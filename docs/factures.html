@@ -105,7 +105,7 @@
     <div class="topbar">
       <h1>Factures</h1>
       <div class="topbar-right">
-        <button class="btn-em" onclick="alert('Les factures sont générées automatiquement dès la signature d\'un devis.')">+ Facture manuelle</button>
+        <button class="btn-em" onclick="showFactToast('Les factures sont créées automatiquement à la signature d\'un devis')">+ Facture manuelle</button>
         <div class="avatar-wrap">
           <div class="avatar" id="avatar-btn">ML</div>
           <div class="user-menu" id="user-menu">
@@ -197,6 +197,21 @@
   function closeSidebar() {
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+  let _factToastT;
+  function showFactToast(msg) {
+    let t = document.getElementById('fact-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'fact-toast';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#14161A;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(_factToastT);
+    _factToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3500);
   }
 </script>
 </body>

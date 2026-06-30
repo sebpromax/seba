@@ -25,12 +25,12 @@ même si le contenu à l'intérieur est encore simplifié.
 | 1.11 | **Fiche détaillée d'un client** (clic "Ouvrir" depuis clients.html) | ✅ Fait |
 | 1.12 | **Fiche détaillée d'un employé** (clic depuis equipe.html) | ✅ Fait |
 | 1.13 | **Création d'un nouveau devis** (vrai formulaire, pas une alert) | ✅ Fait |
-| 1.14 | **Création d'une nouvelle intervention** (depuis planning.html) | ⬜ À faire |
-| 1.15 | **Vue détaillée d'un devis / d'une facture** (clic "Voir") | ⬜ À faire |
-| 1.16 | **Menu de navigation (☰) sur la landing page** — contenu : Fonctionnalités, Comment ça marche, Tarifs, FAQ, Connexion (+ CTA "Créer mon entreprise") | ⬜ À faire |
-| 1.17 | **Page "Comment ça marche"** (accessible depuis la landing) | ⬜ À faire |
-| 1.18 | **Page FAQ** (accessible depuis la landing) | ⬜ À faire |
-| 1.19 | **Page Tarifs** (accessible depuis la landing) | ⬜ À faire |
+| 1.14 | **Création d'une nouvelle intervention** (depuis planning.html) | ✅ Fait |
+| 1.15 | **Vue détaillée d'un devis / d'une facture** (clic "Voir") | ✅ Fait |
+| 1.16 | **Menu de navigation (☰) sur la landing page** — contenu : Fonctionnalités, Comment ça marche, Tarifs, FAQ, Connexion (+ CTA "Créer mon entreprise") | ✅ Fait (0.22) |
+| 1.17 | **Page "Comment ça marche"** (accessible depuis la landing) | ✅ Fait |
+| 1.18 | **Page FAQ** (accessible depuis la landing) | ✅ Fait |
+| 1.19 | **Page Tarifs** (accessible depuis la landing) | ✅ Fait |
 | 1.20 | **Page Connexion** (se connecter à un compte existant) + lien "Mon compte" fonctionnel depuis le dashboard | ✅ Fait |
 | 1.21 | **Généraliser les fiches détaillées** : toutes les lignes clients (pas seulement Sophie Lacroix) et toutes les cartes employés (pas seulement Léa Martin) doivent être cliquables vers une vraie fiche | ✅ Fait |
 
@@ -48,10 +48,10 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 | 2.3 | Filtres clients.html | ✅ Fait |
 | 2.4 | Navigation semaine planning.html | ✅ Fait |
 | 2.5 | Onglets reglages.html | ✅ Fait |
-| 2.6 | Recherche fonctionnelle (barre de recherche clients.html) | ⬜ À faire |
-| 2.7 | Formulaire d'ajout de client (réel, pas une alert) | ⬜ À faire |
-| 2.8 | Formulaire d'ajout d'employé (réel) | ⬜ À faire |
-| 2.9 | Bouton "Relancer" → vraie action (ou simulation crédible) | ⬜ À faire |
+| 2.6 | Recherche fonctionnelle (barre de recherche clients.html) | ✅ Fait |
+| 2.7 | Formulaire d'ajout de client (réel, pas une alert) | ✅ Fait |
+| 2.8 | Formulaire d'ajout d'employé (réel) | ✅ Fait |
+| 2.9 | Bouton "Relancer" → vraie action (ou simulation crédible) | ✅ Fait |
 
 ---
 
@@ -72,6 +72,8 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 | 0.14 | **Horloge temps réel** — Dashboard : horloge HH:MM:SS live (`setInterval` 1s, `Intl.DateTimeFormat` avec `timeZone`), affiche l'heure du pays de l'entreprise (pas du navigateur). `TZ_MAP` de 27 pays (fallback si `biz.timezone` absent). `onboarding.html` : champ `tz` (IANA) ajouté sur chaque pays du sélecteur, persisté en localStorage comme `timezone`. Fallback `Europe/Paris` si aucune donnée. Ville affichée discrètement à côté de l'heure. | ✅ Fait |
 | 0.16 | **Réingénierie visuelle — Part 1 index.html** : Three.js CDN + 800 particules WebGL (AdditiveBlending, émeraude/violet-prune, répulsion souris 3D R=2.5, retour à l'origine, friction 0.95). Hero background #090D16. ha1-ha5 CSS retirés, entrée GSAP power4.out. Dashboard tilt rotationX:15→0 sur scroll (scrub:1.5). Sections Problème + Solution redessinées en Bento Grid 4 colonnes avec glassmorphism (backdrop-filter blur:12px), halos radiaux, textes enrichis. scrub passé à 1.5 sur toutes les animations. Responsive géré. | ✅ Fait |
 | 0.17 | **Réingénierie visuelle — Part 2 onboarding.html** : GSAP CDN ajouté. `goStep()` remplacé par transition GSAP (sortie y:-30/opacity:0 power2.in 0.38s, entrée y:30→0 power2.out 0.48s, direction inverse si back). Step-6 remplacé par anneau cinématique SVG (r=58, dasharray=364.4, GSAP 3.5s power1.inOut). Texte dynamique lisant secteur/nom depuis localStorage. À 100% : fondu corps + redirect dashboard.html. Fallback sans GSAP. | ✅ Fait |
+| 0.22 | **Header hamburger unifié vitrine** — HTML identique sur les 6 pages (index, probleme, solution, confiance, connexion, onboarding) : logo `seba.` à gauche, hamburger à droite. Overlay plein écran `.sh-overlay` (z-index 199, opacity transition). 4 liens `.sh-link` clamp(1.8rem→2.8rem) + CTA émeraude `.sh-cta`. Fermeture : re-clic burger, clic hors nav, Escape. Nav fixe supprimée de index (hero padding ajusté 168→100px). | ✅ Fait |
+| 0.23 | **Refonte onboarding — Jalons 1 à 4 complets** — Steps 0–8 en CSS grid overlap, transitions spring `cubic-bezier(.34,1.56,.64,1)` bidirectionnelles (two-rAF). Layout 45/55 % dark. Phone mockup HTML/CSS pur (lock ↔ app). **Step 1** : sélecteur pays 27 pays + champ téléphone avec indicatif pays auto-rempli. **Step 2** : 9 tiles secteur (conciergerie groupée). **Step 3** : sous-secteur conciergerie (3 tiles : location courte durée / copro / entreprise) — affiché uniquement si conciergerie sélectionné, sinon skippé. **Steps 4–8** : services (avec `makeSvcRow`, `addCustomSvc`), identité (swatches couleur, preview live téléphone), écosystème (slug + code SEBA-XXXX), chargement GSAP ring 3.5s, résumé ticket + grille "Et maintenant ?". `saveLS()` persist dans `sebaEntreprise` avec `phone`, `dialCode`, `timezone`. | ✅ Fait |
 | 0.21 | **Maturation design system** — Audit et unification de l'exécution sur toutes les pages pro (fond clair conservé). `pro-global.css` réécrit : tokens de design, sidebar unifiée (`.sidebar .nav-item` specificity > inline, nav-label, dot actif, footer), badges sémantiques (actif/attente/relance/info), inputs focus émeraude cohérent (`!important`), hover rows, skeleton light-mode, navigation mobile (hamburger + overlay + JS `toggleSidebar`) ajoutée sur 11 pages pro, grille sidebar standardisée à 220px, tableaux scroll horizontal sur mobile, hiérarchie typographique unifiée (page-title, module-title, label, text-2), utilitaires 8px grid. | ✅ Fait |
 | 0.20 | **Refonte index.html v3** — Nouvelle palette encre/émeraude (`--ink:#08090B`, `--emerald:#00F5A0`, etc.), dead code supprimé (`.ha1-.ha5`, `.pipeline`, `.seamless-grid`, `.reveal`), nav flottante `Industries · Automations · Tarifs`, hero glassmorphism cockpit (4s scenes ménage/conciergerie/maintenance), section problème 10 colonnes asymétriques (pc-01=span6, pc-02=span4, pc-03=span4, pc-04=span6), section solution remplacée par 4 métriques vitesse (30s/15s/20s/10s, font-size:68px émeraude), CTA dark `"Reprenez le contrôle de votre entreprise dès aujourd'hui."`, `#cursor-glow` (300px radial, opacity 0.04, blur 40px, suit la souris), Lenis CDN ajouté, boutons spring `cubic-bezier(0.34,1.56,0.64,1)`, View Transitions API + fallback JS. | ✅ Fait |
 | 0.19 | **Particules contextuelles** — Refonte Three.js multi-pages (index, problème, solution, confiance, connexion) : opacité 0.18 (était 0.85), taille ~1px (0.028), canvas `position:fixed` couvrant le viewport. Transitions d'état 2.5s `sine.inOut` (machine à blends). Comportements par section : Problem → micro-bruit sur particules de bord uniquement (|nx|>0.62) ; Solution → magnétisme vers AABB des cartes Bento (force 0.004) ; Confiance → halo radial au survol de `.trust-panel` ; Connexion → ligne d'horizon horizontale sous le formulaire. Gravitation CTA : 30-40 particules dans rayon 1.25 unités attirées doucement au survol des boutons principaux. CDN Three.js + GSAP ajoutés à probleme/solution/confiance/connexion.html. | ✅ Fait |
@@ -93,7 +95,7 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 | 3.2 | Responsive mobile — vérifier toutes les pages sur petit écran |
 | 3.3 | Accessibilité de base (contrastes, focus clavier) |
 | 3.4 | Relecture des textes (fautes, ton, cohérence du vocabulaire) |
-| 3.5 | **Fluidité générale** : transitions entre étapes/pages, espacements, agencement — retour utilisateur du 28/06 : "pas fluide, mal agencé" |
+| 3.5 | **Fluidité générale** : animation pageIn sur toutes les pages pro (pro-global.css), suppression de tous les alert() remplacés par toasts, boutons d'action reliés à de vraies pages | ✅ Fait |
 
 ---
 

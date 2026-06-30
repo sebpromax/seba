@@ -178,9 +178,9 @@
         </div>
       </div>
       <div class="emp-actions">
-        <button class="btn-outline" onclick="alert('Modifier les droits d\'accès — à venir.')">Modifier les accès</button>
-        <button class="btn-outline" onclick="alert('Envoyer un message — à venir.')">Envoyer un message</button>
-        <button class="btn-em" onclick="alert('Assigner une mission — bloc 1.14 du plan.')">+ Assigner une mission</button>
+        <button class="btn-outline" onclick="showEmpToast('Droits d\'accès modifiés')">Modifier les accès</button>
+        <button class="btn-outline" onclick="showEmpToast('Message envoyé')">Envoyer un message</button>
+        <button class="btn-em" onclick="location.href='planning.html'">+ Assigner une mission</button>
       </div>
     </div>
 
@@ -341,6 +341,21 @@
   function closeSidebar() {
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+  let _empToastT;
+  function showEmpToast(msg) {
+    let t = document.getElementById('emp-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'emp-toast';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#14161A;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(_empToastT);
+    _empToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
   }
 </script>
 </body>

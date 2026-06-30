@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -22,10 +22,10 @@
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
   a{color:inherit;text-decoration:none;}
-  button,input{font-family:'Inter',sans-serif;}
+  button,input,textarea,select{font-family:'Inter',sans-serif;}
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
-  .layout{display:grid;grid-template-columns: 220px 1fr;min-height:100vh;}
+  .layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
   .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
   .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
   .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
@@ -45,8 +45,9 @@
 
   .toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
   .search-input{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.88rem;background:#fff;}
-  .search-input:focus{border-color:var(--emerald);}
-  .filter-pill{padding:10px 16px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.85rem;background:#fff;cursor:pointer;color:var(--text-2);}
+  .search-input:focus{border-color:var(--emerald);outline:none;}
+  .filter-pill{padding:10px 16px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.85rem;background:#fff;cursor:pointer;color:var(--text-2);transition:background .15s,color .15s,border-color .15s;}
+  .filter-pill:hover{border-color:var(--ink);}
   .filter-pill.active{background:var(--ink);color:var(--white);border-color:var(--ink);}
 
   .panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
@@ -54,16 +55,17 @@
   th{text-align:left;color:var(--text-2);font-weight:500;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.02em;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
   td{padding:13px 16px;border-bottom:1px solid var(--border);}
   tr:last-child td{border-bottom:none;}
-  tr.client-row{cursor:pointer;}
+  tr.client-row{cursor:pointer;transition:background .1s;}
   tr.client-row:hover{background:var(--bg);}
   .client-name{display:flex;align-items:center;gap:10px;}
-  .mini-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--ink);flex-shrink:0;}
+  .mini-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--ink);flex-shrink:0;border:1px solid var(--border);}
   .badge{font-size:0.74rem;padding:3px 9px;border-radius:12px;font-weight:500;}
   .badge.actif{background:#E3EDE3;color:#4F6F52;}
   .badge.attente{background:#FEF3C7;color:#92400E;}
   .badge.relance{background:#FBE3E0;color:#B5482F;}
   .ca-cell{font-weight:600;}
-  .row-action{font-size:0.78rem;color:var(--emerald);cursor:pointer;}
+  .row-action{font-size:0.78rem;color:var(--emerald);cursor:pointer;white-space:nowrap;}
+  .row-action a{color:var(--emerald);}
 
   .topbar-right{display:flex;align-items:center;gap:14px;}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
@@ -75,19 +77,48 @@
   .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
   .user-menu .menu-deconnect{color:var(--text-2);}
 
+  /* Empty state */
+  .empty-row td{text-align:center;padding:48px 16px;color:var(--text-2);font-size:0.9rem;}
+
+  /* ── Side sheet ── */
+  .ss-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:499;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .ss-backdrop.open{opacity:1;pointer-events:all;}
+  .ss-panel{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:100vw;background:#fff;z-index:500;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,.12);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+  .ss-panel.open{transform:translateX(0);}
+  .ss-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);}
+  .ss-hdr h2{font-size:1.05rem;font-weight:600;}
+  .ss-close{background:none;border:none;cursor:pointer;color:var(--text-2);font-size:1.3rem;line-height:1;padding:4px;}
+  .ss-close:hover{color:var(--ink);}
+  .ss-body{flex:1;overflow-y:auto;padding:24px;}
+  .ss-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+  .ss-field{margin-bottom:16px;}
+  .ss-field label{display:block;font-size:0.78rem;font-weight:500;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.02em;}
+  .ss-field input,.ss-field textarea,.ss-field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.9rem;background:#fff;color:var(--ink);transition:border-color .15s;}
+  .ss-field input:focus,.ss-field textarea:focus,.ss-field select:focus{border-color:var(--emerald);outline:none;}
+  .ss-field textarea{resize:vertical;min-height:80px;}
+  .ss-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .btn-ss-ghost{background:none;border:1px solid var(--border);color:var(--ink);padding:10px 18px;border-radius:var(--rs);font-size:0.86rem;font-weight:500;cursor:pointer;transition:background .15s;}
+  .btn-ss-ghost:hover{background:var(--bg);}
+  .btn-ss-em{background:var(--emerald);color:var(--ink);border:none;padding:10px 18px;border-radius:var(--rs);font-size:0.86rem;font-weight:600;cursor:pointer;transition:opacity .15s;}
+  .btn-ss-em:hover{opacity:.88;}
+
+  /* Toast */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:var(--r);font-size:0.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
   @media (max-width:980px){
     .layout{grid-template-columns:1fr;}
-    .sidebar{}
     .main{padding:24px 20px;}
     table{font-size:0.8rem;}
     th,td{padding:10px 8px;}
     .mini-avatar{width:26px;height:26px;font-size:0.65rem;}
+    .ss-panel{width:100vw;}
   }
 </style>
 </head>
 <body>
 <div class="layout">
-    <div class="mobile-header">
+  <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div>Seba</div>
     <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
       <span></span><span></span><span></span>
@@ -105,14 +136,14 @@
       <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
       <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
     </nav>
-    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+    <div class="sidebar-footer" id="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
   </aside>
 
   <main class="main">
     <div class="topbar">
       <h1>Clients</h1>
       <div class="topbar-right">
-        <button class="btn-em" onclick="alert('Formulaire d\'ajout de client — nom, email ou téléphone, c\'est tout.')">+ Ajouter un client</button>
+        <button class="btn-em" onclick="openSheet()">+ Ajouter un client</button>
         <div class="avatar-wrap">
           <div class="avatar" id="avatar-btn">ML</div>
           <div class="user-menu" id="user-menu">
@@ -125,11 +156,11 @@
     </div>
 
     <div class="toolbar">
-      <input type="text" class="search-input" placeholder="Rechercher un client...">
-      <div class="filter-pill active">Tous (6)</div>
-      <div class="filter-pill">Actifs (3)</div>
-      <div class="filter-pill">En attente (2)</div>
-      <div class="filter-pill">À relancer (1)</div>
+      <input type="text" id="search-input" class="search-input" placeholder="Rechercher un client...">
+      <button class="filter-pill active" data-filter="tous" onclick="setFilter('tous',this)">Tous (<span id="cnt-tous">6</span>)</button>
+      <button class="filter-pill" data-filter="actif" onclick="setFilter('actif',this)">Actifs (<span id="cnt-actif">3</span>)</button>
+      <button class="filter-pill" data-filter="attente" onclick="setFilter('attente',this)">En attente (<span id="cnt-attente">2</span>)</button>
+      <button class="filter-pill" data-filter="relance" onclick="setFilter('relance',this)">À relancer (<span id="cnt-relance">1</span>)</button>
     </div>
 
     <div class="panel">
@@ -137,70 +168,214 @@
         <thead>
           <tr><th>Client</th><th>Contact</th><th>Dernier service</th><th>CA total</th><th>Statut</th><th></th></tr>
         </thead>
-        <tbody>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Sophie Lacroix')">
-            <td><div class="client-name"><div class="mini-avatar">SL</div>Sophie Lacroix</div></td>
-            <td>s.lacroix@email.fr</td>
-            <td>Ménage standard — 12 juin</td>
-            <td class="ca-cell">570 €</td>
-            <td><span class="badge actif">Actif</span></td>
-            <td class="row-action"><a href="client-fiche.html?nom=Sophie%20Lacroix">Ouvrir</a></td>
-          </tr>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Marc Roussel')">
-            <td><div class="client-name"><div class="mini-avatar">MR</div>Marc Roussel</div></td>
-            <td>06 12 34 56 78</td>
-            <td>Devis envoyé — 20 juin</td>
-            <td class="ca-cell">0 €</td>
-            <td><span class="badge attente">Devis envoyé</span></td>
-            <td class="row-action">Relancer</td>
-          </tr>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Julie Dumont')">
-            <td><div class="client-name"><div class="mini-avatar">JD</div>Julie Dumont</div></td>
-            <td>j.dumont@email.fr</td>
-            <td>Repassage — 14 juin</td>
-            <td class="ca-cell">160 €</td>
-            <td><span class="badge relance">Facture en retard</span></td>
-            <td class="row-action">Relancer</td>
-          </tr>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Pierre Tessier')">
-            <td><div class="client-name"><div class="mini-avatar">PT</div>Pierre Tessier</div></td>
-            <td>p.tessier@email.fr</td>
-            <td>Ménage standard — 12 juin</td>
-            <td class="ca-cell">475 €</td>
-            <td><span class="badge actif">Actif</span></td>
-            <td class="row-action"><a href="client-fiche.html?nom=Pierre%20Tessier">Ouvrir</a></td>
-          </tr>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Camille Faure')">
-            <td><div class="client-name"><div class="mini-avatar">CF</div>Camille Faure</div></td>
-            <td>c.faure@email.fr</td>
-            <td>Nettoyage de vitres — 8 juin</td>
-            <td class="ca-cell">60 €</td>
-            <td><span class="badge actif">Actif</span></td>
-            <td class="row-action"><a href="client-fiche.html?nom=Camille%20Faure">Ouvrir</a></td>
-          </tr>
-          <tr class="client-row" onclick="location.href='client-fiche.html?nom=' + encodeURIComponent('Thomas Berger')">
-            <td><div class="client-name"><div class="mini-avatar">TB</div>Thomas Berger</div></td>
-            <td>06 98 76 54 32</td>
-            <td>Devis envoyé — 24 juin</td>
-            <td class="ca-cell">0 €</td>
-            <td><span class="badge attente">Devis envoyé</span></td>
-            <td class="row-action">Relancer</td>
-          </tr>
-        </tbody>
+        <tbody id="clients-tbody"></tbody>
       </table>
     </div>
   </main>
 </div>
-<script>
-  // Lecture des données d'entreprise depuis localStorage (onboarding)
-  try {
-    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
-    if (_ent && _ent.nom) {
-      const _f = document.querySelector('.sidebar-footer');
-      if (_f) _f.childNodes[0].textContent = _ent.nom;
-    }
-  } catch(e) {}
 
+<!-- Side sheet : ajouter un client -->
+<div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
+<div class="ss-panel" id="ss-panel" role="dialog" aria-modal="true" aria-label="Ajouter un client">
+  <div class="ss-hdr">
+    <h2>Nouveau client</h2>
+    <button class="ss-close" onclick="closeSheet()" aria-label="Fermer">&times;</button>
+  </div>
+  <div class="ss-body">
+    <div class="ss-2col">
+      <div class="ss-field">
+        <label for="ss-prenom">Prénom</label>
+        <input type="text" id="ss-prenom" placeholder="Marie">
+      </div>
+      <div class="ss-field">
+        <label for="ss-nom">Nom</label>
+        <input type="text" id="ss-nom" placeholder="Dupont">
+      </div>
+    </div>
+    <div class="ss-field">
+      <label for="ss-email">Email</label>
+      <input type="email" id="ss-email" placeholder="marie.dupont@email.fr">
+    </div>
+    <div class="ss-field">
+      <label for="ss-tel">Téléphone</label>
+      <input type="tel" id="ss-tel" placeholder="06 12 34 56 78">
+    </div>
+    <div class="ss-field">
+      <label for="ss-adresse">Adresse (optionnel)</label>
+      <input type="text" id="ss-adresse" placeholder="12 rue des Lilas, Lyon">
+    </div>
+    <div class="ss-field">
+      <label for="ss-notes">Notes</label>
+      <textarea id="ss-notes" placeholder="Préférences, instructions particulières..."></textarea>
+    </div>
+  </div>
+  <div class="ss-footer">
+    <button class="btn-ss-ghost" onclick="closeSheet()">Annuler</button>
+    <button class="btn-ss-em" onclick="submitClient()">Ajouter le client</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Données clients ──
+  const CLIENTS = [
+    { id:1, prenom:'Sophie', nom:'Lacroix', contact:'s.lacroix@email.fr', service:'Ménage standard — 12 juin', ca:570, statut:'actif' },
+    { id:2, prenom:'Marc',   nom:'Roussel', contact:'06 12 34 56 78',      service:'Devis envoyé — 20 juin',   ca:0,   statut:'attente' },
+    { id:3, prenom:'Julie',  nom:'Dumont',  contact:'j.dumont@email.fr',   service:'Repassage — 14 juin',      ca:160, statut:'relance' },
+    { id:4, prenom:'Pierre', nom:'Tessier', contact:'p.tessier@email.fr',  service:'Ménage standard — 12 juin',ca:475, statut:'actif' },
+    { id:5, prenom:'Camille',nom:'Faure',   contact:'c.faure@email.fr',    service:'Nettoyage de vitres — 8 juin',ca:60, statut:'actif' },
+    { id:6, prenom:'Thomas', nom:'Berger',  contact:'06 98 76 54 32',      service:'Devis envoyé — 24 juin',   ca:0,   statut:'attente' },
+  ];
+
+  const BADGE = { actif:'actif', attente:'attente', relance:'relance' };
+  const BADGE_LBL = { actif:'Actif', attente:'Devis envoyé', relance:'Facture en retard' };
+  const BADGE_ACTION_LBL = { actif:'Ouvrir', attente:'Relancer', relance:'Relancer' };
+
+  let _filter = 'tous';
+  let _query  = '';
+  let sym = '€';
+
+  function initSym() {
+    try {
+      const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
+      if (biz.deviseSymbole) sym = biz.deviseSymbole;
+      if (biz.nom) {
+        document.getElementById('sidebar-footer').innerHTML = biz.nom + '<br>Compte de démonstration';
+      }
+    } catch(e) {}
+  }
+
+  function initials(c) {
+    return (c.prenom[0] + c.nom[0]).toUpperCase();
+  }
+
+  function filtered() {
+    return CLIENTS.filter(c => {
+      const matchFilter = _filter === 'tous' || c.statut === _filter;
+      const q = _query.toLowerCase();
+      const matchSearch = !q ||
+        (c.prenom + ' ' + c.nom).toLowerCase().includes(q) ||
+        c.contact.toLowerCase().includes(q) ||
+        c.service.toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+  }
+
+  function updateCounts() {
+    document.getElementById('cnt-tous').textContent    = CLIENTS.length;
+    document.getElementById('cnt-actif').textContent   = CLIENTS.filter(c=>c.statut==='actif').length;
+    document.getElementById('cnt-attente').textContent = CLIENTS.filter(c=>c.statut==='attente').length;
+    document.getElementById('cnt-relance').textContent = CLIENTS.filter(c=>c.statut==='relance').length;
+  }
+
+  function render() {
+    const tbody = document.getElementById('clients-tbody');
+    const list = filtered();
+    tbody.innerHTML = '';
+    if (!list.length) {
+      const tr = document.createElement('tr');
+      tr.className = 'empty-row';
+      tr.innerHTML = '<td colspan="6">Aucun client trouvé.</td>';
+      tbody.appendChild(tr);
+      return;
+    }
+    list.forEach(c => {
+      const slug = encodeURIComponent(c.prenom + ' ' + c.nom);
+      const href = 'client-fiche.html?nom=' + slug;
+      const canOpen = c.statut === 'actif';
+      const tr = document.createElement('tr');
+      tr.className = 'client-row';
+      if (canOpen) tr.onclick = () => location.href = href;
+      else tr.onclick = () => relancer(c);
+      tr.innerHTML =
+        '<td><div class="client-name"><div class="mini-avatar">' + initials(c) + '</div>' + c.prenom + ' ' + c.nom + '</div></td>' +
+        '<td>' + c.contact + '</td>' +
+        '<td>' + c.service + '</td>' +
+        '<td class="ca-cell">' + (c.ca > 0 ? c.ca + ' ' + sym : '—') + '</td>' +
+        '<td><span class="badge ' + BADGE[c.statut] + '">' + BADGE_LBL[c.statut] + '</span></td>' +
+        '<td class="row-action">' + (canOpen ? '<a href="' + href + '">Ouvrir</a>' : '<span onclick="event.stopPropagation();relancer(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">Relancer</span>') + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function setFilter(f, btn) {
+    _filter = f;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function relancer(c) {
+    showToast('Relance envoyée à ' + c.prenom + ' ' + c.nom + ' ✓');
+  }
+
+  // ── Side sheet ──
+  function openSheet() {
+    document.getElementById('ss-backdrop').classList.add('open');
+    document.getElementById('ss-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('ss-prenom').focus(), 120);
+  }
+
+  function closeSheet() {
+    document.getElementById('ss-backdrop').classList.remove('open');
+    document.getElementById('ss-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function submitClient() {
+    const prenom  = document.getElementById('ss-prenom').value.trim();
+    const nom     = document.getElementById('ss-nom').value.trim();
+    const email   = document.getElementById('ss-email').value.trim();
+    const tel     = document.getElementById('ss-tel').value.trim();
+
+    if (!prenom || !nom) {
+      document.getElementById('ss-prenom').focus();
+      return;
+    }
+
+    const nouveau = {
+      id: Date.now(),
+      prenom, nom,
+      contact: email || tel || '—',
+      service: 'Aucun service encore',
+      ca: 0,
+      statut: 'attente'
+    };
+    CLIENTS.unshift(nouveau);
+    updateCounts();
+    render();
+    closeSheet();
+    // reset form
+    ['ss-prenom','ss-nom','ss-email','ss-tel','ss-adresse','ss-notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    showToast(prenom + ' ' + nom + ' ajouté(e) avec succès');
+  }
+
+  // ── Toast ──
+  let _toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // ── Search ──
+  document.getElementById('search-input').addEventListener('input', function() {
+    _query = this.value;
+    render();
+  });
+
+  // ── Escape ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSheet();
+  });
+
+  // ── Avatar menu ──
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');
   avatarBtn.addEventListener('click', e => {
@@ -208,9 +383,8 @@
     userMenu.classList.toggle('open');
   });
   document.addEventListener('click', () => userMenu.classList.remove('open'));
-</script>
 
-<script>
+  // ── Sidebar mobile ──
   function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -219,8 +393,11 @@
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
   }
+
+  // ── Init ──
+  initSym();
+  updateCounts();
+  render();
 </script>
 </body>
 </html>
-
-

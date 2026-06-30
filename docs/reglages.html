@@ -153,7 +153,7 @@
             <div class="field-group"><label>Téléphone</label><input type="text" value="04 78 00 00 00"></div>
           </div>
           <div class="field-group"><label>Zone d'intervention</label><input type="text" value="Lyon et agglomération"></div>
-          <button class="btn-em" onclick="alert('Réglages enregistrés (démonstration).')">Enregistrer</button>
+          <button class="btn-em" onclick="showReglToast('Réglages enregistrés')">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-identite" style="display:none;">
@@ -170,7 +170,7 @@
             </div>
           </div>
           <div class="field-group"><label>Logo</label><input type="file"></div>
-          <button class="btn-em" onclick="alert('Identité visuelle enregistrée (démonstration).')">Enregistrer</button>
+          <button class="btn-em" onclick="showReglToast('Identité visuelle enregistrée')">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-services" style="display:none;">
@@ -201,9 +201,9 @@
             <div class="service-price"><input type="number" value="" disabled></div>
             <div class="price-suffix">€/h</div>
           </div>
-          <span class="add-service" onclick="alert('Ajouter un service personnalisé.')">+ Ajouter un service personnalisé</span>
+          <span class="add-service" onclick="showReglToast('Ajout de service personnalisé — bientôt disponible')">+ Ajouter un service personnalisé</span>
           <br><br>
-          <button class="btn-em" onclick="alert('Services et tarifs enregistrés (démonstration).')">Enregistrer</button>
+          <button class="btn-em" onclick="showReglToast('Services et tarifs enregistrés')">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-compte" style="display:none;">
@@ -211,13 +211,13 @@
           <p class="desc">Gestion de votre accès et de votre abonnement Seba.</p>
           <div class="field-group"><label>Email de connexion</label><input type="email" value="contact@menageexpress.fr"></div>
           <div class="field-group"><label>Mot de passe</label><input type="password" value="••••••••"></div>
-          <button class="btn-em" onclick="alert('Mot de passe mis à jour (démonstration).')">Mettre à jour</button>
+          <button class="btn-em" onclick="showReglToast('Mot de passe mis à jour')">Mettre à jour</button>
         </div>
 
         <div class="panel danger-zone">
           <div class="danger-row">
             <div><div class="label">Supprimer mon entreprise</div><div class="sub">Action définitive — toutes les données seront perdues.</div></div>
-            <button class="btn-danger" onclick="alert('Confirmation de suppression à venir.')">Supprimer</button>
+            <button class="btn-danger" onclick="confirmDelete()">Supprimer</button>
           </div>
         </div>
       </div>
@@ -273,6 +273,27 @@
   function closeSidebar() {
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+  let _reglToastT;
+  function showReglToast(msg) {
+    let t = document.getElementById('regl-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'regl-toast';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#14161A;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg + ' ✓';
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(_reglToastT);
+    _reglToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
+  }
+  function confirmDelete() {
+    if (confirm('Êtes-vous sûr(e) de vouloir supprimer votre entreprise ? Cette action est irréversible.')) {
+      showReglToast('Compte supprimé — redirection...');
+      setTimeout(() => location.href = 'connexion.html', 2000);
+    }
   }
 </script>
 </body>

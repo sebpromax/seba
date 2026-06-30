@@ -77,6 +77,58 @@
     table{font-size:0.8rem;}
     th,td{padding:10px 8px;}
   }
+
+  /* ── Side Sheet ── */
+  .ss-backdrop{position:fixed;inset:0;z-index:499;background:rgba(20,22,26,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s ease;}
+  .ss-backdrop.open{opacity:1;pointer-events:auto;}
+  .ss-panel{position:fixed;right:0;top:0;bottom:0;z-index:500;width:min(540px,94vw);background:#fff;box-shadow:-8px 0 48px rgba(0,0,0,.13);transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+  .ss-panel.open{transform:translateX(0);}
+  .ss-hdr{padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .ss-hdr-left{display:flex;flex-direction:column;gap:4px;}
+  .ss-doc-num{font-size:.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;}
+  .ss-hdr h2{font-size:1.1rem;letter-spacing:-.01em;margin:0;}
+  .ss-close{width:34px;height:34px;border:1px solid var(--border);background:transparent;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:background .15s;flex-shrink:0;}
+  .ss-close:hover{background:var(--bg);}
+  .ss-body{flex:1;overflow-y:auto;padding:0;}
+  .ss-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:#fff;}
+
+  /* Receipt */
+  .receipt{padding:28px;}
+  .receipt-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;}
+  .receipt-from{font-size:.82rem;color:var(--text-2);line-height:1.7;}
+  .receipt-from strong{color:var(--ink);font-size:1rem;font-weight:700;display:block;margin-bottom:2px;}
+  .receipt-badge{padding:5px 14px;border-radius:100px;font-size:.76rem;font-weight:600;}
+  .receipt-badge.signe{background:#E3EDE3;color:#1a7a3a;}
+  .receipt-badge.attente{background:#FFF4E5;color:#B45309;}
+  .receipt-badge.expire{background:#F0EDE8;color:var(--text-2);}
+  .receipt-to{margin-bottom:24px;padding:16px 18px;background:var(--bg);border-radius:var(--rs);}
+  .receipt-to-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
+  .receipt-to-name{font-weight:600;font-size:.95rem;}
+  .receipt-to-meta{font-size:.8rem;color:var(--text-2);margin-top:2px;}
+  .receipt-lines{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:.86rem;}
+  .receipt-lines th{text-align:left;padding:8px 0;border-bottom:1.5px solid var(--border);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);}
+  .receipt-lines td{padding:11px 0;border-bottom:1px solid var(--border);}
+  .receipt-lines tr:last-child td{border-bottom:none;}
+  .receipt-lines .td-r{text-align:right;font-weight:600;}
+  .receipt-total{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--ink);border-radius:var(--rs);color:#fff;margin-bottom:22px;}
+  .receipt-total-lbl{font-size:.85rem;font-weight:600;}
+  .receipt-total-amt{font-size:1.2rem;font-weight:800;color:var(--emerald);}
+  .receipt-history{margin-bottom:8px;}
+  .receipt-history-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:10px;}
+  .hist-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem;}
+  .hist-item:last-child{border-bottom:none;}
+  .hist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .hist-dot.g{background:#22c55e;}
+  .hist-dot.o{background:#f59e0b;}
+  .hist-dot.gr{background:#9ca3af;}
+  .hist-date{color:var(--text-2);font-size:.76rem;margin-left:auto;}
+
+  .btn-copy{background:transparent;border:1px solid var(--border);color:var(--ink);padding:11px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+  .btn-copy:hover{background:var(--bg);}
+  .btn-ss-em{flex:2;background:var(--emerald);border:none;color:var(--ink);padding:11px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .15s;}
+  .btn-ss-em:hover{opacity:.88;transform:translateY(-1px);}
+  @keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+  .row-action{cursor:pointer;}
 </style>
 </head>
 <body>
@@ -200,6 +252,151 @@
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
   }
+</script>
+
+<!-- ── Side Sheet: Devis detail ── -->
+<div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
+<aside class="ss-panel" id="ss-panel" role="dialog" aria-modal="true">
+  <div class="ss-hdr">
+    <div class="ss-hdr-left">
+      <div class="ss-doc-num" id="ss-doc-num">#0123</div>
+      <h2 id="ss-client-name">Sophie Lacroix</h2>
+    </div>
+    <button class="ss-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="ss-body">
+    <div class="receipt" id="ss-receipt"><!-- filled by JS --></div>
+  </div>
+  <div class="ss-footer" id="ss-footer"><!-- filled by JS --></div>
+</aside>
+
+<script>
+  /* ── Devis data ── */
+  const DEVIS_DATA = [
+    {num:'#0124',client:'Marc Roussel',  service:'Nettoyage fin de bail',    amount:180,status:'attente',date:'2026-06-18',
+     lines:[{desc:'Nettoyage fin de bail 3h',qty:1,u:180}],
+     history:[{label:'Devis envoyé',date:'18 juin 2026',cls:'o'},{label:'Devis créé',date:'17 juin 2026',cls:'g'}]},
+    {num:'#0123',client:'Sophie Lacroix',service:'Ménage standard (mensuel)',  amount:95, status:'signe', date:'2026-06-14',
+     lines:[{desc:'Ménage standard 2h',qty:1,u:65},{desc:'Repassage 1h',qty:1,u:30}],
+     history:[{label:'Devis signé',date:'15 juin 2026',cls:'g'},{label:'Devis envoyé',date:'14 juin 2026',cls:'o'},{label:'Devis créé',date:'13 juin 2026',cls:'g'}]},
+    {num:'#0122',client:'Camille Faure', service:'Nettoyage de vitres',       amount:60, status:'attente',date:'2026-06-12',
+     lines:[{desc:'Nettoyage vitres 1h30',qty:1,u:60}],
+     history:[{label:'Devis envoyé',date:'12 juin 2026',cls:'o'},{label:'Devis créé',date:'11 juin 2026',cls:'g'}]},
+    {num:'#0121',client:'Pierre Tessier',service:'Ménage standard (mensuel)', amount:95, status:'signe', date:'2026-06-10',
+     lines:[{desc:'Ménage standard 2h',qty:1,u:65},{desc:'Repassage 1h',qty:1,u:30}],
+     history:[{label:'Devis signé',date:'12 juin 2026',cls:'g'},{label:'Devis envoyé',date:'10 juin 2026',cls:'o'},{label:'Devis créé',date:'9 juin 2026',cls:'g'}]},
+    {num:'#0120',client:'Julie Dumont',  service:'Repassage',                 amount:40, status:'expire',date:'2026-05-28',
+     lines:[{desc:'Repassage 1h',qty:1,u:40}],
+     history:[{label:'Expiré',date:'11 juin 2026',cls:'gr'},{label:'Devis envoyé',date:'28 mai 2026',cls:'o'},{label:'Devis créé',date:'27 mai 2026',cls:'g'}]},
+    {num:'#0119',client:'Thomas Berger', service:'Ménage standard',           amount:85, status:'attente',date:'2026-06-20',
+     lines:[{desc:'Ménage standard 2h',qty:1,u:55},{desc:'Nettoyage cuisine',qty:1,u:30}],
+     history:[{label:'Devis envoyé',date:'20 juin 2026',cls:'o'},{label:'Devis créé',date:'19 juin 2026',cls:'g'}]},
+  ];
+
+  const STATUS_LABEL = {signe:'Signé',attente:'En attente',expire:'Expiré'};
+  let _biz = {};
+  try { _biz = JSON.parse(localStorage.getItem('sebaEntreprise')||'{}'); } catch(e){}
+  const _bizName = _biz.nom || 'Seba Services';
+  const _sym     = _biz.deviseSymbole || '€';
+
+  function openSheet(num) {
+    const d = DEVIS_DATA.find(x => x.num === num);
+    if (!d) return;
+    document.getElementById('ss-doc-num').textContent = d.num;
+    document.getElementById('ss-client-name').textContent = d.client;
+    document.getElementById('ss-receipt').innerHTML = buildReceipt(d);
+    document.getElementById('ss-footer').innerHTML = buildFooter(d);
+    document.getElementById('ss-backdrop').classList.add('open');
+    document.getElementById('ss-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function buildReceipt(d) {
+    const lines = d.lines.map(l =>
+      `<tr><td>${l.desc}</td><td>${l.qty}</td><td class="td-r">${l.u} ${_sym}</td></tr>`
+    ).join('');
+    const hist = d.history.map(h =>
+      `<div class="hist-item"><div class="hist-dot ${h.cls}"></div><span>${h.label}</span><span class="hist-date">${h.date}</span></div>`
+    ).join('');
+    return `
+      <div class="receipt-header">
+        <div class="receipt-from">
+          <strong>${_bizName}</strong>
+          Devis émis le ${new Date(d.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+        </div>
+        <span class="receipt-badge ${d.status}">${STATUS_LABEL[d.status]}</span>
+      </div>
+      <div class="receipt-to">
+        <div class="receipt-to-lbl">Destinataire</div>
+        <div class="receipt-to-name">${d.client}</div>
+        <div class="receipt-to-meta">${d.service}</div>
+      </div>
+      <table class="receipt-lines">
+        <thead><tr><th>Prestation</th><th>Qté</th><th style="text-align:right">Montant</th></tr></thead>
+        <tbody>${lines}</tbody>
+      </table>
+      <div class="receipt-total">
+        <span class="receipt-total-lbl">Total TTC</span>
+        <span class="receipt-total-amt">${d.amount} ${_sym}</span>
+      </div>
+      <div class="receipt-history">
+        <div class="receipt-history-lbl">Historique</div>
+        ${hist}
+      </div>`;
+  }
+
+  function buildFooter(d) {
+    if (d.status === 'signe') {
+      return `<button class="btn-copy" onclick="copyLink('${d.num}')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
+        Copier le lien de paiement
+      </button>
+      <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+    }
+    if (d.status === 'attente') {
+      return `<button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
+        <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+    }
+    return `<button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
+      <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+  }
+
+  function closeSheet() {
+    document.getElementById('ss-backdrop').classList.remove('open');
+    document.getElementById('ss-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function copyLink(num) {
+    navigator.clipboard?.writeText('https://seba.app/pay/'+num.replace('#','')).catch(()=>{});
+    showToast('Lien de paiement copié !');
+  }
+  function relancer(num) { showToast('Relance envoyée pour '+num); closeSheet(); }
+  function renouveler(num) { showToast('Devis renouvelé — nouveau brouillon créé.'); closeSheet(); }
+
+  function showToast(msg) {
+    const ex=document.getElementById('_toast'); if(ex)ex.remove();
+    const t=document.createElement('div'); t.id='_toast';
+    t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#14161A;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;animation:toast-in .25s ease;';
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>t.style.opacity='0',2800); setTimeout(()=>t.remove(),3300);
+  }
+
+  /* Wire "Voir" buttons */
+  document.querySelectorAll('.row-action').forEach(btn => {
+    if (btn.textContent.trim() === 'Voir') {
+      const row = btn.closest('tr');
+      const num = row.querySelector('.num').textContent.trim();
+      btn.addEventListener('click', () => openSheet(num));
+    }
+    if (btn.textContent.trim() === 'Relancer') {
+      const row = btn.closest('tr');
+      const num = row.querySelector('.num').textContent.trim();
+      btn.addEventListener('click', () => { showToast('Relance envoyée pour '+num); });
+    }
+  });
+
+  document.addEventListener('keydown', e => { if (e.key==='Escape') closeSheet(); });
 </script>
 </body>
 </html>

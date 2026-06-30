@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px;}
+
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
+
+.accent-line{position:fixed;top:0;left:0;right:0;height:2px;background:var(--emerald);z-index:300;}
+
+.sh{position:sticky;top:0;z-index:200;background:rgba(8,9,11,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05);}
+.sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#fff;}
+.sh-dot{color:var(--emerald);}
+.sh-burger{width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1.5px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;cursor:pointer;padding:0;transition:border-color .15s;}
+.sh-burger span{width:16px;height:1.5px;background:#fff;border-radius:99px;display:block;transition:transform .25s,opacity .2s;}
+.sh-burger:hover{border-color:rgba(255,255,255,.3);}
+.sh-burger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.sh-burger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.sh-burger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.sh-overlay{position:fixed;inset:0;z-index:199;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
+.sh-overlay.open{opacity:1;pointer-events:auto;}
+.sh-nav{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+.sh-link{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;color:rgba(255,255,255,.5);text-decoration:none;letter-spacing:-.03em;padding:8px 0;transition:color .15s;}
+.sh-link:hover{color:#fff;}
+.sh-cta{margin-top:24px;display:inline-block;background:var(--emerald);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;transition:opacity .15s;}
+.sh-cta:hover{opacity:.85;}
+
+.page-hero{background:var(--ink);padding:72px 0 80px;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;top:-100px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,200,150,.09) 0%,transparent 65%);pointer-events:none;}
+.ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
+.ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);}
+.page-hero h1{font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:600px;margin-bottom:16px;}
+.page-hero p{font-size:1rem;color:rgba(255,255,255,.5);max-width:500px;line-height:1.65;}
+
+/* FAQ */
+.faq-section{padding:80px 0;max-width:780px;}
+.faq-group{margin-bottom:48px;}
+.faq-group-lbl{font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.faq-group-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:18px 0;cursor:pointer;font-weight:600;font-size:1rem;gap:16px;}
+.faq-q:hover{color:var(--emerald);}
+.faq-icon{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;transition:transform .25s,border-color .15s;}
+.faq-item.open .faq-icon{transform:rotate(45deg);border-color:var(--emerald);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(0.4,0,0.2,1),padding .25s;}
+.faq-item.open .faq-a{max-height:400px;padding-bottom:20px;}
+.faq-a p{color:var(--text-2);font-size:.93rem;line-height:1.7;}
+.faq-a a{color:var(--emerald);text-decoration:underline;}
+
+/* CTA strip */
+.cta-strip{background:var(--ink);padding:64px 0;margin-top:0;}
+.cta-strip h2{font-size:clamp(1.5rem,2.8vw,2rem);font-weight:700;color:#fff;margin-bottom:12px;letter-spacing:-.025em;}
+.cta-strip p{color:rgba(255,255,255,.45);margin-bottom:28px;font-size:.95rem;}
+.btn-em{display:inline-block;background:var(--emerald);color:var(--ink);padding:13px 30px;border-radius:8px;font-weight:700;font-size:.95rem;transition:opacity .15s;}
+.btn-em:hover{opacity:.88;}
+
+@media(max-width:700px){.wrap{padding:0 20px;}.faq-section{max-width:100%;}}
+</style>
+</head>
+<body>
+<div class="accent-line"></div>
+
+<header class="sh">
+  <div class="sh-inner">
+    <a href="index.html" class="sh-logo">seba<span class="sh-dot">.</span></a>
+    <button class="sh-burger" id="sh-burger" aria-label="Menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="sh-overlay" id="sh-overlay">
+  <nav class="sh-nav">
+    <a href="comment-ca-marche.html" class="sh-link">Comment ça marche</a>
+    <a href="tarifs.html" class="sh-link">Tarifs</a>
+    <a href="faq.html" class="sh-link">FAQ</a>
+    <a href="connexion.html" class="sh-link">Connexion</a>
+    <a href="onboarding.html" class="sh-cta">Créer mon entreprise</a>
+  </nav>
+</div>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="ph-eyebrow"><span class="e-dot"></span>Questions fréquentes</div>
+    <h1>Toutes vos questions, répondues.</h1>
+    <p>Vous ne trouvez pas ce que vous cherchez ? Écrivez-nous à bonjour@seba.app</p>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="wrap" id="faq-wrap"></div>
+</section>
+
+<section class="cta-strip">
+  <div class="wrap">
+    <h2>Encore des doutes ?</h2>
+    <p>Essayez Seba gratuitement pendant 14 jours — aucune carte bancaire requise.</p>
+    <a href="onboarding.html" class="btn-em">Créer mon entreprise</a>
+  </div>
+</section>
+
+<script>
+  const FAQ = [
+    {
+      group: 'Démarrage',
+      items: [
+        { q: 'Est-ce que Seba est vraiment gratuit au départ ?', a: 'Oui. Le plan Démarrer est 100% gratuit, sans limite de durée et sans carte bancaire. Vous passez au plan Pro seulement si vous avez besoin de plus de clients ou de fonctionnalités avancées.' },
+        { q: 'Combien de temps faut-il pour configurer Seba ?', a: 'L\'onboarding prend entre 2 et 5 minutes. Vous répondez à quelques questions sur votre activité, et Seba génère automatiquement votre espace de travail adapté à votre secteur.' },
+        { q: 'Je n\'ai pas de compétences informatiques — est-ce accessible ?', a: 'Seba est conçu pour des professionnels du terrain, pas pour des informaticiens. Si vous savez utiliser WhatsApp ou Instagram, vous saurez utiliser Seba. Et si vous bloquez, notre support répond en moins de 24h.' },
+      ]
+    },
+    {
+      group: 'Fonctionnalités',
+      items: [
+        { q: 'Comment mes clients reçoivent-ils leurs devis ?', a: 'Vous créez un devis en 30 secondes depuis Seba, puis vous copiez le lien et vous l\'envoyez par SMS, WhatsApp ou email. Votre client l\'ouvre sur son téléphone et signe en ligne — aucune application à installer de son côté.' },
+        { q: 'Mes employés peuvent-ils voir toutes mes données ?', a: 'Non. Vous choisissez précisément ce que chaque employé peut voir : planning seul, ou planning + fiches clients. Les données financières (devis, CA) restent privées et visibles uniquement par vous.' },
+        { q: 'Est-ce que je peux utiliser Seba sur mon téléphone ?', a: 'Oui, Seba est conçu mobile-first. Toutes les fonctions sont accessibles depuis le navigateur de votre téléphone — sans application à télécharger. L\'application native est en développement.' },
+        { q: 'Comment fonctionne la facturation automatique ?', a: 'Dès qu\'un client signe un devis, Seba génère automatiquement la facture correspondante avec le même numéro, les mêmes lignes, et votre identité visuelle. Vous la retrouvez dans l\'onglet Factures.' },
+      ]
+    },
+    {
+      group: 'Données et sécurité',
+      items: [
+        { q: 'Où sont stockées mes données ?', a: 'Toutes vos données sont hébergées en Europe (Union Européenne), conformément au RGPD. Elles ne sont jamais vendues ou partagées avec des tiers.' },
+        { q: 'Que se passe-t-il si j\'arrête Seba ?', a: 'Vous pouvez exporter toutes vos données à tout moment (clients, devis, factures) au format CSV ou PDF. Si vous arrêtez, vous gardez vos exports — rien n\'est perdu.' },
+        { q: 'Est-ce que Seba est conforme au RGPD ?', a: 'Oui. Seba est conforme RGPD. Vos données clients sont stockées de manière sécurisée, et vos clients peuvent exercer leurs droits (accès, suppression) via leur portail.' },
+      ]
+    },
+  ];
+
+  const wrap = document.getElementById('faq-wrap');
+  FAQ.forEach(group => {
+    const grpDiv = document.createElement('div');
+    grpDiv.className = 'faq-group';
+    grpDiv.innerHTML = '<div class="faq-group-lbl">' + group.group + '</div>';
+    group.items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'faq-item';
+      div.innerHTML =
+        '<div class="faq-q" onclick="toggle(this.parentElement)">' +
+          item.q +
+          '<span class="faq-icon">+</span>' +
+        '</div>' +
+        '<div class="faq-a"><p>' + item.a + '</p></div>';
+      grpDiv.appendChild(div);
+    });
+    wrap.appendChild(grpDiv);
+  });
+
+  function toggle(item) {
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  function toggleMenu() {
+    document.getElementById('sh-burger').classList.toggle('open');
+    document.getElementById('sh-overlay').classList.toggle('open');
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.getElementById('sh-burger').classList.remove('open');
+      document.getElementById('sh-overlay').classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>

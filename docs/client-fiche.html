@@ -181,9 +181,9 @@
         </div>
       </div>
       <div class="client-actions">
-        <button class="btn-outline" onclick="alert('Planifier une intervention — bloc 1.14 du plan.')">Planifier une intervention</button>
-        <button class="btn-outline" onclick="alert('Envoyer un message — à venir.')">Envoyer un message</button>
-        <button class="btn-em" onclick="alert('Nouveau devis — bloc 1.13 du plan.')">+ Nouveau devis</button>
+        <button class="btn-outline" onclick="location.href='planning.html'">Planifier une intervention</button>
+        <button class="btn-outline" onclick="showFicheToast('Message envoyé au client')">Envoyer un message</button>
+        <button class="btn-em" onclick="location.href='devis-nouveau.html'">+ Nouveau devis</button>
       </div>
     </div>
 
@@ -459,6 +459,21 @@
   function closeSidebar() {
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+  let _ficheToastT;
+  function showFicheToast(msg) {
+    let t = document.getElementById('fiche-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'fiche-toast';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#14161A;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(_ficheToastT);
+    _ficheToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
   }
 </script>
 </body>

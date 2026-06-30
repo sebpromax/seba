@@ -76,6 +76,31 @@
     .week-grid{grid-template-columns:1fr;}
     .main{padding:24px 20px;}
   }
+
+  /* ── Side Sheet ── */
+  .ss-backdrop{position:fixed;inset:0;z-index:499;background:rgba(20,22,26,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s ease;}
+  .ss-backdrop.open{opacity:1;pointer-events:auto;}
+  .ss-panel{position:fixed;right:0;top:0;bottom:0;z-index:500;width:min(480px,92vw);background:#fff;box-shadow:-8px 0 48px rgba(0,0,0,.13);transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+  .ss-panel.open{transform:translateX(0);}
+  .ss-hdr{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .ss-hdr h2{font-size:1.15rem;letter-spacing:-.01em;}
+  .ss-close{width:34px;height:34px;border:1px solid var(--border);background:transparent;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:background .15s;}
+  .ss-close:hover{background:var(--bg);}
+  .ss-body{flex:1;overflow-y:auto;padding:24px 28px;}
+  .ss-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:#fff;}
+  .ss-field{margin-bottom:18px;}
+  .ss-field label{display:block;font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em;}
+  .ss-field input,.ss-field select,.ss-field textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.9rem;color:var(--ink);background:#fff;transition:border-color .15s;outline:none;}
+  .ss-field input:focus,.ss-field select:focus,.ss-field textarea:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(0,200,150,.1);}
+  .ss-field textarea{height:76px;resize:none;}
+  .ss-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .ss-sep{height:1px;background:var(--border);margin:8px 0 20px;}
+  .ss-section-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin-bottom:14px;}
+  .btn-ss-ghost{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-2);padding:11px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .15s;}
+  .btn-ss-ghost:hover{background:var(--bg);}
+  .btn-ss-em{flex:2;background:var(--emerald);border:none;color:var(--ink);padding:11px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .15s;}
+  .btn-ss-em:hover{opacity:.88;transform:translateY(-1px);}
+  @keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 </style>
 </head>
 <body>
@@ -110,7 +135,7 @@
           <span class="week-label">22 — 28 JUIN 2026</span>
           <button>→</button>
         </div>
-        <button class="btn-em" onclick="alert('Création d\'une intervention — formulaire à ouvrir.')">+ Nouvelle intervention</button>
+        <button class="btn-em" onclick="openSheet()">+ Nouvelle intervention</button>
         <div class="avatar-wrap">
           <div class="avatar" id="avatar-btn">ML</div>
           <div class="user-menu" id="user-menu">
@@ -239,6 +264,7 @@
           const div = document.createElement('div');
           div.className = 'job' + (job.moss ? ' moss' : '');
           div.innerHTML = `<span class="jtime">${job.time}</span><div class="jclient">${job.client}</div><div class="jservice">${job.service}</div>`;
+          div.addEventListener('click', () => openSheet({client: job.client, service: job.service, time: job.time}));
           col.appendChild(div);
         });
       }
@@ -278,6 +304,142 @@
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
   }
+</script>
+
+<!-- ── Side Sheet HTML ── -->
+<div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
+<aside class="ss-panel" id="ss-panel" role="dialog" aria-modal="true" aria-label="Nouvelle intervention">
+  <div class="ss-hdr">
+    <h2 id="ss-title">Nouvelle intervention</h2>
+    <button class="ss-close" onclick="closeSheet()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="ss-body">
+    <div class="ss-section-lbl">Qui &amp; Quoi</div>
+    <div class="ss-field">
+      <label for="ss-client">Client</label>
+      <select id="ss-client">
+        <option value="">— Sélectionner un client —</option>
+        <option>Sophie Lacroix</option>
+        <option>Pierre Tessier</option>
+        <option>Julie Dumont</option>
+        <option>Marc Roussel</option>
+        <option>Camille Faure</option>
+        <option>Thomas Berger</option>
+      </select>
+    </div>
+    <div class="ss-field">
+      <label for="ss-service">Prestation</label>
+      <select id="ss-service">
+        <option value="">— Sélectionner une prestation —</option>
+        <option>Ménage standard</option>
+        <option>Ménage approfondi</option>
+        <option>Repassage</option>
+        <option>Nettoyage fin de bail</option>
+        <option>Nettoyage de vitres</option>
+        <option>Désinfection complète</option>
+      </select>
+    </div>
+    <div class="ss-sep"></div>
+    <div class="ss-section-lbl">Quand &amp; Combien</div>
+    <div class="ss-2col">
+      <div class="ss-field">
+        <label for="ss-date">Date</label>
+        <input type="date" id="ss-date">
+      </div>
+      <div class="ss-field">
+        <label for="ss-time">Heure</label>
+        <input type="time" id="ss-time" value="09:00">
+      </div>
+    </div>
+    <div class="ss-2col">
+      <div class="ss-field">
+        <label for="ss-duration">Durée</label>
+        <select id="ss-duration">
+          <option>1h</option><option>1h30</option><option selected>2h</option>
+          <option>2h30</option><option>3h</option><option>3h30</option><option>4h</option>
+        </select>
+      </div>
+      <div class="ss-field">
+        <label for="ss-employee">Employé(e)</label>
+        <select id="ss-employee">
+          <option>Léa Martin</option>
+          <option>Karim Diallo</option>
+          <option>Marie Lefebvre</option>
+        </select>
+      </div>
+    </div>
+    <div class="ss-sep"></div>
+    <div class="ss-section-lbl">Notes internes</div>
+    <div class="ss-field">
+      <textarea id="ss-notes" placeholder="Code d'entrée, instructions particulières..."></textarea>
+    </div>
+  </div>
+  <div class="ss-footer">
+    <button class="btn-ss-ghost" onclick="closeSheet()">Annuler</button>
+    <button class="btn-ss-em" onclick="submitIntervention()">Créer l'intervention</button>
+  </div>
+</aside>
+
+<script>
+  /* ── Side Sheet ── */
+  const SERVICES_FROM_LS = (function(){
+    try {
+      const b = JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+      if (b.services && b.services.length) return b.services.map(s=>s.name).filter(Boolean);
+    } catch(e){}
+    return [];
+  })();
+
+  if (SERVICES_FROM_LS.length) {
+    const sel = document.getElementById('ss-service');
+    sel.innerHTML = '<option value="">— Sélectionner une prestation —</option>';
+    SERVICES_FROM_LS.forEach(n => { const o=document.createElement('option'); o.textContent=n; sel.appendChild(o); });
+  }
+
+  function openSheet(prefill) {
+    document.getElementById('ss-backdrop').classList.add('open');
+    document.getElementById('ss-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (prefill) {
+      if (prefill.client)  { const s=document.getElementById('ss-client');  [...s.options].forEach(o=>{if(o.text===prefill.client)o.selected=true;}); }
+      if (prefill.service) { const s=document.getElementById('ss-service'); [...s.options].forEach(o=>{if(o.text===prefill.service)o.selected=true;}); }
+      if (prefill.time)    document.getElementById('ss-time').value = prefill.time;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('ss-date').value = prefill?.date || today;
+    setTimeout(() => document.getElementById('ss-client').focus(), 120);
+  }
+
+  function closeSheet() {
+    document.getElementById('ss-backdrop').classList.remove('open');
+    document.getElementById('ss-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function submitIntervention() {
+    const client  = document.getElementById('ss-client').value;
+    const service = document.getElementById('ss-service').value;
+    if (!client || !service) {
+      showToast('Veuillez choisir un client et une prestation.');
+      return;
+    }
+    closeSheet();
+    showToast('Intervention créée avec succès !');
+  }
+
+  function showToast(msg) {
+    const ex = document.getElementById('_toast');
+    if (ex) ex.remove();
+    const t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(0);background:#14161A;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;animation:toast-in .25s ease;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.style.opacity='0', 3000);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 </script>
 </body>
 </html>

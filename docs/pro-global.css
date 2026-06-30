@@ -433,3 +433,24 @@ label,
 .mb-16  { margin-bottom: 16px; }
 .mb-24  { margin-bottom: 24px; }
 .mb-32  { margin-bottom: 32px; }
+
+/* ── 16. Entrée de page — fluidité navigation ───────────────────────────── */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.main,
+.page-main {
+  animation: pageIn .32s cubic-bezier(0.0, 0, 0.2, 1) both;
+}
+
+/* Sortie douce avant navigation */
+@keyframes pageOut {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+body.page-leaving .main,
+body.page-leaving .page-main {
+  animation: pageOut .2s var(--ease-in) forwards;
+}
+
+/* ── 17. Liens de navigation — exit hook ────────────────────────────────── */

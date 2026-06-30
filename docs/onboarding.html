@@ -1,1107 +1,908 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Créer mon entreprise — Seba</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <style>
-    :root {
-      --ink: #14161A;
-      --emerald: #00C896;
-      --plum: #3D2645;
-      --bg: #FAF9F7;
-      --white: #FFFFFF;
-      --text-2: #6B6A6F;
-      --border: #E8E6E1;
-      --r: 12px;
-      --rs: 8px;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      min-height: 100vh;
-      line-height: 1.6;
-    }
-    .accent-line {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: 2px; background: var(--emerald); z-index: 300;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer mon entreprise — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+:root{--em:#00F5A0;--ink:#060913;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:auto;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
 
-    /* ── Layout ── */
-    .ob-wrap {
-      min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 24px 16px 64px;
-    }
-    .ob-inner { width: 100%; max-width: 640px; }
+.sh{position:sticky;top:0;z-index:200;background:rgba(6,9,19,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05);}
+.sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#fff;display:flex;align-items:center;gap:1px;}
+.sh-dot{color:var(--em);}
+.sh-burger{width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1.5px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;cursor:pointer;padding:0;transition:border-color .15s;}
+.sh-burger span{width:16px;height:1.5px;background:#fff;border-radius:99px;display:block;transition:transform .25s,opacity .2s;}
+.sh-burger:hover{border-color:rgba(255,255,255,.3);}
+.sh-burger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.sh-burger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.sh-burger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.sh-overlay{position:fixed;inset:0;z-index:199;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
+.sh-overlay.open{opacity:1;pointer-events:auto;}
+.sh-nav{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+.sh-link{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;color:rgba(255,255,255,.5);letter-spacing:-.03em;padding:8px 0;transition:color .15s;}
+.sh-link:hover{color:#fff;}
+.sh-cta{margin-top:24px;display:inline-block;background:var(--em);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;transition:opacity .15s;}
+.sh-cta:hover{opacity:.85;}
 
-    /* ── Progress ── */
-    .ob-progress { margin-bottom: 36px; padding-top: 8px; }
-    .progress-label {
-      font-size: .72rem; font-weight: 500; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px;
-    }
-    .progress-segs { display: flex; gap: 5px; }
-    .seg {
-      flex: 1; height: 4px; background: var(--border);
-      border-radius: 2px; transition: background .3s;
-    }
-    .seg.done { background: var(--emerald); }
-    .seg.active { background: var(--emerald); opacity: .5; }
+.ob-layout{display:grid;grid-template-columns:45% 55%;min-height:calc(100vh - 60px);}
+.ob-left{background:#060913;position:relative;overflow-x:hidden;}
+.ob-right{background:var(--ink-r);background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);background-size:44px 44px;display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;}
+.ob-right::before{content:'';position:absolute;width:420px;height:420px;background:radial-gradient(circle,rgba(0,245,160,.055) 0%,transparent 65%);pointer-events:none;}
 
-    /* ── Steps ── */
-    .ob-step { display: none; }
-    .ob-step.active { display: block; }
+.ob-progress{position:absolute;top:32px;left:60px;right:60px;z-index:10;display:none;align-items:center;gap:14px;}
+.ob-progress.show{display:flex;}
+.prog-dots{display:flex;gap:5px;}
+.prog-dot{width:22px;height:3px;background:rgba(255,255,255,.12);border-radius:99px;transition:background .3s,width .3s;flex-shrink:0;}
+.prog-dot.done{background:var(--em);}
+.prog-dot.active{background:var(--em);opacity:.55;width:32px;}
+.prog-label{font-size:.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;}
 
-    /* ── Écran de chargement cinématique ── */
-    .loading-cinema { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:28px; text-align:center; }
-    .ring-wrap { position:relative; width:140px; height:140px; }
-    .ring-svg { width:140px; height:140px; }
-    .ring-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.55rem; font-weight:800; color:var(--ink); letter-spacing:-.03em; }
-    .loading-phase { font-size:1.1rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; max-width:340px; }
-    .loading-sub-label { font-size:.88rem; color:var(--text-2); }
-    @keyframes pulse-text { 0%,100%{opacity:1;} 50%{opacity:.55;} }
-    .loading-phase.pulsing { animation:pulse-text 1.4s ease-in-out infinite; }
+.ob-steps-wrap{display:grid;}
+.step-container{grid-area:1/1;padding:96px 60px 60px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;min-height:calc(100vh - 60px);}
 
-    /* ── Companion ── */
-    .companion {
-      display: flex; align-items: flex-start; gap: 10px;
-      margin-bottom: 24px; padding: 14px 16px;
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--r);
-    }
-    .companion-av {
-      width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
-      background: var(--emerald); display: flex; align-items: center;
-      justify-content: center; font-size: .85rem; font-weight: 700; color: var(--ink);
-    }
-    .companion-text { font-size: .875rem; color: var(--text-2); line-height: 1.5; }
-    .companion-text strong { color: var(--ink); }
+.step-eyebrow{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--em);margin-bottom:16px;display:flex;align-items:center;gap:9px;}
+.step-eyebrow::before{content:'';display:block;width:18px;height:2px;background:var(--em);flex-shrink:0;}
+.step-title{font-size:clamp(1.7rem,3.2vw,2.3rem);font-weight:700;line-height:1.12;letter-spacing:-.035em;margin-bottom:12px;}
+.step-sub{font-size:.93rem;color:var(--t2);line-height:1.65;margin-bottom:36px;max-width:400px;}
 
-    /* ── Typography ── */
-    .ob-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
-    .ob-sub { font-size: .95rem; color: var(--text-2); margin-bottom: 28px; }
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:.75rem;font-weight:600;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em;}
+.field-hint{font-size:.75rem;color:var(--t3);margin-top:6px;}
+input[type="text"],input[type="number"],input[type="tel"],select{width:100%;height:48px;padding:0 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.95rem;color:#fff;outline:none;appearance:none;transition:border-color .2s,box-shadow .2s;}
+input::placeholder{color:rgba(255,255,255,.18);}
+select option{background:#0f1420;color:#fff;}
+input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,160,.12);}
+.select-wrap{position:relative;}
+.select-wrap::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);border:5px solid transparent;border-top-color:rgba(255,255,255,.3);border-bottom:none;pointer-events:none;}
+.err{font-size:.78rem;color:#ff7070;margin-top:5px;display:none;}
+.err.show{display:block;}
 
-    /* ── Fields ── */
-    .field { margin-bottom: 20px; }
-    label { display: block; font-size: .875rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
-    .field-hint { font-size: .78rem; color: var(--text-2); margin-top: 4px; }
-    input[type="text"], input[type="number"], select {
-      width: 100%; height: 48px; padding: 0 14px;
-      border: 1.5px solid var(--border); border-radius: var(--rs);
-      font-family: 'Inter', sans-serif; font-size: .95rem;
-      color: var(--ink); background: var(--white);
-      transition: border-color .2s; outline: none; appearance: none;
-    }
-    input:focus, select:focus { border-color: var(--emerald); }
-    .select-wrap { position: relative; }
-    .select-wrap::after {
-      content: ''; position: absolute; right: 14px; top: 50%;
-      transform: translateY(-50%); border: 5px solid transparent;
-      border-top-color: var(--text-2); border-bottom: none; pointer-events: none;
-    }
-    .err { font-size: .8rem; color: #E53E3E; margin-top: 5px; display: none; }
-    .err.show { display: block; }
+.phone-group{display:flex;gap:8px;}
+.dial-wrap{position:relative;width:100px;flex-shrink:0;}
+.dial-wrap::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);border:5px solid transparent;border-top-color:rgba(255,255,255,.3);border-bottom:none;pointer-events:none;}
+.dial-select{width:100%;height:48px;padding:0 28px 0 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.88rem;color:#fff;appearance:none;outline:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;}
+.dial-select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,160,.12);}
+.phone-input{flex:1;}
 
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; height: 50px; padding: 0 28px;
-      font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600;
-      border-radius: var(--rs); cursor: pointer; border: none;
-      text-decoration: none; transition: opacity .15s, transform .15s;
-    }
-    .btn:hover { opacity: .88; transform: translateY(-1px); }
-    .btn:active { transform: none; }
-    .btn-em { background: var(--emerald); color: var(--ink); }
-    .btn-ghost {
-      background: transparent; border: 1.5px solid var(--border);
-      color: var(--text-2); height: 44px; padding: 0 20px; font-size: .875rem;
-    }
-    .btn-ghost:hover { border-color: var(--ink); color: var(--ink); opacity: 1; transform: none; }
-    .btn-full { width: 100%; }
-    .nav-btns { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }
+.pays-info{padding:10px 14px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.15);border-radius:var(--rs);font-size:.85rem;color:var(--t2);margin-top:-8px;margin-bottom:16px;display:none;}
+.pays-info strong{color:var(--em);font-weight:600;}
 
-    /* ── Step 0 — Welcome ── */
-    .welcome-wrap { text-align: center; padding: 32px 0 16px; }
-    .w-logo {
-      display: flex; align-items: center; justify-content: center;
-      gap: 7px; font-size: 1.05rem; font-weight: 700;
-      color: var(--ink); margin-bottom: 52px;
-    }
-    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); }
-    .w-title {
-      font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 800;
-      line-height: 1.15; margin-bottom: 16px;
-    }
-    .w-title em { font-style: normal; color: var(--emerald); }
-    .w-sub { font-size: 1.05rem; color: var(--text-2); max-width: 400px; margin: 0 auto 40px; }
-    .w-meta { font-size: .78rem; color: var(--text-2); margin-top: 16px; }
+.sector-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.sector-card{padding:16px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);cursor:pointer;text-align:center;transition:border-color .2s,background .2s;user-select:none;}
+.sector-card:hover{border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.04);}
+.sector-card.selected{border-color:var(--em);background:rgba(0,245,160,.08);}
+.sc-icon{font-size:1.05rem;margin-bottom:7px;color:rgba(255,255,255,.35);line-height:1;}
+.sector-card.selected .sc-icon{color:var(--em);}
+.sc-name{font-size:.73rem;font-weight:500;color:rgba(255,255,255,.6);line-height:1.3;}
+.sector-card.selected .sc-name{color:#fff;}
+.sr-wrap{min-height:32px;margin-bottom:4px;}
+.sector-reaction{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(0,245,160,.1);border:1px solid rgba(0,245,160,.2);color:var(--em);font-size:.8rem;font-weight:600;border-radius:100px;opacity:0;transform:translateY(-6px);transition:opacity .3s,transform .3s;margin-bottom:10px;}
+.sector-reaction.show{opacity:1;transform:none;}
 
-    /* ── Step 1 — Country ── */
-    .pays-info {
-      padding: 12px 14px; background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--rs); font-size: .875rem; color: var(--text-2);
-      margin-top: -12px; margin-bottom: 16px; display: none;
-    }
-    .pays-info strong { color: var(--ink); }
+.subsector-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.subsector-card{padding:18px 20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);cursor:pointer;display:flex;align-items:flex-start;gap:16px;transition:border-color .2s,background .2s;user-select:none;}
+.subsector-card:hover{border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.04);}
+.subsector-card.selected{border-color:var(--em);background:rgba(0,245,160,.08);}
+.sub-ico{width:40px;height:40px;min-width:40px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:rgba(255,255,255,.45);transition:background .2s,color .2s;}
+.subsector-card.selected .sub-ico{background:rgba(0,245,160,.1);color:var(--em);}
+.sub-title{font-size:.93rem;font-weight:700;color:#fff;margin-bottom:3px;}
+.sub-desc{font-size:.79rem;color:var(--t2);line-height:1.5;}
 
-    /* ── Step 2 — Sectors ── */
-    .sector-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr);
-      gap: 8px; margin-bottom: 20px;
-    }
-    @media (min-width: 400px) { .sector-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (min-width: 560px) { .sector-grid { grid-template-columns: repeat(4, 1fr); } }
-    .sector-card {
-      padding: 18px 12px; border: 1.5px solid var(--border); border-radius: var(--r);
-      cursor: pointer; text-align: center; transition: border-color .2s, background .2s;
-      user-select: none;
-    }
-    .sector-card:hover { border-color: var(--emerald); background: var(--white); }
-    .sector-card.selected { border-color: var(--emerald); background: #F0FDF8; }
-    .sc-icon {
-      font-size: 1.4rem; margin-bottom: 8px; color: var(--text-2);
-      line-height: 1; letter-spacing: -.05em;
-    }
-    .sector-card.selected .sc-icon { color: var(--emerald); }
-    .sc-name { font-size: .8rem; font-weight: 500; color: var(--ink); }
+.svc-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.svc-row{display:grid;grid-template-columns:1fr 78px 86px 24px;align-items:center;gap:7px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--rs);transition:border-color .2s,background .2s;}
+.svc-row.checked{border-color:rgba(0,245,160,.25);background:rgba(0,245,160,.05);}
+.svc-check{display:flex;align-items:center;gap:8px;overflow:hidden;}
+.svc-check input[type="checkbox"]{width:15px;height:15px;min-width:15px;accent-color:var(--em);cursor:pointer;flex-shrink:0;}
+.svc-check label{margin:0;font-weight:400;font-size:.845rem;cursor:pointer;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.svc-price,.svc-type{height:34px!important;font-size:.78rem!important;padding:0 8px!important;background:rgba(255,255,255,.06)!important;}
+.svc-rm{background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:.85rem;padding:4px;line-height:1;transition:color .15s;}
+.svc-rm:hover{color:#ff7070;}
+.btn-add-svc{display:flex;align-items:center;gap:7px;padding:9px 14px;background:transparent;border:1px dashed rgba(255,255,255,.14);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.845rem;color:var(--t2);cursor:pointer;width:100%;transition:border-color .2s,color .2s;}
+.btn-add-svc:hover{border-color:var(--em);color:#fff;}
 
-    .sector-reaction {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 16px; background: var(--emerald); color: var(--ink);
-      font-size: .875rem; font-weight: 600; border-radius: 100px;
-      opacity: 0; transform: translateY(-6px);
-      transition: opacity .3s, transform .3s; margin-bottom: 14px;
-    }
-    .sector-reaction.show { opacity: 1; transform: none; }
-    .sr-wrap { text-align: center; min-height: 44px; }
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.swatch:hover{transform:scale(1.18);}
+.swatch.sel{border-color:rgba(255,255,255,.85);}
 
-    /* ── Step 3 — Services ── */
-    .svc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-    .svc-row {
-      display: grid; grid-template-columns: 1fr 88px 90px auto;
-      align-items: center; gap: 8px; padding: 10px 12px;
-      background: var(--white); border: 1.5px solid var(--border);
-      border-radius: var(--rs); transition: border-color .2s;
-    }
-    .svc-row.checked { border-color: var(--emerald); }
-    .svc-check { display: flex; align-items: center; gap: 8px; }
-    .svc-check input[type="checkbox"] {
-      width: 17px; height: 17px; min-width: 17px;
-      accent-color: var(--emerald); cursor: pointer;
-    }
-    .svc-check label { margin: 0; font-weight: 400; font-size: .875rem; cursor: pointer; }
-    .svc-price { height: 36px !important; font-size: .85rem !important; padding: 0 10px !important; }
-    .svc-type { height: 36px !important; font-size: .78rem !important; padding: 0 8px !important; }
-    .svc-rm {
-      background: none; border: none; color: var(--text-2);
-      cursor: pointer; font-size: .9rem; padding: 4px; line-height: 1;
-    }
-    .svc-rm:hover { color: #E53E3E; }
-    .btn-add-svc {
-      display: flex; align-items: center; gap: 6px;
-      padding: 10px 16px; background: transparent;
-      border: 1.5px dashed var(--border); border-radius: var(--rs);
-      font-family: 'Inter', sans-serif; font-size: .875rem; color: var(--text-2);
-      cursor: pointer; width: 100%; transition: border-color .2s, color .2s;
-    }
-    .btn-add-svc:hover { border-color: var(--emerald); color: var(--ink); }
+.eco-list{display:flex;flex-direction:column;gap:10px;}
+.eco-card{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);}
+.eco-ico{width:38px;height:38px;min-width:38px;border-radius:8px;background:rgba(0,245,160,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.eco-title{font-size:.88rem;font-weight:600;margin-bottom:4px;}
+.eco-desc{font-size:.79rem;color:var(--t2);line-height:1.5;}
+.eco-badge{display:inline-block;margin-top:7px;padding:3px 10px;background:rgba(0,245,160,.07);border:1px solid rgba(0,245,160,.18);border-radius:100px;font-size:.7rem;font-family:monospace;color:var(--em);}
 
-    /* ── Step 4 — Identity ── */
-    .id-layout { display: grid; grid-template-columns: 1fr; gap: 28px; }
-    @media (min-width: 560px) { .id-layout { grid-template-columns: 1fr 180px; } }
-    .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .swatch {
-      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-      border: 2px solid transparent; transition: transform .15s, border-color .15s;
-    }
-    .swatch:hover { transform: scale(1.12); }
-    .swatch.sel { border-color: var(--ink); }
+.loading-cinema{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:28px;text-align:center;}
+.ring-wrap{position:relative;width:136px;height:136px;}
+.ring-svg{width:136px;height:136px;}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#fff;letter-spacing:-.04em;}
+.loading-phase{font-size:1rem;font-weight:700;max-width:300px;line-height:1.45;}
+.loading-sub-lbl{font-size:.83rem;color:var(--t2);}
+@keyframes pulse-text{0%,100%{opacity:1;}50%{opacity:.4;}}
+.loading-phase.pulsing{animation:pulse-text 1.4s ease-in-out infinite;}
 
-    /* Phone frame */
-    .phone-wrap { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-    .phone-lbl { font-size: .75rem; color: var(--text-2); letter-spacing: .03em; text-transform: uppercase; }
-    .phone-shell {
-      background: var(--ink);
-      border-radius: 36px;
-      padding: 10px 8px 14px;
-      width: 158px;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.08) inset,
-        0 28px 56px rgba(0,0,0,.28),
-        0 8px 16px rgba(0,0,0,.16);
-      position: relative;
-    }
-    .phone-notch {
-      width: 44px; height: 5px; background: #1F2024;
-      border-radius: 3px; margin: 0 auto 8px;
-    }
-    .phone-screen {
-      background: var(--white);
-      border-radius: 28px;
-      overflow: hidden;
-      min-height: 300px;
-      display: flex; flex-direction: column;
-    }
-    .phone-status {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 12px 0; font-size: .48rem; font-weight: 600;
-      background: transparent;
-    }
-    .phone-hdr {
-      padding: 10px 12px 12px; text-align: center;
-      transition: background .3s; flex-shrink: 0;
-    }
-    .phone-pname {
-      font-size: .7rem; font-weight: 700; color: var(--white);
-      margin-bottom: 3px; letter-spacing: -.01em;
-    }
-    .phone-welcome { font-size: .56rem; color: rgba(255,255,255,.8); line-height: 1.3; }
-    .phone-body { padding: 10px 12px; flex: 1; }
-    .phone-section-lbl {
-      font-size: .52rem; font-weight: 600; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
-    }
-    .phone-svc {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: .62rem; padding: 7px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .phone-svc:last-child { border-bottom: none; }
-    .phone-svc-n { color: var(--ink); font-weight: 500; }
-    .phone-svc-p { color: var(--text-2); font-size: .58rem; }
-    .phone-empty { font-size: .6rem; color: var(--text-2); text-align: center; padding: 20px 0; }
-    .phone-footer { padding: 0 12px 12px; margin-top: auto; }
-    .phone-cta {
-      height: 28px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: .62rem; font-weight: 700; color: var(--ink);
-      letter-spacing: .01em; transition: background .3s;
-    }
+.summary-ticket{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);overflow:hidden;margin-bottom:22px;}
+.t-head{padding:16px 20px;display:flex;align-items:center;gap:12px;}
+.t-ico{width:40px;height:40px;border-radius:50%;min-width:40px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(0,245,160,.1);}
+.t-company{font-size:.95rem;font-weight:700;}
+.t-sector{font-size:.76rem;color:var(--t2);}
+.t-badge{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:.73rem;font-weight:500;background:rgba(0,245,160,.1);color:var(--em);border:1px solid rgba(0,245,160,.2);}
+.t-body{border-top:1px solid rgba(255,255,255,.07);}
+.t-row{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.87rem;}
+.t-row:last-child{border-bottom:none;}
+.t-lbl{color:var(--t2);}
+.t-val{font-weight:500;}
+.next-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.next-card{padding:14px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);text-align:center;display:block;transition:border-color .2s,background .2s;}
+.next-card:hover{border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.04);}
+.nc-title{font-size:.84rem;font-weight:600;color:#fff;margin-bottom:2px;}
+.nc-desc{font-size:.72rem;color:var(--t2);line-height:1.4;}
 
-    /* ── Step 5 — Ecosystem ── */
-    .eco-list { display: flex; flex-direction: column; gap: 12px; }
-    .eco-card {
-      display: flex; gap: 14px; align-items: flex-start;
-      padding: 18px; background: var(--white);
-      border: 1.5px solid var(--border); border-radius: var(--r);
-    }
-    .eco-ico {
-      width: 40px; height: 40px; min-width: 40px; border-radius: var(--rs);
-      background: #F0FDF8; display: flex; align-items: center;
-      justify-content: center; font-size: 1.1rem;
-    }
-    .eco-title { font-size: .95rem; font-weight: 600; margin-bottom: 4px; }
-    .eco-desc { font-size: .82rem; color: var(--text-2); line-height: 1.5; }
-    .eco-badge {
-      display: inline-block; margin-top: 8px; padding: 3px 10px;
-      background: var(--bg); border: 1px solid var(--border); border-radius: 100px;
-      font-size: .75rem; font-family: monospace; color: var(--ink);
-    }
+.welcome-wrap{display:flex;flex-direction:column;justify-content:center;flex:1;}
+.w-logo{font-size:.95rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:6px;margin-bottom:56px;color:rgba(255,255,255,.35);}
+.w-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--em);}
+.w-title{font-size:clamp(2.4rem,5.5vw,3.6rem);font-weight:800;letter-spacing:-.045em;line-height:1.08;margin-bottom:20px;}
+.w-title em{font-style:normal;color:var(--em);}
+.w-sub{font-size:1.05rem;color:var(--t2);max-width:340px;line-height:1.65;margin-bottom:44px;}
+.w-meta{font-size:.76rem;color:var(--t3);margin-top:18px;}
 
-    /* ── Step 6 — Loading ── */
-    .loading-wrap { text-align: center; padding: 24px 0; }
-    .spinner {
-      width: 48px; height: 48px; border: 3px solid var(--border);
-      border-top-color: var(--emerald); border-radius: 50%;
-      animation: spin 1s linear infinite; margin: 0 auto 28px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
-    .loading-sub { font-size: .9rem; color: var(--text-2); margin-bottom: 32px; }
-    .checklist { text-align: left; max-width: 340px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-    .chk-item {
-      display: flex; align-items: center; gap: 10px;
-      font-size: .875rem; color: var(--text-2);
-      opacity: 0; transform: translateY(4px);
-      transition: opacity .3s, transform .3s, color .3s;
-    }
-    .chk-item.vis { opacity: 1; transform: none; }
-    .chk-item.done { color: var(--ink); }
-    .chk-dot {
-      width: 20px; height: 20px; min-width: 20px; border-radius: 50%;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      transition: background .3s, border-color .3s;
-      font-size: .6rem; font-weight: 700; color: transparent;
-    }
-    .chk-item.done .chk-dot {
-      background: var(--emerald); border-color: var(--emerald); color: var(--ink);
-    }
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:50px;padding:0 28px;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:600;border-radius:var(--rs);cursor:pointer;border:none;transition:opacity .15s,transform .15s;}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:none;}
+.btn-em{background:var(--em);color:#060913;}
+.btn-em:hover{opacity:.9;}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.55);height:44px;padding:0 20px;font-size:.875rem;}
+.btn-ghost:hover{border-color:rgba(255,255,255,.4);color:#fff;opacity:1;}
+.btn-full{width:100%;}
+.nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:36px;gap:12px;}
 
-    /* ── Step 7 — Summary ── */
-    .summary-ticket {
-      background: var(--white); border: 1.5px solid var(--border);
-      border-radius: var(--r); overflow: hidden; margin-bottom: 28px;
-    }
-    .t-head { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
-    .t-ico {
-      width: 42px; height: 42px; border-radius: 50%; min-width: 42px;
-      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
-    }
-    .t-company { font-size: 1rem; font-weight: 700; }
-    .t-sector { font-size: .8rem; color: var(--text-2); }
-    .t-badge {
-      margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 100px; font-size: .78rem; font-weight: 500;
-      background: #F0FDF8; color: #007A5E;
-    }
-    .t-body { border-top: 1px solid var(--border); }
-    .t-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 11px 20px; border-bottom: 1px solid var(--border); font-size: .875rem;
-    }
-    .t-row:last-child { border-bottom: none; }
-    .t-lbl { color: var(--text-2); }
-    .t-val { font-weight: 500; }
-    .next-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-    .next-card {
-      padding: 16px 12px; background: var(--white);
-      border: 1.5px solid var(--border); border-radius: var(--r);
-      text-align: center; text-decoration: none; display: block;
-      transition: border-color .2s;
-    }
-    .next-card:hover { border-color: var(--emerald); }
-    .nc-title { font-size: .85rem; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
-    .nc-desc { font-size: .75rem; color: var(--text-2); line-height: 1.4; }
-  .sh{position:sticky;top:0;z-index:200;background:rgba(8,9,11,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05);}
-  .sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
-  .sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#fff;display:flex;align-items:center;gap:1px;text-decoration:none;}
-  .sh-dot{color:var(--emerald);}
-  .sh-burger{width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1.5px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;cursor:pointer;padding:0;transition:border-color .15s;}
-  .sh-burger span{width:16px;height:1.5px;background:#fff;border-radius:99px;display:block;transition:transform .25s,opacity .2s;}
-  .sh-burger:hover{border-color:rgba(255,255,255,.3);}
-  .sh-burger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
-  .sh-burger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
-  .sh-burger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
-  .sh-overlay{position:fixed;inset:0;z-index:199;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
-  .sh-overlay.open{opacity:1;pointer-events:auto;}
-  .sh-nav{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
-  .sh-link{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;color:rgba(255,255,255,.5);text-decoration:none;letter-spacing:-.03em;padding:8px 0;transition:color .15s;}
-  .sh-link:hover{color:#fff;}
-  .sh-cta{margin-top:24px;display:inline-block;background:var(--emerald);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;transition:opacity .15s;}
-  .sh-cta:hover{opacity:.85;}
-  </style>
+.phone-device{width:248px;background:linear-gradient(155deg,#141720 0%,#090d16 100%);border-radius:48px;padding:14px 11px 24px;box-shadow:0 0 0 1.5px rgba(255,255,255,.1),0 0 0 9px rgba(255,255,255,.018),0 52px 100px rgba(0,0,0,.65),0 16px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.07);position:relative;z-index:1;user-select:none;}
+.phone-device::before{content:'';position:absolute;right:-3px;top:108px;width:3px;height:38px;background:rgba(255,255,255,.09);border-radius:0 2px 2px 0;}
+.phone-device::after{content:'';position:absolute;left:-3px;top:88px;width:3px;height:32px;background:rgba(255,255,255,.09);border-radius:2px 0 0 2px;box-shadow:0 22px 0 rgba(255,255,255,.09),0 56px 0 rgba(255,255,255,.07);}
+.phone-island{width:54px;height:18px;background:#000;border-radius:11px;margin:0 auto 10px;}
+.phone-screen{background:#08091a;border-radius:34px;overflow:hidden;aspect-ratio:9/19.5;display:flex;flex-direction:column;}
+.ph-status{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 3px;font-size:.46rem;font-weight:600;color:rgba(255,255,255,.7);flex-shrink:0;}
+.ph-status-icons{display:flex;gap:5px;align-items:center;}
+.ph-content{flex:1;position:relative;overflow:hidden;}
+.ph-pane{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s ease;}
+.ph-pane.active{opacity:1;pointer-events:auto;}
+.ph-lock-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px 14px;gap:5px;background:linear-gradient(155deg,#080c1a 0%,#0d1428 100%);}
+.ph-time{font-size:2.1rem;font-weight:700;color:#fff;letter-spacing:-.05em;line-height:1;}
+.ph-date{font-size:.44rem;color:rgba(255,255,255,.38);margin-bottom:14px;}
+.ph-notif{width:100%;padding:7px 9px;background:rgba(255,255,255,.07);border-radius:8px;display:flex;gap:7px;align-items:flex-start;}
+.ph-notif-icon{width:18px;height:18px;border-radius:5px;background:var(--em);display:flex;align-items:center;justify-content:center;font-size:.44rem;font-weight:800;color:#060913;flex-shrink:0;}
+.ph-notif-app{font-weight:700;color:rgba(255,255,255,.9);font-size:.44rem;margin-bottom:1px;}
+.ph-notif-msg{font-size:.42rem;color:rgba(255,255,255,.7);line-height:1.5;}
+.ph-app-body{flex:1;display:flex;flex-direction:column;background:linear-gradient(155deg,#07091a 0%,#0d1128 100%);}
+.ph-app-hdr{padding:10px 14px 8px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;}
+.ph-app-hdr-color{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--em);margin-right:4px;vertical-align:middle;transition:background .3s;}
+.ph-app-brand{font-size:.54rem;font-weight:800;color:#fff;letter-spacing:-.01em;}
+.ph-app-welcome{font-size:.42rem;color:rgba(255,255,255,.4);margin-top:1px;}
+.ph-svc-section{padding:8px 14px;flex:1;overflow:hidden;}
+.ph-svc-lbl{font-size:.38rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:5px;}
+.ph-svc-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.47rem;color:rgba(255,255,255,.65);}
+.ph-svc-item:last-child{border-bottom:none;}
+.ph-svc-p{color:var(--em);font-weight:600;font-size:.44rem;}
+.ph-svc-empty{font-size:.44rem;color:rgba(255,255,255,.25);padding:8px 0;}
+.ph-app-footer{padding:7px 14px 10px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0;}
+.ph-app-cta{height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.48rem;font-weight:700;color:#060913;background:var(--em);transition:background .3s;}
+.phone-home{width:38px;height:3px;background:rgba(255,255,255,.14);border-radius:2px;margin:10px auto 0;}
+
+@media(max-width:880px){.ob-layout{grid-template-columns:1fr;}.ob-right{display:none;}.step-container{padding:84px 32px 40px;min-height:calc(100vh - 60px);}.ob-progress{left:32px;right:32px;}}
+@media(max-width:480px){.step-container{padding:80px 22px 32px;}.ob-progress{left:22px;right:22px;}.sector-grid{grid-template-columns:repeat(2,1fr);}.svc-row{grid-template-columns:1fr 68px 78px 20px;}}
+</style>
 </head>
 <body>
-  <div class="accent-line"></div>
 
-  <header class="sh">
-    <div class="sh-inner">
-      <a href="index.html" class="sh-logo">seba<span class="sh-dot">.</span></a>
-      <button class="sh-burger" id="sh-burger" aria-label="Ouvrir le menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
+<div class="accent-line" style="position:fixed;top:0;left:0;right:0;height:2px;background:var(--em);z-index:300;"></div>
+
+<header class="sh">
+  <div class="sh-inner">
+    <a href="index.html" class="sh-logo">seba<span class="sh-dot">.</span></a>
+    <button class="sh-burger" id="sh-burger" aria-label="Ouvrir le menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+<div class="sh-overlay" id="sh-overlay" aria-hidden="true">
+  <nav class="sh-nav">
+    <a href="comment-ca-marche.html" class="sh-link">Comment ça marche</a>
+    <a href="tarifs.html" class="sh-link">Tarifs</a>
+    <a href="faq.html" class="sh-link">FAQ</a>
+    <a href="connexion.html" class="sh-link">Connexion</a>
+    <a href="onboarding.html" class="sh-cta">Créer mon entreprise →</a>
+  </nav>
+</div>
+
+<div class="ob-layout">
+<div class="ob-left">
+
+  <div class="ob-progress" id="ob-progress">
+    <div class="prog-dots">
+      <span class="prog-dot"></span><span class="prog-dot"></span>
+      <span class="prog-dot"></span><span class="prog-dot"></span>
+      <span class="prog-dot"></span><span class="prog-dot"></span>
     </div>
-  </header>
-  <div class="sh-overlay" id="sh-overlay" aria-hidden="true">
-    <nav class="sh-nav">
-      <a href="probleme.html" class="sh-link">Le problème</a>
-      <a href="solution.html" class="sh-link">La solution</a>
-      <a href="confiance.html" class="sh-link">Confiance</a>
-      <a href="connexion.html" class="sh-link">Connexion</a>
-      <a href="onboarding.html" class="sh-cta">Créer mon entreprise →</a>
-    </nav>
+    <span class="prog-label" id="prog-label"></span>
   </div>
 
-  <div class="ob-wrap">
-    <div class="ob-inner">
+  <div class="ob-steps-wrap">
 
-      <!-- Progress bar (hidden on step 0) -->
-      <div id="ob-progress" class="ob-progress" style="display:none;">
-        <div class="progress-label" id="progress-label">Étape 1 sur 6</div>
-        <div class="progress-segs">
-          <div class="seg" id="seg-0"></div>
-          <div class="seg" id="seg-1"></div>
-          <div class="seg" id="seg-2"></div>
-          <div class="seg" id="seg-3"></div>
-          <div class="seg" id="seg-4"></div>
-          <div class="seg" id="seg-5"></div>
+    <!-- 0 BIENVENUE -->
+    <div class="step-container" id="step-0">
+      <div class="welcome-wrap">
+        <div class="w-logo"><div class="w-logo-dot"></div>seba</div>
+        <h1 class="w-title">Bienvenue sur<br><em>Seba</em></h1>
+        <p class="w-sub">Créons ensemble votre espace professionnel en quelques minutes.</p>
+        <button class="btn btn-em" style="font-size:1rem;height:52px;padding:0 40px;" onclick="goStep(1)">
+          Commencer →
+        </button>
+        <p class="w-meta">6 étapes · environ 3 minutes · aucune carte requise</p>
+      </div>
+    </div>
+
+    <!-- 1 PAYS + TÉLÉPHONE -->
+    <div class="step-container" id="step-1">
+      <div class="step-eyebrow">Votre situation</div>
+      <h2 class="step-title">Où exercez-vous ?</h2>
+      <p class="step-sub">Seba adapte devise, langue et réglementation à votre pays.</p>
+
+      <div class="field">
+        <label for="sel-pays">Votre pays</label>
+        <div class="select-wrap">
+          <select id="sel-pays" onchange="onPaysChange()">
+            <option value="">— Sélectionner un pays —</option>
+          </select>
         </div>
+        <div class="err" id="err-pays">Veuillez choisir votre pays.</div>
+      </div>
+      <div class="pays-info" id="pays-info">
+        Devise&nbsp;: <strong id="pi-devise">—</strong> &nbsp;·&nbsp; Langue&nbsp;: <strong id="pi-langue">—</strong>
       </div>
 
-      <!-- ═══ STEP 0 : WELCOME ═══ -->
-      <div class="ob-step active" id="step-0">
-        <div class="welcome-wrap">
-          <div class="w-logo"><div class="logo-dot"></div>Seba</div>
-          <h1 class="w-title">Bienvenue sur<br><em>Seba</em></h1>
-          <p class="w-sub">Créons ensemble votre espace professionnel en quelques minutes.</p>
-          <button class="btn btn-em" style="font-size:1.05rem;height:56px;padding:0 44px;" onclick="goStep(1)">
-            Commencer →
-          </button>
-          <p class="w-meta">6 étapes · environ 3 minutes · aucune carte requise</p>
+      <div class="field">
+        <label>Numéro de téléphone professionnel</label>
+        <div class="phone-group">
+          <div class="dial-wrap">
+            <select class="dial-select" id="sel-dial"></select>
+          </div>
+          <input type="tel" class="phone-input" id="inp-phone"
+            placeholder="06 12 34 56 78" oninput="S.phone=this.value">
         </div>
+        <div class="field-hint">Utilisé pour vos notifications et votre profil client.</div>
+        <div class="err" id="err-phone">Veuillez entrer votre numéro de téléphone.</div>
       </div>
 
-      <!-- ═══ STEP 1 : PAYS ═══ -->
-      <div class="ob-step" id="step-1">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text">
-            <strong>Bonjour !</strong> Seba adapte votre compte à votre pays : devise, langue et réglementation locale. Indiquez-nous où vous exercez.
-          </div>
-        </div>
-        <h2 class="ob-title">Dans quel pays exercez-vous ?</h2>
-        <p class="ob-sub">Votre devise et vos options locales seront configurées automatiquement.</p>
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(0,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(1)">Continuer →</button>
+      </div>
+    </div>
 
-        <div class="field">
-          <label for="sel-pays">Votre pays</label>
-          <div class="select-wrap">
-            <select id="sel-pays" onchange="onPaysChange()">
-              <option value="">— Sélectionner un pays —</option>
-            </select>
-          </div>
-          <div class="err" id="err-pays">Veuillez choisir votre pays pour continuer.</div>
-        </div>
-        <div class="pays-info" id="pays-info">
-          Devise&nbsp;: <strong id="pi-devise">—</strong> &nbsp;·&nbsp; Langue&nbsp;: <strong id="pi-langue">—</strong>
-        </div>
+    <!-- 2 SECTEUR -->
+    <div class="step-container" id="step-2">
+      <div class="step-eyebrow">Votre activité</div>
+      <h2 class="step-title">Quel type d'activité exercez-vous ?</h2>
+      <p class="step-sub">Seba adapte vos devis, relances et indicateurs à votre métier.</p>
 
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(0)">← Retour</button>
-          <button class="btn btn-em" onclick="validateStep(1)">Continuer →</button>
+      <div class="sr-wrap">
+        <div class="sector-reaction" id="sector-reaction">
+          <span id="reaction-text">Parfait !</span>
         </div>
       </div>
+      <div class="sector-grid" id="sector-grid"></div>
+      <div class="err" id="err-sector">Veuillez choisir une activité.</div>
 
-      <!-- ═══ STEP 2 : ACTIVITÉ ═══ -->
-      <div class="ob-step" id="step-2">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text">
-            Chaque métier a ses spécificités. Seba adapte vos modèles de devis, vos relances et vos indicateurs à votre activité.
-          </div>
-        </div>
-        <h2 class="ob-title">Quel type d'activité exercez-vous ?</h2>
-        <p class="ob-sub">Choisissez la catégorie la plus proche de votre métier.</p>
-
-        <div class="sr-wrap">
-          <div class="sector-reaction" id="sector-reaction">✓ <span id="reaction-text">Parfait !</span></div>
-        </div>
-        <div class="sector-grid" id="sector-grid"></div>
-        <div class="err" id="err-sector">Veuillez choisir une activité pour continuer.</div>
-
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(1)">← Retour</button>
-          <button class="btn btn-em" onclick="validateStep(2)">Continuer →</button>
-        </div>
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(1,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(2)">Continuer →</button>
       </div>
+    </div>
 
-      <!-- ═══ STEP 3 : SERVICES ═══ -->
-      <div class="ob-step" id="step-3">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text">
-            Cochez les prestations que vous proposez et renseignez vos tarifs. Vos clients les verront sur votre portail — vous pourrez tout modifier plus tard.
-          </div>
-        </div>
-        <h2 class="ob-title">Vos prestations</h2>
-        <p class="ob-sub">Renseignez vos tarifs pour que Seba génère vos devis automatiquement.</p>
+    <!-- 3 SOUS-SECTEUR (conciergerie) -->
+    <div class="step-container" id="step-3">
+      <div class="step-eyebrow">Type de conciergerie</div>
+      <h2 class="step-title">Précisez votre activité</h2>
+      <p class="step-sub">Chaque type a ses propres modèles de services et indicateurs de performance.</p>
 
-        <div class="svc-list" id="svc-list"></div>
-        <button class="btn-add-svc" onclick="addCustomSvc()">+ Ajouter une prestation personnalisée</button>
-        <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation pour continuer.</div>
-
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(2)">← Retour</button>
-          <button class="btn btn-em" onclick="validateStep(3)">Continuer →</button>
-        </div>
-      </div>
-
-      <!-- ═══ STEP 4 : IDENTITÉ ═══ -->
-      <div class="ob-step" id="step-4">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text">
-            Ces informations apparaîtront sur vos devis et votre portail client. <strong>La prévisualisation se met à jour en temps réel.</strong>
-          </div>
-        </div>
-        <h2 class="ob-title">Votre identité</h2>
-
-        <div class="id-layout">
+      <div class="subsector-list">
+        <div class="subsector-card" id="sub-conciergerie" onclick="pickSub('conciergerie')">
+          <div class="sub-ico" id="sub-ico-conciergerie"></div>
           <div>
-            <div class="field">
-              <label for="inp-nom">Nom de votre entreprise</label>
-              <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60" oninput="updatePreview()">
-              <div class="err" id="err-nom">Le nom de votre entreprise est obligatoire.</div>
-            </div>
-            <div class="field">
-              <label for="inp-pub">Nom public (affiché sur votre portail)</label>
-              <input type="text" id="inp-pub" placeholder="ex. Services Martin" maxlength="50" oninput="updatePreview()">
-              <div class="field-hint">Par défaut, identique au nom d'entreprise.</div>
-            </div>
-            <div class="field">
-              <label for="inp-welcome">Message de bienvenue</label>
-              <input type="text" id="inp-welcome" placeholder="ex. Bienvenue, prenez rendez-vous ici !" maxlength="80" oninput="updatePreview()">
-            </div>
-            <div class="field">
-              <label>Couleur principale</label>
-              <div class="swatches" id="swatches"></div>
-            </div>
+            <div class="sub-title">Location courte durée</div>
+            <div class="sub-desc">Airbnb, Booking, locations saisonnières. Check-in clients, ménage entre résidents, maintenance.</div>
           </div>
+        </div>
+        <div class="subsector-card" id="sub-conciergerieCopro" onclick="pickSub('conciergerieCopro')">
+          <div class="sub-ico" id="sub-ico-conciergerieCopro"></div>
+          <div>
+            <div class="sub-title">Copropriété</div>
+            <div class="sub-desc">Entretien des parties communes, gardiennage, maintenance d'immeuble et espaces verts.</div>
+          </div>
+        </div>
+        <div class="subsector-card" id="sub-conciergerieEntreprise" onclick="pickSub('conciergerieEntreprise')">
+          <div class="sub-ico" id="sub-ico-conciergerieEntreprise"></div>
+          <div>
+            <div class="sub-title">Entreprise</div>
+            <div class="sub-desc">Services aux sociétés, bureaux et espaces de coworking. Accueil, courses, coordination.</div>
+          </div>
+        </div>
+      </div>
+      <div class="err" id="err-sub">Veuillez choisir un type de conciergerie.</div>
 
-          <div class="phone-wrap">
-            <div class="phone-lbl">Aperçu portail client</div>
-            <div class="phone-shell">
-              <div class="phone-screen">
-                <div class="phone-notch"></div>
-                <div class="phone-hdr" id="phone-hdr" style="background:var(--emerald);">
-                  <div class="phone-pname" id="phone-pname">Votre entreprise</div>
-                  <div class="phone-welcome" id="phone-wlc">Bienvenue !</div>
-                </div>
-                <div class="phone-body">
-                  <div class="phone-section-lbl">Prestations</div>
-                  <div id="phone-svcs"><div class="phone-empty">Aucun service sélectionné</div></div>
-                </div>
-                <div class="phone-footer">
-                  <div class="phone-cta" id="phone-cta" style="background:var(--emerald);">Prendre rendez-vous</div>
-                </div>
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(3)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 4 SERVICES -->
+    <div class="step-container" id="step-4">
+      <div class="step-eyebrow">Vos services</div>
+      <h2 class="step-title">Vos prestations</h2>
+      <p class="step-sub">Cochez les services que vous proposez et renseignez vos tarifs. Tout est modifiable plus tard.</p>
+
+      <div class="svc-list" id="svc-list"></div>
+      <button class="btn-add-svc" onclick="addCustomSvc()">+ Ajouter une prestation personnalisée</button>
+      <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation.</div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="backFrom4()">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 5 IDENTITÉ -->
+    <div class="step-container" id="step-5">
+      <div class="step-eyebrow">Votre identité</div>
+      <h2 class="step-title">Donnez un visage à votre entreprise</h2>
+      <p class="step-sub">Ces informations apparaîtront sur vos devis et votre portail client. Prévisualisation en temps réel.</p>
+
+      <div class="field">
+        <label for="inp-nom">Nom de votre entreprise</label>
+        <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60" oninput="updatePreview()">
+        <div class="err" id="err-nom">Le nom est obligatoire.</div>
+      </div>
+      <div class="field">
+        <label for="inp-pub">Nom public (portail client)</label>
+        <input type="text" id="inp-pub" placeholder="ex. Services Martin" maxlength="50" oninput="updatePreview()">
+        <div class="field-hint">Par défaut, identique au nom d'entreprise.</div>
+      </div>
+      <div class="field">
+        <label for="inp-welcome">Message de bienvenue</label>
+        <input type="text" id="inp-welcome" placeholder="ex. Bienvenue, prenez rendez-vous ici !" maxlength="80" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Couleur principale</label>
+        <div class="swatches" id="swatches"></div>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(5)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 6 ÉCOSYSTÈME -->
+    <div class="step-container" id="step-6">
+      <div class="step-eyebrow">Votre écosystème</div>
+      <h2 class="step-title">Votre espace est prêt</h2>
+      <p class="step-sub">Voici comment vos clients vous rejoindront et comment vous gérerez les réservations.</p>
+
+      <div class="eco-list">
+        <div class="eco-card">
+          <div class="eco-ico">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 0 0 5.657 0l2.829-2.828a4 4 0 0 0-5.657-5.657L9.172 5.172"/><path d="M12 8a4 4 0 0 0-5.657 0L3.515 10.828a4 4 0 0 0 5.657 5.657l1.657-1.657"/></svg>
+          </div>
+          <div>
+            <div class="eco-title">Lien privé de votre portail</div>
+            <div class="eco-desc">Un lien unique que vous partagez avec vos clients. Seules les personnes autorisées y accèdent.</div>
+            <div class="eco-badge" id="eco-slug">seba.app/p/votre-entreprise</div>
+          </div>
+        </div>
+        <div class="eco-card">
+          <div class="eco-ico">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg>
+          </div>
+          <div>
+            <div class="eco-title">Code d'activation client</div>
+            <div class="eco-desc">Donnez ce code à vos nouveaux clients pour qu'ils s'inscrivent sur votre portail.</div>
+            <div class="eco-badge" id="eco-code">SEBA-XXXX</div>
+          </div>
+        </div>
+        <div class="eco-card">
+          <div class="eco-ico">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><line x1="9" y1="16" x2="11" y2="16"/></svg>
+          </div>
+          <div>
+            <div class="eco-title">Application client</div>
+            <div class="eco-desc">Vos clients réservent, reçoivent leurs devis et paient directement depuis leur téléphone.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(5,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="goStep(7)">Déployer mon espace →</button>
+      </div>
+    </div>
+
+    <!-- 7 CHARGEMENT -->
+    <div class="step-container" id="step-7">
+      <div class="loading-cinema">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 136 136" fill="none">
+            <circle cx="68" cy="68" r="56" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+            <circle id="ring-fill" cx="68" cy="68" r="56"
+              stroke="var(--em)" stroke-width="7" stroke-linecap="round"
+              stroke-dasharray="351.9" stroke-dashoffset="351.9"
+              transform="rotate(-90 68 68)"/>
+          </svg>
+          <div class="ring-pct" id="ring-pct">0%</div>
+        </div>
+        <div class="loading-phase pulsing" id="loading-phase">Initialisation…</div>
+        <div class="loading-sub-lbl" id="loading-sub-lbl">Votre espace professionnel se construit</div>
+      </div>
+    </div>
+
+    <!-- 8 RÉSUMÉ -->
+    <div class="step-container" id="step-8">
+      <div class="step-eyebrow">Compte créé</div>
+      <h2 class="step-title">C'est parti !</h2>
+      <p class="step-sub" id="s8-sub">Votre espace Seba est configuré et prêt à l'emploi.</p>
+
+      <div class="summary-ticket">
+        <div class="t-head">
+          <div class="t-ico" id="t-ico">✓</div>
+          <div>
+            <div class="t-company" id="t-company">—</div>
+            <div class="t-sector"  id="t-sector">—</div>
+          </div>
+          <span class="t-badge">✓ Compte créé</span>
+        </div>
+        <div class="t-body">
+          <div class="t-row"><span class="t-lbl">Pays</span>           <span class="t-val" id="t-pays">—</span></div>
+          <div class="t-row"><span class="t-lbl">Téléphone</span>      <span class="t-val" id="t-phone">—</span></div>
+          <div class="t-row"><span class="t-lbl">Devise</span>         <span class="t-val" id="t-devise">—</span></div>
+          <div class="t-row"><span class="t-lbl">Prestations</span>    <span class="t-val" id="t-svcs">—</span></div>
+          <div class="t-row"><span class="t-lbl">Portail client</span> <span class="t-val" id="t-slug-sum">—</span></div>
+        </div>
+      </div>
+
+      <p style="font-size:.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">Et maintenant ?</p>
+      <div class="next-grid">
+        <a href="dashboard.html" class="next-card"><div class="nc-title">Tableau de bord</div><div class="nc-desc">Indicateurs et recommandations</div></a>
+        <a href="clients.html"   class="next-card"><div class="nc-title">Mes clients</div><div class="nc-desc">Créez vos premières fiches</div></a>
+        <a href="devis.html"     class="next-card"><div class="nc-title">Créer un devis</div><div class="nc-desc">En 3 clics, devis signable</div></a>
+        <a href="reglages.html"  class="next-card"><div class="nc-title">Mon compte</div><div class="nc-desc">Logo, coordonnées, conditions</div></a>
+      </div>
+      <a href="dashboard.html" class="btn btn-em btn-full" style="margin-top:8px;">
+        Accéder à mon tableau de bord →
+      </a>
+    </div>
+
+  </div><!-- /ob-steps-wrap -->
+</div><!-- /ob-left -->
+
+<!-- RIGHT — phone -->
+<div class="ob-right">
+  <div class="phone-device">
+    <div class="phone-island"></div>
+    <div class="phone-screen">
+      <div class="ph-status">
+        <span id="ph-clock">10:42</span>
+        <div class="ph-status-icons">
+          <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
+            <rect x="0" y="4" width="2" height="4" rx=".5" fill="rgba(255,255,255,.55)"/>
+            <rect x="3" y="2.5" width="2" height="5.5" rx=".5" fill="rgba(255,255,255,.55)"/>
+            <rect x="6" y="1" width="2" height="7" rx=".5" fill="rgba(255,255,255,.55)"/>
+            <rect x="9" y="0" width="2" height="8" rx=".5" fill="rgba(255,255,255,.55)"/>
+          </svg>
+          <svg width="14" height="7" viewBox="0 0 14 7" fill="none">
+            <rect x=".5" y=".5" width="10.5" height="6" rx="1.5" stroke="rgba(255,255,255,.45)" stroke-width="1"/>
+            <rect x="1.5" y="1.5" width="7.5" height="4" rx=".8" fill="rgba(255,255,255,.55)"/>
+            <path d="M12 2.5v2a1 1 0 0 0 0-2z" fill="rgba(255,255,255,.35)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ph-content">
+        <div class="ph-pane active" id="ph-lock">
+          <div class="ph-lock-body">
+            <div class="ph-time" id="ph-time">10:42</div>
+            <div class="ph-date" id="ph-date">Lundi 30 juin</div>
+            <div class="ph-notif">
+              <div class="ph-notif-icon">S</div>
+              <div>
+                <div class="ph-notif-app">Seba</div>
+                <div class="ph-notif-msg" id="ph-notif-msg">Bienvenue ! Votre espace vous attend.</div>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(3)">← Retour</button>
-          <button class="btn btn-em" onclick="validateStep(4)">Continuer →</button>
-        </div>
-      </div>
-
-      <!-- ═══ STEP 5 : ÉCOSYSTÈME ═══ -->
-      <div class="ob-step" id="step-5">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text">
-            Votre portail client est prêt. Voici comment vos clients vous rejoindront et comment vous gérerez les réservations.
-          </div>
-        </div>
-        <h2 class="ob-title">Votre écosystème</h2>
-        <p class="ob-sub">Tout ce dont vos clients ont besoin pour travailler avec vous.</p>
-
-        <div class="eco-list">
-          <div class="eco-card">
-            <div class="eco-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 0 0 5.657 0l2.829-2.828a4 4 0 0 0-5.657-5.657L9.172 5.172"/><path d="M12 8a4 4 0 0 0-5.657 0L3.515 10.828a4 4 0 0 0 5.657 5.657l1.657-1.657"/></svg></div>
-            <div>
-              <div class="eco-title">Lien privé de votre portail</div>
-              <div class="eco-desc">Un lien unique que vous partagez avec vos clients. Seules les personnes qui ont ce lien (ou un code d'activation) peuvent accéder à votre portail.</div>
-              <div class="eco-badge" id="eco-slug">seba.app/p/votre-entreprise</div>
+        <div class="ph-pane" id="ph-app">
+          <div class="ph-app-body">
+            <div class="ph-app-hdr">
+              <div class="ph-app-brand">
+                <span class="ph-app-hdr-color" id="ph-color-dot"></span>
+                <span id="ph-brand">Mon entreprise</span>
+              </div>
+              <div class="ph-app-welcome" id="ph-welcome">Bienvenue !</div>
             </div>
-          </div>
-          <div class="eco-card">
-            <div class="eco-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="m11.414 11.414 5.172 5.172"/><path d="M14 14h2v2"/></svg></div>
-            <div>
-              <div class="eco-title">Code d'activation client</div>
-              <div class="eco-desc">Donnez ce code à vos nouveaux clients pour qu'ils s'inscrivent sur votre portail. Vous contrôlez qui peut vous réserver.</div>
-              <div class="eco-badge" id="eco-code">SEBA-XXXX</div>
+            <div class="ph-svc-section">
+              <div class="ph-svc-lbl">Prestations</div>
+              <div id="ph-svcs"><div class="ph-svc-empty">Aucun service sélectionné</div></div>
             </div>
-          </div>
-          <div class="eco-card">
-            <div class="eco-ico"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><line x1="9" y1="16" x2="11" y2="16"/></svg></div>
-            <div>
-              <div class="eco-title">Application client</div>
-              <div class="eco-desc">Vos clients réservent, reçoivent leurs devis et paient directement depuis leur téléphone. Zéro appel, zéro email perdu.</div>
+            <div class="ph-app-footer">
+              <div class="ph-app-cta" id="ph-cta">Prendre rendez-vous</div>
             </div>
           </div>
         </div>
-
-        <div class="nav-btns">
-          <button class="btn btn-ghost" onclick="goStep(4)">← Retour</button>
-          <button class="btn btn-em" onclick="goStep(6)">Finaliser →</button>
-        </div>
       </div>
-
-      <!-- ═══ STEP 6 : CHARGEMENT CINÉMATIQUE ═══ -->
-      <div class="ob-step" id="step-6">
-        <div class="loading-cinema">
-          <div class="ring-wrap">
-            <svg class="ring-svg" viewBox="0 0 140 140" fill="none" aria-hidden="true">
-              <circle cx="70" cy="70" r="58" stroke="rgba(0,0,0,.07)" stroke-width="7"/>
-              <circle id="ring-fill" cx="70" cy="70" r="58"
-                stroke="var(--emerald)" stroke-width="7"
-                stroke-linecap="round"
-                stroke-dasharray="364.4"
-                stroke-dashoffset="364.4"
-                transform="rotate(-90 70 70)"/>
-            </svg>
-            <div class="ring-pct" id="ring-pct">0%</div>
-          </div>
-          <div class="loading-phase pulsing" id="loading-phase">Initialisation…</div>
-          <div class="loading-sub-label" id="loading-sub-label">Votre espace professionnel se construit</div>
-        </div>
-      </div>
-
-      <!-- ═══ STEP 7 : RÉSUMÉ ═══ -->
-      <div class="ob-step" id="step-7">
-        <div class="companion">
-          <div class="companion-av">S</div>
-          <div class="companion-text" id="s7-companion">
-            <strong>C'est parti !</strong> Votre compte Seba est configuré. Voici le résumé de votre espace.
-          </div>
-        </div>
-
-        <div class="summary-ticket">
-          <div class="t-head">
-            <div class="t-ico" id="t-ico">✓</div>
-            <div>
-              <div class="t-company" id="t-company">—</div>
-              <div class="t-sector" id="t-sector">—</div>
-            </div>
-            <span class="t-badge">✓ Compte créé</span>
-          </div>
-          <div class="t-body">
-            <div class="t-row"><span class="t-lbl">Pays</span><span class="t-val" id="t-pays">—</span></div>
-            <div class="t-row"><span class="t-lbl">Devise</span><span class="t-val" id="t-devise">—</span></div>
-            <div class="t-row"><span class="t-lbl">Prestations</span><span class="t-val" id="t-svcs">—</span></div>
-            <div class="t-row"><span class="t-lbl">Portail client</span><span class="t-val" id="t-slug">—</span></div>
-          </div>
-        </div>
-
-        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">Et maintenant ?</h3>
-        <div class="next-grid">
-          <a href="dashboard.html" class="next-card">
-            <div class="nc-title">Tableau de bord</div>
-            <div class="nc-desc">Indicateurs et recommandations</div>
-          </a>
-          <a href="clients.html" class="next-card">
-            <div class="nc-title">Ajouter mes clients</div>
-            <div class="nc-desc">Créez vos premières fiches clients</div>
-          </a>
-          <a href="devis.html" class="next-card">
-            <div class="nc-title">Créer un devis</div>
-            <div class="nc-desc">En 3 clics, envoyez un devis signable</div>
-          </a>
-          <a href="reglages.html" class="next-card">
-            <div class="nc-title">Mon compte</div>
-            <div class="nc-desc">Logo, coordonnées, conditions</div>
-          </a>
-        </div>
-        <a href="dashboard.html" class="btn btn-em btn-full" style="margin-top:8px;">
-          Accéder à mon tableau de bord →
-        </a>
-      </div>
-
     </div>
+    <div class="phone-home"></div>
   </div>
+</div>
+</div><!-- /ob-layout -->
 
-  <script src="businessTypes.js"></script>
-  <script>
-    /* ── State ── */
-    const S = {
-      pays: null, paysCode: null, devise: null, deviseSymbole: null, langue: 'fr', zone: null, timezone: null,
-      secteur: null,
-      svcs: {},
-      nom: '', publicName: '', welcomePhrase: '',
-      couleur: '#00C896',
-      slug: '',
-    };
+<script src="businessTypes.js"></script>
+<script>
+/* ─── State ─── */
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',couleur:'#00F5A0',slug:''};
+let _isConciergerie=false;
 
-    const COUNTRIES = [
-      { code:'FR', name:'🇫🇷 France',             devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'Europe/Paris' },
-      { code:'BE', name:'🇧🇪 Belgique',            devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'Europe/Brussels' },
-      { code:'CH', name:'🇨🇭 Suisse',              devise:'Franc suisse',     sym:'CHF',  lang:'fr', zone:'CH',  tz:'Europe/Zurich' },
-      { code:'LU', name:'🇱🇺 Luxembourg',          devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'Europe/Luxembourg' },
-      { code:'CA', name:'🇨🇦 Canada',              devise:'Dollar canadien',  sym:'$CA',  lang:'fr', zone:'CA',  tz:'America/Toronto' },
-      { code:'MA', name:'🇲🇦 Maroc',               devise:'Dirham',           sym:'DH',   lang:'fr', zone:'MA',  tz:'Africa/Casablanca' },
-      { code:'TN', name:'🇹🇳 Tunisie',             devise:'Dinar tunisien',   sym:'DT',   lang:'fr', zone:'TN',  tz:'Africa/Tunis' },
-      { code:'DZ', name:'🇩🇿 Algérie',             devise:'Dinar algérien',   sym:'DA',   lang:'fr', zone:'DZ',  tz:'Africa/Algiers' },
-      { code:'SN', name:'🇸🇳 Sénégal',             devise:'Franc CFA',        sym:'FCFA', lang:'fr', zone:'XOF', tz:'Africa/Dakar' },
-      { code:'CI', name:"🇨🇮 Côte d'Ivoire",       devise:'Franc CFA',        sym:'FCFA', lang:'fr', zone:'XOF', tz:'Africa/Abidjan' },
-      { code:'CM', name:'🇨🇲 Cameroun',            devise:'Franc CFA',        sym:'FCFA', lang:'fr', zone:'XAF', tz:'Africa/Douala' },
-      { code:'CD', name:'🇨🇩 RD Congo',            devise:'Franc congolais',  sym:'FC',   lang:'fr', zone:'CD',  tz:'Africa/Kinshasa' },
-      { code:'MG', name:'🇲🇬 Madagascar',          devise:'Ariary',           sym:'Ar',   lang:'fr', zone:'MG',  tz:'Indian/Antananarivo' },
-      { code:'HT', name:'🇭🇹 Haïti',               devise:'Gourde',           sym:'G',    lang:'fr', zone:'HT',  tz:'America/Port-au-Prince' },
-      { code:'MC', name:'🇲🇨 Monaco',              devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'Europe/Monaco' },
-      { code:'RE', name:'🇷🇪 La Réunion',          devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'Indian/Reunion' },
-      { code:'MQ', name:'🇲🇶 Martinique',          devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'America/Martinique' },
-      { code:'GP', name:'🇬🇵 Guadeloupe',          devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'America/Guadeloupe' },
-      { code:'GF', name:'🇬🇫 Guyane française',    devise:'Euro',             sym:'€',    lang:'fr', zone:'EU',  tz:'America/Cayenne' },
-      { code:'NC', name:'🇳🇨 Nouvelle-Calédonie',  devise:'Franc CFP',        sym:'XPF',  lang:'fr', zone:'NC',  tz:'Pacific/Noumea' },
-      { code:'PF', name:'🇵🇫 Polynésie française', devise:'Franc CFP',        sym:'XPF',  lang:'fr', zone:'PF',  tz:'Pacific/Tahiti' },
-      { code:'ES', name:'🇪🇸 Espagne',             devise:'Euro',             sym:'€',    lang:'es', zone:'EU',  tz:'Europe/Madrid' },
-      { code:'PT', name:'🇵🇹 Portugal',            devise:'Euro',             sym:'€',    lang:'pt', zone:'EU',  tz:'Europe/Lisbon' },
-      { code:'IT', name:'🇮🇹 Italie',              devise:'Euro',             sym:'€',    lang:'it', zone:'EU',  tz:'Europe/Rome' },
-      { code:'DE', name:'🇩🇪 Allemagne',           devise:'Euro',             sym:'€',    lang:'de', zone:'EU',  tz:'Europe/Berlin' },
-      { code:'GB', name:'🇬🇧 Royaume-Uni',         devise:'Livre sterling',   sym:'£',    lang:'en', zone:'GB',  tz:'Europe/London' },
-      { code:'US', name:'🇺🇸 États-Unis',          devise:'Dollar américain', sym:'$',    lang:'en', zone:'US',  tz:'America/New_York' },
-    ];
+const COUNTRIES=[
+  {code:'FR',name:'🇫🇷 France',            devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Paris',          dial:'+33'},
+  {code:'BE',name:'🇧🇪 Belgique',           devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Brussels',       dial:'+32'},
+  {code:'CH',name:'🇨🇭 Suisse',             devise:'Franc suisse',    sym:'CHF', lang:'fr',zone:'CH', tz:'Europe/Zurich',         dial:'+41'},
+  {code:'LU',name:'🇱🇺 Luxembourg',         devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Luxembourg',     dial:'+352'},
+  {code:'CA',name:'🇨🇦 Canada',             devise:'Dollar canadien', sym:'$CA', lang:'fr',zone:'CA', tz:'America/Toronto',       dial:'+1'},
+  {code:'MA',name:'🇲🇦 Maroc',              devise:'Dirham',          sym:'DH',  lang:'fr',zone:'MA', tz:'Africa/Casablanca',     dial:'+212'},
+  {code:'TN',name:'🇹🇳 Tunisie',            devise:'Dinar tunisien',  sym:'DT',  lang:'fr',zone:'TN', tz:'Africa/Tunis',          dial:'+216'},
+  {code:'DZ',name:'🇩🇿 Algérie',            devise:'Dinar algérien',  sym:'DA',  lang:'fr',zone:'DZ', tz:'Africa/Algiers',        dial:'+213'},
+  {code:'SN',name:'🇸🇳 Sénégal',            devise:'Franc CFA',       sym:'FCFA',lang:'fr',zone:'XOF',tz:'Africa/Dakar',          dial:'+221'},
+  {code:'CI',name:"🇨🇮 Côte d'Ivoire",      devise:'Franc CFA',       sym:'FCFA',lang:'fr',zone:'XOF',tz:'Africa/Abidjan',        dial:'+225'},
+  {code:'CM',name:'🇨🇲 Cameroun',           devise:'Franc CFA',       sym:'FCFA',lang:'fr',zone:'XAF',tz:'Africa/Douala',         dial:'+237'},
+  {code:'CD',name:'🇨🇩 RD Congo',           devise:'Franc congolais', sym:'FC',  lang:'fr',zone:'CD', tz:'Africa/Kinshasa',       dial:'+243'},
+  {code:'MG',name:'🇲🇬 Madagascar',         devise:'Ariary',          sym:'Ar',  lang:'fr',zone:'MG', tz:'Indian/Antananarivo',   dial:'+261'},
+  {code:'HT',name:'🇭🇹 Haïti',              devise:'Gourde',          sym:'G',   lang:'fr',zone:'HT', tz:'America/Port-au-Prince',dial:'+509'},
+  {code:'MC',name:'🇲🇨 Monaco',             devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Monaco',         dial:'+377'},
+  {code:'RE',name:'🇷🇪 La Réunion',         devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Indian/Reunion',        dial:'+262'},
+  {code:'MQ',name:'🇲🇶 Martinique',         devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'America/Martinique',    dial:'+596'},
+  {code:'GP',name:'🇬🇵 Guadeloupe',         devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'America/Guadeloupe',    dial:'+590'},
+  {code:'GF',name:'🇬🇫 Guyane française',   devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'America/Cayenne',       dial:'+594'},
+  {code:'NC',name:'🇳🇨 Nouvelle-Calédonie', devise:'Franc CFP',       sym:'XPF', lang:'fr',zone:'NC', tz:'Pacific/Noumea',        dial:'+687'},
+  {code:'PF',name:'🇵🇫 Polynésie française',devise:'Franc CFP',       sym:'XPF', lang:'fr',zone:'PF', tz:'Pacific/Tahiti',        dial:'+689'},
+  {code:'ES',name:'🇪🇸 Espagne',            devise:'Euro',            sym:'€',   lang:'es',zone:'EU', tz:'Europe/Madrid',         dial:'+34'},
+  {code:'PT',name:'🇵🇹 Portugal',           devise:'Euro',            sym:'€',   lang:'pt',zone:'EU', tz:'Europe/Lisbon',         dial:'+351'},
+  {code:'IT',name:'🇮🇹 Italie',             devise:'Euro',            sym:'€',   lang:'it',zone:'EU', tz:'Europe/Rome',           dial:'+39'},
+  {code:'DE',name:'🇩🇪 Allemagne',          devise:'Euro',            sym:'€',   lang:'de',zone:'EU', tz:'Europe/Berlin',         dial:'+49'},
+  {code:'GB',name:'🇬🇧 Royaume-Uni',        devise:'Livre sterling',  sym:'£',   lang:'en',zone:'GB', tz:'Europe/London',         dial:'+44'},
+  {code:'US',name:'🇺🇸 États-Unis',         devise:'Dollar américain',sym:'$',   lang:'en',zone:'US', tz:'America/New_York',      dial:'+1'},
+];
+const COLORS=['#00F5A0','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E0B','#10B981'];
+const SC_REACT={menage:'Parfait pour le ménage !',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Super pour le jardinage !',maintenance:'Très bien pour la maintenance !',pressing:'Parfait pour le pressing !',beaute:'Idéal pour la beauté à domicile !',animaux:"Super pour les soins d'animaux !",demenagement:'Parfait pour le déménagement !',autre:'On adapte tout à votre activité !',conciergerie:'Idéal pour la location courte durée !',conciergerieCopro:'Parfait pour la copropriété !',conciergerieEntreprise:"Très bien pour la conciergerie d'entreprise !"};
+const SECTOR2=[{key:'menage',label:'Ménage & nettoyage'},{key:'__conciergerie__',label:'Conciergerie'},{key:'jardinage',label:'Jardinage'},{key:'maintenance',label:'Maintenance'},{key:'pressing',label:'Pressing'},{key:'beaute',label:'Beauté à domicile'},{key:'animaux',label:'Animaux de compagnie'},{key:'demenagement',label:'Déménagement'},{key:'autre',label:'Autre activité'}];
+const PROG_LABELS={1:'Votre situation',2:'Votre activité',3:'Votre activité',4:'Vos services',5:'Votre identité',6:'Votre écosystème',7:'Déploiement',8:'Compte créé'};
 
-    const COLORS = ['#00C896','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E0B','#10B981'];
-    const SC_REACT = {
-      menage:                 'Parfait pour le ménage et le nettoyage !',
-      conciergerie:           'Idéal pour la location courte durée !',
-      conciergerieCopro:      'Parfait pour la gestion de copropriété !',
-      conciergerieEntreprise: "Très bien pour la conciergerie d'entreprise !",
-      jardinage:              'Super pour le jardinage et les espaces verts !',
-      maintenance:            'Très bien pour la maintenance !',
-      pressing:               'Parfait pour le pressing et la blanchisserie !',
-      beaute:                 'Idéal pour la beauté et les soins à domicile !',
-      animaux:                "Super pour la garde et les soins d'animaux !",
-      demenagement:           'Parfait pour le déménagement et le transport !',
-      autre:                  'Super, on adapte tout à votre activité !',
-    };
-    const STEP_LABELS = ['','Votre situation','Votre activité','Vos services','Votre identité','Votre écosystème','Finalisation'];
+/* ─── Init ─── */
+function init(){
+  const sel=document.getElementById('sel-pays');
+  COUNTRIES.forEach(c=>{const o=document.createElement('option');o.value=c.code;o.textContent=c.name;sel.appendChild(o);});
+  const ds=document.getElementById('sel-dial');
+  const seen=new Set();
+  COUNTRIES.forEach(c=>{if(!seen.has(c.dial)){const o=document.createElement('option');o.value=c.dial;o.textContent=c.dial;ds.appendChild(o);seen.add(c.dial);}});
+  ds.value='+33';
+  ds.addEventListener('change',()=>{S.dialCode=ds.value;});
+  buildSectorGrid();
+  const bt=window.businessTypes||{};
+  ['conciergerie','conciergerieCopro','conciergerieEntreprise'].forEach(k=>{
+    const el=document.getElementById('sub-ico-'+k);
+    if(el&&bt[k]) el.textContent=bt[k].icon||'·';
+  });
+  const sw=document.getElementById('swatches');
+  COLORS.forEach((hex,i)=>{
+    const d=document.createElement('div');
+    d.className='swatch'+(i===0?' sel':'');
+    d.style.background=hex;
+    d.addEventListener('click',()=>{document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));d.classList.add('sel');S.couleur=hex;updatePreview();});
+    sw.appendChild(d);
+  });
+  tickClock(); setInterval(tickClock,30000);
+  const now=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const de=document.getElementById('ph-date');
+  if(de) de.textContent=days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()];
+  const s0=document.getElementById('step-0');
+  s0.style.transition='none';s0.style.opacity='1';s0.style.transform='translateX(0)';s0.style.pointerEvents='auto';s0.style.zIndex='2';
+}
 
-    /* ── Init ── */
-    function init() {
-      const sel = document.getElementById('sel-pays');
-      COUNTRIES.forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.code; o.textContent = c.name;
-        sel.appendChild(o);
-      });
+function tickClock(){
+  const now=new Date();
+  const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  ['ph-clock','ph-time'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=t;});
+}
 
-      const grid = document.getElementById('sector-grid');
-      const bt = window.businessTypes || {};
-      Object.keys(bt).forEach(key => {
-        const card = document.createElement('div');
-        card.className = 'sector-card';
-        card.innerHTML = `<div class="sc-icon">${bt[key].icon||'·'}</div><div class="sc-name">${bt[key].label}</div>`;
-        card.addEventListener('click', () => {
-          document.querySelectorAll('.sector-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          S.secteur = key;
-          const r = document.getElementById('sector-reaction');
-          document.getElementById('reaction-text').textContent = SC_REACT[key]||'Parfait !';
-          r.classList.add('show');
-          setTimeout(() => r.classList.remove('show'), 2500);
-        });
-        grid.appendChild(card);
-      });
+function buildSectorGrid(){
+  const bt=window.businessTypes||{};
+  const grid=document.getElementById('sector-grid');
+  grid.innerHTML='';
+  SECTOR2.forEach(({key,label})=>{
+    const icon=key==='__conciergerie__'?(bt.conciergerie||{}).icon||'·':(bt[key]||{}).icon||'·';
+    const card=document.createElement('div');
+    card.className='sector-card';card.id='sc-'+key;
+    card.innerHTML='<div class="sc-icon">'+icon+'</div><div class="sc-name">'+label+'</div>';
+    card.addEventListener('click',()=>selectSector(key,card));
+    grid.appendChild(card);
+  });
+}
 
-      const sw = document.getElementById('swatches');
-      COLORS.forEach((hex, i) => {
-        const d = document.createElement('div');
-        d.className = 'swatch' + (i===0?' sel':'');
-        d.style.background = hex;
-        d.addEventListener('click', () => {
-          document.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
-          d.classList.add('sel');
-          S.couleur = hex;
-          updatePreview();
-        });
-        sw.appendChild(d);
-      });
-    }
+function selectSector(key,card){
+  document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  _isConciergerie=(key==='__conciergerie__');
+  if(!_isConciergerie) S.secteur=key;
+  const r=document.getElementById('sector-reaction');
+  document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
+  r.classList.add('show');
+  setTimeout(()=>r.classList.remove('show'),2400);
+}
 
-    function onPaysChange() {
-      const sel = document.getElementById('sel-pays');
-      const c = COUNTRIES.find(x => x.code === sel.value);
-      if (!c) { document.getElementById('pays-info').style.display='none'; return; }
-      S.pays=c.name; S.paysCode=c.code; S.devise=c.devise;
-      S.deviseSymbole=c.sym; S.langue=c.lang; S.zone=c.zone; S.timezone=c.tz;
-      document.getElementById('pi-devise').textContent = c.devise+' ('+c.sym+')';
-      document.getElementById('pi-langue').textContent = c.lang.toUpperCase();
-      document.getElementById('pays-info').style.display = 'block';
-    }
+function pickSub(key){
+  document.querySelectorAll('.subsector-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('sub-'+key).classList.add('selected');
+  S.secteur=key;
+}
 
-    /* ── Services ── */
-    let builtForSector = null;
-    let customCount = 0;
+/* ─── Navigation ─── */
+let _currentStep=0;
 
-    function buildSvcList(sector) {
-      const container = document.getElementById('svc-list');
-      container.innerHTML = '';
-      S.svcs = {};
-      customCount = 0;
-      const sec = (window.businessTypes||{})[sector];
-      if (!sec) return;
-      sec.services.forEach((svc, i) => {
-        const id = 'svc'+i;
-        S.svcs[id] = { name:svc.name||svc, price:svc.price||'', priceType:svc.priceType||'forfait', checked:false };
-        container.appendChild(makeSvcRow(id, svc.name||svc, false));
-      });
-      builtForSector = sector;
-    }
+function goStep(toIdx,forward){
+  if(typeof forward==='undefined') forward=toIdx>_currentStep;
+  if(toIdx===_currentStep) return;
+  const fromEl=document.getElementById('step-'+_currentStep);
+  const toEl=document.getElementById('step-'+toIdx);
+  if(!toEl) return;
+  toEl.style.transition='none';
+  toEl.style.opacity='0';
+  toEl.style.transform=forward?'translateX(100px)':'translateX(-100px)';
+  toEl.style.pointerEvents='none';
+  toEl.style.zIndex='3';
+  fromEl.style.transition='opacity .28s ease-in,transform .28s ease-in';
+  fromEl.style.opacity='0';
+  fromEl.style.transform=forward?'translateX(-100px)':'translateX(100px)';
+  fromEl.style.pointerEvents='none';
+  fromEl.style.zIndex='1';
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+    toEl.style.transition='opacity .52s cubic-bezier(.34,1.56,.64,1),transform .52s cubic-bezier(.34,1.56,.64,1)';
+    toEl.style.opacity='1';toEl.style.transform='translateX(0)';
+    toEl.style.pointerEvents='auto';toEl.style.zIndex='2';
+  });});
+  setTimeout(()=>{fromEl.style.transition='none';fromEl.style.opacity='0';fromEl.style.transform='translateX(100px)';fromEl.style.zIndex='1';},360);
+  _currentStep=toIdx;
+  updateProgress(toIdx);
+  window.scrollTo({top:0,behavior:'instant'});
+  if(toIdx===4&&S.secteur&&builtForSector!==S.secteur) buildSvcList(S.secteur);
+  if(toIdx===5) updatePreview();
+  if(toIdx===6){
+    document.getElementById('eco-slug').textContent='seba.app/p/'+(S.slug||slugify(S.publicName||S.nom||'mon-entreprise'));
+    document.getElementById('eco-code').textContent='SEBA-'+Math.random().toString(36).substring(2,6).toUpperCase();
+  }
+  if(toIdx===7) setTimeout(startLoading,480);
+  if(toIdx===8) fillSummary();
+  updatePhone(toIdx);
+}
 
-    function makeSvcRow(id, name, checked) {
-      const svc = S.svcs[id];
-      const row = document.createElement('div');
-      row.className = 'svc-row'+(checked?' checked':'');
-      row.id = 'row-'+id;
-      row.innerHTML = `
-        <div class="svc-check">
-          <input type="checkbox" id="chk-${id}" ${checked?'checked':''} onchange="toggleSvc('${id}')">
-          <label for="chk-${id}">${name}</label>
-        </div>
-        <input type="number" class="svc-price" id="price-${id}" placeholder="Prix" min="0" step="0.01"
-          value="${svc.price}" oninput="S.svcs['${id}'].price=this.value">
-        <select class="svc-type" id="type-${id}" onchange="S.svcs['${id}'].priceType=this.value">
-          <option value="forfait">Forfait</option>
-          <option value="heure">/ heure</option>
-          <option value="jour">/ jour</option>
-          <option value="m2">/ m²</option>
-        </select>
-      `;
-      return row;
-    }
+function backFrom4(){if(_isConciergerie) goStep(3,false);else goStep(2,false);}
 
-    function toggleSvc(id) {
-      const chk = document.getElementById('chk-'+id);
-      S.svcs[id].checked = chk.checked;
-      document.getElementById('row-'+id).classList.toggle('checked', chk.checked);
-      updatePreview();
-    }
+function updateProgress(n){
+  const prog=document.getElementById('ob-progress');
+  const lbl=document.getElementById('prog-label');
+  if(n===0){prog.classList.remove('show');return;}
+  prog.classList.add('show');
+  const dot=n===1?1:n<=3?2:n===4?3:n===5?4:n===6?5:6;
+  document.querySelectorAll('.prog-dot').forEach((d,i)=>{
+    d.classList.remove('done','active');
+    if(i<dot-1) d.classList.add('done');
+    else if(i===dot-1) d.classList.add('active');
+  });
+  if(n===8){document.querySelectorAll('.prog-dot').forEach(d=>{d.classList.remove('active');d.classList.add('done');});lbl.textContent='Compte configuré ✓';}
+  else lbl.textContent='Étape '+dot+'/6 — '+(PROG_LABELS[n]||'');
+}
 
-    function addCustomSvc() {
-      const id = 'c'+(++customCount);
-      S.svcs[id] = { name:'', price:'', priceType:'forfait', checked:true };
-      const container = document.getElementById('svc-list');
-      const row = document.createElement('div');
-      row.className = 'svc-row checked';
-      row.id = 'row-'+id;
-      row.innerHTML = `
-        <div class="svc-check">
-          <input type="checkbox" id="chk-${id}" checked onchange="toggleSvc('${id}')">
-          <input type="text" style="height:34px;font-size:.85rem;margin:0;width:auto;flex:1;"
-            placeholder="Nom de la prestation" oninput="S.svcs['${id}'].name=this.value;updatePreview()">
-        </div>
-        <input type="number" class="svc-price" id="price-${id}" placeholder="Prix" min="0" step="0.01"
-          oninput="S.svcs['${id}'].price=this.value">
-        <select class="svc-type" id="type-${id}" onchange="S.svcs['${id}'].priceType=this.value">
-          <option value="forfait">Forfait</option>
-          <option value="heure">/ heure</option>
-          <option value="jour">/ jour</option>
-          <option value="m2">/ m²</option>
-        </select>
-        <button class="svc-rm" onclick="rmSvc('${id}')">✕</button>
-      `;
-      container.appendChild(row);
-      updatePreview();
-    }
+/* ─── Validation ─── */
+function showErr(id){document.getElementById(id).classList.add('show');}
+function hideErr(id){document.getElementById(id).classList.remove('show');}
 
-    function rmSvc(id) {
-      delete S.svcs[id];
-      const row = document.getElementById('row-'+id);
-      if (row) row.remove();
-    }
+function validateStep(n){
+  if(n===1){
+    if(!document.getElementById('sel-pays').value){showErr('err-pays');return;}
+    hideErr('err-pays');
+    if(!document.getElementById('inp-phone').value.trim()){showErr('err-phone');return;}
+    hideErr('err-phone');
+    S.phone=document.getElementById('inp-phone').value.trim();
+    goStep(2);
+  } else if(n===2){
+    if(!S.secteur&&!_isConciergerie){showErr('err-sector');return;}
+    hideErr('err-sector');
+    if(_isConciergerie) goStep(3);
+    else goStep(4);
+  } else if(n===3){
+    if(!S.secteur||!['conciergerie','conciergerieCopro','conciergerieEntreprise'].includes(S.secteur)){showErr('err-sub');return;}
+    hideErr('err-sub');goStep(4);
+  } else if(n===4){
+    if(!Object.values(S.svcs).some(s=>s.checked)){showErr('err-svcs');return;}
+    hideErr('err-svcs');goStep(5);
+  } else if(n===5){
+    const nom=document.getElementById('inp-nom').value.trim();
+    if(!nom){showErr('err-nom');return;}
+    hideErr('err-nom');
+    S.nom=nom;
+    S.publicName=document.getElementById('inp-pub').value.trim()||nom;
+    S.welcomePhrase=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
+    S.slug=slugify(S.publicName);
+    goStep(6);
+  }
+}
 
-    /* ── Preview ── */
-    function updatePreview() {
-      const nom = document.getElementById('inp-nom').value.trim();
-      const pub = document.getElementById('inp-pub').value.trim() || nom;
-      const wlc = document.getElementById('inp-welcome').value.trim() || 'Bienvenue !';
-      S.nom=nom; S.publicName=pub; S.welcomePhrase=wlc;
-      S.slug = slugify(pub||nom||'mon-entreprise');
+/* ─── Country ─── */
+function onPaysChange(){
+  const sel=document.getElementById('sel-pays');
+  const c=COUNTRIES.find(x=>x.code===sel.value);
+  if(!c){document.getElementById('pays-info').style.display='none';return;}
+  S.pays=c.name;S.paysCode=c.code;S.devise=c.devise;S.deviseSymbole=c.sym;S.langue=c.lang;S.zone=c.zone;S.timezone=c.tz;S.dialCode=c.dial;
+  document.getElementById('pi-devise').textContent=c.devise+' ('+c.sym+')';
+  document.getElementById('pi-langue').textContent=c.lang.toUpperCase();
+  document.getElementById('pays-info').style.display='block';
+  const ds=document.getElementById('sel-dial');
+  if(ds) ds.value=c.dial;
+}
 
-      document.getElementById('phone-hdr').style.background = S.couleur;
-      document.getElementById('phone-cta').style.background = S.couleur;
-      document.getElementById('phone-pname').textContent = pub||'Votre entreprise';
-      document.getElementById('phone-wlc').textContent = wlc;
+/* ─── Services ─── */
+let builtForSector=null,customCount=0;
 
-      const checked = Object.values(S.svcs).filter(s => s.checked && s.name);
-      const el = document.getElementById('phone-svcs');
-      el.innerHTML = checked.length===0
-        ? '<div class="phone-empty">Aucun service sélectionné</div>'
-        : checked.slice(0,4).map(s =>
-            `<div class="phone-svc"><span class="phone-svc-n">${s.name}</span><span class="phone-svc-p">${s.price?S.deviseSymbole+s.price:'—'}</span></div>`
-          ).join('');
+function buildSvcList(sector){
+  const container=document.getElementById('svc-list');
+  container.innerHTML='';S.svcs={};customCount=0;
+  const sec=(window.businessTypes||{})[sector];
+  if(!sec) return;
+  sec.services.forEach((svc,i)=>{
+    const id='svc'+i;
+    const name=typeof svc==='string'?svc:svc.name||'';
+    const price=typeof svc==='object'?svc.suggestedPrice||'':'';
+    const pt=typeof svc==='object'?svc.priceType||'forfait':'forfait';
+    S.svcs[id]={name,price,priceType:pt,checked:false};
+    container.appendChild(makeSvcRow(id,name,false,price,pt));
+  });
+  builtForSector=sector;
+}
 
-      document.getElementById('eco-slug').textContent = 'seba.app/p/'+S.slug;
-    }
+function makeSvcRow(id,name,checked,price,priceType){
+  const row=document.createElement('div');
+  row.className='svc-row'+(checked?' checked':'');
+  row.id='row-'+id;
+  const pOpts=['forfait','heure','jour','m2'].map(v=>'<option value="'+v+'"'+(v===priceType?' selected':'')+'>'+(v==='forfait'?'Forfait':v==='heure'?'/ heure':v==='jour'?'/ jour':'/ m²')+'</option>').join('');
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+name+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updatePreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select>';
+  return row;
+}
 
-    function slugify(str) {
-      return (str||'').toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g,'')
-        .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'mon-entreprise';
-    }
+function toggleSvc(id){
+  const chk=document.getElementById('chk-'+id);
+  S.svcs[id].checked=chk.checked;
+  document.getElementById('row-'+id).classList.toggle('checked',chk.checked);
+  updatePreview();
+}
 
-    /* ── Navigation avec transitions GSAP ── */
-    let _currentStep = 0;
+function addCustomSvc(){
+  const id='c'+(++customCount);
+  S.svcs[id]={name:'',price:'',priceType:'forfait',checked:true};
+  const container=document.getElementById('svc-list');
+  const row=document.createElement('div');
+  row.className='svc-row checked';row.id='row-'+id;
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" checked onchange="toggleSvc(\''+id+'\')"><input type="text" style="height:32px;font-size:.8rem;margin:0;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:0 8px;color:#fff;" placeholder="Nom de la prestation" oninput="S.svcs[\''+id+'\'].name=this.value;updatePreview()"></div><input type="number" class="svc-price" placeholder="Prix" min="0" step="0.01" oninput="S.svcs[\''+id+'\'].price=this.value"><select class="svc-type" onchange="S.svcs[\''+id+'\'].priceType=this.value"><option value="forfait">Forfait</option><option value="heure">/ heure</option><option value="jour">/ jour</option><option value="m2">/ m²</option></select><button class="svc-rm" onclick="rmSvc(\''+id+'\')">✕</button>';
+  container.appendChild(row);
+}
 
-    function goStep(n) {
-      const fromEl = document.getElementById('step-' + _currentStep);
-      const toEl   = document.getElementById('step-' + n);
-      if (!toEl) return;
-      const forward = n > _currentStep;
-      _currentStep = n;
+function rmSvc(id){delete S.svcs[id];const r=document.getElementById('row-'+id);if(r)r.remove();}
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      updateProgress(n);
+/* ─── Phone preview ─── */
+function updatePreview(){
+  const nom=document.getElementById('inp-nom').value.trim();
+  const pub=document.getElementById('inp-pub').value.trim()||nom;
+  const wlc=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
+  S.nom=nom;S.publicName=pub;S.welcomePhrase=wlc;S.slug=slugify(pub||nom||'mon-entreprise');
+  const b=document.getElementById('ph-brand');const w=document.getElementById('ph-welcome');
+  const ct=document.getElementById('ph-cta');const dt=document.getElementById('ph-color-dot');
+  if(b) b.textContent=pub||'Mon entreprise';
+  if(w) w.textContent=wlc;
+  if(ct) ct.style.background=S.couleur;
+  if(dt) dt.style.background=S.couleur;
+  const checked=Object.values(S.svcs).filter(s=>s.checked&&s.name);
+  const el=document.getElementById('ph-svcs');
+  if(el) el.innerHTML=checked.length===0?'<div class="ph-svc-empty">Aucun service sélectionné</div>':checked.slice(0,5).map(s=>'<div class="ph-svc-item"><span>'+s.name+'</span><span class="ph-svc-p">'+(s.price?(S.deviseSymbole||'€')+s.price:'—')+'</span></div>').join('');
+  const se=document.getElementById('eco-slug');
+  if(se) se.textContent='seba.app/p/'+S.slug;
+}
 
-      if (n === 3 && S.secteur && builtForSector !== S.secteur) buildSvcList(S.secteur);
-      if (n === 4) updatePreview();
-      if (n === 5) {
-        document.getElementById('eco-slug').textContent = 'seba.app/p/' + (S.slug || slugify(S.publicName || S.nom || 'mon-entreprise'));
-        document.getElementById('eco-code').textContent = 'SEBA-' + Math.random().toString(36).substring(2,6).toUpperCase();
-      }
+function updatePhone(n){
+  const lock=document.getElementById('ph-lock');const app=document.getElementById('ph-app');
+  if(!lock||!app) return;
+  if(n<=3){lock.classList.add('active');app.classList.remove('active');}
+  else{lock.classList.remove('active');app.classList.add('active');updatePreview();}
+}
 
-      if (typeof gsap === 'undefined') {
-        /* Fallback sans GSAP */
-        fromEl.classList.remove('active');
-        toEl.classList.add('active');
-        if (n === 6) startLoading();
-        if (n === 7) fillSummary();
-        return;
-      }
+/* ─── Loading ─── */
+function startLoading(){
+  saveLS();
+  const biz=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+  const bt=window.businessTypes||{};
+  const sl=(bt[biz.secteur]||{}).label||biz.secteur||'votre activité';
+  const nom=biz.nom||'votre entreprise';
+  const MSGS=['Initialisation de votre espace…','Configuration de l\'espace '+sl+'…','Chargement des prestations de '+nom+'…','Création de votre portail client…','Adaptation de votre tableau de bord…',nom+' est prête !'];
+  const rf=document.getElementById('ring-fill');const rp=document.getElementById('ring-pct');
+  const ph=document.getElementById('loading-phase');const sl2=document.getElementById('loading-sub-lbl');
+  const TOTAL=351.9;
+  if(typeof gsap==='undefined'){
+    setTimeout(()=>{document.body.style.transition='opacity .6s';document.body.style.opacity='0';setTimeout(()=>{window.location.href='dashboard.html';},700);},3000);
+    return;
+  }
+  ph.classList.add('pulsing');
+  const proxy={p:0};
+  gsap.to(proxy,{p:1,duration:3.5,ease:'power1.inOut',
+    onUpdate(){const pct=Math.round(proxy.p*100);rf.setAttribute('stroke-dashoffset',TOTAL*(1-proxy.p));rp.textContent=pct+'%';ph.textContent=MSGS[Math.min(Math.floor(proxy.p*MSGS.length),MSGS.length-1)];},
+    onComplete(){rp.textContent='100%';ph.classList.remove('pulsing');ph.textContent=nom+' est prête !';sl2.textContent='Redirection vers votre tableau de bord…';gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:.5,onComplete(){window.location.href='dashboard.html';}});}
+  });
+}
 
-      gsap.to(fromEl, {
-        y: forward ? -30 : 30,
-        opacity: 0,
-        duration: 0.38,
-        ease: 'power2.in',
-        onComplete: function () {
-          fromEl.classList.remove('active');
-          gsap.set(fromEl, { y: 0, opacity: 1 }); /* reset pour la prochaine visite */
-          toEl.classList.add('active');
-          gsap.fromTo(toEl,
-            { y: forward ? 30 : -30, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.48, ease: 'power2.out',
-              onComplete: function () {
-                if (n === 6) startLoading();
-                if (n === 7) fillSummary();
-              }
-            }
-          );
-        },
-      });
-    }
+/* ─── Summary ─── */
+function fillSummary(){
+  const bt=window.businessTypes||{};const nom=S.nom||'Mon entreprise';
+  const checked=Object.values(S.svcs).filter(s=>s.checked);
+  document.getElementById('t-company').textContent=nom;
+  document.getElementById('t-sector').textContent=(bt[S.secteur]||{}).label||S.secteur||'—';
+  const ico=document.getElementById('t-ico');
+  ico.style.background=(S.couleur||'#00F5A0')+'22';ico.textContent=(bt[S.secteur]||{}).icon||'✓';
+  document.getElementById('t-pays').textContent=S.pays||'—';
+  document.getElementById('t-phone').textContent=S.dialCode&&S.phone?S.dialCode+' '+S.phone:'—';
+  document.getElementById('t-devise').textContent=S.devise?S.devise+' ('+S.deviseSymbole+')':'—';
+  const nb=checked.length;
+  document.getElementById('t-svcs').textContent=nb+' prestation'+(nb>1?'s':'')+' configurée'+(nb>1?'s':'');
+  document.getElementById('t-slug-sum').textContent='seba.app/p/'+(S.slug||slugify(nom));
+  document.getElementById('s8-sub').textContent='Votre espace '+nom+' est configuré et prêt à l\'emploi.';
+}
 
-    function updateProgress(n) {
-      const bar = document.getElementById('ob-progress');
-      if (n===0) { bar.style.display='none'; return; }
-      bar.style.display='block';
-      const segs = document.querySelectorAll('.seg');
-      const lbl = document.getElementById('progress-label');
-      segs.forEach((seg,i) => {
-        seg.classList.remove('done','active');
-        if (i<n-1) seg.classList.add('done');
-        else if (i===n-1) seg.classList.add('active');
-      });
-      if (n===7) { segs.forEach(s=>s.classList.add('done')); lbl.textContent='Compte configuré ✓'; }
-      else lbl.textContent='Étape '+n+' sur 6 — '+(STEP_LABELS[n]||'');
-    }
+/* ─── Save ─── */
+function saveLS(){
+  const services=Object.values(S.svcs).filter(s=>s.checked).map(s=>({name:s.name,price:s.price,priceType:s.priceType}));
+  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,slug:S.slug,onboardingCompleted:true}));
+}
 
-    function showErr(id) { document.getElementById(id).classList.add('show'); }
-    function hideErr(id) { document.getElementById(id).classList.remove('show'); }
+function slugify(str){return(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'mon-entreprise';}
 
-    function validateStep(n) {
-      if (n===1) {
-        if (!document.getElementById('sel-pays').value) { showErr('err-pays'); return; }
-        hideErr('err-pays'); goStep(2);
-      } else if (n===2) {
-        if (!S.secteur) { showErr('err-sector'); return; }
-        hideErr('err-sector'); goStep(3);
-      } else if (n===3) {
-        if (!Object.values(S.svcs).some(s=>s.checked)) { showErr('err-svcs'); return; }
-        hideErr('err-svcs'); goStep(4);
-      } else if (n===4) {
-        const nom = document.getElementById('inp-nom').value.trim();
-        if (!nom) { showErr('err-nom'); return; }
-        hideErr('err-nom');
-        S.nom=nom;
-        S.publicName=document.getElementById('inp-pub').value.trim()||nom;
-        S.welcomePhrase=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
-        S.slug=slugify(S.publicName);
-        goStep(5);
-      }
-    }
-
-    /* ── Loading cinématique ── */
-    function startLoading() {
-      saveLS();
-      const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-      const bt  = window.businessTypes || {};
-      const sectorLabel = (bt[biz.secteur] || {}).label || biz.secteur || 'votre activité';
-      const nom = biz.nom || 'votre entreprise';
-
-      const MESSAGES = [
-        'Initialisation de votre espace…',
-        `Configuration de l'espace ${sectorLabel}…`,
-        `Chargement des prestations de ${nom}…`,
-        'Création de votre portail client…',
-        'Adaptation de votre tableau de bord…',
-        `${nom} est prête !`,
-      ];
-
-      const ringFill  = document.getElementById('ring-fill');
-      const ringPct   = document.getElementById('ring-pct');
-      const phaseEl   = document.getElementById('loading-phase');
-      const subEl     = document.getElementById('loading-sub-label');
-      const TOTAL_LEN = 364.4; /* 2π × 58 */
-
-      if (typeof gsap === 'undefined') {
-        /* Fallback sans GSAP */
-        setTimeout(function () { window.location.href = 'dashboard.html'; }, 3500);
-        return;
-      }
-
-      phaseEl.classList.add('pulsing');
-      const proxy = { p: 0 };
-      gsap.to(proxy, {
-        p: 1,
-        duration: 3.5,
-        ease: 'power1.inOut',
-        onUpdate: function () {
-          const pct = Math.round(proxy.p * 100);
-          ringFill.setAttribute('stroke-dashoffset', TOTAL_LEN * (1 - proxy.p));
-          ringPct.textContent = pct + '%';
-          const idx = Math.min(Math.floor(proxy.p * MESSAGES.length), MESSAGES.length - 1);
-          phaseEl.textContent = MESSAGES[idx];
-        },
-        onComplete: function () {
-          ringPct.textContent = '100%';
-          phaseEl.classList.remove('pulsing');
-          phaseEl.textContent = `${nom} est prête !`;
-          subEl.textContent   = 'Redirection vers votre tableau de bord…';
-          gsap.to('body', {
-            opacity: 0,
-            duration: 0.75,
-            ease: 'power2.inOut',
-            delay: 0.5,
-            onComplete: function () { window.location.href = 'dashboard.html'; },
-          });
-        },
-      });
-    }
-
-    /* ── Summary ── */
-    function fillSummary() {
-      const bt = window.businessTypes||{};
-      const sec = bt[S.secteur];
-      const nom = S.nom||'Mon entreprise';
-      const checked = Object.values(S.svcs).filter(s=>s.checked);
-
-      document.getElementById('t-company').textContent = nom;
-      document.getElementById('t-sector').textContent = sec?sec.label:(S.secteur||'—');
-      const ico = document.getElementById('t-ico');
-      ico.style.background = S.couleur+'22';
-      ico.textContent = (bt[S.secteur]||{}).icon||'·';
-      document.getElementById('t-pays').textContent = S.pays||'—';
-      document.getElementById('t-devise').textContent = S.devise?S.devise+' ('+S.deviseSymbole+')':'—';
-      const nb = checked.length;
-      document.getElementById('t-svcs').textContent = nb+' prestation'+(nb>1?'s':'')+' configurée'+(nb>1?'s':'');
-      document.getElementById('t-slug').textContent = 'seba.app/p/'+(S.slug||slugify(nom));
-      document.getElementById('s7-companion').innerHTML =
-        `<strong>C'est parti, ${nom} !</strong> Votre compte Seba est configuré. Voici le résumé de votre espace.`;
-    }
-
-    /* ── Save ── */
-    function saveLS() {
-      const services = Object.values(S.svcs).filter(s=>s.checked)
-        .map(s=>({ name:s.name, price:s.price, priceType:s.priceType }));
-      localStorage.setItem('sebaEntreprise', JSON.stringify({
-        nom:S.nom, secteur:S.secteur, couleur:S.couleur, services,
-        pays:S.pays, paysCode:S.paysCode, devise:S.devise, deviseSymbole:S.deviseSymbole,
-        langue:S.langue, zone:S.zone, timezone:S.timezone, publicName:S.publicName,
-        welcomePhrase:S.welcomePhrase, slug:S.slug, onboardingCompleted:true,
-      }));
-    }
-
-    init();
-  </script>
+init();
+</script>
 <script>
 (function(){
   var b=document.getElementById('sh-burger'),o=document.getElementById('sh-overlay');
-  function open_(){o.classList.add('open');b.classList.add('open');b.setAttribute('aria-expanded','true');o.setAttribute('aria-hidden','false');}
-  function close_(){o.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');o.setAttribute('aria-hidden','true');}
-  b.addEventListener('click',function(e){e.stopPropagation();o.classList.contains('open')?close_():open_();});
-  o.addEventListener('click',function(e){if(!e.target.closest('.sh-nav'))close_();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')close_();});
+  function openM(){o.classList.add('open');b.classList.add('open');b.setAttribute('aria-expanded','true');o.setAttribute('aria-hidden','false');}
+  function closeM(){o.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');o.setAttribute('aria-hidden','true');}
+  b.addEventListener('click',function(e){e.stopPropagation();o.classList.contains('open')?closeM():openM();});
+  o.addEventListener('click',function(e){if(!e.target.closest('.sh-nav'))closeM();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM();});
 })();
 </script>
 </body>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comment ça marche — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px;}
+
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
+
+.accent-line{position:fixed;top:0;left:0;right:0;height:2px;background:var(--emerald);z-index:300;}
+
+/* Header */
+.sh{position:sticky;top:0;z-index:200;background:rgba(8,9,11,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05);}
+.sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#fff;display:flex;align-items:center;gap:1px;text-decoration:none;}
+.sh-dot{color:var(--emerald);}
+.sh-burger{width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1.5px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;cursor:pointer;padding:0;transition:border-color .15s;}
+.sh-burger span{width:16px;height:1.5px;background:#fff;border-radius:99px;display:block;transition:transform .25s,opacity .2s;}
+.sh-burger:hover{border-color:rgba(255,255,255,.3);}
+.sh-burger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.sh-burger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.sh-burger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.sh-overlay{position:fixed;inset:0;z-index:199;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
+.sh-overlay.open{opacity:1;pointer-events:auto;}
+.sh-nav{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+.sh-link{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;color:rgba(255,255,255,.5);text-decoration:none;letter-spacing:-.03em;padding:8px 0;transition:color .15s;}
+.sh-link:hover{color:#fff;}
+.sh-cta{margin-top:24px;display:inline-block;background:var(--emerald);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;transition:opacity .15s;}
+.sh-cta:hover{opacity:.85;}
+
+/* Hero */
+.page-hero{background:var(--ink);padding:80px 0 88px;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;top:-100px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,200,150,.09) 0%,transparent 65%);pointer-events:none;}
+.ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
+.ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px rgba(0,200,150,.7);}
+.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
+.page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:560px;line-height:1.65;}
+
+/* Steps */
+.steps-section{padding:88px 0;}
+.steps-grid{display:grid;grid-template-columns:1fr;gap:0;}
+.step-item{display:grid;grid-template-columns:80px 1fr;gap:32px;padding:48px 0;border-bottom:1px solid var(--border);align-items:start;}
+.step-item:last-child{border-bottom:none;}
+.step-num{width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--emerald);font-size:1.1rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-content h3{font-size:1.35rem;font-weight:700;margin-bottom:10px;letter-spacing:-.02em;}
+.step-content p{color:var(--text-2);font-size:1rem;line-height:1.65;max-width:560px;}
+.step-content .step-detail{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.step-detail-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.step-detail-card .sdc-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px;}
+.step-detail-card .sdc-val{font-size:.9rem;font-weight:600;}
+
+/* Dark section */
+.dark-section{background:var(--ink);padding:72px 0;}
+.dark-section h2{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:700;color:#fff;letter-spacing:-.025em;margin-bottom:14px;}
+.dark-section p{color:rgba(255,255,255,.5);font-size:1rem;max-width:540px;margin-bottom:32px;line-height:1.65;}
+.btn-em-dark{display:inline-block;background:var(--emerald);color:var(--ink);padding:14px 32px;border-radius:8px;font-weight:700;font-size:1rem;transition:opacity .15s;}
+.btn-em-dark:hover{opacity:.88;}
+
+@media(max-width:700px){
+  .step-item{grid-template-columns:1fr;gap:16px;}
+  .step-detail{grid-template-columns:1fr!important;}
+  .wrap{padding:0 20px;}
+}
+</style>
+</head>
+<body>
+<div class="accent-line"></div>
+
+<header class="sh">
+  <div class="sh-inner">
+    <a href="index.html" class="sh-logo">seba<span class="sh-dot">.</span></a>
+    <button class="sh-burger" id="sh-burger" aria-label="Menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="sh-overlay" id="sh-overlay">
+  <nav class="sh-nav">
+    <a href="comment-ca-marche.html" class="sh-link">Comment ça marche</a>
+    <a href="tarifs.html" class="sh-link">Tarifs</a>
+    <a href="faq.html" class="sh-link">FAQ</a>
+    <a href="connexion.html" class="sh-link">Connexion</a>
+    <a href="onboarding.html" class="sh-cta">Créer mon entreprise</a>
+  </nav>
+</div>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="ph-eyebrow"><span class="e-dot"></span>Mode d'emploi</div>
+    <h1>Opérationnel en moins de 5 minutes.</h1>
+    <p>Seba se configure en une seule séance. Pas de formation, pas de technicien — juste vous et votre téléphone.</p>
+  </div>
+</section>
+
+<section class="steps-section">
+  <div class="wrap">
+    <div class="steps-grid">
+
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Créez votre espace pro</h3>
+          <p>Répondez à quelques questions sur votre activité — secteur, services proposés, tarifs de base, et les coordonnées de votre entreprise. Seba adapte immédiatement l'interface à votre métier.</p>
+          <div class="step-detail">
+            <div class="step-detail-card"><div class="sdc-label">Durée</div><div class="sdc-val">2 à 5 min</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Sans CB requise</div><div class="sdc-val">Gratuit au départ</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Résultat</div><div class="sdc-val">Tableau de bord prêt</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Ajoutez vos clients et votre équipe</h3>
+          <p>Importez ou créez vos fiches clients en quelques secondes. Invitez vos employés — ils reçoivent un accès limité au planning et aux missions qui les concernent, rien de plus.</p>
+          <div class="step-detail">
+            <div class="step-detail-card"><div class="sdc-label">Clients</div><div class="sdc-val">Illimités</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Employés</div><div class="sdc-val">Accès personnalisés</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Import</div><div class="sdc-val">CSV ou saisie manuelle</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Planifiez et envoyez vos devis</h3>
+          <p>Créez une intervention en 30 secondes. Générez un devis personnalisé avec votre identité visuelle et envoyez-le par lien — votre client signe en ligne depuis son téléphone.</p>
+          <div class="step-detail">
+            <div class="step-detail-card"><div class="sdc-label">Devis en ligne</div><div class="sdc-val">Signature électronique</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Relances auto</div><div class="sdc-val">J+3, J+7</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Conversion</div><div class="sdc-val">→ Facture automatique</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Vos clients ont leur propre espace</h3>
+          <p>Chaque client reçoit un portail privé où il retrouve ses devis, factures, le calendrier de ses interventions, et peut vous contacter directement. Zéro appel pour "c'est pour quand ?".</p>
+          <div class="step-detail">
+            <div class="step-detail-card"><div class="sdc-label">Portail client</div><div class="sdc-val">Accès par lien</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Historique</div><div class="sdc-val">Documents complets</div></div>
+            <div class="step-detail-card"><div class="sdc-label">Messagerie</div><div class="sdc-val">Directe et tracée</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="dark-section">
+  <div class="wrap">
+    <h2>Prêt à tester ?</h2>
+    <p>Créez votre espace en 5 minutes. Gratuit pour commencer, sans engagement.</p>
+    <a href="onboarding.html" class="btn-em-dark">Créer mon entreprise gratuitement</a>
+  </div>
+</section>
+
+<script>
+  function toggleMenu() {
+    const burger = document.getElementById('sh-burger');
+    const overlay = document.getElementById('sh-overlay');
+    burger.classList.toggle('open');
+    overlay.classList.toggle('open');
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.getElementById('sh-burger').classList.remove('open');
+      document.getElementById('sh-overlay').classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>
