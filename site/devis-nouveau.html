@@ -1,0 +1,341 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nouveau devis — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<style>
+  :root {
+    --ink: #14161A;
+    --emerald: #00C896;
+    --plum: #3D2645;
+    --bg: #FAF9F7;
+    --white: #FFFFFF;
+    --text-2: #6B6A6F;
+    --border: #E8E6E1;
+    --r: 12px;
+    --rs: 8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  button,input,select,textarea{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+
+  /* SIDEBAR */
+  .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
+  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
+  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
+  .nav-section{padding:0 14px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+  .nav-item.active{background:rgba(0,200,150,.12);color:var(--emerald);}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
+  .nav-item.active .dot{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+
+  /* MAIN */
+  .main{padding:32px 40px;}
+  .fiche-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-2);margin-bottom:0;}
+  .back-link:hover{color:var(--emerald);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+  .form-wrap{max-width:640px;}
+
+  /* CARD */
+  .card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:36px 40px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .card-ref{font-size:0.75rem;color:var(--emerald);letter-spacing:0.05em;text-transform:uppercase;display:block;margin-bottom:10px;}
+  .card h2{font-size:1.6rem;margin-bottom:6px;}
+  .card .sub{color:var(--text-2);font-size:0.88rem;margin-bottom:30px;}
+
+  /* FIELDS */
+  .field-group{margin-bottom:20px;}
+  .field-group label{display:block;font-size:0.84rem;font-weight:500;margin-bottom:8px;color:var(--ink);}
+  .field-group label .opt{font-weight:400;color:var(--text-2);font-size:0.8rem;}
+  .field-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.92rem;background:var(--bg);color:var(--ink);transition:border-color .15s;}
+  .field-input:focus{border-color:var(--emerald);outline:none;}
+  select.field-input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6A6F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+  textarea.field-input{resize:vertical;min-height:80px;line-height:1.5;}
+
+  /* NEW CLIENT FIELDS */
+  .new-client-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-top:12px;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  /* QTY + TOTAL */
+  .qty-total-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:20px;}
+  .total-box{background:var(--ink);color:var(--bg);border-radius:var(--rs);padding:11px 20px;text-align:center;min-width:130px;flex-shrink:0;}
+  .total-box .total-label{font-size:0.68rem;color:#8A91A6;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;}
+  .total-box .total-amount{font-size:1.5rem;font-weight:700;color:var(--emerald);}
+
+  /* DIVIDER */
+  .divider{border:none;border-top:1px solid var(--border);margin:26px 0;}
+
+  /* ACTIONS */
+  .form-actions{display:flex;justify-content:space-between;align-items:center;margin-top:28px;}
+  .btn-cancel{font-size:0.9rem;color:var(--text-2);padding:11px 20px;border:1px solid var(--border);border-radius:var(--rs);background:#fff;cursor:pointer;}
+  .btn-cancel:hover{border-color:var(--ink);color:var(--ink);}
+  .btn-send{background:var(--emerald);color:var(--ink);border:none;padding:12px 26px;border-radius:var(--rs);font-weight:700;font-size:0.95rem;cursor:pointer;transition:opacity .15s,transform .15s;}
+  .btn-send:hover{opacity:.88;transform:translateY(-1px);}
+
+  /* CONFIRMATION */
+  .confirm-wrap{text-align:center;padding:20px 0;}
+  .confirm-wrap h2{font-size:1.6rem;margin-bottom:8px;}
+  .confirm-wrap .sub{color:var(--text-2);font-size:0.9rem;margin-bottom:32px;}
+  .ticket{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:24px 26px 20px;max-width:360px;margin:0 auto 32px;text-align:left;position:relative;box-shadow:0 20px 40px -16px rgba(0,0,0,0.12);}
+  .ticket-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--border);padding-bottom:12px;margin-bottom:14px;}
+  .ticket-head .tnum{font-size:0.76rem;color:var(--text-2);}
+  .ticket-head .tlabel{font-weight:600;font-size:0.93rem;}
+  .ticket-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:5px 0;color:var(--text-2);}
+  .ticket-row b{color:var(--ink);font-weight:500;}
+  .stamp{position:absolute;right:16px;bottom:12px;font-weight:700;font-size:0.95rem;color:var(--emerald);border:2.5px solid var(--emerald);padding:3px 10px;border-radius:4px;transform:rotate(-8deg);letter-spacing:0.03em;}
+  .btn-back{display:inline-block;background:var(--ink);color:var(--bg);padding:13px 26px;border-radius:var(--rs);font-weight:600;font-size:0.92rem;}
+  .btn-back:hover{opacity:.88;}
+
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .main{padding:24px 20px;}
+    .card{padding:24px 22px;}
+    .field-row{grid-template-columns:1fr;}
+    .qty-total-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>Seba</div>
+    <nav class="nav-section">
+      <a href="dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
+      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
+      <a href="planning.html"><div class="nav-item"><span class="dot"></span>Planning</div></a>
+      <a href="devis.html"><div class="nav-item active"><span class="dot"></span>Devis</div></a>
+      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
+      <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
+      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
+    </nav>
+    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+  </aside>
+
+  <main class="main">
+    <div class="fiche-topbar">
+      <a href="devis.html" class="back-link">← Retour aux devis</a>
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar-btn">ML</div>
+        <div class="user-menu" id="user-menu">
+          <a href="reglages.html">Mon compte</a>
+          <div class="menu-sep"></div>
+          <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-wrap">
+
+      <!-- FORMULAIRE -->
+      <div id="form-state">
+        <div class="card">
+          <span class="card-ref">Nouveau devis — #0125</span>
+          <h2>Créer un devis</h2>
+          <p class="sub">Remplissez en quelques secondes, envoyez d'un clic.</p>
+
+          <!-- CLIENT -->
+          <div class="field-group">
+            <label for="client">Client</label>
+            <select id="client" class="field-input">
+              <option value="">— Sélectionnez un client —</option>
+              <option value="Sophie Lacroix">Sophie Lacroix</option>
+              <option value="Marc Roussel">Marc Roussel</option>
+              <option value="Julie Dumont">Julie Dumont</option>
+              <option value="Pierre Tessier">Pierre Tessier</option>
+              <option value="Camille Faure">Camille Faure</option>
+              <option value="Thomas Berger">Thomas Berger</option>
+              <option value="new">+ Nouveau client</option>
+            </select>
+          </div>
+
+          <div id="new-client-block" class="new-client-block" style="display:none;">
+            <div class="field-group" style="margin-bottom:14px;">
+              <label for="new-name">Nom complet</label>
+              <input type="text" id="new-name" class="field-input" placeholder="Prénom Nom">
+            </div>
+            <div class="field-row">
+              <div class="field-group" style="margin-bottom:0;">
+                <label for="new-email">Email</label>
+                <input type="email" id="new-email" class="field-input" placeholder="email@exemple.fr">
+              </div>
+              <div class="field-group" style="margin-bottom:0;">
+                <label for="new-phone">Téléphone</label>
+                <input type="tel" id="new-phone" class="field-input" placeholder="06 00 00 00 00">
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- SERVICE -->
+          <div class="field-group">
+            <label for="service">Service</label>
+            <select id="service" class="field-input">
+              <option value="" data-rate="0">— Sélectionnez un service —</option>
+              <option value="Ménage standard" data-rate="25">Ménage standard — 25 €/h</option>
+              <option value="Repassage" data-rate="20">Repassage — 20 €/h</option>
+              <option value="Nettoyage de vitres" data-rate="30">Nettoyage de vitres — 30 €/h</option>
+              <option value="Nettoyage fin de bail" data-rate="35">Nettoyage fin de bail — 35 €/h</option>
+            </select>
+          </div>
+
+          <!-- HEURES + TOTAL -->
+          <div class="qty-total-row">
+            <div class="field-group" style="margin-bottom:0;">
+              <label for="hours">Nombre d'heures</label>
+              <input type="number" id="hours" class="field-input" min="0.5" step="0.5" placeholder="Ex. 2">
+            </div>
+            <div class="total-box">
+              <span class="total-label">Total estimé</span>
+              <span class="total-amount" id="total">— €</span>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- DATE -->
+          <div class="field-group">
+            <label for="date">Date d'intervention souhaitée</label>
+            <input type="date" id="date" class="field-input">
+          </div>
+
+          <!-- NOTES -->
+          <div class="field-group">
+            <label for="notes">Notes <span class="opt">(optionnel)</span></label>
+            <textarea id="notes" class="field-input" placeholder="Précisions sur l'intervention, accès, matériel…"></textarea>
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="form-actions">
+            <a href="devis.html" class="btn-cancel">Annuler</a>
+            <button class="btn-send" onclick="sendDevis()">Envoyer le devis →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIRMATION -->
+      <div id="confirm-state" style="display:none;">
+        <div class="card confirm-wrap">
+          <h2>Devis envoyé.</h2>
+          <p class="sub">Un email a été transmis automatiquement au client.</p>
+          <div class="ticket">
+            <div class="ticket-head">
+              <span class="tnum">#0125</span>
+              <span class="tlabel">Devis envoyé</span>
+            </div>
+            <div class="ticket-row"><span>Client</span><b id="conf-client">—</b></div>
+            <div class="ticket-row"><span>Service</span><b id="conf-service">—</b></div>
+            <div class="ticket-row"><span>Montant</span><b id="conf-amount">—</b></div>
+            <div class="ticket-row"><span>Date souhaitée</span><b id="conf-date">—</b></div>
+            <div class="stamp">ENVOYÉ</div>
+          </div>
+          <a href="devis.html" class="btn-back">← Retour aux devis</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  try {
+    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    if (_ent && _ent.nom) {
+      const _f = document.querySelector('.sidebar-footer');
+      if (_f) _f.childNodes[0].textContent = _ent.nom;
+    }
+  } catch(e) {}
+
+  const clientSel = document.getElementById('client');
+  const serviceSel = document.getElementById('service');
+  const hoursInp  = document.getElementById('hours');
+  const totalEl   = document.getElementById('total');
+  const newBlock  = document.getElementById('new-client-block');
+
+  clientSel.addEventListener('change', () => {
+    newBlock.style.display = clientSel.value === 'new' ? 'block' : 'none';
+  });
+
+  function calcTotal() {
+    const rate  = parseFloat(serviceSel.options[serviceSel.selectedIndex].dataset.rate) || 0;
+    const hours = parseFloat(hoursInp.value) || 0;
+    totalEl.textContent = (rate && hours) ? (rate * hours) + ' €' : '— €';
+  }
+
+  serviceSel.addEventListener('change', calcTotal);
+  hoursInp.addEventListener('input', calcTotal);
+
+  function clientName() {
+    if (clientSel.value === 'new') {
+      return document.getElementById('new-name').value.trim() || 'Nouveau client';
+    }
+    return clientSel.value;
+  }
+
+  function formatDate(val) {
+    if (!val) return '—';
+    const [y, m, d] = val.split('-');
+    const MOIS = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    return `${parseInt(d)} ${MOIS[parseInt(m)-1]} ${y}`;
+  }
+
+  function sendDevis() {
+    if (!clientSel.value) {
+      clientSel.focus();
+      clientSel.style.borderColor = 'var(--emerald)';
+      return;
+    }
+    if (!serviceSel.value) {
+      serviceSel.focus();
+      serviceSel.style.borderColor = 'var(--emerald)';
+      return;
+    }
+
+    const rate   = parseFloat(serviceSel.options[serviceSel.selectedIndex].dataset.rate) || 0;
+    const hours  = parseFloat(hoursInp.value) || 0;
+    const amount = (rate && hours) ? (rate * hours) + ' €' : '—';
+
+    document.getElementById('conf-client').textContent  = clientName();
+    document.getElementById('conf-service').textContent = serviceSel.value;
+    document.getElementById('conf-amount').textContent  = amount;
+    document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);
+
+    document.getElementById('form-state').style.display    = 'none';
+    document.getElementById('confirm-state').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    userMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+
+</body>
+</html>

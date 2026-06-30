@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seba — L'écosystème des entreprises de terrain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js" defer></script>
+<style>
+/* ══════════════════════════════════════════════════════════
+ * SEBA — Design System v3  (Juin 2026)
+ * Palette encre / émeraude cyber / prune-obsidienne
+ * ══════════════════════════════════════════════════════════ */
+:root {
+  --ink:         #08090B;
+  --emerald:     #00F5A0;
+  --plum:        #1D1225;
+  --bg:          #08090B;
+  --white:       #FFFFFF;
+  --text-2:      #94A3B8;
+  --border:      rgba(255,255,255,0.03);
+  --ink-surface: #0D0F12;
+  --ink-border:  rgba(255,255,255,0.05);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--ink);
+  color:var(--white);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1140px;margin:0 auto;padding:0 40px;}
+:focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
+
+/* Cursor glow */
+#cursor-glow{
+  position:fixed;pointer-events:none;z-index:0;
+  width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,245,160,0.07) 0%,transparent 70%);
+  filter:blur(40px);
+  transform:translate(-50%,-50%);
+  transition:opacity .4s;
+  opacity:0;
+}
+
+/* Section label */
+.section-label{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(0,245,160,0.7);margin-bottom:18px;
+}
+.section-label::before{content:'';display:block;width:22px;height:1px;background:var(--emerald);flex-shrink:0;}
+
+/* État initial GSAP */
+.hero-eyebrow,.hero h1,.hero-lede,.hero-ctas,.hero-visual{opacity:0;}
+@media(prefers-reduced-motion:reduce){
+  .hero-eyebrow,.hero h1,.hero-lede,.hero-ctas,.hero-visual{opacity:1!important;}
+}
+
+/* ──────────────────────── NAV ──────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(8,9,11,0.78);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--ink-border);
+}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;}
+.nav-logo{
+  font-weight:800;font-size:1.15rem;letter-spacing:-.03em;color:var(--white);
+  display:flex;align-items:center;gap:2px;
+}
+.nav-logo-dot{color:var(--emerald);}
+.nav-links{display:flex;gap:36px;}
+.nav-links a{
+  font-size:.875rem;font-weight:500;color:var(--text-2);
+  transition:color .2s ease;
+}
+.nav-links a:hover{color:var(--white);}
+.nav-cta{
+  font-size:.875rem;font-weight:600;color:var(--white);
+  border:1px solid rgba(255,255,255,0.15);border-radius:7px;
+  padding:.6rem 1.2rem;
+  transition:border-color .2s ease,background .2s ease;
+}
+.nav-cta:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.04);}
+
+/* ──────────────────────── HERO ─────────────────────────── */
+.hero{
+  background:var(--ink);
+  padding:168px 0 0;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-200px;right:-150px;
+  width:700px;height:700px;pointer-events:none;
+  background:radial-gradient(circle,rgba(0,245,160,0.06) 0%,transparent 65%);
+}
+.hero::after{
+  content:'';position:absolute;bottom:60px;left:-120px;
+  width:500px;height:500px;pointer-events:none;
+  background:radial-gradient(circle,rgba(29,18,37,0.55) 0%,transparent 65%);
+}
+.hero-noise{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.45;
+}
+.hero-content{
+  position:relative;z-index:2;
+  text-align:center;max-width:760px;margin:0 auto;padding:0 32px;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(0,245,160,0.05);border:1px solid rgba(0,245,160,0.15);
+  border-radius:100px;padding:6px 16px;
+  font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--emerald);margin-bottom:30px;
+}
+.hero-eyebrow .e-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--emerald);box-shadow:0 0 8px rgba(0,245,160,.7);flex-shrink:0;
+}
+.hero h1{
+  font-size:clamp(2.6rem,5.5vw,4.2rem);font-weight:800;
+  line-height:1.06;letter-spacing:-.035em;color:var(--white);margin-bottom:24px;
+}
+.hero h1 span{
+  display:block;font-weight:800;
+  letter-spacing:-.045em;line-height:1.04;
+}
+.hero-lede{
+  font-size:1.08rem;line-height:1.7;color:var(--text-2);
+  max-width:520px;margin:0 auto 40px;
+}
+.hero-ctas{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:80px;
+}
+
+/* Boutons */
+.btn-primary{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--emerald);color:#08090B;
+  padding:14px 28px;border-radius:8px;
+  font-weight:700;font-size:.95rem;border:none;cursor:pointer;
+  transition:box-shadow .25s ease,transform .3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.btn-primary:hover{
+  box-shadow:0 8px 28px rgba(0,245,160,0.28);
+  transform:translateY(-1px);
+}
+.btn-primary:active{transform:scale(0.97);}
+.btn-primary .arrow{
+  display:inline-block;
+  transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.btn-primary:hover .arrow{transform:translateX(3px);}
+
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:10px;
+  background:transparent;color:rgba(255,255,255,.7);
+  padding:13px 24px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);
+  font-weight:500;font-size:.95rem;cursor:pointer;
+  transition:border-color .2s ease,color .2s ease,transform .3s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;overflow:hidden;
+}
+.btn-ghost::after{
+  content:'';position:absolute;bottom:0;left:0;
+  width:0;height:1px;background:var(--emerald);
+  transition:width .3s ease;
+}
+.btn-ghost:hover{border-color:rgba(255,255,255,.2);color:var(--white);}
+.btn-ghost:hover::after{width:100%;}
+.btn-ghost:active{transform:scale(0.97);}
+
+/* ─── Hero visual ────────────────────────────────────────── */
+#particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;pointer-events:none;z-index:1;}
+
+.hero-visual{
+  position:relative;z-index:2;
+  max-width:900px;margin:0 auto;
+  background:rgba(13,15,18,0.72);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.05);
+  border-bottom:none;border-radius:16px 16px 0 0;
+  box-shadow:0 -32px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.02);
+  overflow:hidden;
+}
+.app-chrome{
+  display:flex;align-items:center;gap:6px;padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  background:rgba(255,255,255,.015);
+}
+.chrome-dot{width:10px;height:10px;border-radius:50%;}
+.chrome-dot.r{background:#FF5F57;}.chrome-dot.y{background:#FFBD2E;}.chrome-dot.g{background:#28C940;}
+.chrome-title{flex:1;text-align:center;font-size:.68rem;color:rgba(255,255,255,.18);letter-spacing:.05em;}
+.app-metrics{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:rgba(255,255,255,.04);
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.app-metric{background:#0A0C0F;padding:14px 20px;}
+.app-metric .m-label{font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:5px;}
+.app-metric .m-value{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-.02em;}
+.app-metric .m-change{font-size:.68rem;color:var(--emerald);font-weight:600;margin-top:2px;}
+.app-body{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.04);}
+.app-panel{background:#0A0C0F;padding:20px;}
+.app-panel-label{font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:14px;}
+
+/* Demo scenes */
+.demo-container{position:relative;min-height:210px;}
+.demo-scene{position:absolute;top:0;left:0;right:0;opacity:0;transition:opacity .35s ease;pointer-events:none;}
+.demo-scene.active{opacity:1;pointer-events:auto;}
+
+/* Ticket */
+.ticket{background:#0F1115;border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:18px 20px;position:relative;}
+.ticket-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed rgba(255,255,255,.06);padding-bottom:12px;margin-bottom:14px;}
+.ticket-head .tnum{font-size:.68rem;color:rgba(255,255,255,.22);font-weight:500;letter-spacing:.04em;}
+.ticket-head .tlabel{font-size:.88rem;font-weight:700;color:var(--white);}
+.ticket-row{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;color:rgba(255,255,255,.3);}
+.ticket-row b{color:rgba(255,255,255,.78);font-weight:500;}
+.typed{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid var(--emerald);}
+.stamp{position:absolute;right:14px;bottom:12px;font-weight:800;font-size:.85rem;color:var(--emerald);border:2px solid var(--emerald);padding:3px 10px;border-radius:4px;letter-spacing:.08em;transform:rotate(-8deg) scale(0);animation:stampIn .4s 2.6s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes stampIn{to{transform:rotate(-8deg) scale(1);}}
+@media(prefers-reduced-motion:reduce){
+  .stamp{animation:none;transform:rotate(-8deg) scale(1);}
+  .typed{border-right:none;white-space:normal;}
+}
+
+/* Scène 2 */
+.demo-devis-table{display:flex;flex-direction:column;gap:7px;}
+.demo-devis-row{display:flex;align-items:center;gap:10px;font-size:.78rem;padding:8px 10px;background:rgba(255,255,255,.02);border-radius:5px;border:1px solid rgba(255,255,255,.04);}
+.demo-devis-row.hl{border-color:rgba(0,245,160,.2);background:rgba(0,245,160,.03);}
+.ddr-ref{color:rgba(255,255,255,.18);font-size:.67rem;width:36px;flex-shrink:0;}
+.ddr-client{flex:1;color:rgba(255,255,255,.6);font-weight:500;}
+.ddr-badge{font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);}
+.ddr-badge.signed{background:rgba(0,245,160,.12);color:var(--emerald);}
+.ddr-badge.paid{background:rgba(0,245,160,.08);color:rgba(0,245,160,.65);}
+.demo-sign-notif{display:flex;align-items:center;gap:9px;margin-top:12px;padding:9px 12px;border-radius:6px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.15);font-size:.78rem;color:var(--emerald);font-weight:600;opacity:0;transition:opacity .4s ease;}
+.dsn-check{width:16px;height:16px;border-radius:50%;background:var(--emerald);color:#08090B;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900;flex-shrink:0;}
+
+/* Scène 3 */
+.demo-intel-card{background:rgba(0,245,160,.04);border:1px solid rgba(0,245,160,.12);border-radius:8px;padding:16px;}
+.dic-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.dic-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 7px rgba(0,245,160,.5);flex-shrink:0;}
+.dic-head span{font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);}
+.dic-body{font-size:.84rem;color:rgba(255,255,255,.55);line-height:1.55;margin-bottom:14px;}
+.dic-actions{display:flex;gap:8px;}
+.dic-btn{background:var(--emerald);color:#08090B;border:none;padding:7px 14px;border-radius:5px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+.dic-ghost{background:transparent;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);padding:7px 12px;border-radius:5px;font-size:.75rem;cursor:pointer;font-family:'Inter',sans-serif;}
+
+/* Timeline */
+.app-panel.timeline-panel{background:#09090C;border-left:1px solid rgba(255,255,255,.04);}
+.tl-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.tl-time{font-size:.68rem;color:rgba(255,255,255,.22);font-weight:600;width:36px;flex-shrink:0;padding-top:1px;}
+.tl-track{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.08);margin-top:3px;}
+.tl-dot.done{background:var(--emerald);}
+.tl-dot.now{background:var(--emerald);box-shadow:0 0 0 3px rgba(0,245,160,.15);}
+.tl-line{width:1px;height:20px;background:rgba(255,255,255,.06);margin:2px 0;}
+.tl-info{flex:1;}
+.tl-name{font-size:.82rem;color:rgba(255,255,255,.68);font-weight:600;}
+.tl-sub{font-size:.68rem;color:rgba(255,255,255,.25);margin-top:1px;}
+
+/* ──────────────────────── SECTIONS COMMUNES ─────────────── */
+.section{padding:140px 0;}
+.section-head{max-width:620px;margin-bottom:60px;}
+.section-head h2{
+  font-size:clamp(1.9rem,3.5vw,2.8rem);font-weight:800;
+  line-height:1.1;letter-spacing:-.03em;color:var(--white);margin-bottom:14px;
+}
+.section-head p{font-size:1rem;color:var(--text-2);line-height:1.7;max-width:480px;}
+.section-more{
+  display:inline-flex;align-items:center;gap:6px;margin-top:28px;
+  font-size:.88rem;font-weight:600;color:var(--emerald);
+  transition:opacity .2s;
+}
+.section-more:hover{opacity:.7;}
+
+/* ──────────────────────── BENTO GRID ──────────────────────── */
+.bento-card{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.025);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:22px;padding:32px 30px;
+  transition:border-color .3s ease;
+}
+.bento-card:hover{border-color:rgba(0,245,160,.2);}
+.bento-halo{
+  position:absolute;pointer-events:none;border-radius:50%;
+  width:240px;height:240px;top:-70px;right:-70px;
+  background:radial-gradient(circle,rgba(0,245,160,.1) 0%,transparent 70%);
+}
+.bento-halo.h-pl{background:radial-gradient(circle,rgba(29,18,37,.9) 0%,transparent 70%);}
+.bento-halo.h-br{top:auto;bottom:-60px;left:-60px;right:auto;}
+.bento-num{font-size:.6rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--emerald);margin-bottom:16px;display:block;}
+.bento-card h3{font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:10px;letter-spacing:-.01em;}
+.bento-card p{font-size:.9rem;color:var(--text-2);line-height:1.68;}
+
+/* ──────────────────────── SECTION PROBLEM ──────────────────── */
+.section-problem{background:var(--ink);}
+.problem-grid{
+  display:grid;
+  grid-template-columns:6fr 4fr;
+  grid-template-rows:auto auto;
+  gap:14px;
+}
+.pc-01{grid-column:1;grid-row:1;}
+.pc-02{grid-column:2;grid-row:1;}
+.pc-03{grid-column:1;grid-row:2;}
+.pc-04{grid-column:2;grid-row:2;}
+/* Swap columns on row 2 via order */
+.problem-grid .pc-03{grid-column:1;}
+.problem-grid .pc-04{grid-column:2;}
+
+/* Override widths for row 2 (40/60 → swap) */
+.problem-grid{
+  grid-template-columns: 6fr 4fr;
+}
+/* row 2: 40% left, 60% right — we reassign columns */
+.pc-03,.pc-04{grid-row:2;}
+.pc-03{grid-column:1;} /* will be 6fr = 60% in row 2? no — let me use named areas */
+
+/* Use subgrid approach: separate col definition per row not possible, use single 10-col grid */
+.problem-grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:14px;
+}
+.pc-01{grid-column:1/7;}  /* 60% */
+.pc-02{grid-column:7/11;} /* 40% */
+.pc-03{grid-column:1/5;}  /* 40% */
+.pc-04{grid-column:5/11;} /* 60% */
+
+/* ──────────────────────── SECTION SOLUTION / MÉTRIQUES ─────── */
+.section-solution{background:#060708;}
+.metrics-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+}
+.metric-block{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:22px;padding:36px 30px;
+  transition:border-color .3s ease;
+}
+.metric-block:hover{border-color:rgba(0,245,160,.2);}
+.m-big{
+  font-size:68px;font-weight:900;color:var(--emerald);
+  line-height:1;letter-spacing:-.04em;margin-bottom:14px;
+  display:flex;align-items:baseline;gap:4px;
+}
+.m-big .m-unit{font-size:34px;font-weight:700;color:rgba(0,245,160,.45);}
+.m-title{font-size:.92rem;font-weight:700;color:var(--white);margin-bottom:8px;}
+.m-desc{font-size:.84rem;color:var(--text-2);line-height:1.65;}
+
+/* ──────────────────────── SECTION MÉTIERS ──────────────────── */
+.section-metiers{background:#060708;}
+.metier-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.metier-card{
+  background:var(--ink-surface);
+  border:1px solid rgba(255,255,255,.04);
+  border-left:2px solid rgba(255,255,255,.04);
+  border-radius:12px;padding:22px 18px;
+  transition:border-left-color .25s ease,box-shadow .25s ease;
+}
+.metier-card:hover{
+  border-left-color:var(--emerald);
+  box-shadow:0 4px 24px rgba(0,245,160,.06);
+}
+.metier-card .sector-tag{
+  font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(0,245,160,.6);margin-bottom:10px;display:block;
+}
+.metier-card p{font-size:.84rem;color:var(--text-2);line-height:1.6;}
+
+/* ──────────────────────── SECTION INTELLIGENCE ─────────────── */
+.section-intel{background:var(--ink);}
+.intel-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:rgba(255,255,255,.04);
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.04);
+}
+.intel-card{background:var(--ink-surface);padding:28px 26px;}
+.intel-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.intel-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px rgba(0,245,160,.5);flex-shrink:0;}
+.intel-cat{font-size:.63rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);}
+.intel-card p{font-size:.88rem;color:var(--text-2);line-height:1.65;}
+
+/* ──────────────────────── SECTION PORTAIL ──────────────────── */
+.section-portail{background:#060708;}
+.portail-split{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-radius:16px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.05);
+}
+.portail-dark{background:rgba(255,255,255,.02);padding:44px 42px;}
+.portail-light{background:rgba(255,255,255,.04);padding:44px 42px;border-left:1px solid rgba(255,255,255,.05);}
+.portail-tag{font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:18px;color:rgba(255,255,255,.3);}
+.portail-dark h3,.portail-light h3{color:var(--white);font-size:1.3rem;font-weight:700;margin-bottom:10px;}
+.portail-dark p,.portail-light p{color:var(--text-2);font-size:.9rem;margin-bottom:22px;line-height:1.65;}
+.portail-list{list-style:none;}
+.portail-list li{display:flex;align-items:baseline;gap:10px;font-size:.87rem;color:var(--text-2);padding:6px 0;}
+.portail-list li::before{
+  content:'';display:inline-block;width:14px;height:14px;flex-shrink:0;margin-top:2px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='7' cy='7' r='7' fill='%2300F5A0'/%3E%3Cpath d='M4 7l2 2 4-4' stroke='%2308090B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size:contain;background-repeat:no-repeat;
+}
+
+/* ──────────────────────── SECTION CONFIANCE ────────────────── */
+.section-confiance{background:var(--ink);}
+.trust-panels{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:rgba(255,255,255,.04);
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.04);
+}
+.trust-panel{background:var(--ink-surface);padding:32px 28px;}
+.trust-panel:hover{background:#0F1115;}
+.trust-label{font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:14px;display:block;}
+.trust-panel h4{font-size:1rem;font-weight:700;color:var(--white);margin-bottom:8px;letter-spacing:-.01em;}
+.trust-panel p{font-size:.83rem;color:var(--text-2);line-height:1.6;}
+
+/* ──────────────────────── SECTION CTA ─────────────────────── */
+.section-cta{background:var(--ink);}
+.cta-inner{text-align:center;max-width:600px;margin:0 auto;}
+.cta-inner h2{
+  font-size:clamp(1.8rem,3.8vw,2.8rem);font-weight:800;
+  letter-spacing:-.035em;color:var(--white);margin-bottom:16px;line-height:1.1;
+}
+.cta-inner p{color:var(--text-2);font-size:1rem;margin-bottom:40px;}
+.btn-cta{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--emerald);color:#08090B;
+  padding:17px 36px;border-radius:9px;
+  font-weight:700;font-size:1.05rem;
+  transition:box-shadow .25s ease,transform .3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.btn-cta:hover{box-shadow:0 12px 36px rgba(0,245,160,.3);transform:translateY(-2px);}
+.btn-cta:active{transform:scale(0.97);}
+.btn-cta .arrow{display:inline-block;transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);}
+.btn-cta:hover .arrow{transform:translateX(4px);}
+
+/* ──────────────────────── FOOTER ───────────────────────────── */
+footer{
+  background:var(--ink-surface);
+  border-top:1px solid rgba(255,255,255,.04);
+  padding:28px 0;
+}
+footer .wrap{
+  display:flex;justify-content:space-between;align-items:center;
+  color:rgba(255,255,255,.25);font-size:.82rem;
+}
+.footer-logo{font-weight:800;font-size:1.05rem;color:var(--white);letter-spacing:-.03em;}
+.footer-logo span{color:var(--emerald);}
+
+/* ──────────────────────── RESPONSIVE ───────────────────────── */
+@media(max-width:1000px){
+  .metrics-grid{grid-template-columns:repeat(2,1fr);}
+  .problem-grid{grid-template-columns:1fr!important;}
+  .pc-01,.pc-02,.pc-03,.pc-04{grid-column:1!important;}
+  .portail-split{grid-template-columns:1fr;}
+  .portail-light{border-left:none;border-top:1px solid rgba(255,255,255,.05);}
+  .trust-panels{grid-template-columns:repeat(2,1fr);}
+  .metier-grid{grid-template-columns:repeat(2,1fr);}
+  .intel-grid{grid-template-columns:repeat(2,1fr);}
+  .app-body{grid-template-columns:1fr;}
+  .timeline-panel{display:none;}
+}
+@media(max-width:680px){
+  .wrap{padding:0 22px;}
+  .section{padding:100px 0;}
+  .hero{padding:130px 0 0;}
+  .hero-content{padding:0 20px;}
+  .nav-links{display:none;}
+  .metrics-grid{grid-template-columns:1fr;}
+  .metier-grid{grid-template-columns:1fr;}
+  .intel-grid{grid-template-columns:1fr;}
+  .trust-panels{grid-template-columns:1fr;}
+  .app-metrics{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor-glow" aria-hidden="true"></div>
+
+<!-- ══════════ NAV ══════════ -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="nav-logo">seba<span class="nav-logo-dot">.</span></a>
+    <div class="nav-links">
+      <a href="probleme.html">Industries</a>
+      <a href="solution.html">Automations</a>
+      <a href="confiance.html">Confiance</a>
+    </div>
+    <a href="onboarding.html" class="nav-cta">Commencer →</a>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow"><span class="e-dot"></span>Pour les entreprises de terrain</div>
+    <h1>Toute votre entreprise.<br><span>Enfin réunie.</span></h1>
+    <p class="hero-lede">Seba centralise vos clients, devis, factures, plannings et paiements. Pensé exclusivement pour la performance des entreprises de terrain.</p>
+    <div class="hero-ctas">
+      <a href="onboarding.html" class="btn-primary">Créer mon espace <span class="arrow">→</span></a>
+      <a href="solution.html" class="btn-ghost">Voir comment ça marche</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero-visual">
+      <div class="app-chrome">
+        <div class="chrome-dot r"></div><div class="chrome-dot y"></div><div class="chrome-dot g"></div>
+        <span class="chrome-title">seba.app — Tableau de bord</span>
+      </div>
+      <div class="app-metrics">
+        <div class="app-metric"><div class="m-label">Clients actifs</div><div class="m-value">28</div><div class="m-change">↑ 4 ce mois</div></div>
+        <div class="app-metric"><div class="m-label">Devis en attente</div><div class="m-value">5</div><div class="m-change">1 à relancer</div></div>
+        <div class="app-metric"><div class="m-label">CA mensuel</div><div class="m-value">4 260 €</div><div class="m-change">↑ +14 % vs juin</div></div>
+      </div>
+      <div class="app-body">
+        <div class="app-panel">
+          <div class="app-panel-label" id="demo-scene-label">Nouvelle mission</div>
+          <div class="demo-container">
+            <!-- Scène 1 : ticket de mission ménage -->
+            <div class="demo-scene active" id="demo-s1">
+              <div class="ticket" role="img" aria-label="Bon de mission qui se remplit automatiquement">
+                <div class="ticket-head">
+                  <span class="tnum">FICHE #0427</span>
+                  <span class="tlabel">Nouvelle mission</span>
+                </div>
+                <div class="ticket-row"><span>Client</span><b class="typed" id="t1"></b></div>
+                <div class="ticket-row"><span>Service</span><b id="t2" style="opacity:0">Ménage — appartement T3</b></div>
+                <div class="ticket-row"><span>Créneau</span><b id="t3" style="opacity:0">Jeu. 14h00 — 16h30</b></div>
+                <div class="ticket-row"><span>Devis</span><b id="t4" style="opacity:0">Envoyé · signé</b></div>
+                <div class="ticket-row"><span>Facture</span><b id="t5" style="opacity:0">Générée automatiquement</b></div>
+                <div class="stamp">CONFIRMÉ</div>
+              </div>
+            </div>
+            <!-- Scène 2 : devis conciergerie signé -->
+            <div class="demo-scene" id="demo-s2">
+              <div class="demo-devis-table">
+                <div class="demo-devis-row">
+                  <span class="ddr-ref">#0123</span>
+                  <span class="ddr-client">Résid. Les Pins</span>
+                  <span class="ddr-badge paid">Signé</span>
+                </div>
+                <div class="demo-devis-row hl">
+                  <span class="ddr-ref">#0124</span>
+                  <span class="ddr-client">M. Roussel</span>
+                  <span class="ddr-badge" id="demo-sign-badge">En attente</span>
+                </div>
+                <div class="demo-devis-row">
+                  <span class="ddr-ref">#0125</span>
+                  <span class="ddr-client">Appt. Voltaire</span>
+                  <span class="ddr-badge">En attente</span>
+                </div>
+                <div class="demo-sign-notif" id="demo-sign-notif">
+                  <div class="dsn-check">✓</div>
+                  M. Roussel vient de signer son devis
+                </div>
+              </div>
+            </div>
+            <!-- Scène 3 : suggestion maintenance -->
+            <div class="demo-scene" id="demo-s3">
+              <div class="demo-intel-card">
+                <div class="dic-head"><div class="dic-dot"></div><span>Suggestion Seba</span></div>
+                <div class="dic-body">Créneau libre <strong style="color:rgba(255,255,255,.8)">jeudi 14h00</strong> — proposer à M. Tessier pour son entretien mensuel de chaudière ?</div>
+                <div class="dic-actions">
+                  <button class="dic-btn">Envoyer la proposition</button>
+                  <button class="dic-ghost">Plus tard</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app-panel timeline-panel">
+          <div class="app-panel-label">Aujourd'hui</div>
+          <div class="tl-item"><div class="tl-time">8:30</div><div class="tl-track"><div class="tl-dot done"></div><div class="tl-line"></div></div><div class="tl-info"><div class="tl-name">Mme Dupont</div><div class="tl-sub">Ménage · Terminé</div></div></div>
+          <div class="tl-item"><div class="tl-time">11:00</div><div class="tl-track"><div class="tl-dot done"></div><div class="tl-line"></div></div><div class="tl-info"><div class="tl-name">Résid. Les Pins</div><div class="tl-sub">Conciergerie · Facturé</div></div></div>
+          <div class="tl-item"><div class="tl-time">14:00</div><div class="tl-track"><div class="tl-dot now"></div><div class="tl-line"></div></div><div class="tl-info"><div class="tl-name">Mme Fontaine</div><div class="tl-sub">Ménage · En cours</div></div></div>
+          <div class="tl-item"><div class="tl-time">16:30</div><div class="tl-track"><div class="tl-dot"></div></div><div class="tl-info"><div class="tl-name">M. Tessier</div><div class="tl-sub">Maintenance · À venir</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PROBLÈME ══════════ -->
+<section class="section section-problem" id="probleme">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">Le constat</span>
+      <h2>Une entreprise, dix outils,<br>zéro vue d'ensemble.</h2>
+      <p>Le problème n'est pas votre savoir-faire. C'est la dispersion de votre attention entre des systèmes qui ne se parlent pas.</p>
+    </div>
+    <div class="problem-grid">
+
+      <div class="bento-card pc-01">
+        <div class="bento-halo"></div>
+        <span class="bento-num">Friction 01</span>
+        <h3>Le gouffre de la re-saisie</h3>
+        <p>Vous créez un devis sur un outil, tapez la facture sur un autre, et recopiez les données sur un troisième. Chaque transfert est une source d'erreur et un vol de temps que vous ne récupérerez jamais.</p>
+      </div>
+
+      <div class="bento-card pc-02">
+        <div class="bento-halo h-pl"></div>
+        <span class="bento-num">Friction 02</span>
+        <h3>Le chaos des boucles</h3>
+        <p>Vos clients, vos équipes et vos consignes urgentes s'éparpillent dans des dizaines de conversations WhatsApp éphémères et d'e-mails sans suite.</p>
+      </div>
+
+      <div class="bento-card pc-03">
+        <div class="bento-halo h-br"></div>
+        <span class="bento-num">Friction 03</span>
+        <h3>Synchronisation brisée</h3>
+        <p>Google Calendar ne sait rien de votre comptabilité. Vos équipes partent sur le terrain sans savoir si les acomptes ont été encaissés.</p>
+      </div>
+
+      <div class="bento-card pc-04">
+        <div class="bento-halo"></div>
+        <span class="bento-num">Friction 04</span>
+        <h3>La chasse aux impayés</h3>
+        <p>Sans relances automatisées, vous passez vos soirées à réclamer de l'argent. Chaque impayé silencieux ronge votre trésorerie et votre énergie.</p>
+      </div>
+
+    </div>
+    <a href="probleme.html" class="section-more">Comprendre le problème en profondeur →</a>
+  </div>
+</section>
+
+<!-- ══════════ MÉTRIQUES ══════════ -->
+<section class="section section-solution" id="solution">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">La vitesse Seba</span>
+      <h2>Chaque action prend<br>moins d'une minute.</h2>
+      <p>Seba ne simplifie pas votre travail. Il l'automatise, à la seconde près.</p>
+    </div>
+    <div class="metrics-grid">
+
+      <div class="metric-block">
+        <div class="m-big">30<span class="m-unit">s</span></div>
+        <div class="m-title">Créer un devis</div>
+        <p class="m-desc">Un client arrive, un créneau se profile : votre devis est généré depuis vos tarifs et envoyé par lien en trente secondes.</p>
+      </div>
+
+      <div class="metric-block">
+        <div class="m-big">15<span class="m-unit">s</span></div>
+        <div class="m-title">Ajouter un client</div>
+        <p class="m-desc">Scannez une carte, collez un contact. Seba crée la fiche complète avec historique et notes en quinze secondes chrono.</p>
+      </div>
+
+      <div class="metric-block">
+        <div class="m-big">20<span class="m-unit">s</span></div>
+        <div class="m-title">Planifier une mission</div>
+        <p class="m-desc">Du devis signé à l'équipe briefée sur mobile : la mission apparaît dans le planning de chaque intervenant en vingt secondes.</p>
+      </div>
+
+      <div class="metric-block">
+        <div class="m-big">10<span class="m-unit">s</span></div>
+        <div class="m-title">Générer une facture</div>
+        <p class="m-desc">L'intervention est terminée. La facture sort automatiquement depuis le bon de mission signé en dix secondes, prête à encaisser.</p>
+      </div>
+
+    </div>
+    <a href="solution.html" class="section-more">Voir l'architecture complète →</a>
+  </div>
+</section>
+
+<!-- ══════════ MÉTIERS ══════════ -->
+<section class="section section-metiers" id="metiers">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">Adapté à chaque métier</span>
+      <h2>Un moteur, plusieurs réalités.</h2>
+    </div>
+    <div class="metier-grid">
+      <div class="metier-card"><span class="sector-tag">Ménage</span><p>Fréquence, surface, codes d'accès et consignes clients — votre fiche est configurée pour votre quotidien.</p></div>
+      <div class="metier-card"><span class="sector-tag">Conciergerie</span><p>Check-in, check-out, linge, rapport propriétaire — chaque séjour suivi de l'arrivée au paiement.</p></div>
+      <div class="metier-card"><span class="sector-tag">Jardinage</span><p>Contrats saisonniers, déchets verts et plannings récurrents adaptés au rythme de vos chantiers.</p></div>
+      <div class="metier-card"><span class="sector-tag">Maintenance</span><p>Urgences, devis sur photo, rapport d'intervention — du signalement à la facture en quelques actions.</p></div>
+      <div class="metier-card"><span class="sector-tag">Pressing</span><p>Collecte, traitement, livraison, notification client — chaque commande suivie sans note papier.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ INTELLIGENCE ══════════ -->
+<section class="section section-intel" id="intelligence">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">Intelligence Seba</span>
+      <h2>Seba ne se contente pas<br>de gérer. Il vous conseille.</h2>
+    </div>
+    <div class="intel-grid">
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Relances</span></div><p>Un devis est sans réponse depuis cinq jours ? Seba vous le signale et prépare le message de relance.</p></div>
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Factures</span></div><p>Une intervention est terminée mais pas encore facturée. Seba vous prévient avant que vous l'oubliiez.</p></div>
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Planning</span></div><p>Vous avez un créneau libre mercredi matin. Seba vous suggère de le proposer à un client régulier.</p></div>
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Tarifs</span></div><p>Vos prix n'ont pas évolué depuis un an. Seba vous indique les écarts pour vous aider à décider.</p></div>
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Clients inactifs</span></div><p>Un client n'a pas réservé depuis trois mois. Seba vous l'indique pour que vous gardiez le lien.</p></div>
+      <div class="intel-card"><div class="intel-head"><div class="intel-dot"></div><span class="intel-cat">Abonnements</span></div><p>Un client revient chaque mois. Seba vous suggère de lui proposer un contrat récurrent avantageux.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PORTAIL ══════════ -->
+<section class="section section-portail" id="portail">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">Portail client</span>
+      <h2>Vos clients n'ont pas besoin<br>d'installer une application.</h2>
+    </div>
+    <div class="portail-split">
+      <div class="portail-dark">
+        <span class="portail-tag">Ce que reçoit votre client</span>
+        <h3>Un lien, tout y est</h3>
+        <p>Vous envoyez un lien sécurisé. Votre client l'ouvre depuis n'importe quel appareil, sans créer de compte ni télécharger quoi que ce soit.</p>
+        <ul class="portail-list">
+          <li>Devis à consulter et signer en un clic</li>
+          <li>Paiement en ligne sécurisé</li>
+          <li>Factures et documents à télécharger</li>
+          <li>Historique complet de ses interventions</li>
+        </ul>
+      </div>
+      <div class="portail-light">
+        <span class="portail-tag">Ce que vous gagnez</span>
+        <h3>Moins d'allers-retours, plus de signatures</h3>
+        <p>Chaque client a son espace dédié. Vous savez en temps réel qui a ouvert, signé ou réglé sa facture — sans rien relancer manuellement.</p>
+        <ul class="portail-list">
+          <li>Notification dès qu'un devis est signé</li>
+          <li>Paiement confirmé sans action supplémentaire</li>
+          <li>Zéro impression, zéro courrier, zéro suivi manuel</li>
+          <li>Historique de chaque échange conservé</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CONFIANCE ══════════ -->
+<section class="section section-confiance" id="confiance">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-label">La confiance avant tout</span>
+      <h2>Vos données méritent mieux<br>qu'une feuille Excel.</h2>
+    </div>
+    <div class="trust-panels">
+      <div class="trust-panel"><span class="trust-label">Sauvegarde</span><h4>Automatique</h4><p>Vos données sont sauvegardées en continu, sans aucune action de votre part.</p></div>
+      <div class="trust-panel"><span class="trust-label">Accès</span><h4>Droits par employé</h4><p>Chaque membre de l'équipe accède uniquement à ce dont il a besoin.</p></div>
+      <div class="trust-panel"><span class="trust-label">Traçabilité</span><h4>Historique total</h4><p>Chaque modification est tracée. Vous savez toujours qui a fait quoi et quand.</p></div>
+      <div class="trust-panel"><span class="trust-label">Disponibilité</span><h4>Toujours en ligne</h4><p>Votre espace accessible depuis n'importe quel appareil, 24h/24, 7j/7.</p></div>
+    </div>
+    <a href="confiance.html" class="section-more">En savoir plus sur la sécurité →</a>
+  </div>
+</section>
+
+<!-- ══════════ CTA ══════════ -->
+<section class="section section-cta" id="creer">
+  <div class="wrap">
+    <div class="cta-inner">
+      <h2>Reprenez le contrôle de votre entreprise dès aujourd'hui.</h2>
+      <p>Trois étapes. Moins de cinq minutes. Aucune carte bancaire requise.</p>
+      <a href="onboarding.html" class="btn-cta">Créer mon espace gratuitement <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+  <div class="wrap">
+    <span class="footer-logo">seba<span>.</span></span>
+    <span>© 2026 Seba — Fait pour le terrain.</span>
+  </div>
+</footer>
+
+<canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+<script>
+  /* ── Cursor glow ──────────────────────────────────────────────────────── */
+  (function() {
+    var glow = document.getElementById('cursor-glow');
+    var visible = false;
+    document.addEventListener('mousemove', function(e) {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top  = e.clientY + 'px';
+      if (!visible) { glow.style.opacity = '1'; visible = true; }
+    }, { passive: true });
+    document.addEventListener('mouseleave', function() {
+      glow.style.opacity = '0'; visible = false;
+    });
+  })();
+
+  /* ── Ticket typing animation ──────────────────────────────────────────── */
+  var ticketText = "Mme Fontaine";
+  var t1el = document.getElementById('t1');
+  var ti = 0;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function typeTicket() {
+    if (ti <= ticketText.length) {
+      t1el.textContent = ticketText.slice(0, ti++);
+      setTimeout(typeTicket, 75);
+    } else { t1el.style.borderRight = 'none'; }
+  }
+  if (!reduced) {
+    typeTicket();
+    [['t2',600],['t3',1100],['t4',1700],['t5',2200]].forEach(function(pair) {
+      setTimeout(function() {
+        var n = document.getElementById(pair[0]);
+        n.style.transition = 'opacity .4s';
+        n.style.opacity = '1';
+      }, pair[1]);
+    });
+  } else {
+    t1el.textContent = ticketText;
+    ['t2','t3','t4','t5'].forEach(function(id) { document.getElementById(id).style.opacity = '1'; });
+  }
+
+  /* ── Demo scene loop (4s) ─────────────────────────────────────────────── */
+  var scenes = document.querySelectorAll('.demo-scene');
+  var sceneLabels = ['Nouvelle mission', 'Devis — activité', 'Suggestion Seba'];
+  var labelEl = document.getElementById('demo-scene-label');
+  var curr = 0;
+
+  function goScene(idx) {
+    scenes[curr].classList.remove('active');
+    curr = idx % scenes.length;
+    scenes[curr].classList.add('active');
+    if (labelEl) labelEl.textContent = sceneLabels[curr];
+    if (curr === 1) {
+      var badge = document.getElementById('demo-sign-badge');
+      var notif = document.getElementById('demo-sign-notif');
+      if (badge) { badge.textContent = 'En attente'; badge.classList.remove('signed'); }
+      if (notif) notif.style.opacity = '0';
+      setTimeout(function() {
+        if (curr !== 1) return;
+        if (badge) { badge.textContent = '✓ Signé'; badge.classList.add('signed'); }
+        if (notif) notif.style.opacity = '1';
+      }, 1500);
+    }
+  }
+
+  if (!reduced) {
+    setTimeout(function() {
+      setInterval(function() { goScene(curr + 1); }, 4000);
+    }, 5000);
+  }
+
+  /* ── View Transitions fallback ────────────────────────────────────────── */
+  if (!document.startViewTransition) {
+    document.body.style.opacity = '0';
+    requestAnimationFrame(function() { requestAnimationFrame(function() {
+      document.body.style.transition = 'opacity .22s ease';
+      document.body.style.opacity = '1';
+    }); });
+    document.addEventListener('click', function(e) {
+      var a = e.target.closest('a[href]');
+      if (!a) return;
+      var h = a.getAttribute('href');
+      if (!h || h.startsWith('#') || h.includes('://') || h.startsWith('mailto')) return;
+      e.preventDefault();
+      document.body.style.transition = 'opacity .18s ease';
+      document.body.style.opacity = '0';
+      setTimeout(function() { window.location.href = h; }, 190);
+    });
+  }
+</script>
+<script src="animations-vitrine.js" defer></script>
+</body>
+</html>

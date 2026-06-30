@@ -1,0 +1,262 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réglages — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<style>
+  :root {
+    --ink: #14161A;
+    --emerald: #00C896;
+    --plum: #3D2645;
+    --bg: #FAF9F7;
+    --white: #FFFFFF;
+    --text-2: #6B6A6F;
+    --border: #E8E6E1;
+    --r: 12px;
+    --rs: 8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  button,input{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
+  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
+  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
+  .nav-section{padding:0 14px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+  .nav-item.active{background:rgba(0,200,150,.12);color:var(--emerald);}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
+  .nav-item.active .dot{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+
+  .main{padding:32px 40px;max-width:920px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .topbar h1{font-size:1.5rem;}
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  .settings-layout{display:grid;grid-template-columns:190px 1fr;gap:32px;}
+  .settings-nav{display:flex;flex-direction:column;gap:2px;}
+  .settings-nav-item{padding:10px 14px;border-radius:6px;font-size:0.86rem;color:var(--text-2);cursor:pointer;}
+  .settings-nav-item:hover{background:#fff;}
+  .settings-nav-item.active{background:#fff;color:var(--ink);font-weight:500;border:1px solid var(--border);}
+
+  .panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .panel h3{font-size:1.05rem;margin-bottom:6px;}
+  .panel .desc{font-size:0.84rem;color:var(--text-2);margin-bottom:22px;}
+
+  .field-group{margin-bottom:20px;}
+  .field-group label{display:block;font-size:0.85rem;font-weight:500;margin-bottom:8px;}
+  .field-group input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.92rem;background:var(--bg);}
+  .field-group input:focus{border-color:var(--emerald);outline:none;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+  .color-grid{display:flex;gap:12px;margin-bottom:4px;}
+  .color-swatch{width:38px;height:38px;border-radius:8px;cursor:pointer;border:2px solid transparent;}
+  .color-swatch.active{border-color:var(--ink);transform:scale(1.1);}
+
+  .service-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .service-row:last-child{border-bottom:none;}
+  .service-check{width:20px;height:20px;border:1.5px solid var(--border);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .service-check.checked{background:var(--emerald);border-color:var(--emerald);}
+  .service-check.checked::after{content:"✓";color:#fff;font-size:0.75rem;}
+  .service-name{flex:1;font-size:0.92rem;}
+  .service-price input{width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.85rem;text-align:right;}
+  .price-suffix{font-size:0.78rem;color:var(--text-2);width:50px;}
+  .add-service{font-size:0.84rem;color:var(--emerald);cursor:pointer;margin-top:14px;display:inline-block;}
+
+  .btn-em{background:var(--emerald);color:var(--ink);border:none;padding:11px 22px;border-radius:var(--rs);font-weight:600;font-size:0.88rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+  .btn-danger{background:none;border:1px solid #E0B5AC;color:#B5482F;padding:11px 22px;border-radius:var(--rs);font-weight:500;font-size:0.88rem;cursor:pointer;}
+
+  .danger-zone{border-color:#E0B5AC;}
+  .danger-row{display:flex;justify-content:space-between;align-items:center;}
+  .danger-row .label{font-size:0.9rem;font-weight:500;}
+  .danger-row .sub{font-size:0.8rem;color:var(--text-2);}
+
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .main{padding:24px 20px;}
+    .settings-layout{grid-template-columns:1fr;}
+    .settings-nav{flex-direction:row;overflow-x:auto;}
+    .field-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>Seba</div>
+    <nav class="nav-section">
+      <a href="dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
+      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
+      <a href="planning.html"><div class="nav-item"><span class="dot"></span>Planning</div></a>
+      <a href="devis.html"><div class="nav-item"><span class="dot"></span>Devis</div></a>
+      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
+      <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
+      <div class="nav-item active"><span class="dot"></span>Réglages</div>
+    </nav>
+    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h1>Réglages</h1>
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar-btn">ML</div>
+        <div class="user-menu" id="user-menu">
+          <a href="reglages.html">Mon compte</a>
+          <div class="menu-sep"></div>
+          <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-layout">
+      <div class="settings-nav">
+        <div class="settings-nav-item active" onclick="showTab('general')">Général</div>
+        <div class="settings-nav-item" onclick="showTab('identite')">Identité visuelle</div>
+        <div class="settings-nav-item" onclick="showTab('services')">Services & tarifs</div>
+        <div class="settings-nav-item" onclick="showTab('compte')">Compte</div>
+      </div>
+
+      <div>
+        <div class="panel tab-content" id="tab-general">
+          <h3>Informations générales</h3>
+          <p class="desc">Ces informations apparaissent sur vos devis et factures.</p>
+          <div class="field-group"><label>Nom de l'entreprise</label><input type="text" value="Ménage Express Lyon"></div>
+          <div class="field-row">
+            <div class="field-group"><label>Email professionnel</label><input type="email" value="contact@menageexpress.fr"></div>
+            <div class="field-group"><label>Téléphone</label><input type="text" value="04 78 00 00 00"></div>
+          </div>
+          <div class="field-group"><label>Zone d'intervention</label><input type="text" value="Lyon et agglomération"></div>
+          <button class="btn-em" onclick="alert('Réglages enregistrés (démonstration).')">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-identite" style="display:none;">
+          <h3>Identité visuelle</h3>
+          <p class="desc">Visible par vos clients sur leurs devis, factures et invitations.</p>
+          <div class="field-group">
+            <label>Couleur principale</label>
+            <div class="color-grid">
+              <div class="color-swatch active" style="background:#E2722C"></div>
+              <div class="color-swatch" style="background:#4F6F52"></div>
+              <div class="color-swatch" style="background:#3B5BA9"></div>
+              <div class="color-swatch" style="background:#9C4A8C"></div>
+              <div class="color-swatch" style="background:#15213A"></div>
+            </div>
+          </div>
+          <div class="field-group"><label>Logo</label><input type="file"></div>
+          <button class="btn-em" onclick="alert('Identité visuelle enregistrée (démonstration).')">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-services" style="display:none;">
+          <h3>Services proposés</h3>
+          <p class="desc">Cochez vos services et fixez vos tarifs de départ.</p>
+
+          <div class="service-row">
+            <div class="service-check checked"></div>
+            <div class="service-name">Ménage standard</div>
+            <div class="service-price"><input type="number" value="25"></div>
+            <div class="price-suffix">€/h</div>
+          </div>
+          <div class="service-row">
+            <div class="service-check checked"></div>
+            <div class="service-name">Repassage</div>
+            <div class="service-price"><input type="number" value="20"></div>
+            <div class="price-suffix">€/h</div>
+          </div>
+          <div class="service-row">
+            <div class="service-check checked"></div>
+            <div class="service-name">Nettoyage de vitres</div>
+            <div class="service-price"><input type="number" value="30"></div>
+            <div class="price-suffix">€/h</div>
+          </div>
+          <div class="service-row">
+            <div class="service-check"></div>
+            <div class="service-name">Nettoyage fin de bail</div>
+            <div class="service-price"><input type="number" value="" disabled></div>
+            <div class="price-suffix">€/h</div>
+          </div>
+          <span class="add-service" onclick="alert('Ajouter un service personnalisé.')">+ Ajouter un service personnalisé</span>
+          <br><br>
+          <button class="btn-em" onclick="alert('Services et tarifs enregistrés (démonstration).')">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-compte" style="display:none;">
+          <h3>Compte</h3>
+          <p class="desc">Gestion de votre accès et de votre abonnement Seba.</p>
+          <div class="field-group"><label>Email de connexion</label><input type="email" value="contact@menageexpress.fr"></div>
+          <div class="field-group"><label>Mot de passe</label><input type="password" value="••••••••"></div>
+          <button class="btn-em" onclick="alert('Mot de passe mis à jour (démonstration).')">Mettre à jour</button>
+        </div>
+
+        <div class="panel danger-zone">
+          <div class="danger-row">
+            <div><div class="label">Supprimer mon entreprise</div><div class="sub">Action définitive — toutes les données seront perdues.</div></div>
+            <button class="btn-danger" onclick="alert('Confirmation de suppression à venir.')">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function showTab(name){
+    document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
+    document.getElementById('tab-'+name).style.display='block';
+    document.querySelectorAll('.settings-nav-item').forEach(n=>n.classList.remove('active'));
+    [...document.querySelectorAll('.settings-nav-item')].find(n=>n.getAttribute('onclick').includes(name)).classList.add('active');
+  }
+  document.querySelectorAll('.color-swatch').forEach(sw=>{
+    sw.addEventListener('click',()=>{
+      document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.service-check').forEach(chk=>{
+    chk.addEventListener('click',()=>{
+      chk.classList.toggle('checked');
+      const input = chk.parentElement.querySelector('input');
+      input.disabled = !chk.classList.contains('checked');
+    });
+  });
+
+  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  try {
+    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    if (_ent && _ent.nom) {
+      const _f = document.querySelector('.sidebar-footer');
+      if (_f) _f.childNodes[0].textContent = _ent.nom;
+      const _inp = document.querySelector('#tab-general input[type="text"]');
+      if (_inp) _inp.value = _ent.nom;
+    }
+  } catch(e) {}
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    userMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historique — Seba</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+  <style>
+    :root {
+      --ink: #14161A; --emerald: #00C896; --plum: #3D2645;
+      --bg: #FAF9F7; --white: #FFFFFF; --text-2: #6B6A6F;
+      --border: #E8E6E1; --r: 12px; --rs: 8px; --amber: #F59E0B;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font-family: 'Inter', sans-serif; }
+    :focus-visible { outline: 2px solid var(--emerald); outline-offset: 3px; }
+
+    .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { background: var(--ink); color: var(--white); padding: 24px 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .logo { font-weight: 700; font-size: 1.1rem; padding: 0 20px 28px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
+    .logo-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); margin-right: 8px; flex-shrink: 0; }
+    .nav-section { padding: 0 10px; margin-bottom: 8px; }
+    .nav-lbl { font-size: .67rem; font-weight: 600; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .07em; padding: 0 10px 8px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: var(--rs); font-size: .875rem; color: rgba(255,255,255,.55); cursor: pointer; margin-bottom: 1px; transition: background .15s, color .15s; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
+    .nav-item.active { background: rgba(0,200,150,.12); color: var(--emerald); }
+    .nav-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); opacity: 0; }
+    .nav-item.active .dot { opacity: 1; }
+    .sidebar-footer { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .78rem; color: rgba(255,255,255,.35); }
+    .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-size: .85rem; margin-bottom: 2px; }
+
+    /* Main */
+    .main { padding: 32px 36px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .topbar-left h1 { font-size: 1.4rem; font-weight: 700; }
+    .topbar-left .sub { font-size: .84rem; color: var(--text-2); margin-top: 3px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .avatar-wrap { position: relative; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--emerald); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .82rem; cursor: pointer; user-select: none; }
+    .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); padding: 6px; min-width: 168px; z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.08); display: none; }
+    .user-menu.open { display: block; }
+    .user-menu a { display: block; padding: 9px 12px; border-radius: 6px; font-size: .88rem; color: var(--ink); }
+    .user-menu a:hover { background: var(--bg); }
+    .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .menu-deconnect { color: var(--text-2) !important; }
+
+    /* Toolbar */
+    .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-pill { padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 20px; font-size: .82rem; background: var(--white); cursor: pointer; color: var(--text-2); font-family: 'Inter', sans-serif; transition: all .15s; }
+    .filter-pill:hover { border-color: var(--ink); color: var(--ink); }
+    .filter-pill.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+    /* Panel */
+    .panel { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
+    .day-group { }
+    .day-label { padding: 10px 18px; font-size: .72rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+    /* Event row */
+    .event-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 18px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s; color: inherit;
+    }
+    .event-row:last-child { border-bottom: none; }
+    .event-row:hover { background: var(--bg); }
+    .event-row.hidden { display: none; }
+    .ev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ev-dot.client { background: var(--plum); }
+    .ev-dot.paiement { background: #16A34A; }
+    .ev-dot.devis { background: var(--amber); }
+    .ev-dot.intervention { background: var(--emerald); }
+    .ev-time { font-size: .73rem; color: var(--text-2); width: 80px; flex-shrink: 0; }
+    .ev-type-pill { font-size: .67rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+    .ev-type-pill.client { background: rgba(61,38,69,.1); color: var(--plum); }
+    .ev-type-pill.paiement { background: #DCFCE7; color: #16A34A; }
+    .ev-type-pill.devis { background: rgba(245,158,11,.12); color: #B45309; }
+    .ev-type-pill.intervention { background: rgba(0,200,150,.12); color: #007A5E; }
+    .ev-label { flex: 1; font-size: .85rem; font-weight: 500; }
+    .ev-amount { font-size: .82rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>Seba</div>
+    <div class="nav-section">
+      <div class="nav-lbl">Principal</div>
+      <a href="dashboard.html" class="nav-item active"><span class="dot"></span>Tableau de bord</a>
+      <a href="clients.html" class="nav-item"><span class="dot"></span>Clients</a>
+      <a href="planning.html" class="nav-item"><span class="dot"></span>Planning</a>
+      <a href="devis.html" class="nav-item"><span class="dot"></span>Devis</a>
+      <a href="factures.html" class="nav-item"><span class="dot"></span>Factures</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-lbl">Équipe</div>
+      <a href="equipe.html" class="nav-item"><span class="dot"></span>Équipe</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-lbl">Compte</div>
+      <a href="reglages.html" class="nav-item"><span class="dot"></span>Réglages</a>
+    </div>
+    <div class="sidebar-footer">
+      <strong id="sidebar-company">Mon entreprise</strong>
+      Compte de démonstration
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Historique d'activité</h1>
+        <div class="sub">Tous les événements de votre entreprise</div>
+      </div>
+      <div class="topbar-right">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatar-btn">—</div>
+          <div class="user-menu" id="user-menu">
+            <a href="reglages.html">Mon compte</a>
+            <div class="menu-sep"></div>
+            <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="filter-pill active" onclick="filter('all', this)">Tout</button>
+      <button class="filter-pill" onclick="filter('client', this)">Clients</button>
+      <button class="filter-pill" onclick="filter('paiement', this)">Paiements</button>
+      <button class="filter-pill" onclick="filter('devis', this)">Devis</button>
+      <button class="filter-pill" onclick="filter('intervention', this)">Interventions</button>
+    </div>
+
+    <div class="panel" id="event-panel">
+
+      <div class="day-group">
+        <div class="day-label">Aujourd'hui</div>
+        <a href="client-fiche.html" class="event-row" data-type="client">
+          <div class="ev-dot client"></div>
+          <span class="ev-time">Il y a 2h</span>
+          <span class="ev-type-pill client">Client</span>
+          <span class="ev-label">Nouveau client — Mme Renaud</span>
+        </a>
+        <a href="factures.html" class="event-row" data-type="paiement">
+          <div class="ev-dot paiement"></div>
+          <span class="ev-time">11:42</span>
+          <span class="ev-type-pill paiement">Paiement</span>
+          <span class="ev-label">Paiement reçu — Sophie Lacroix</span>
+          <span class="ev-amount">+160 €</span>
+        </a>
+        <a href="planning.html" class="event-row" data-type="intervention">
+          <div class="ev-dot intervention"></div>
+          <span class="ev-time">09:30</span>
+          <span class="ev-type-pill intervention">Intervention</span>
+          <span class="ev-label">Intervention terminée — M. Durand · Ménage complet</span>
+        </a>
+      </div>
+
+      <div class="day-group">
+        <div class="day-label">Hier</div>
+        <a href="devis.html" class="event-row" data-type="devis">
+          <div class="ev-dot devis"></div>
+          <span class="ev-time">16:15</span>
+          <span class="ev-type-pill devis">Devis</span>
+          <span class="ev-label">Devis signé — Pierre Tessier · Grand ménage</span>
+          <span class="ev-amount">190 €</span>
+        </a>
+        <a href="planning.html" class="event-row" data-type="intervention">
+          <div class="ev-dot intervention"></div>
+          <span class="ev-time">14:00</span>
+          <span class="ev-type-pill intervention">Intervention</span>
+          <span class="ev-label">Intervention — Mme Bernard · Ménage hebdomadaire</span>
+        </a>
+        <a href="factures.html" class="event-row" data-type="paiement">
+          <div class="ev-dot paiement"></div>
+          <span class="ev-time">11:00</span>
+          <span class="ev-type-pill paiement">Paiement</span>
+          <span class="ev-label">Facture réglée — Camille Faure</span>
+          <span class="ev-amount">+95 €</span>
+        </a>
+        <a href="devis.html" class="event-row" data-type="devis">
+          <div class="ev-dot devis"></div>
+          <span class="ev-time">09:45</span>
+          <span class="ev-type-pill devis">Devis</span>
+          <span class="ev-label">Devis envoyé — Mme Petit · Grand ménage + vitrerie</span>
+          <span class="ev-amount">280 €</span>
+        </a>
+      </div>
+
+      <div class="day-group">
+        <div class="day-label">Il y a 2 jours</div>
+        <a href="client-fiche.html" class="event-row" data-type="client">
+          <div class="ev-dot client"></div>
+          <span class="ev-time">17:30</span>
+          <span class="ev-type-pill client">Client</span>
+          <span class="ev-label">Nouveau client — M. Fontaine (parrainage Sophie Lacroix)</span>
+        </a>
+        <a href="planning.html" class="event-row" data-type="intervention">
+          <div class="ev-dot intervention"></div>
+          <span class="ev-time">10:00</span>
+          <span class="ev-type-pill intervention">Intervention</span>
+          <span class="ev-label">Intervention — M. et Mme Roy · Nettoyage post-travaux</span>
+        </a>
+        <a href="factures.html" class="event-row" data-type="paiement">
+          <div class="ev-dot paiement"></div>
+          <span class="ev-time">09:15</span>
+          <span class="ev-type-pill paiement">Paiement</span>
+          <span class="ev-label">Paiement reçu — M. et Mme Roy</span>
+          <span class="ev-amount">+340 €</span>
+        </a>
+      </div>
+
+      <div class="day-group">
+        <div class="day-label">Cette semaine</div>
+        <a href="devis.html" class="event-row" data-type="devis">
+          <div class="ev-dot devis"></div>
+          <span class="ev-time">Mar</span>
+          <span class="ev-type-pill devis">Devis</span>
+          <span class="ev-label">Devis refusé — M. Legrand · Nettoyage de vitres</span>
+        </a>
+        <a href="planning.html" class="event-row" data-type="intervention">
+          <div class="ev-dot intervention"></div>
+          <span class="ev-time">Lun</span>
+          <span class="ev-type-pill intervention">Intervention</span>
+          <span class="ev-label">Intervention — Thomas K. · Ménage récurrent</span>
+        </a>
+        <a href="factures.html" class="event-row" data-type="paiement">
+          <div class="ev-dot paiement"></div>
+          <span class="ev-time">Lun</span>
+          <span class="ev-type-pill paiement">Paiement</span>
+          <span class="ev-label">Paiement reçu — Thomas K.</span>
+          <span class="ev-amount">+110 €</span>
+        </a>
+        <a href="client-fiche.html" class="event-row" data-type="client">
+          <div class="ev-dot client"></div>
+          <span class="ev-time">Lun</span>
+          <span class="ev-type-pill client">Client</span>
+          <span class="ev-label">Fiche client mise à jour — Sophie Lacroix</span>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  /* Avatar */
+  let biz = null;
+  try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
+  if (biz) {
+    const av = document.getElementById('avatar-btn');
+    av.textContent = (biz.nom || '?').charAt(0).toUpperCase();
+    av.style.background = biz.couleur || '#00C896';
+    const sc = document.getElementById('sidebar-company');
+    if (sc) sc.textContent = biz.nom || 'Mon entreprise';
+  }
+
+  /* Filter */
+  function filter(type, btn) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.event-row').forEach(row => {
+      row.classList.toggle('hidden', type !== 'all' && row.dataset.type !== type);
+    });
+    /* hide empty day groups */
+    document.querySelectorAll('.day-group').forEach(g => {
+      const visible = [...g.querySelectorAll('.event-row')].some(r => !r.classList.contains('hidden'));
+      g.style.display = visible ? '' : 'none';
+    });
+  }
+
+  /* Avatar menu */
+  const btn = document.getElementById('avatar-btn');
+  const menu = document.getElementById('user-menu');
+  btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
+  document.addEventListener('click', () => menu.classList.remove('open'));
+</script>
+</body>
+</html>

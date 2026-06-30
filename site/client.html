@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon espace — Ménage Express Lyon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14161A;
+    --emerald: #00C896;
+    --plum: #3D2645;
+    --bg: #FAF9F7;
+    --white: #FFFFFF;
+    --text-2: #6B6A6F;
+    --border: #E8E6E1;
+    --r: 12px;
+    --rs: 8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  .phone-frame{max-width:420px;margin:24px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,0.2);min-height:90vh;}
+  .topbar{background:var(--ink);color:var(--bg);padding:22px 22px 26px;}
+  .topbar .ent{font-size:0.78rem;color:#B9C0D1;margin-bottom:4px;}
+  .topbar h1{font-size:1.3rem;}
+
+  .content{padding:22px;}
+
+  .next-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .next-card .label{font-size:0.74rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.03em;font-weight:600;display:block;margin-bottom:8px;}
+  .next-card .when{font-weight:600;font-size:1.15rem;margin-bottom:4px;}
+  .next-card .what{font-size:0.86rem;color:var(--text-2);}
+
+  .section-title{font-size:0.78rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;margin:24px 0 12px;}
+
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+  .action-btn{border:1px solid var(--border);border-radius:var(--r);padding:16px 12px;text-align:center;font-size:0.85rem;font-weight:500;cursor:pointer;background:#fff;}
+  .action-btn:hover{border-color:var(--emerald);}
+
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);font-size:0.88rem;}
+  .list-item:last-child{border-bottom:none;}
+  .list-item .li-title{font-weight:500;}
+  .list-item .li-sub{font-size:0.76rem;color:var(--text-2);}
+  .badge{font-size:0.72rem;padding:3px 9px;border-radius:12px;font-weight:500;}
+  .badge.attente{background:#FCE8D9;color:var(--emerald);}
+  .badge.paye{background:#E3EDE3;color:var(--emerald);}
+
+  .nav-bottom{display:flex;justify-content:space-around;border-top:1px solid var(--border);padding:12px 0;position:sticky;bottom:0;background:#fff;}
+  .nb-item{font-size:0.72rem;color:var(--text-2);text-align:center;cursor:pointer;padding:4px 8px;}
+  .nb-item.active{color:var(--emerald);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="topbar">
+    <div class="ent">Ménage Express Lyon</div>
+    <h1>Bonjour Sophie</h1>
+  </div>
+
+  <div class="content">
+    <div class="next-card">
+      <span class="label">Prochaine intervention</span>
+      <div class="when">Samedi 27 juin — 09h00</div>
+      <div class="what">Ménage standard, 2h</div>
+    </div>
+
+    <div class="section-title">Actions rapides</div>
+    <div class="action-grid">
+      <div class="action-btn" onclick="alert('Formulaire de réservation à venir.')">Réserver</div>
+      <div class="action-btn" onclick="alert('Formulaire de demande de devis à venir.')">Demander un devis</div>
+      <div class="action-btn" onclick="alert('Ouverture de la messagerie avec le prestataire.')">Contacter</div>
+      <div class="action-btn" onclick="alert('Liste des documents et factures.')">Mes documents</div>
+    </div>
+
+    <div class="section-title">Factures récentes</div>
+    <div class="list-item">
+      <div><div class="li-title">Ménage standard — Juin</div><div class="li-sub">12 juin 2026</div></div>
+      <span class="badge paye">Payée</span>
+    </div>
+    <div class="list-item">
+      <div><div class="li-title">Ménage standard — Mai</div><div class="li-sub">14 mai 2026</div></div>
+      <span class="badge paye">Payée</span>
+    </div>
+
+    <div class="section-title">Devis en attente</div>
+    <div class="list-item">
+      <div><div class="li-title">Nettoyage de vitres</div><div class="li-sub">Envoyé le 20 juin</div></div>
+      <span class="badge attente">À signer</span>
+    </div>
+  </div>
+
+  <div class="nav-bottom">
+    <div class="nb-item active">Accueil</div>
+    <div class="nb-item">Planning</div>
+    <div class="nb-item">Documents</div>
+    <div class="nb-item">Messages</div>
+  </div>
+</div>
+
+</body>
+</html>

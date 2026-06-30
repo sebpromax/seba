@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<style>
+  :root {
+    --ink: #14161A;
+    --emerald: #00C896;
+    --plum: #3D2645;
+    --bg: #FAF9F7;
+    --white: #FFFFFF;
+    --text-2: #6B6A6F;
+    --border: #E8E6E1;
+    --r: 12px;
+    --rs: 8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
+  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
+  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
+  .nav-section{padding:0 14px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+  .nav-item.active{background:rgba(0,200,150,.12);color:var(--emerald);}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
+  .nav-item.active .dot{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+
+  .main{padding:32px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
+  .topbar h1{font-size:1.5rem;}
+  .week-nav{display:flex;align-items:center;gap:14px;}
+  .week-nav button{width:34px;height:34px;border:1px solid var(--border);background:#fff;border-radius:var(--rs);cursor:pointer;font-size:1rem;}
+  .week-label{font-size:0.85rem;color:var(--text-2);}
+  .btn-em{background:var(--emerald);color:var(--ink);border:none;padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+  .day-col{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:14px;min-height:340px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .day-col.today{border-color:var(--emerald);box-shadow:0 0 0 1px var(--emerald);}
+  .day-head{margin-bottom:12px;}
+  .day-head .dname{font-size:0.74rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;}
+  .day-head .dnum{font-weight:600;font-size:1.1rem;}
+  .job{background:var(--bg);border-left:3px solid var(--emerald);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;font-size:0.78rem;cursor:pointer;}
+  .job.moss{border-left-color:var(--emerald);}
+  .job .jtime{font-size:0.7rem;color:var(--emerald);display:block;margin-bottom:3px;}
+  .job.moss .jtime{color:var(--emerald);}
+  .job .jclient{font-weight:500;}
+  .job .jservice{color:var(--text-2);font-size:0.72rem;}
+  .empty-day{font-size:0.76rem;color:#B9C0CE;text-align:center;padding:30px 0;}
+
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .week-grid{grid-template-columns:1fr;}
+    .main{padding:24px 20px;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>Seba</div>
+    <nav class="nav-section">
+      <a href="dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
+      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
+      <div class="nav-item active"><span class="dot"></span>Planning</div>
+      <a href="devis.html"><div class="nav-item"><span class="dot"></span>Devis</div></a>
+      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
+      <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
+      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
+    </nav>
+    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h1>Planning</h1>
+      <div class="topbar-right">
+        <div class="week-nav">
+          <button>←</button>
+          <span class="week-label">22 — 28 JUIN 2026</span>
+          <button>→</button>
+        </div>
+        <button class="btn-em" onclick="alert('Création d\'une intervention — formulaire à ouvrir.')">+ Nouvelle intervention</button>
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="user-menu" id="user-menu">
+            <a href="reglages.html">Mon compte</a>
+            <div class="menu-sep"></div>
+            <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="week-grid">
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Lun.</span><div class="dnum">22</div></div>
+        <div class="job"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard</div></div>
+        <div class="job moss"><span class="jtime">14:00</span><div class="jclient">Pierre Tessier</div><div class="jservice">Ménage standard</div></div>
+      </div>
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Mar.</span><div class="dnum">23</div></div>
+        <div class="job moss"><span class="jtime">10:30</span><div class="jclient">Julie Dumont</div><div class="jservice">Repassage</div></div>
+      </div>
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Mer.</span><div class="dnum">24</div></div>
+        <div class="empty-day">Aucune intervention</div>
+      </div>
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Jeu.</span><div class="dnum">25</div></div>
+        <div class="job"><span class="jtime">11:00</span><div class="jclient">Marc Roussel</div><div class="jservice">Fin de bail</div></div>
+      </div>
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Ven.</span><div class="dnum">26</div></div>
+        <div class="job moss"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard</div></div>
+      </div>
+      <div class="day-col today">
+        <div class="day-head"><span class="dname">Sam.</span><div class="dnum">27</div></div>
+        <div class="job"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard — 2h</div></div>
+        <div class="job"><span class="jtime">13:30</span><div class="jclient">Pierre Tessier</div><div class="jservice">Ménage standard — 1h30</div></div>
+        <div class="job"><span class="jtime">16:00</span><div class="jclient">Marc Roussel</div><div class="jservice">Fin de bail — 3h</div></div>
+      </div>
+      <div class="day-col">
+        <div class="day-head"><span class="dname">Dim.</span><div class="dnum">28</div></div>
+        <div class="empty-day">Aucune intervention</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const BASE_MONDAY = new Date(2026, 5, 22); // lundi 22 juin 2026
+  const DAY_NAMES = ['Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.','Dim.'];
+  const MONTHS_FR = ['JAN.','FÉV.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
+
+  const DEMO = [
+    [
+      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard',       moss:false},
+      {time:'14:00', client:'Pierre Tessier',  service:'Ménage standard',       moss:true},
+    ],
+    [
+      {time:'10:30', client:'Julie Dumont',    service:'Repassage',             moss:true},
+    ],
+    [],
+    [
+      {time:'11:00', client:'Marc Roussel',    service:'Fin de bail',           moss:false},
+    ],
+    [
+      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard',       moss:true},
+    ],
+    [
+      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard — 2h',  moss:false},
+      {time:'13:30', client:'Pierre Tessier',  service:'Ménage standard — 1h30',moss:false},
+      {time:'16:00', client:'Marc Roussel',    service:'Fin de bail — 3h',      moss:false},
+    ],
+    [],
+  ];
+
+  let weekOffset = 0;
+
+  function addDays(date, n) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function weekLabel(monday) {
+    const sunday = addDays(monday, 6);
+    const d1 = monday.getDate(), d2 = sunday.getDate();
+    const m1 = MONTHS_FR[monday.getMonth()], m2 = MONTHS_FR[sunday.getMonth()];
+    const y = sunday.getFullYear();
+    if (monday.getMonth() === sunday.getMonth()) {
+      return `${d1} — ${d2} ${m1} ${y}`;
+    }
+    return `${d1} ${m1} — ${d2} ${m2} ${y}`;
+  }
+
+  function today0() {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t.getTime();
+  }
+
+  function renderWeek(offset) {
+    weekOffset = offset;
+    const monday = addDays(BASE_MONDAY, offset * 7);
+    const todayTs = today0();
+
+    document.querySelector('.week-label').textContent = weekLabel(monday);
+
+    document.querySelectorAll('.day-col').forEach((col, i) => {
+      const date = addDays(monday, i);
+      date.setHours(0, 0, 0, 0);
+
+      col.querySelector('.dname').textContent = DAY_NAMES[i];
+      col.querySelector('.dnum').textContent = addDays(monday, i).getDate();
+      col.classList.toggle('today', date.getTime() === todayTs);
+
+      col.querySelectorAll('.job, .empty-day').forEach(el => el.remove());
+
+      const jobs = offset === 0 ? DEMO[i] : [];
+      if (jobs.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-day';
+        empty.textContent = 'Aucune intervention';
+        col.appendChild(empty);
+      } else {
+        jobs.forEach(job => {
+          const div = document.createElement('div');
+          div.className = 'job' + (job.moss ? ' moss' : '');
+          div.innerHTML = `<span class="jtime">${job.time}</span><div class="jclient">${job.client}</div><div class="jservice">${job.service}</div>`;
+          col.appendChild(div);
+        });
+      }
+    });
+  }
+
+  const [btnPrev, btnNext] = document.querySelectorAll('.week-nav button');
+  btnPrev.addEventListener('click', () => renderWeek(weekOffset - 1));
+  btnNext.addEventListener('click', () => renderWeek(weekOffset + 1));
+
+  renderWeek(0);
+
+  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  try {
+    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    if (_ent && _ent.nom) {
+      const _f = document.querySelector('.sidebar-footer');
+      if (_f) _f.childNodes[0].textContent = _ent.nom;
+    }
+  } catch(e) {}
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    userMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+
+</body>
+</html>

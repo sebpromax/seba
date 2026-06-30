@@ -1,0 +1,271 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confiance — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<style>
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px;}
+:focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
+
+.accent-line{position:fixed;top:0;left:0;right:0;height:2px;background:var(--emerald);z-index:300;}
+.section-label{display:inline-flex;align-items:center;gap:10px;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin-bottom:16px;}
+.section-label::before{content:'';display:block;width:20px;height:2px;background:var(--emerald);flex-shrink:0;}
+.section-label.on-dark{color:rgba(255,255,255,.35);}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}}
+
+nav{position:sticky;top:2px;z-index:100;background:rgba(20,22,26,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--ink-border);}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+.nav-logo{font-weight:800;font-size:1.2rem;letter-spacing:-.03em;color:var(--white);}
+.nav-logo em{font-style:normal;color:var(--emerald);}
+.nav-links{display:flex;gap:32px;font-size:.875rem;font-weight:500;color:rgba(255,255,255,.4);}
+.nav-links a{transition:color .15s;}
+.nav-links a:hover,.nav-links a.active{color:var(--white);}
+.nav-right{display:flex;align-items:center;gap:20px;}
+.nav-login{font-size:.875rem;font-weight:500;color:rgba(255,255,255,.45);transition:color .15s;}
+.nav-login:hover{color:var(--white);}
+.nav-cta{background:var(--emerald);color:var(--ink);padding:9px 18px;border-radius:6px;font-size:.875rem;font-weight:700;transition:opacity .15s;}
+.nav-cta:hover{opacity:.85;}
+
+.page-hero{background:var(--ink);padding:80px 0 88px;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;top:-100px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,200,150,.09) 0%,transparent 65%);pointer-events:none;}
+.ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
+.ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px rgba(0,200,150,.7);}
+.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
+.page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:580px;line-height:1.65;}
+
+.section{padding:88px 0;}
+.section-head{max-width:640px;margin-bottom:52px;}
+.section-head h2{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:700;line-height:1.15;letter-spacing:-.025em;}
+.section-head p{margin-top:12px;font-size:1rem;color:var(--text-2);line-height:1.65;}
+
+/* Piliers confiance détaillés */
+.trust-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.td-item{background:var(--white);padding:36px 32px;}
+.td-label{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:14px;display:block;}
+.td-item h3{font-size:1.2rem;font-weight:700;color:var(--ink);margin-bottom:10px;}
+.td-item p{font-size:.92rem;color:var(--text-2);line-height:1.65;margin-bottom:14px;}
+.td-list{list-style:none;}
+.td-list li{display:flex;align-items:baseline;gap:9px;font-size:.88rem;color:var(--ink);padding:5px 0;}
+.td-list li::before{content:'';display:inline-block;width:14px;height:14px;flex-shrink:0;margin-top:2px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='7' cy='7' r='7' fill='%2300C896'/%3E%3Cpath d='M4 7l2 2 4-4' stroke='%2314161A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;}
+
+/* Engagements section (dark) */
+.engage-section{background:var(--ink);padding:88px 0;}
+.engage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--ink-border);border-radius:10px;overflow:hidden;border:1px solid var(--ink-border);}
+.eg-item{background:var(--ink-surface);padding:30px 26px;}
+.eg-label{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:14px;display:block;}
+.eg-item h4{font-size:1rem;font-weight:700;color:var(--white);margin-bottom:8px;}
+.eg-item p{font-size:.86rem;color:rgba(255,255,255,.4);line-height:1.6;}
+
+.page-nav{display:flex;align-items:center;justify-content:space-between;padding:40px 0;border-top:1px solid var(--border);}
+.page-nav a{font-size:.9rem;font-weight:600;color:var(--text-2);transition:color .15s;}
+.page-nav a:hover{color:var(--ink);}
+.page-nav .next-page{display:inline-flex;align-items:center;gap:8px;background:var(--emerald);color:var(--ink);padding:12px 22px;border-radius:7px;font-weight:700;font-size:.9rem;transition:opacity .15s;}
+.page-nav .next-page:hover{opacity:.85;}
+
+.section-cta{background:var(--bg);padding:88px 0;}
+.cta-inner{text-align:center;max-width:540px;margin:0 auto;}
+.cta-inner h2{font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.03em;margin-bottom:14px;}
+.cta-inner p{color:var(--text-2);font-size:1rem;margin-bottom:32px;}
+.btn-cta{background:var(--emerald);color:var(--ink);padding:14px 32px;border-radius:7px;font-weight:700;font-size:1rem;display:inline-block;transition:opacity .15s,transform .15s;}
+.btn-cta:hover{opacity:.86;transform:translateY(-1px);}
+
+footer{background:var(--white);padding:36px 0;border-top:1px solid var(--border);}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;color:var(--text-2);font-size:.84rem;}
+.footer-logo{font-weight:800;font-size:1.1rem;color:var(--ink);letter-spacing:-.03em;}
+.footer-logo em{font-style:normal;color:var(--emerald);}
+
+@media(max-width:760px){
+  .trust-detail-grid{grid-template-columns:1fr;}
+  .engage-grid{grid-template-columns:1fr;}
+}
+@media(max-width:600px){
+  .wrap{padding:0 20px;}
+  .section{padding:64px 0;}
+  .nav-links{display:none;}
+  .page-hero{padding:60px 0 72px;}
+}
+
+  #particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;pointer-events:none;z-index:0;}
+</style>
+</head>
+<body>
+
+<div class="accent-line"></div>
+
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="nav-logo">se<em>ba</em></a>
+    <div class="nav-links">
+      <a href="probleme.html">Le problème</a>
+      <a href="solution.html">La solution</a>
+      <a href="confiance.html" class="active">Confiance</a>
+    </div>
+    <div class="nav-right">
+      <a href="connexion.html" class="nav-login">Connexion</a>
+      <a href="onboarding.html" class="nav-cta">Créer mon entreprise</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="ph-eyebrow"><span class="e-dot"></span>La confiance avant tout</div>
+    <h1>Vos données méritent<br>plus qu'un Excel.</h1>
+    <p>Chaque information sur vos clients, vos devis et votre équipe est protégée, sauvegardée et accessible uniquement par vous. Voici exactement comment.</p>
+  </div>
+</section>
+
+<!-- 4 piliers détaillés -->
+<section class="section" style="background:var(--bg)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="section-label">La sécurité en détail</span>
+      <h2>Quatre piliers. Aucun compromis.</h2>
+      <p>La sécurité ne devrait pas être une option. Chez Seba, elle est intégrée à chaque étape — pas ajoutée après coup.</p>
+    </div>
+    <div class="trust-detail-grid reveal">
+      <div class="td-item">
+        <span class="td-label">Sauvegarde</span>
+        <h3>Automatique, en continu</h3>
+        <p>Vos données sont sauvegardées en temps réel, sans aucune action de votre part. En cas de problème, vous retrouvez vos informations à tout moment.</p>
+        <ul class="td-list">
+          <li>Sauvegarde en temps réel à chaque modification</li>
+          <li>Historique de 30 jours restaurable</li>
+          <li>Aucune donnée perdue en cas de panne</li>
+          <li>Accessible depuis n'importe quel appareil</li>
+        </ul>
+      </div>
+      <div class="td-item">
+        <span class="td-label">Accès</span>
+        <h3>Droits par employé</h3>
+        <p>Chaque membre de votre équipe accède uniquement à ce dont il a besoin pour faire son travail. Vous gardez le contrôle total sur qui voit quoi.</p>
+        <ul class="td-list">
+          <li>Rôle gérant : accès complet à tout</li>
+          <li>Rôle employé : missions et planning uniquement</li>
+          <li>Modification des droits à tout moment</li>
+          <li>Révocation instantanée si départ d'un employé</li>
+        </ul>
+      </div>
+      <div class="td-item">
+        <span class="td-label">Historique</span>
+        <h3>Traçabilité totale</h3>
+        <p>Chaque action réalisée dans Seba est tracée : qui a modifié quoi, à quelle heure, et pourquoi. Vous avez une vue complète sur l'activité de votre compte.</p>
+        <ul class="td-list">
+          <li>Journal de toutes les modifications</li>
+          <li>Identité de l'auteur de chaque changement</li>
+          <li>Date et heure précises de chaque action</li>
+          <li>Impossible de supprimer un enregistrement sans trace</li>
+        </ul>
+      </div>
+      <div class="td-item">
+        <span class="td-label">Disponibilité</span>
+        <h3>Votre entreprise, toujours en ligne</h3>
+        <p>Seba est accessible depuis n'importe quel appareil connecté — ordinateur, tablette, téléphone — sans installation requise. Votre activité ne s'arrête jamais.</p>
+        <ul class="td-list">
+          <li>Interface web optimisée pour mobile et desktop</li>
+          <li>Aucune installation, aucune mise à jour manuelle</li>
+          <li>Accès simultané depuis plusieurs appareils</li>
+          <li>Disponible 24h/24, 7j/7</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Engagements -->
+<section class="engage-section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="section-label on-dark">Les engagements Seba</span>
+      <h2 style="color:var(--white)">Ce qu'on s'engage à faire. Et à ne jamais faire.</h2>
+      <p style="color:rgba(255,255,255,.45);margin-top:12px;">Des principes clairs, pas du jargon juridique.</p>
+    </div>
+    <div class="engage-grid reveal">
+      <div class="eg-item">
+        <span class="eg-label">Hébergement</span>
+        <h4>Données en Europe</h4>
+        <p>Vos données sont hébergées sur des serveurs situés en Europe, conformément au RGPD. Aucun transfert vers des pays tiers sans votre accord explicite.</p>
+      </div>
+      <div class="eg-item">
+        <span class="eg-label">Confidentialité</span>
+        <h4>Zéro revente de données</h4>
+        <p>Vos informations et celles de vos clients ne sont jamais vendues, partagées ou utilisées à des fins publicitaires. Vos données vous appartiennent, point.</p>
+      </div>
+      <div class="eg-item">
+        <span class="eg-label">Portabilité</span>
+        <h4>Export à tout moment</h4>
+        <p>Vous pouvez exporter l'intégralité de vos données (clients, devis, factures, historique) au format standard à tout moment. Aucun verrouillage propriétaire.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-cta">
+  <div class="wrap">
+    <div class="cta-inner reveal">
+      <h2>Prêt à configurer votre entreprise ?</h2>
+      <p>Trois étapes. Moins de cinq minutes. Vos données sont en sécurité dès le premier jour.</p>
+      <a href="onboarding.html" class="btn-cta">Créer mon entreprise →</a>
+    </div>
+    <div class="page-nav reveal">
+      <a href="solution.html">← La solution</a>
+      <a href="onboarding.html" class="next-page">Commencer <span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="footer-logo">se<em>ba</em></span>
+    <span>© 2026 Seba — Fait pour le terrain.</span>
+  </div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  if (!document.startViewTransition) {
+    document.body.style.opacity = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.style.transition = 'opacity .22s ease';
+      document.body.style.opacity = '1';
+    }));
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const h = a.getAttribute('href');
+      if (!h || h.startsWith('#') || h.includes('://') || h.startsWith('mailto')) return;
+      e.preventDefault();
+      document.body.style.transition = 'opacity .18s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { window.location.href = h; }, 190);
+    });
+  }
+</script>
+<canvas id="particles-canvas" aria-hidden="true"></canvas>
+<script src="animations-vitrine.js" defer></script>
+</body>
+</html>
+

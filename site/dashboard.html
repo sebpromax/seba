@@ -1,0 +1,958 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord — Seba</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+  <style>
+    :root {
+      --ink: #14161A;
+      --emerald: #00C896;
+      --plum: #3D2645;
+      --bg: #FAF9F7;
+      --white: #FFFFFF;
+      --text-2: #6B6A6F;
+      --border: #E8E6E1;
+      --r: 12px;
+      --rs: 8px;
+      --amber: #F59E0B;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── App layout ── */
+    .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar { background: var(--ink); color: var(--white); display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
+    .s-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
+    .nav-group { padding: 0 10px; margin-bottom: 8px; }
+    .nav-label { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .07em; padding: 0 10px 8px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: var(--rs); font-size: .875rem; color: rgba(255,255,255,.55); cursor: pointer; margin-bottom: 1px; transition: background .15s, color .15s; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
+    .nav-item.active { background: rgba(0,200,150,.12); color: var(--emerald); }
+    .nav-item .ni-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); opacity: 0; transition: opacity .15s; }
+    .nav-item.active .ni-dot { opacity: 1; }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .78rem; color: rgba(255,255,255,.35); }
+    .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
+
+    /* ── Main ── */
+    .main { padding: 28px 32px 56px; overflow-x: hidden; min-width: 0; }
+
+    /* ── Header ── */
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
+    .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+    .dh-meta { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--text-2); flex-wrap: wrap; }
+    .sector-badge { display: inline-flex; align-items: center; padding: 2px 9px; background: rgba(0,200,150,.12); color: var(--emerald); border-radius: 20px; font-size: .73rem; font-weight: 600; letter-spacing: .02em; }
+    .clock-time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .84rem; color: var(--ink); letter-spacing: .04em; }
+    .clock-tz { font-size: .71rem; color: var(--text-2); }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-btn { width: 36px; height: 36px; border-radius: var(--rs); border: 1.5px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: border-color .15s; }
+    .topbar-btn:hover { border-color: var(--ink); }
+    .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--emerald); color: var(--ink); font-size: .58rem; font-weight: 700; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .avatar-wrap { position: relative; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; color: var(--ink); cursor: pointer; transition: opacity .15s; user-select: none; }
+    .avatar:hover { opacity: .85; }
+    .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); padding: 6px; min-width: 168px; z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.08); display: none; }
+    .user-menu.open { display: block; }
+    .user-menu a { display: block; padding: 9px 12px; border-radius: 6px; font-size: .88rem; color: var(--ink); }
+    .user-menu a:hover { background: var(--bg); }
+    .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .menu-deconnect { color: var(--text-2) !important; }
+
+    /* ── Metrics strip ── */
+    .metrics-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .metric-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 18px; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: block; }
+    .metric-card:hover { border-color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .metric-label { font-size: .72rem; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
+    .metric-value { font-size: 1.55rem; font-weight: 700; line-height: 1.1; margin-bottom: 4px; }
+    .metric-unit { font-size: .9rem; font-weight: 400; color: var(--text-2); margin-left: 2px; }
+    .metric-delta { font-size: .73rem; font-weight: 500; }
+    .metric-delta.up { color: #16A34A; }
+    .metric-delta.down { color: #DC2626; }
+
+    /* ── 2-col main grid ── */
+    .main-grid { display: grid; grid-template-columns: 1fr 308px; gap: 16px; margin-bottom: 16px; align-items: start; }
+    .col-left { display: flex; flex-direction: column; gap: 16px; }
+    .col-right { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── 3-col bottom grid ── */
+    .bottom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    /* ── Module ── */
+    .module { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
+    .module-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+    .module-title { font-size: .83rem; font-weight: 600; }
+    .module-link { font-size: .76rem; color: var(--emerald); white-space: nowrap; }
+    .module-link:hover { text-decoration: underline; }
+
+    /* ── Timeline ── */
+    .tl-item { display: grid; grid-template-columns: 50px 1fr; gap: 0; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-item:hover { background: var(--bg); }
+    .tl-item.done { opacity: .5; }
+    .tl-time-col { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding-top: 1px; }
+    .tl-time { font-size: .7rem; font-weight: 600; color: var(--text-2); }
+    .tl-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border); background: transparent; flex-shrink: 0; }
+    .tl-dot.done { background: var(--emerald); border-color: var(--emerald); }
+    .tl-type-pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: .65rem; font-weight: 600; margin-bottom: 3px; }
+    .tl-type-pill.intervention { background: rgba(0,200,150,.12); color: #00906E; }
+    .tl-type-pill.devis { background: rgba(245,158,11,.12); color: #B45309; }
+    .tl-type-pill.client { background: rgba(61,38,69,.1); color: var(--plum); }
+    .tl-type-pill.paiement { background: #DCFCE7; color: #16A34A; }
+    .tl-label { font-size: .85rem; font-weight: 500; margin-bottom: 2px; }
+    .tl-sub { font-size: .76rem; color: var(--text-2); line-height: 1.4; }
+    .tl-empty { padding: 24px 16px; font-size: .85rem; color: var(--text-2); text-align: center; }
+
+    /* ── Recommendations ── */
+    .reco-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
+    .reco-item:last-child { border-bottom: none; }
+    .reco-item:hover { background: var(--bg); }
+    .reco-bar { width: 3px; min-width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+    .reco-bar.em { background: var(--emerald); }
+    .reco-bar.am { background: var(--amber); }
+    .reco-bar.pl { background: var(--plum); }
+    .reco-content { flex: 1; min-width: 0; }
+    .reco-title { font-size: .83rem; font-weight: 600; margin-bottom: 2px; }
+    .reco-desc { font-size: .75rem; color: var(--text-2); line-height: 1.45; margin-bottom: 5px; }
+    .reco-cta { font-size: .71rem; font-weight: 600; color: var(--emerald); }
+
+    /* ── Quick actions ── */
+    .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
+    .qa-btn { display: flex; align-items: center; justify-content: center; padding: 10px 6px; border-radius: var(--rs); background: var(--bg); border: 1.5px solid var(--border); font-size: .78rem; font-weight: 600; color: var(--ink); text-align: center; transition: border-color .15s, background .15s, color .15s; }
+    .qa-btn:hover { border-color: var(--emerald); background: rgba(0,200,150,.06); color: var(--emerald); }
+
+    /* ── Monthly goal ── */
+    .goal-block { padding: 14px 16px; }
+    .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+    .goal-current { font-size: 1.35rem; font-weight: 700; }
+    .goal-target-txt { font-size: .76rem; color: var(--text-2); }
+    .goal-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 8px 0 6px; }
+    .goal-bar-fill { height: 100%; border-radius: 3px; background: var(--emerald); transition: width 1.2s cubic-bezier(.22,1,.36,1); width: 0; }
+    .goal-sub { font-size: .72rem; color: var(--text-2); }
+
+    /* ── Activity ── */
+    .activity-item { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--bg); }
+    .act-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .act-dot.client { background: var(--plum); }
+    .act-dot.paiement { background: #16A34A; }
+    .act-dot.devis { background: var(--amber); }
+    .act-dot.intervention { background: var(--emerald); }
+    .act-body { flex: 1; min-width: 0; }
+    .act-label { font-size: .83rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .act-time { font-size: .71rem; color: var(--text-2); margin-top: 1px; }
+
+    /* ── Workspace ── */
+    .ws-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: .83rem; }
+    .ws-row:last-child { border-bottom: none; }
+    a.ws-row { cursor: pointer; transition: background .12s; color: inherit; }
+    a.ws-row:hover { background: var(--bg); }
+    .ws-label { color: var(--text-2); font-size: .76rem; }
+    .ws-val { font-weight: 500; }
+    .ws-val.link { color: var(--emerald); }
+
+    /* ── Portal ── */
+    .portal-block { padding: 14px 16px; }
+    .portal-name { font-size: .95rem; font-weight: 600; margin-bottom: 3px; }
+    .portal-url-txt { font-size: .76rem; color: var(--text-2); margin-bottom: 10px; word-break: break-all; }
+    .portal-code-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .portal-code-lbl { font-size: .73rem; color: var(--text-2); }
+    .code-chip { font-size: .71rem; font-weight: 700; letter-spacing: .05em; background: var(--bg); border: 1.5px solid var(--border); padding: 3px 9px; border-radius: 6px; }
+    .portal-actions { display: flex; gap: 8px; }
+    .portal-btn { flex: 1; padding: 8px 10px; border-radius: var(--rs); font-size: .76rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--bg); color: var(--ink); transition: all .15s; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .portal-btn:hover { border-color: var(--ink); }
+    .portal-btn.primary { background: var(--ink); color: var(--white); border-color: var(--ink); }
+    .portal-btn.primary:hover { background: #2b2f37; }
+
+    /* ── Team ── */
+    .team-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
+    .team-item:last-child { border-bottom: none; }
+    .team-item:hover { background: var(--bg); }
+    .team-av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; }
+    .team-info { flex: 1; min-width: 0; }
+    .team-name { font-size: .83rem; font-weight: 500; }
+    .team-role { font-size: .72rem; color: var(--text-2); }
+    .team-status { font-size: .67rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+    .team-status.working { background: rgba(0,200,150,.12); color: #007A5E; }
+    .team-status.off { background: var(--bg); color: var(--text-2); border: 1px solid var(--border); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 80px 24px; }
+    .empty-state h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 8px; }
+    .empty-state p { font-size: .95rem; color: var(--text-2); margin-bottom: 28px; max-width: 380px; margin-left: auto; margin-right: auto; }
+    .btn-em { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 24px; background: var(--emerald); color: var(--ink); font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1120px) {
+      .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+      .main-grid { grid-template-columns: 1fr; }
+      .bottom-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 20px 16px 40px; }
+      .bottom-grid { grid-template-columns: 1fr; }
+      .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="s-logo"><div class="s-logo-dot"></div>Seba</div>
+    <div class="nav-group">
+      <div class="nav-label">Principal</div>
+      <a href="dashboard.html" class="nav-item active"><div class="ni-dot"></div>Tableau de bord</a>
+      <a href="clients.html" class="nav-item"><div class="ni-dot"></div>Clients</a>
+      <a href="planning.html" class="nav-item"><div class="ni-dot"></div>Planning</a>
+      <a href="devis.html" class="nav-item"><div class="ni-dot"></div>Devis</a>
+      <a href="factures.html" class="nav-item"><div class="ni-dot"></div>Factures</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Équipe</div>
+      <a href="equipe.html" class="nav-item"><div class="ni-dot"></div>Équipe</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Compte</div>
+      <a href="reglages.html" class="nav-item"><div class="ni-dot"></div>Réglages</a>
+    </div>
+    <div class="sidebar-footer">
+      <strong id="sidebar-company">Mon entreprise</strong>
+      Compte de démonstration
+    </div>
+  </nav>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="main">
+
+    <!-- État vide -->
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <h2>Bienvenue sur Seba !</h2>
+      <p>Créez votre espace professionnel en quelques minutes pour accéder à votre tableau de bord personnalisé.</p>
+      <a href="onboarding.html" class="btn-em">Créer mon entreprise →</a>
+    </div>
+
+    <!-- Dashboard principal -->
+    <div id="dash-content">
+
+      <!-- ── Zone 1 : En-tête ── -->
+      <div class="dash-header">
+        <div>
+          <div class="dh-greeting" id="greeting">Bonjour !</div>
+          <div class="dh-meta">
+            <span class="sector-badge" id="sector-badge">—</span>
+            <span id="topbar-date"></span>
+            <span aria-hidden="true">·</span>
+            <span class="clock-time" id="clock-time">--:--:--</span>
+            <span class="clock-tz" id="clock-tz" title="Heure locale de l'entreprise"></span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-btn" title="Notifications">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
+            <div class="notif-badge">2</div>
+          </div>
+          <div class="avatar-wrap">
+            <div class="avatar" id="avatar" style="background:var(--emerald);">—</div>
+            <div class="user-menu" id="user-menu">
+              <a href="reglages.html">Mon compte</a>
+              <div class="menu-sep"></div>
+              <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Zone 2 : Métriques ── -->
+      <div class="metrics-strip" id="metrics-strip"></div>
+
+      <!-- ── Zone 3 : Grille principale 2 colonnes ── -->
+      <div class="main-grid">
+
+        <!-- Colonne gauche : Timeline + Activité -->
+        <div class="col-left">
+
+          <div class="module">
+            <div class="module-head">
+              <span class="module-title">Journée d'aujourd'hui</span>
+              <a href="planning.html" class="module-link">Voir le planning →</a>
+            </div>
+            <div id="timeline-list"></div>
+          </div>
+
+          <div class="module">
+            <div class="module-head">
+              <span class="module-title">Activité récente</span>
+              <a href="historique.html" class="module-link">Tout voir →</a>
+            </div>
+            <div id="activity-list"></div>
+          </div>
+
+        </div>
+
+        <!-- Colonne droite : Reco + Actions + Objectif -->
+        <div class="col-right">
+
+          <div class="module">
+            <div class="module-head">
+              <span class="module-title">Recommandations Seba</span>
+            </div>
+            <div id="reco-list"></div>
+          </div>
+
+          <div class="module">
+            <div class="module-head">
+              <span class="module-title">Actions rapides</span>
+            </div>
+            <div class="qa-grid">
+              <a href="clients.html" class="qa-btn">+ Client</a>
+              <a href="devis-nouveau.html" class="qa-btn">+ Devis</a>
+              <a href="planning.html" class="qa-btn">+ Intervention</a>
+              <a href="factures.html" class="qa-btn">+ Facture</a>
+            </div>
+          </div>
+
+          <div class="module">
+            <div class="module-head">
+              <span class="module-title">Objectif du mois</span>
+              <a href="factures.html" class="module-link">Factures →</a>
+            </div>
+            <div class="goal-block">
+              <div class="goal-head">
+                <span class="goal-current" id="goal-current">—</span>
+                <span class="goal-target-txt" id="goal-target">— objectif</span>
+              </div>
+              <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-bar"></div></div>
+              <div class="goal-sub" id="goal-sub"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Zone 4 : Bande basse 3 colonnes ── -->
+      <div class="bottom-grid">
+
+        <div class="module">
+          <div class="module-head">
+            <span class="module-title">Votre espace</span>
+            <a href="reglages.html" class="module-link">Réglages →</a>
+          </div>
+          <div id="workspace-rows"></div>
+        </div>
+
+        <div class="module">
+          <div class="module-head">
+            <span class="module-title">Portail client</span>
+          </div>
+          <div class="portal-block">
+            <div class="portal-name" id="portal-name">—</div>
+            <div class="portal-url-txt" id="portal-url">seba.app/p/—</div>
+            <div class="portal-code-row">
+              <span class="portal-code-lbl">Code d'accès</span>
+              <span class="code-chip" id="portal-code">SEBA-XXXX</span>
+            </div>
+            <div class="portal-actions">
+              <button class="portal-btn" id="copy-btn" onclick="copyLink()">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
+                Copier le lien
+              </button>
+              <a href="client.html" class="portal-btn primary" target="_blank">Voir l'aperçu</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="module-head">
+            <span class="module-title">Équipe aujourd'hui</span>
+            <a href="equipe.html" class="module-link">Voir tout →</a>
+          </div>
+          <div id="team-list"></div>
+        </div>
+
+      </div>
+    </div><!-- /dash-content -->
+  </main>
+</div>
+
+<script src="businessTypes.js"></script>
+<script>
+  /* ═══════════════════════════════════════════════════════
+     DEMO DATA — par secteur
+  ═══════════════════════════════════════════════════════ */
+  const DEMO = {
+    menage: {
+      metrics: [
+        { label: 'CA ce mois', value: '2 840', unit: '€', delta: '+12% vs mois der.', up: true, href: 'factures.html' },
+        { label: 'Interventions', value: '23', unit: '', delta: '+3 vs mois der.', up: true, href: 'planning.html' },
+        { label: 'Clients actifs', value: '14', unit: '', delta: '+2 nouveaux', up: true, href: 'clients.html' },
+        { label: 'Devis en attente', value: '4', unit: '', delta: '2 à relancer', up: false, href: 'devis.html' },
+      ],
+      timeline: [
+        { time: '08:00', done: true,  type: 'intervention', label: 'Ménage — M. Durand',          sub: 'Ménage complet 3h · Terminé',              href: 'client-fiche.html' },
+        { time: '11:30', done: true,  type: 'devis',        label: 'Devis envoyé — Mme Petit',     sub: 'Grand ménage + vitrerie · 280 €',           href: 'devis.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Mme Bernard — Ménage hebdo',   sub: 'Durée prévue : 2h',                         href: 'client-fiche.html' },
+        { time: '17:00', done: false, type: 'client',       label: 'RDV — Sophie Lacroix',         sub: "Visite d'estimation · nouveau client",       href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Planifiez vos relances',       desc: '2 devis en attente depuis plus de 7 jours sans réponse.', cta: 'Voir les devis',  href: 'devis.html' },
+        { cls: 'am', title: 'Demandez des avis clients',    desc: '5 interventions cette semaine sans demande de retour.',   cta: 'Mes clients',      href: 'clients.html' },
+        { cls: 'pl', title: 'Créez vos modèles de devis',  desc: 'Gagnez 8 min par devis, soit environ 2h/mois.',           cta: 'Réglages',          href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Nouveau client — Mme Renaud',              time: 'Il y a 2h',         href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Paiement reçu — Sophie Lacroix · 160 €',   time: 'Ce matin 11:42',   href: 'factures.html' },
+        { type: 'devis',        label: 'Devis signé — Pierre Tessier · 190 €',     time: 'Hier 16:15',       href: 'devis.html' },
+        { type: 'intervention', label: 'Intervention terminée — M. Durand',         time: 'Hier 09:30',       href: 'planning.html' },
+      ],
+      team: [
+        { name: 'Léa Martin',   role: 'Aide-ménagère', working: true,  href: 'employe-fiche.html' },
+        { name: 'Sarah Dupont', role: 'Aide-ménagère', working: true,  href: 'employe-fiche.html' },
+        { name: 'Julie Moreau', role: 'Aide-ménagère', working: false, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 2840, target: 3500, unit: '€' },
+    },
+
+    conciergerie: {
+      metrics: [
+        { label: 'CA mensuel',     value: '6 420', unit: '€', delta: '+8% vs mois der.', up: true,  href: 'factures.html' },
+        { label: 'Logements',      value: '12',    unit: '',  delta: '+1 ce mois',        up: true,  href: 'clients.html' },
+        { label: "Arrivées auj.",  value: '3',     unit: '',  delta: '2 départs aussi',   up: true,  href: 'planning.html' },
+        { label: 'Ménages à faire',value: '2',     unit: '',  delta: "Aujourd'hui",        up: false, href: 'planning.html' },
+      ],
+      timeline: [
+        { time: '09:00', done: true,  type: 'intervention', label: 'Check-out — Apt Rue Molière',    sub: 'État des lieux · Clés récupérées',          href: 'client-fiche.html' },
+        { time: '11:00', done: true,  type: 'intervention', label: 'Ménage — Apt Rue Molière',       sub: 'Préparation prochaine arrivée · 2h',         href: 'client-fiche.html' },
+        { time: '15:00', done: false, type: 'client',       label: 'Check-in — Villa Les Pins',      sub: 'Famille Martin · 4 pers.',                   href: 'client-fiche.html' },
+        { time: '18:00', done: false, type: 'client',       label: 'Check-in — Apt Haussmann',       sub: 'M. Schneider · 1 pers.',                     href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Automatisez les check-ins',        desc: '7 check-ins cette semaine. Économisez jusqu\'à 3h de déplacements.',   cta: 'Configurer', href: 'reglages.html' },
+        { cls: 'am', title: 'Photos des logements à mettre à jour', desc: '3 logements sans photos récentes. +25% de réservations en moyenne.', cta: 'Clients',    href: 'clients.html' },
+        { cls: 'pl', title: 'Rapport propriétaire en attente',  desc: 'Rapport de mai non envoyé à 2 propriétaires.',                          cta: 'Clients',    href: 'clients.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Nouvelle réservation — Villa Les Pins',           time: 'Il y a 1h',   href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Virement propriétaire — M. Fontaine · 1 200 €', time: 'Ce matin',    href: 'factures.html' },
+        { type: 'intervention', label: 'Check-out effectué — Apt Molière',                time: 'Hier 10:00', href: 'planning.html' },
+        { type: 'devis',        label: 'Nouveau logement — Contrat signé',                time: 'Avant-hier', href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Léa Martin',  role: 'Agent conciergerie', working: true,  href: 'employe-fiche.html' },
+        { name: 'Marc Tissot', role: 'Prestataire ménage', working: true,  href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 6420, target: 8000, unit: '€' },
+    },
+
+    conciergerieCopro: {
+      metrics: [
+        { label: 'CA mensuel',      value: '3 800', unit: '€', delta: 'Abonnements stables', up: true,  href: 'factures.html' },
+        { label: 'Résidences',      value: '4',     unit: '',  delta: '+1 en négociation',   up: true,  href: 'clients.html' },
+        { label: 'Incidents',       value: '2',     unit: '',  delta: 'à traiter',            up: false, href: 'planning.html' },
+        { label: 'Colis en attente',value: '8',     unit: '',  delta: 'depuis >2j',           up: false, href: 'clients.html' },
+      ],
+      timeline: [
+        { time: '08:00', done: true,  type: 'intervention', label: 'Nettoyage — Résidence Galilée',    sub: "Parties communes · Hall + cage d'escalier",  href: 'client-fiche.html' },
+        { time: '10:00', done: true,  type: 'intervention', label: 'Réception colis — 14 unités',      sub: 'Résidence Galilée · Enregistrés',            href: 'client-fiche.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Incident — Résidence Montaigne',    sub: 'Ascenseur en panne · Contacter prestataire', href: 'client-fiche.html' },
+        { time: '16:30', done: false, type: 'client',       label: 'RDV syndic — Résidence Lafayette', sub: 'Renouvellement contrat annuel',              href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: '8 colis en attente depuis +2j', desc: 'Alertez les résidents pour éviter les réclamations.',         cta: 'Clients',  href: 'clients.html' },
+        { cls: 'am', title: 'Assemblée générale dans 10 jours', desc: 'Préparez le rapport d\'activité trimestriel.',             cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: 'Incident ascenseur non assigné',   desc: 'Résidence Montaigne — coordonnez un prestataire vite.',    cta: 'Planning', href: 'planning.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Signalement — Fuite cave Résidence Voltaire',    time: 'Il y a 1h',   href: 'client-fiche.html' },
+        { type: 'intervention', label: 'Nettoyage terminé — Résidence Galilée',          time: 'Ce matin',    href: 'planning.html' },
+        { type: 'paiement',     label: 'Abonnement reçu — Résidence Montaigne · 950 €', time: 'Hier',        href: 'factures.html' },
+        { type: 'devis',        label: 'Devis nouveau contrat — Résidence Victor Hugo',   time: 'Avant-hier', href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Isabelle Laurent', role: 'Concierge', working: true,  href: 'employe-fiche.html' },
+        { name: 'Paul Mercier',     role: 'Concierge', working: false, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 3800, target: 4500, unit: '€' },
+    },
+
+    conciergerieEntreprise: {
+      metrics: [
+        { label: 'CA mensuel',      value: '5 200', unit: '€', delta: '+6% vs mois der.',    up: true,  href: 'factures.html' },
+        { label: 'Entreprises',     value: '3',     unit: '',  delta: 'clientes actives',     up: true,  href: 'clients.html' },
+        { label: "Demandes auj.",   value: '12',    unit: '',  delta: 'salariés',             up: true,  href: 'planning.html' },
+        { label: 'Budget utilisé',  value: '78',    unit: '%', delta: 'du forfait mensuel',   up: false, href: 'factures.html' },
+      ],
+      timeline: [
+        { time: '08:30', done: true,  type: 'intervention', label: 'Accueil visiteurs — TechCorp',     sub: 'Délégation partenaire · 8 pers. · Café prêt',  href: 'client-fiche.html' },
+        { time: '10:00', done: true,  type: 'devis',        label: 'Réservation hôtel — M. Schneider', sub: 'Déplacement Lyon · 2 nuits · Confirmé',         href: 'devis.html' },
+        { time: '12:30', done: false, type: 'intervention', label: 'Déjeuner équipe — StartupXY',       sub: 'Restaurant La Belle Époque · 12 pers.',         href: 'client-fiche.html' },
+        { time: '15:00', done: false, type: 'intervention', label: '5 demandes salariés en attente',    sub: 'Services conciergerie bien-être',                href: 'planning.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Budget mensuel à 78% au 20',       desc: 'Informez le DRH de TechCorp avant d\'atteindre le plafond.',   cta: 'Client',   href: 'client-fiche.html' },
+        { cls: 'am', title: 'Pic de demandes lundi matin',       desc: 'Renforcez votre disponibilité en début de semaine.',           cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: 'Proposez le module bien-être',      desc: '2 entreprises clientes sans ce service très demandé.',         cta: 'Réglages', href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Nouvelle demande — M. Petit (StartupXY)',  time: 'Il y a 30min', href: 'client-fiche.html' },
+        { type: 'intervention', label: 'Accueil visiteurs terminé — TechCorp',     time: 'Ce matin',     href: 'planning.html' },
+        { type: 'paiement',     label: 'Abonnement mensuel — InnoGroup · 1 800 €', time: 'Hier',         href: 'factures.html' },
+        { type: 'devis',        label: 'Devis nouveau service — TechCorp',          time: 'Avant-hier',  href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Marine Dupont', role: 'Concierge entreprise',   working: true, href: 'employe-fiche.html' },
+        { name: 'Kevin Perrin',  role: 'Assistant conciergerie', working: true, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 5200, target: 6500, unit: '€' },
+    },
+
+    jardinage: {
+      metrics: [
+        { label: 'CA mensuel',      value: '3 100', unit: '€', delta: '+5% vs mois der.', up: true,  href: 'factures.html' },
+        { label: 'Interventions',   value: '31',    unit: '',  delta: 'ce mois',           up: true,  href: 'planning.html' },
+        { label: 'Contrats annuels',value: '8',     unit: '',  delta: '+1 ce trimestre',   up: true,  href: 'clients.html' },
+        { label: 'Devis en cours',  value: '3',     unit: '',  delta: '1 à relancer',      up: false, href: 'devis.html' },
+      ],
+      timeline: [
+        { time: '07:30', done: true,  type: 'intervention', label: 'Tonte — M. Girard',              sub: 'Jardin 400m² · 1h30 · Terminé',        href: 'client-fiche.html' },
+        { time: '09:30', done: true,  type: 'intervention', label: 'Taille de haies — Mme Colin',    sub: '80ml de haie · Terminé',                href: 'client-fiche.html' },
+        { time: '13:30', done: false, type: 'intervention', label: 'Entretien — Résidence Les Acacias',sub: 'Contrat mensuel · Espaces communs',    href: 'client-fiche.html' },
+        { time: '16:00', done: false, type: 'devis',        label: 'Visite terrain — Mme Faure',     sub: 'Création massif · devis à établir',     href: 'devis.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Contrat annuel à renouveler',    desc: 'Le contrat de M. Girard expire dans 3 semaines.',           cta: 'Client',   href: 'client-fiche.html' },
+        { cls: 'am', title: 'Météo défavorable jeudi',         desc: 'Pluie prévue — reportez les 2 interventions planifiées.',   cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: '3 clients sans passage depuis 45j',desc: 'La saison est active — relancez avant la concurrence.',    cta: 'Clients',  href: 'clients.html' },
+      ],
+      activity: [
+        { type: 'paiement',     label: 'Paiement — Mme Colin · 180 €',          time: 'Il y a 3h',   href: 'factures.html' },
+        { type: 'intervention', label: 'Tonte terminée — M. Girard',             time: 'Ce matin',    href: 'planning.html' },
+        { type: 'client',       label: 'Nouveau client — Résidence Les Acacias', time: 'Hier',        href: 'client-fiche.html' },
+        { type: 'devis',        label: 'Devis envoyé — Mme Faure · 640 €',       time: 'Avant-hier', href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Lucas Bernard', role: 'Paysagiste', working: true,  href: 'employe-fiche.html' },
+        { name: 'Antoine Roux',  role: 'Paysagiste', working: false, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 3100, target: 4000, unit: '€' },
+    },
+
+    maintenance: {
+      metrics: [
+        { label: 'CA mensuel',      value: '4 200', unit: '€', delta: '+9% vs mois der.', up: true,  href: 'factures.html' },
+        { label: 'Interventions',   value: '18',    unit: '',  delta: 'ce mois',           up: true,  href: 'planning.html' },
+        { label: 'Urgences',        value: '3',     unit: '',  delta: 'cette semaine',     up: false, href: 'planning.html' },
+        { label: 'Devis signés',    value: '5',     unit: '',  delta: '+2 vs mois der.',   up: true,  href: 'devis.html' },
+      ],
+      timeline: [
+        { time: '08:30', done: true,  type: 'intervention', label: 'Plomberie — M. Lambert',           sub: 'Fuite robinet · Réparé en 45min',         href: 'client-fiche.html' },
+        { time: '10:30', done: true,  type: 'intervention', label: 'Électricité — Mme Perrin',         sub: 'Tableau disjoncteur · Mis aux normes',     href: 'client-fiche.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Montage meubles — M. et Mme Roy',  sub: 'Suite chambre IKEA · ~3h',                 href: 'client-fiche.html' },
+        { time: '17:30', done: false, type: 'devis',        label: 'Devis peinture — Mme Aubert',      sub: 'Salon + couloir · ~120m²',                 href: 'devis.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Intervention non facturée',      desc: "Passage chez M. Lambert terminé mais facture non émise.",   cta: 'Factures', href: 'factures.html' },
+        { cls: 'am', title: 'Urgence non assignée',            desc: 'Demande entrante en attente depuis 4h.',                   cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: 'Créez un forfait urgence',        desc: 'Vos interventions urgentes valent 3× plus — formalisez.',  cta: 'Réglages', href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Nouveau client — M. Aubert',         time: 'Il y a 1h',   href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Paiement — M. Lambert · 90 €',       time: 'Ce matin',    href: 'factures.html' },
+        { type: 'intervention', label: 'Intervention terminée — Mme Perrin', time: 'Hier 16:00',  href: 'planning.html' },
+        { type: 'devis',        label: 'Devis refusé — M. Moreau',           time: 'Avant-hier',  href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Thomas Chevalier', role: 'Technicien', working: true, href: 'employe-fiche.html' },
+        { name: 'Julien Blanc',     role: 'Technicien', working: true, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 4200, target: 5000, unit: '€' },
+    },
+
+    pressing: {
+      metrics: [
+        { label: 'CA mensuel',  value: '1 840', unit: '€', delta: '+4% vs mois der.', up: true,  href: 'factures.html' },
+        { label: 'Commandes',   value: '47',    unit: '',  delta: 'ce mois',           up: true,  href: 'clients.html' },
+        { label: 'À collecter', value: '5',     unit: '',  delta: "aujourd'hui",        up: true,  href: 'planning.html' },
+        { label: 'Retards',     value: '2',     unit: '',  delta: 'à résoudre',        up: false, href: 'clients.html' },
+      ],
+      timeline: [
+        { time: '08:00', done: true,  type: 'intervention', label: 'Collecte — M. Renaud',   sub: '3 chemises + 1 costume · Récupéré',  href: 'client-fiche.html' },
+        { time: '10:00', done: true,  type: 'intervention', label: 'Collecte — Mme Blanc',   sub: 'Linge hebdo · Récupéré',             href: 'client-fiche.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Livraison — M. Renaud',  sub: 'Commande de lundi · Prête',          href: 'client-fiche.html' },
+        { time: '17:00', done: false, type: 'intervention', label: 'Collecte — Mme Fontaine',sub: 'Abonnement hebdomadaire',             href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Commande en attente depuis 4j',      desc: "M. Laurent n'est pas venu récupérer sa commande.",          cta: 'Clients',  href: 'clients.html' },
+        { cls: 'am', title: '2 clients sans commande depuis 3 sem.',desc: 'Période inhabituelle — relancez avant la concurrence.',    cta: 'Clients',  href: 'clients.html' },
+        { cls: 'pl', title: 'Proposez l\'abonnement mensuel',       desc: '12 clients réguliers pourraient passer en abonnement.',    cta: 'Réglages', href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'client',       label: "Nouvel abonnement — Mme Fontaine",   time: 'Ce matin',    href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Paiement — M. Renaud · 48 €',        time: 'Hier 14:30', href: 'factures.html' },
+        { type: 'intervention', label: 'Collecte effectuée — Mme Blanc',      time: 'Hier 10:00', href: 'planning.html' },
+        { type: 'devis',        label: 'Devis entreprise — Cabinet Dupont',   time: 'Avant-hier', href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Camille Jouvet', role: 'Livreur-collecteur', working: true, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 1840, target: 2200, unit: '€' },
+    },
+
+    beaute: {
+      metrics: [
+        { label: 'CA mensuel',        value: '2 380', unit: '€', delta: '+15% vs mois der.', up: true, href: 'factures.html' },
+        { label: 'RDV ce mois',       value: '34',    unit: '',  delta: '+6 vs mois der.',   up: true, href: 'planning.html' },
+        { label: 'Nouveaux clients',  value: '5',     unit: '',  delta: 'ce mois',            up: true, href: 'clients.html' },
+        { label: 'Fidélisation',      value: '82',    unit: '%', delta: '+3pts',              up: true, href: 'clients.html' },
+      ],
+      timeline: [
+        { time: '09:00', done: true,  type: 'intervention', label: 'Coupe + couleur — Mme Petit',   sub: '2h30 · Terminé · 120 €',          href: 'client-fiche.html' },
+        { time: '11:30', done: true,  type: 'intervention', label: 'Soin visage — Mme Renaud',      sub: '1h · Terminé · 60 €',             href: 'client-fiche.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Balayage — Mme Lambert',        sub: 'Durée estimée : 3h',               href: 'client-fiche.html' },
+        { time: '17:30', done: false, type: 'intervention', label: 'Maquillage mariage — Mme Blanc',sub: 'Prestation événementielle · 80 €', href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: '3 clientes sans RDV depuis 6 sem.', desc: 'Habituellement mensuelles — un message les ramènera.',     cta: 'Clients',  href: 'clients.html' },
+        { cls: 'am', title: 'Créneau vide demain matin',           desc: "Proposez-le à votre liste d'attente dès maintenant.",    cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: 'Collectez plus d\'avis',              desc: '8 prestations cette semaine sans demande d\'avis.',      cta: 'Clients',  href: 'clients.html' },
+      ],
+      activity: [
+        { type: 'paiement',     label: 'Paiement — Mme Petit · 120 €',     time: 'Il y a 2h',  href: 'factures.html' },
+        { type: 'client',       label: 'Nouveau client — Mme Aubert',       time: 'Ce matin',   href: 'client-fiche.html' },
+        { type: 'intervention', label: 'Soin terminé — Mme Renaud',         time: 'Ce matin',   href: 'planning.html' },
+        { type: 'devis',        label: 'Devis mariage — Mme Fontaine',      time: 'Hier',       href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Sophie Morel', role: 'Esthéticienne', working: true,  href: 'employe-fiche.html' },
+        { name: 'Claire Dubois',role: 'Coiffeuse',      working: false, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 2380, target: 3000, unit: '€' },
+    },
+
+    animaux: {
+      metrics: [
+        { label: 'CA mensuel',       value: '1 620', unit: '€', delta: '+7% vs mois der.', up: true, href: 'factures.html' },
+        { label: 'Animaux en garde', value: '6',     unit: '',  delta: "aujourd'hui",        up: true, href: 'clients.html' },
+        { label: 'Promenades',       value: '14',    unit: '',  delta: 'cette semaine',      up: true, href: 'planning.html' },
+        { label: 'Nouveaux clients', value: '3',     unit: '',  delta: 'ce mois',            up: true, href: 'clients.html' },
+      ],
+      timeline: [
+        { time: '07:00', done: true,  type: 'intervention', label: 'Promenade — Rex (M. Martin)',   sub: '30min · Parc Lefebvre · Terminé', href: 'client-fiche.html' },
+        { time: '08:00', done: true,  type: 'intervention', label: 'Promenade — Nala (Mme Girard)', sub: '30min · Terminé',                  href: 'client-fiche.html' },
+        { time: '12:00', done: false, type: 'intervention', label: 'Visite domicile — Cookie',       sub: 'Chat de Mme Blanc · 2e jour',      href: 'client-fiche.html' },
+        { time: '17:00', done: false, type: 'intervention', label: 'Promenade — Bruno (M. Fontaine)',sub: '45min · Abonnement hebdo',          href: 'client-fiche.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Confirmez la garde semaine prochaine', desc: 'M. Lambert revient dans 6 jours — la place est encore libre.', cta: 'Planning', href: 'planning.html' },
+        { cls: 'am', title: 'Vaccins à renouveler',                  desc: 'Rex (M. Martin) — carnet de santé à vérifier avant le séjour.', cta: 'Client',   href: 'client-fiche.html' },
+        { cls: 'pl', title: 'Proposez l\'abonnement promenades',     desc: '4 clients réguliers sans abonnement — revenu garanti pour vous.', cta: 'Réglages', href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'client',       label: 'Nouveau client — Mme Aubert + Luna',   time: 'Il y a 3h', href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Paiement garde — M. Martin · 160 €',  time: 'Ce matin',  href: 'factures.html' },
+        { type: 'intervention', label: 'Promenade terminée — Rex',              time: 'Ce matin',  href: 'planning.html' },
+        { type: 'devis',        label: 'Devis garde 2 sem. — M. Lambert',      time: 'Hier',      href: 'devis.html' },
+      ],
+      team: [
+        { name: 'Eva Moreau', role: 'Garde animaux', working: true, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 1620, target: 2000, unit: '€' },
+    },
+
+    demenagement: {
+      metrics: [
+        { label: 'CA mensuel',    value: '8 400', unit: '€', delta: '+11% vs mois der.', up: true,  href: 'factures.html' },
+        { label: 'Déménagements', value: '7',     unit: '',  delta: 'ce mois',            up: true,  href: 'planning.html' },
+        { label: 'Devis en attente',value: '5',   unit: '',  delta: '2 à relancer',       up: false, href: 'devis.html' },
+        { label: 'Volume moyen',  value: '28',    unit: 'm³',delta: 'par mission',         up: true,  href: 'factures.html' },
+      ],
+      timeline: [
+        { time: '07:00', done: true,  type: 'intervention', label: 'Déménagement — Mme Dupont',   sub: 'Apt 3 pièces · Chargement en cours',  href: 'client-fiche.html' },
+        { time: '09:00', done: false, type: 'intervention', label: 'Transport — Rue des Lilas',    sub: 'Destination : Bd Voltaire · ~45min',   href: 'planning.html' },
+        { time: '14:00', done: false, type: 'intervention', label: 'Déchargement + montage',        sub: 'Durée estimée : 3h',                   href: 'planning.html' },
+        { time: '17:00', done: false, type: 'devis',        label: 'Visite estimation — M. Laurent',sub: 'Appartement 4 pièces · 70m²',         href: 'devis.html' },
+      ],
+      recos: [
+        { cls: 'em', title: '2 devis sans réponse depuis 8j',   desc: 'La décision se prend en 5 jours — relancez maintenant.',       cta: 'Devis',    href: 'devis.html' },
+        { cls: 'am', title: 'Forte demande juin–juillet',         desc: 'Bloquez vos disponibilités tôt — créneaux partent en 3 sem.', cta: 'Planning', href: 'planning.html' },
+        { cls: 'pl', title: 'Ajoutez le service garde-meubles',  desc: '3 clients ont demandé du stockage — service non proposé.',     cta: 'Réglages', href: 'reglages.html' },
+      ],
+      activity: [
+        { type: 'devis',        label: 'Devis signé — Mme Dupont · 1 200 €',   time: 'Hier 17:00',    href: 'devis.html' },
+        { type: 'client',       label: 'Nouveau client — M. Laurent',            time: 'Hier 14:00',    href: 'client-fiche.html' },
+        { type: 'paiement',     label: 'Acompte reçu — M. Faure · 400 €',       time: 'Avant-hier',    href: 'factures.html' },
+        { type: 'intervention', label: 'Déménagement terminé — M. Blanc',        time: 'Il y a 3 jours',href: 'planning.html' },
+      ],
+      team: [
+        { name: 'Lucas Bernard', role: 'Chauffeur-déménageur', working: true, href: 'employe-fiche.html' },
+        { name: 'Antoine Roux',  role: 'Déménageur',           working: true, href: 'employe-fiche.html' },
+        { name: 'Julien Blanc',  role: 'Déménageur',           working: true, href: 'employe-fiche.html' },
+      ],
+      goal: { label: 'CA mensuel', current: 8400, target: 10000, unit: '€' },
+    },
+
+    autre: {
+      metrics: [
+        { label: 'CA mensuel',   value: '—', unit: '', delta: 'À configurer', up: true, href: 'factures.html' },
+        { label: 'Interventions',value: '—', unit: '', delta: 'ce mois',      up: true, href: 'planning.html' },
+        { label: 'Clients',      value: '—', unit: '', delta: '',              up: true, href: 'clients.html' },
+        { label: 'Devis',        value: '—', unit: '', delta: '',              up: true, href: 'devis.html' },
+      ],
+      timeline: [
+        { time: '—', done: false, type: 'intervention', label: 'Complétez votre profil', sub: 'Ajoutez vos services dans les réglages pour personnaliser le planning', href: 'reglages.html' },
+      ],
+      recos: [
+        { cls: 'em', title: 'Personnalisez votre espace',  desc: 'Ajoutez vos services pour activer les recommandations Seba.', cta: 'Réglages',   href: 'reglages.html' },
+        { cls: 'pl', title: 'Créez votre premier devis',   desc: 'Commencez à travailler avec vos premiers clients.',           cta: 'Nouveau devis', href: 'devis-nouveau.html' },
+      ],
+      activity: [
+        { type: 'client', label: 'Bienvenue sur Seba !', time: "Aujourd'hui", href: 'reglages.html' },
+      ],
+      team: [],
+      goal: { label: 'CA mensuel', current: 0, target: 0, unit: '€' },
+    },
+  };
+
+  /* ═══════════════════════════════════════════════════════
+     HELPERS
+  ═══════════════════════════════════════════════════════ */
+  function slugify(str) {
+    return (str || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'mon-entreprise';
+  }
+
+  function fmtNum(n, unit) {
+    if (n === 0) return unit === '€' ? '0 €' : '0';
+    return n.toLocaleString('fr-FR') + (unit ? ' ' + unit : '');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════ */
+  let biz = null;
+  try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
+
+  if (!biz || !biz.secteur) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('dash-content').style.display = 'none';
+  } else {
+    renderDashboard(biz);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     RENDER
+  ═══════════════════════════════════════════════════════ */
+  function renderDashboard(biz) {
+    const nom      = biz.nom || 'Mon entreprise';
+    const secteur  = biz.secteur || 'autre';
+    const couleur  = biz.couleur || '#00C896';
+    const services = biz.services || [];
+    const slug     = biz.slug || slugify(biz.publicName || nom);
+    const demo     = DEMO[secteur] || DEMO['autre'];
+    const bt       = window.businessTypes || {};
+    const sectorLabel = (bt[secteur] || {}).label || secteur;
+
+    /* Header */
+    const h = new Date().getHours();
+    const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+    document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
+    document.getElementById('sector-badge').textContent = sectorLabel;
+    document.getElementById('topbar-date').textContent =
+      new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    startClock(biz);
+
+    /* Avatar */
+    const av = document.getElementById('avatar');
+    av.style.background = couleur;
+    av.textContent = nom.charAt(0).toUpperCase();
+
+    /* Sidebar */
+    document.getElementById('sidebar-company').textContent = nom;
+
+    /* Metrics */
+    const ms = document.getElementById('metrics-strip');
+    demo.metrics.forEach(m => {
+      const a = document.createElement('a');
+      a.href = m.href;
+      a.className = 'metric-card';
+      a.innerHTML =
+        '<div class="metric-label">' + m.label + '</div>' +
+        '<div class="metric-value">' + m.value + '<span class="metric-unit">' + m.unit + '</span></div>' +
+        '<div class="metric-delta ' + (m.up ? 'up' : 'down') + '">' + (m.up ? '↑' : '↓') + ' ' + m.delta + '</div>';
+      ms.appendChild(a);
+    });
+
+    /* Timeline */
+    const tlEl = document.getElementById('timeline-list');
+    const typePillLabel = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
+    if (!demo.timeline.length) {
+      tlEl.innerHTML = '<div class="tl-empty">Aucune tâche planifiée. <a href="planning.html" style="color:var(--emerald)">Planifier →</a></div>';
+    } else {
+      demo.timeline.forEach(t => {
+        const a = document.createElement('a');
+        a.href = t.href;
+        a.className = 'tl-item' + (t.done ? ' done' : '');
+        a.innerHTML =
+          '<div class="tl-time-col"><span class="tl-time">' + t.time + '</span><div class="tl-dot' + (t.done ? ' done' : '') + '"></div></div>' +
+          '<div><div class="tl-type-pill ' + t.type + '">' + (typePillLabel[t.type] || t.type) + '</div>' +
+          '<div class="tl-label">' + t.label + '</div>' +
+          '<div class="tl-sub">' + t.sub + '</div></div>';
+        tlEl.appendChild(a);
+      });
+    }
+
+    /* Recommendations */
+    const rl = document.getElementById('reco-list');
+    demo.recos.forEach(r => {
+      const a = document.createElement('a');
+      a.href = r.href;
+      a.className = 'reco-item';
+      a.innerHTML =
+        '<div class="reco-bar ' + r.cls + '"></div>' +
+        '<div class="reco-content">' +
+        '<div class="reco-title">' + r.title + '</div>' +
+        '<div class="reco-desc">' + r.desc + '</div>' +
+        '<div class="reco-cta">' + r.cta + ' →</div></div>';
+      rl.appendChild(a);
+    });
+
+    /* Activity */
+    const al = document.getElementById('activity-list');
+    demo.activity.forEach(item => {
+      const a = document.createElement('a');
+      a.href = item.href;
+      a.className = 'activity-item';
+      a.innerHTML =
+        '<div class="act-dot ' + item.type + '"></div>' +
+        '<div class="act-body"><div class="act-label">' + item.label + '</div>' +
+        '<div class="act-time">' + item.time + '</div></div>';
+      al.appendChild(a);
+    });
+
+    /* Monthly goal */
+    const g = demo.goal;
+    document.getElementById('goal-current').textContent = g.current > 0 ? fmtNum(g.current, g.unit) : '—';
+    document.getElementById('goal-target').textContent  = g.target  > 0 ? '/ ' + fmtNum(g.target, g.unit) + ' objectif' : 'Définir un objectif';
+    const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
+    setTimeout(() => { document.getElementById('goal-bar').style.width = pct + '%'; }, 400);
+    const remaining = g.target - g.current;
+    document.getElementById('goal-sub').textContent = g.target > 0
+      ? (pct >= 100 ? 'Objectif atteint ce mois !' : fmtNum(remaining, g.unit) + ' restants pour atteindre l\'objectif')
+      : 'Configurez votre objectif mensuel dans les réglages.';
+
+    /* Workspace */
+    const wr = document.getElementById('workspace-rows');
+    const sc = services.length;
+    wr.innerHTML =
+      '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + sectorLabel + '</span></div>' +
+      '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
+      '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#16A34A">Actif</span></div>' +
+      '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (biz.pays || '—') + ' · ' + (biz.deviseSymbole || '€') + '</span></div>';
+
+    /* Portal */
+    const publicName = biz.publicName || nom;
+    const portalUrl  = 'seba.app/p/' + slug;
+    const portalCode = 'SEBA-' + slug.substring(0, 4).toUpperCase();
+    document.getElementById('portal-name').textContent = publicName;
+    document.getElementById('portal-url').textContent  = portalUrl;
+    document.getElementById('portal-code').textContent = portalCode;
+
+    /* Team */
+    const tlTeam = document.getElementById('team-list');
+    if (!demo.team.length) {
+      tlTeam.innerHTML = '<div class="tl-empty">Aucun employé. <a href="equipe.html" style="color:var(--emerald)">Ajouter →</a></div>';
+    } else {
+      demo.team.forEach(t => {
+        const a = document.createElement('a');
+        a.href = t.href;
+        a.className = 'team-item';
+        const initials = t.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        a.innerHTML =
+          '<div class="team-av" style="background:' + (t.working ? couleur : 'var(--border)') + ';color:' + (t.working ? 'var(--ink)' : 'var(--text-2)') + '">' + initials + '</div>' +
+          '<div class="team-info"><div class="team-name">' + t.name + '</div><div class="team-role">' + t.role + '</div></div>' +
+          '<span class="team-status ' + (t.working ? 'working' : 'off') + '">' + (t.working ? 'En service' : 'En repos') + '</span>';
+        tlTeam.appendChild(a);
+      });
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     COPY PORTAL LINK
+  ═══════════════════════════════════════════════════════ */
+  /* ── Horloge temps réel ── */
+  const TZ_MAP = {
+    FR:'Europe/Paris',      BE:'Europe/Brussels',   CH:'Europe/Zurich',
+    LU:'Europe/Luxembourg', CA:'America/Toronto',   MA:'Africa/Casablanca',
+    TN:'Africa/Tunis',      DZ:'Africa/Algiers',    SN:'Africa/Dakar',
+    CI:'Africa/Abidjan',    CM:'Africa/Douala',     CD:'Africa/Kinshasa',
+    MG:'Indian/Antananarivo', HT:'America/Port-au-Prince', MC:'Europe/Monaco',
+    RE:'Indian/Reunion',    MQ:'America/Martinique', GP:'America/Guadeloupe',
+    GF:'America/Cayenne',   NC:'Pacific/Noumea',    PF:'Pacific/Tahiti',
+    ES:'Europe/Madrid',     PT:'Europe/Lisbon',     IT:'Europe/Rome',
+    DE:'Europe/Berlin',     GB:'Europe/London',     US:'America/New_York',
+  };
+  let _clockInterval = null;
+  function startClock(biz) {
+    const tz = biz.timezone || TZ_MAP[biz.paysCode] || 'Europe/Paris';
+    const fmt = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const city = tz.split('/').pop().replace(/_/g, ' ');
+    const tzEl = document.getElementById('clock-tz');
+    if (tzEl) tzEl.textContent = city;
+    const tick = () => {
+      const el = document.getElementById('clock-time');
+      if (el) el.textContent = fmt.format(new Date());
+    };
+    tick();
+    if (_clockInterval) clearInterval(_clockInterval);
+    _clockInterval = setInterval(tick, 1000);
+  }
+
+  function copyLink() {
+    const url = 'https://' + document.getElementById('portal-url').textContent;
+    const btn = document.getElementById('copy-btn');
+    const restore = btn.innerHTML;
+    const ok = () => {
+      btn.textContent = 'Copié !';
+      btn.style.color = 'var(--emerald)';
+      btn.style.borderColor = 'var(--emerald)';
+      setTimeout(() => { btn.innerHTML = restore; btn.style.color = ''; btn.style.borderColor = ''; }, 2200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(ok).catch(() => fallbackCopy(url, ok));
+    } else {
+      fallbackCopy(url, ok);
+    }
+  }
+
+  function fallbackCopy(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     AVATAR MENU
+  ═══════════════════════════════════════════════════════ */
+  const avatarEl  = document.getElementById('avatar');
+  const menuEl    = document.getElementById('user-menu');
+  avatarEl.addEventListener('click', e => { e.stopPropagation(); menuEl.classList.toggle('open'); });
+  document.addEventListener('click', () => menuEl.classList.remove('open'));
+</script>
+</body>
+</html>

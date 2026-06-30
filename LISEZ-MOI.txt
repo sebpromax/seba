@@ -1,0 +1,23 @@
+SEBA — Dossier de travail
+==========================
+
+/site/
+  - index.html        -> page d'accueil (landing)
+  - onboarding.html   -> création d'entreprise (3 étapes + confirmation)
+  - dashboard.html     -> tableau de bord professionnel (vue d'ensemble, clients, planning du jour)
+  - planning.html      -> planning détaillé, vue semaine
+  - devis.html          -> liste et statut des devis
+  - factures.html       -> liste et statut des factures
+  - client.html          -> espace client (ce que voit le client invité)
+
+Parcours complet :
+  index.html -> "Créer mon entreprise" -> onboarding.html -> dashboard.html
+  Depuis le dashboard : Planning / Devis / Factures dans le menu de gauche
+  Depuis le dashboard : "Générer un lien d'invitation" -> ouvre client.html (espace client)
+
+/strategie/
+  - Seba-vision-strategie.md -> vision, roadmap, philosophie produit
+
+Tout est navigable en cliquant, pas de sauvegarde réelle pour l'instant —
+c'est une maquette interactive à montrer à de vrais professionnels avant
+de construire la vraie base de données derrière.

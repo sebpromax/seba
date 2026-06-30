@@ -1,0 +1,164 @@
+/* pro-global.css — Espace Professionnel Seba
+   Micro-interactions + Skeleton Loading
+   Lié dans : dashboard, clients, client-fiche, planning, devis, devis-nouveau,
+               factures, equipe, employe-fiche, reglages, historique
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Variables communes ──────────────────────────────────────────────────── */
+:root {
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1,   1);
+  --t-fast: 0.15s;
+  --t-std:  0.25s;
+  --t-slow: 0.35s;
+}
+
+/* ── Transitions fluides — boutons ───────────────────────────────────────── */
+button,
+.btn,
+[class*="btn-"],
+[class*="-btn"],
+.action-btn,
+.cta-btn {
+  transition:
+    background-color var(--t-std) var(--ease-std),
+    color            var(--t-std) var(--ease-std),
+    border-color     var(--t-std) var(--ease-std),
+    opacity          var(--t-std) var(--ease-std),
+    box-shadow       var(--t-std) var(--ease-std),
+    transform        var(--t-fast) var(--ease-out);
+}
+button:hover,
+.btn:hover,
+[class*="btn-"]:hover { transform: translateY(-1px); }
+button:active,
+.btn:active,
+[class*="btn-"]:active { transform: translateY(0); }
+
+/* ── Transitions — liens sidebar ─────────────────────────────────────────── */
+.sidebar a,
+.sidebar-link,
+nav a,
+.nav-item {
+  transition:
+    color            var(--t-std) var(--ease-std),
+    background-color var(--t-std) var(--ease-std),
+    border-color     var(--t-std) var(--ease-std),
+    opacity          var(--t-fast) var(--ease-std);
+}
+
+/* ── Transitions — fiches clients / employés ─────────────────────────────── */
+.client-row,
+.client-card,
+.employe-card,
+.fiche-card,
+.event-row,
+.table-row,
+tr {
+  transition:
+    background-color var(--t-fast) var(--ease-std),
+    box-shadow       var(--t-std)  var(--ease-std);
+}
+.client-row:hover,
+.client-card:hover,
+.employe-card:hover,
+.fiche-card:hover,
+.event-row:hover,
+.table-row:hover,
+tr:hover { background-color: rgba(0, 200, 150, 0.04); }
+
+/* ── Transitions — modules dashboard ─────────────────────────────────────── */
+.module,
+.metric-card,
+.card,
+[class*="-card"] {
+  transition:
+    border-color var(--t-std) var(--ease-std),
+    box-shadow   var(--t-std) var(--ease-std);
+}
+.module:hover,
+.metric-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 200, 150, 0.07);
+  border-color: rgba(0, 200, 150, 0.18);
+}
+
+/* ── Transitions — inputs & select ──────────────────────────────────────── */
+input,
+select,
+textarea {
+  transition:
+    border-color var(--t-fast) var(--ease-std),
+    box-shadow   var(--t-fast) var(--ease-std);
+}
+
+/* ── Skeleton Loading ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(20, 22, 26, 0)    0%,
+      rgba(0, 200, 150, 0.06) 40%,
+      rgba(61, 38, 69,  0.06) 60%,
+      rgba(20, 22, 26, 0)    100%
+    )
+    #E8E6E1;
+  background-size: 600px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 6px;
+  color: transparent !important;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Variantes de hauteur */
+.skeleton-text   { height: 14px; margin-bottom: 8px; }
+.skeleton-title  { height: 22px; margin-bottom: 12px; }
+.skeleton-badge  { height: 20px; width: 70px; border-radius: 20px; }
+.skeleton-metric { height: 40px; }
+.skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; }
+.skeleton-line   { height: 12px; }
+.skeleton-block  { height: 80px; }
+
+/* Conteneurs pré-chargement */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border, #E8E6E1);
+}
+
+/* Fade de transition skeleton → contenu réel */
+.skeleton-fade-out {
+  animation: skFadeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes skFadeOut {
+  to { opacity: 0; height: 0; overflow: hidden; margin: 0; padding: 0; }
+}
+
+.content-fade-in {
+  animation: skFadeIn 0.5s cubic-bezier(0.0, 0, 0.2, 1) both;
+}
+@keyframes skFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Utilitaires globaux pro ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--emerald, #00C896);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Scrollbar discrète dans l'espace pro (Webkit) */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border, #E8E6E1); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #C8C5BE; }

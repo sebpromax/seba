@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Léa Martin — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<style>
+  :root {
+    --ink: #14161A;
+    --emerald: #00C896;
+    --plum: #3D2645;
+    --bg: #FAF9F7;
+    --white: #FFFFFF;
+    --text-2: #6B6A6F;
+    --border: #E8E6E1;
+    --r: 12px;
+    --rs: 8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  button,textarea{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
+  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
+  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
+  .nav-section{padding:0 14px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+  .nav-item.active{background:rgba(0,200,150,.12);color:var(--emerald);}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
+  .nav-item.active .dot{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+
+  /* MAIN */
+  .main{padding:32px 40px;}
+  .fiche-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-2);margin-bottom:0;}
+  .back-link:hover{color:var(--emerald);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  /* EMPLOYEE HEADER */
+  .emp-header{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:24px 28px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .emp-header-left{display:flex;align-items:center;gap:18px;}
+  .emp-avatar{width:54px;height:54px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;flex-shrink:0;}
+  .emp-name-row{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+  .emp-name-row h1{font-size:1.4rem;}
+  .emp-role{font-size:0.86rem;color:var(--text-2);display:flex;align-items:center;gap:6px;}
+  .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;}
+  .status-dot.on{background:var(--emerald);}
+  .status-dot.off{background:var(--border);}
+  .badge{font-size:0.74rem;padding:3px 9px;border-radius:12px;font-weight:500;}
+  .badge.actif{background:#E3EDE3;color:var(--emerald);}
+  .badge.repos{background:var(--bg);color:var(--text-2);}
+  .emp-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn-outline{border:1px solid var(--border);background:#fff;color:var(--ink);padding:9px 16px;border-radius:var(--rs);font-size:0.85rem;font-weight:500;cursor:pointer;}
+  .btn-outline:hover{border-color:var(--emerald);color:var(--emerald);}
+  .btn-em{background:var(--emerald);color:var(--ink);border:none;padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+
+  /* STATS */
+  .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  .stat-card{background:var(--bg);border-radius:var(--rs);padding:14px 16px;}
+  .stat-card .slabel{font-size:0.72rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;display:block;margin-bottom:6px;}
+  .stat-card .svalue{font-size:1.35rem;font-weight:600;}
+  .stat-card .svalue.moss{color:var(--emerald);}
+
+  /* CONTENT GRID */
+  .content-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start;}
+
+  /* PANELS */
+  .panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .panel:last-child{margin-bottom:0;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .panel-head h3{font-size:1rem;}
+  .panel-eyebrow{font-size:0.72rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:14px;}
+
+  /* MISSION LIST */
+  .mission-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .mission-item:last-child{border-bottom:none;}
+  .mission-time{font-size:0.76rem;color:var(--emerald);min-width:52px;padding-top:2px;}
+  .mission-body .m-date{font-size:0.74rem;color:var(--text-2);margin-bottom:2px;}
+  .mission-body .m-client{font-weight:500;font-size:0.88rem;}
+  .mission-body .m-service{font-size:0.76rem;color:var(--text-2);}
+
+  /* ACCESS RIGHTS */
+  .access-list{display:flex;flex-direction:column;gap:10px;}
+  .access-row{display:flex;justify-content:space-between;align-items:center;font-size:0.88rem;}
+  .access-label{color:var(--ink);}
+  .access-status{display:flex;align-items:center;gap:5px;font-size:0.78rem;}
+  .access-status.granted{color:var(--emerald);}
+  .access-status.denied{color:var(--text-2);}
+  .access-icon{font-size:0.85rem;}
+
+  /* INFO LIST */
+  .info-list{display:flex;flex-direction:column;gap:14px;}
+  .info-row{display:flex;flex-direction:column;gap:3px;}
+  .info-label{font-size:0.74rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;}
+  .info-value{font-size:0.9rem;}
+
+  /* NOTES */
+  .notes-area{width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);resize:vertical;min-height:80px;line-height:1.5;}
+  .notes-area:focus{border-color:var(--emerald);outline:none;}
+
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .main{padding:24px 20px;}
+    .content-grid{grid-template-columns:1fr;}
+    .emp-header{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>Seba</div>
+    <nav class="nav-section">
+      <a href="dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
+      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
+      <a href="planning.html"><div class="nav-item"><span class="dot"></span>Planning</div></a>
+      <a href="devis.html"><div class="nav-item"><span class="dot"></span>Devis</div></a>
+      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
+      <a href="equipe.html"><div class="nav-item active"><span class="dot"></span>Équipe</div></a>
+      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
+    </nav>
+    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+  </aside>
+
+  <main class="main">
+    <div class="fiche-topbar">
+      <a href="equipe.html" class="back-link">← Retour à l'équipe</a>
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar-btn">ML</div>
+        <div class="user-menu" id="user-menu">
+          <a href="reglages.html">Mon compte</a>
+          <div class="menu-sep"></div>
+          <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYEE HEADER -->
+    <div class="emp-header">
+      <div class="emp-header-left">
+        <div class="emp-avatar" id="emp-avatar">LM</div>
+        <div>
+          <div class="emp-name-row">
+            <h1 id="emp-name">Léa Martin</h1>
+            <span class="badge actif">En mission</span>
+          </div>
+          <div class="emp-role">
+            <span class="status-dot on"></span>
+            Intervenante — Temps plein
+          </div>
+        </div>
+      </div>
+      <div class="emp-actions">
+        <button class="btn-outline" onclick="alert('Modifier les droits d\'accès — à venir.')">Modifier les accès</button>
+        <button class="btn-outline" onclick="alert('Envoyer un message — à venir.')">Envoyer un message</button>
+        <button class="btn-em" onclick="alert('Assigner une mission — bloc 1.14 du plan.')">+ Assigner une mission</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="slabel">Missions cette semaine</span>
+        <span class="svalue moss">5</span>
+      </div>
+      <div class="stat-card">
+        <span class="slabel">Missions ce mois</span>
+        <span class="svalue">18</span>
+      </div>
+    </div>
+
+    <div class="content-grid">
+
+      <!-- COLONNE PRINCIPALE -->
+      <div>
+        <div class="panel">
+          <div class="panel-head"><h3>Planning de la semaine</h3></div>
+          <div class="mission-item">
+            <div class="mission-time">Lun 09:00</div>
+            <div class="mission-body">
+              <div class="m-date">22 juin 2026</div>
+              <div class="m-client">Sophie Lacroix</div>
+              <div class="m-service">Ménage standard — 2h</div>
+            </div>
+          </div>
+          <div class="mission-item">
+            <div class="mission-time">Mar 10:30</div>
+            <div class="mission-body">
+              <div class="m-date">23 juin 2026</div>
+              <div class="m-client">Julie Dumont</div>
+              <div class="m-service">Repassage — 1h30</div>
+            </div>
+          </div>
+          <div class="mission-item">
+            <div class="mission-time">Jeu 14:00</div>
+            <div class="mission-body">
+              <div class="m-date">25 juin 2026</div>
+              <div class="m-client">Pierre Tessier</div>
+              <div class="m-service">Ménage standard — 2h</div>
+            </div>
+          </div>
+          <div class="mission-item">
+            <div class="mission-time">Ven 09:00</div>
+            <div class="mission-body">
+              <div class="m-date">26 juin 2026</div>
+              <div class="m-client">Sophie Lacroix</div>
+              <div class="m-service">Ménage standard — 2h</div>
+            </div>
+          </div>
+          <div class="mission-item">
+            <div class="mission-time">Sam 13:30</div>
+            <div class="mission-body">
+              <div class="m-date">27 juin 2026</div>
+              <div class="m-client">Pierre Tessier</div>
+              <div class="m-service">Ménage standard — 1h30</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Accès & droits</h3></div>
+          <div class="access-list">
+            <div class="access-row">
+              <span class="access-label">Planning</span>
+              <span class="access-status granted"><span class="access-icon">✓</span>Accordé</span>
+            </div>
+            <div class="access-row">
+              <span class="access-label">Clients</span>
+              <span class="access-status granted"><span class="access-icon">✓</span>Lecture seule</span>
+            </div>
+            <div class="access-row">
+              <span class="access-label">Devis & Factures</span>
+              <span class="access-status denied"><span class="access-icon">—</span>Non accordé</span>
+            </div>
+            <div class="access-row">
+              <span class="access-label">Réglages</span>
+              <span class="access-status denied"><span class="access-icon">—</span>Non accordé</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLONNE LATÉRALE -->
+      <div>
+        <div class="panel">
+          <span class="panel-eyebrow">Informations</span>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-label">Email</span>
+              <span class="info-value">lea.martin@equipe.fr</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Téléphone</span>
+              <span class="info-value">06 22 33 44 55</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Poste</span>
+              <span class="info-value">Intervenante — Temps plein</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Dans l'équipe depuis</span>
+              <span class="info-value">Janvier 2026</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Zone principale</span>
+              <span class="info-value">Lyon 3e — Lyon 6e</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <span class="panel-eyebrow">Notes internes</span>
+          <textarea class="notes-area" placeholder="Ajouter une note sur cet employé...">Ponctuelle, clients satisfaits. Disponible le samedi matin. Préfère les missions longues (2h+).</textarea>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  try {
+    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    if (_ent && _ent.nom) {
+      const _f = document.querySelector('.sidebar-footer');
+      if (_f) _f.childNodes[0].textContent = _ent.nom;
+    }
+  } catch(e) {}
+
+  const _n = new URLSearchParams(window.location.search).get('nom');
+  if (_n) {
+    document.title = _n + ' — Seba';
+    document.getElementById('emp-name').textContent = _n;
+    const _p = _n.trim().split(/\s+/);
+    document.getElementById('emp-avatar').textContent =
+      (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
+  }
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    userMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+
+</body>
+</html>

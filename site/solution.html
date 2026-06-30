@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La solution — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<style>
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px;}
+:focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+@view-transition{navigation:auto;}
+::view-transition-old(root){animation:180ms ease vt-out;}
+::view-transition-new(root){animation:220ms ease vt-in;}
+@keyframes vt-out{to{opacity:0;}}
+@keyframes vt-in{from{opacity:0;}}
+
+.accent-line{position:fixed;top:0;left:0;right:0;height:2px;background:var(--emerald);z-index:300;}
+.section-label{display:inline-flex;align-items:center;gap:10px;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin-bottom:16px;}
+.section-label::before{content:'';display:block;width:20px;height:2px;background:var(--emerald);flex-shrink:0;}
+.section-label.on-dark{color:rgba(255,255,255,.35);}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}}
+
+nav{position:sticky;top:2px;z-index:100;background:rgba(20,22,26,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--ink-border);}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+.nav-logo{font-weight:800;font-size:1.2rem;letter-spacing:-.03em;color:var(--white);}
+.nav-logo em{font-style:normal;color:var(--emerald);}
+.nav-links{display:flex;gap:32px;font-size:.875rem;font-weight:500;color:rgba(255,255,255,.4);}
+.nav-links a{transition:color .15s;}
+.nav-links a:hover,.nav-links a.active{color:var(--white);}
+.nav-right{display:flex;align-items:center;gap:20px;}
+.nav-login{font-size:.875rem;font-weight:500;color:rgba(255,255,255,.45);transition:color .15s;}
+.nav-login:hover{color:var(--white);}
+.nav-cta{background:var(--emerald);color:var(--ink);padding:9px 18px;border-radius:6px;font-size:.875rem;font-weight:700;transition:opacity .15s;}
+.nav-cta:hover{opacity:.85;}
+
+.page-hero{background:var(--ink);padding:80px 0 88px;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;top:-100px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,200,150,.09) 0%,transparent 65%);pointer-events:none;}
+.ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
+.ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px rgba(0,200,150,.7);}
+.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
+.page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:580px;line-height:1.65;}
+
+.section{padding:88px 0;}
+.section-head{max-width:640px;margin-bottom:52px;}
+.section-head h2{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:700;line-height:1.15;letter-spacing:-.025em;}
+.section-head p{margin-top:12px;font-size:1rem;color:var(--text-2);line-height:1.65;}
+
+/* Steps détaillés */
+.steps-list{display:flex;flex-direction:column;gap:2px;background:var(--border);border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.step-item{background:var(--white);display:grid;grid-template-columns:64px 1fr 1fr;gap:0;}
+.step-num-col{padding:28px 24px;display:flex;align-items:flex-start;justify-content:center;border-right:1px solid var(--border);}
+.step-badge{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--emerald);color:var(--ink);font-size:.72rem;font-weight:800;flex-shrink:0;}
+.step-left{padding:28px 28px;border-right:1px solid var(--border);}
+.step-right{padding:28px 28px;background:var(--bg);}
+.step-title{font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.step-desc{font-size:.9rem;color:var(--text-2);line-height:1.6;}
+.step-right-label{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:8px;display:block;}
+.step-auto{font-size:.88rem;color:var(--text-2);line-height:1.6;}
+.step-auto strong{color:var(--ink);font-weight:600;}
+
+/* Gain section dark */
+.gain-section{background:var(--ink);padding:88px 0;}
+.gain-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--ink-border);border-radius:10px;overflow:hidden;border:1px solid var(--ink-border);}
+.gain-item{background:var(--ink-surface);padding:28px 24px;}
+.gi-label{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:12px;display:block;}
+.gi-value{font-size:1.8rem;font-weight:800;color:var(--white);letter-spacing:-.03em;line-height:1;margin-bottom:8px;}
+.gi-desc{font-size:.84rem;color:rgba(255,255,255,.4);line-height:1.55;}
+
+.page-nav{display:flex;align-items:center;justify-content:space-between;padding:40px 0;border-top:1px solid var(--border);}
+.page-nav a{font-size:.9rem;font-weight:600;color:var(--text-2);transition:color .15s;}
+.page-nav a:hover{color:var(--ink);}
+.page-nav .next-page{display:inline-flex;align-items:center;gap:8px;background:var(--emerald);color:var(--ink);padding:12px 22px;border-radius:7px;font-weight:700;font-size:.9rem;transition:opacity .15s;}
+.page-nav .next-page:hover{opacity:.85;}
+
+.section-cta{background:var(--bg);padding:88px 0;}
+.cta-inner{text-align:center;max-width:540px;margin:0 auto;}
+.cta-inner h2{font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.03em;margin-bottom:14px;}
+.cta-inner p{color:var(--text-2);font-size:1rem;margin-bottom:32px;}
+.btn-cta{background:var(--emerald);color:var(--ink);padding:14px 32px;border-radius:7px;font-weight:700;font-size:1rem;display:inline-block;transition:opacity .15s,transform .15s;}
+.btn-cta:hover{opacity:.86;transform:translateY(-1px);}
+
+footer{background:var(--white);padding:36px 0;border-top:1px solid var(--border);}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;color:var(--text-2);font-size:.84rem;}
+.footer-logo{font-weight:800;font-size:1.1rem;color:var(--ink);letter-spacing:-.03em;}
+.footer-logo em{font-style:normal;color:var(--emerald);}
+
+@media(max-width:860px){
+  .step-item{grid-template-columns:56px 1fr;}
+  .step-right{display:none;}
+  .gain-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .wrap{padding:0 20px;}
+  .section{padding:64px 0;}
+  .nav-links{display:none;}
+  .page-hero{padding:60px 0 72px;}
+  .gain-grid{grid-template-columns:1fr;}
+  .step-item{grid-template-columns:48px 1fr;}
+}
+
+  #particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;pointer-events:none;z-index:0;}
+</style>
+</head>
+<body>
+
+<div class="accent-line"></div>
+
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="nav-logo">se<em>ba</em></a>
+    <div class="nav-links">
+      <a href="probleme.html">Le problème</a>
+      <a href="solution.html" class="active">La solution</a>
+      <a href="confiance.html">Confiance</a>
+    </div>
+    <div class="nav-right">
+      <a href="connexion.html" class="nav-login">Connexion</a>
+      <a href="onboarding.html" class="nav-cta">Créer mon entreprise</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="ph-eyebrow"><span class="e-dot"></span>La solution</div>
+    <h1>Une seule action déclenche<br>toute la chaîne.</h1>
+    <p>De la première réservation client jusqu'à l'avis en ligne, chaque étape s'enchaîne automatiquement. Vous gérez votre métier — Seba gère l'administratif.</p>
+  </div>
+</section>
+
+<!-- 8 étapes détaillées -->
+<section class="section" style="background:var(--bg)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="section-label">La chaîne complète</span>
+      <h2>8 étapes. Chacune déclenchée automatiquement par la précédente.</h2>
+      <p>Ce que Seba fait pour vous à chaque étape — et ce qu'il vous reste à faire (spoiler : presque rien).</p>
+    </div>
+    <div class="steps-list reveal">
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">1</div></div>
+        <div class="step-left">
+          <div class="step-title">Réservation</div>
+          <div class="step-desc">Votre client vous contacte via le portail, un formulaire ou directement. Seba crée automatiquement sa fiche client si elle n'existe pas encore.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Création de la fiche client · Notification de nouvelle demande · Proposition de créneaux disponibles</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">2</div></div>
+        <div class="step-left">
+          <div class="step-title">Devis</div>
+          <div class="step-desc">Seba génère le devis à partir de vos tarifs et des informations du client. Vous le relisez, l'ajustez si nécessaire, et l'envoyez en un clic.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Pré-remplissage avec les tarifs configurés · <strong>Envoi par email ou lien sécurisé</strong> · Rappel automatique si pas de réponse sous 5 jours</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">3</div></div>
+        <div class="step-left">
+          <div class="step-title">Signature</div>
+          <div class="step-desc">Votre client signe en ligne depuis son téléphone ou son ordinateur, sans créer de compte. Vous êtes notifié immédiatement.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto"><strong>Notification instantanée</strong> dès la signature · Passage automatique en statut "Confirmé" · Déclenchement de l'étape Planning</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">4</div></div>
+        <div class="step-left">
+          <div class="step-title">Planning</div>
+          <div class="step-desc">Le créneau est ajouté automatiquement à votre planning et à celui de l'employé concerné. Confirmation envoyée au client.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Ajout au planning partagé · Confirmation client · Rappel la veille pour vous et votre équipe</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">5</div></div>
+        <div class="step-left">
+          <div class="step-title">Intervention</div>
+          <div class="step-desc">L'employé accède aux détails de la mission depuis son téléphone : adresse, consignes, codes d'accès. Il valide l'intervention une fois terminée.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Fiche mission sur mobile · <strong>Déclenchement de la facturation</strong> dès la validation · Notification au gérant</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">6</div></div>
+        <div class="step-left">
+          <div class="step-title">Facture</div>
+          <div class="step-desc">Seba génère la facture automatiquement dès que l'intervention est validée. Elle reprend les informations du devis et de la mission.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Génération et envoi automatique · Lien de paiement intégré · Archivage dans le dossier client</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">7</div></div>
+        <div class="step-left">
+          <div class="step-title">Paiement</div>
+          <div class="step-desc">Votre client paie en ligne en quelques secondes. Vous recevez la confirmation. Seba met à jour le statut de la facture et la comptabilité.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto"><strong>Confirmation instantanée</strong> · Marquage automatique "Payée" · Relance si paiement tardif</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-col"><div class="step-badge">8</div></div>
+        <div class="step-left">
+          <div class="step-title">Avis</div>
+          <div class="step-desc">Un message de suivi est envoyé automatiquement quelques jours après l'intervention pour demander un retour client. Utile pour fidéliser et améliorer.</div>
+        </div>
+        <div class="step-right">
+          <span class="step-right-label">Automatisé</span>
+          <div class="step-auto">Message de suivi personnalisé · Collecte de retours · Suggestion de reconduire la prestation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Gain de temps -->
+<section class="gain-section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="section-label on-dark">Ce que vous gagnez</span>
+      <h2 style="color:var(--white)">Moins de tâches. Plus de missions.</h2>
+      <p style="color:rgba(255,255,255,.45);margin-top:12px;">Chaque automatisation libère du temps que vous pouvez consacrer à votre cœur de métier.</p>
+    </div>
+    <div class="gain-grid reveal">
+      <div class="gain-item">
+        <span class="gi-label">Devis</span>
+        <div class="gi-value">3 min</div>
+        <div class="gi-desc">pour envoyer un devis complet au lieu de 15–20 min avec la ressaisie manuelle.</div>
+      </div>
+      <div class="gain-item">
+        <span class="gi-label">Facturation</span>
+        <div class="gi-value">0 action</div>
+        <div class="gi-desc">nécessaire : la facture se génère et s'envoie automatiquement dès la fin de mission.</div>
+      </div>
+      <div class="gain-item">
+        <span class="gi-label">Relances</span>
+        <div class="gi-value">100 %</div>
+        <div class="gi-desc">des devis et factures en retard sont relancés au bon moment, sans que vous y pensiez.</div>
+      </div>
+      <div class="gain-item">
+        <span class="gi-label">Temps libéré</span>
+        <div class="gi-value">10–15h</div>
+        <div class="gi-desc">par mois en moyenne — soit une à deux journées de travail récupérées chaque mois.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-cta">
+  <div class="wrap">
+    <div class="cta-inner reveal">
+      <h2>Prêt à configurer votre entreprise ?</h2>
+      <p>Trois étapes. Moins de cinq minutes. Et toute la chaîne est en place.</p>
+      <a href="onboarding.html" class="btn-cta">Créer mon entreprise →</a>
+    </div>
+    <div class="page-nav reveal">
+      <a href="probleme.html">← Le problème</a>
+      <a href="confiance.html" class="next-page">Confiance <span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="footer-logo">se<em>ba</em></span>
+    <span>© 2026 Seba — Fait pour le terrain.</span>
+  </div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  if (!document.startViewTransition) {
+    document.body.style.opacity = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.style.transition = 'opacity .22s ease';
+      document.body.style.opacity = '1';
+    }));
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const h = a.getAttribute('href');
+      if (!h || h.startsWith('#') || h.includes('://') || h.startsWith('mailto')) return;
+      e.preventDefault();
+      document.body.style.transition = 'opacity .18s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { window.location.href = h; }, 190);
+    });
+  }
+</script>
+<canvas id="particles-canvas" aria-hidden="true"></canvas>
+<script src="animations-vitrine.js" defer></script>
+</body>
+</html>
+
