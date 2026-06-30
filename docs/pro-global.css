@@ -1,11 +1,36 @@
-/* pro-global.css — Espace Professionnel Seba
-   Micro-interactions + Skeleton Loading
-   Lié dans : dashboard, clients, client-fiche, planning, devis, devis-nouveau,
-               factures, equipe, employe-fiche, reglages, historique
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+ * pro-global.css — Design System Seba · Espace Professionnel
+ * Fond clair / accents encre + émeraude
+ * Lié dans : dashboard, clients, client-fiche, planning, devis,
+ *            devis-nouveau, factures, equipe, employe-fiche,
+ *            reglages, historique
+ * ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Variables communes ──────────────────────────────────────────────────── */
+/* ── 1. Design Tokens ────────────────────────────────────────────────────── */
 :root {
+  /* Palette pro (fond clair — identique dans chaque page) */
+  --ink:     #14161A;
+  --emerald: #00C896;
+  --plum:    #3D2645;
+  --bg:      #FAF9F7;
+  --white:   #FFFFFF;
+  --text-2:  #6B6A6F;
+  --border:  #E8E6E1;
+  --r:       12px;
+  --rs:      8px;
+  --amber:   #F59E0B;
+
+  /* Sémantique badges */
+  --badge-success-bg:  #E8F5F0;
+  --badge-success-txt: #1A7A5A;
+  --badge-warning-bg:  #FEF3C7;
+  --badge-warning-txt: #92400E;
+  --badge-error-bg:    #FBE3E0;
+  --badge-error-txt:   #B5482F;
+  --badge-info-bg:     #F1F0EE;
+  --badge-info-txt:    #6B6A6F;
+
+  /* Easing */
   --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
   --ease-in:  cubic-bezier(0.4, 0, 1,   1);
@@ -14,11 +39,10 @@
   --t-slow: 0.35s;
 }
 
-/* ── Transitions fluides — boutons ───────────────────────────────────────── */
+/* ── 2. Transitions — boutons ────────────────────────────────────────────── */
 button,
 .btn,
 [class*="btn-"],
-[class*="-btn"],
 .action-btn,
 .cta-btn {
   transition:
@@ -29,33 +53,170 @@ button,
     box-shadow       var(--t-std) var(--ease-std),
     transform        var(--t-fast) var(--ease-out);
 }
-button:hover,
-.btn:hover,
-[class*="btn-"]:hover { transform: translateY(-1px); }
-button:active,
-.btn:active,
-[class*="btn-"]:active { transform: translateY(0); }
+button:hover,  .btn:hover,  [class*="btn-"]:hover { transform: translateY(-1px); }
+button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) scale(0.98); }
 
-/* ── Transitions — liens sidebar ─────────────────────────────────────────── */
-.sidebar a,
-.sidebar-link,
-nav a,
-.nav-item {
-  transition:
-    color            var(--t-std) var(--ease-std),
-    background-color var(--t-std) var(--ease-std),
-    border-color     var(--t-std) var(--ease-std),
-    opacity          var(--t-fast) var(--ease-std);
+/* ── 3. Sidebar — hauteur, nav-items, footer (unifié sur toutes les pages) ─ */
+.sidebar {
+  background: var(--ink);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  /* largeur imposée par la grille de chaque page,
+     mais min/max alignent le contenu correctement */
 }
 
-/* ── Transitions — fiches clients / employés ─────────────────────────────── */
+/* Logo (compatible .s-logo dashboard + .logo clients/autres) */
+.sidebar .s-logo,
+.sidebar .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding: 0 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  margin-bottom: 16px;
+}
+.sidebar .s-logo-dot,
+.sidebar .logo-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--emerald);
+  flex-shrink: 0;
+}
+
+/* Nav items — règle unifiée, specificity > inline .nav-item */
+.sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: var(--rs);
+  font-size: .875rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.55);
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition:
+    background var(--t-fast) var(--ease-std),
+    color      var(--t-fast) var(--ease-std);
+  text-decoration: none;
+}
+.sidebar .nav-item:hover {
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.9);
+}
+.sidebar .nav-item.active {
+  background: rgba(0,200,150,.12);
+  color: var(--emerald);
+}
+
+/* Labels de groupe */
+.sidebar .nav-label {
+  font-size: .65rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.3);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding: 8px 12px 5px;
+  display: block;
+}
+
+/* Dot indicateur */
+.sidebar .nav-item .ni-dot,
+.sidebar .nav-item .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--emerald);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity var(--t-fast);
+}
+.sidebar .nav-item.active .ni-dot,
+.sidebar .nav-item.active .dot { opacity: 1; }
+
+/* Footer */
+.sidebar .sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-size: .76rem;
+  color: rgba(255,255,255,.3);
+}
+.sidebar .sidebar-footer strong {
+  display: block;
+  color: rgba(255,255,255,.68);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* ── 4. Badges sémantiques ───────────────────────────────────────────────── */
+/* Classe de base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* Succès / Actif / Payé / Signé */
+.badge.actif,
+.badge.success,
+.badge.paid,
+.badge.signe    { background: var(--badge-success-bg);  color: var(--badge-success-txt); }
+
+/* Attention / En attente */
+.badge.attente,
+.badge.warning,
+.badge.pending  { background: var(--badge-warning-bg);  color: var(--badge-warning-txt); }
+
+/* Erreur / Retard / Relance / Refusé */
+.badge.relance,
+.badge.error,
+.badge.retard,
+.badge.refuse   { background: var(--badge-error-bg);    color: var(--badge-error-txt);   }
+
+/* Info / Repos / Neutre */
+.badge.info,
+.badge.repos,
+.badge.neutral  { background: var(--badge-info-bg);     color: var(--badge-info-txt);    }
+
+/* ── 5. Inputs — focus émeraude cohérent partout ─────────────────────────── */
+input,
+select,
+textarea {
+  transition:
+    border-color var(--t-fast) var(--ease-std),
+    box-shadow   var(--t-fast) var(--ease-std);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--emerald) !important;
+  box-shadow: 0 0 0 3px rgba(0,200,150,.1) !important;
+  outline: none;
+}
+
+/* ── 6. Lignes de tableau — hover cohérent ───────────────────────────────── */
 .client-row,
 .client-card,
 .employe-card,
 .fiche-card,
 .event-row,
-.table-row,
-tr {
+.table-row {
   transition:
     background-color var(--t-fast) var(--ease-std),
     box-shadow       var(--t-std)  var(--ease-std);
@@ -65,10 +226,12 @@ tr {
 .employe-card:hover,
 .fiche-card:hover,
 .event-row:hover,
-.table-row:hover,
-tr:hover { background-color: rgba(0, 200, 150, 0.04); }
+.table-row:hover { background-color: rgba(0,200,150,.04) !important; }
 
-/* ── Transitions — modules dashboard ─────────────────────────────────────── */
+tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
+tbody tr:hover { background-color: rgba(0,200,150,.03); }
+
+/* ── 7. Modules / Cards — hover cohérent ────────────────────────────────── */
 .module,
 .metric-card,
 .card,
@@ -79,35 +242,45 @@ tr:hover { background-color: rgba(0, 200, 150, 0.04); }
 }
 .module:hover,
 .metric-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 200, 150, 0.07);
-  border-color: rgba(0, 200, 150, 0.18);
+  box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  border-color: #D0CEC9;
 }
 
-/* ── Transitions — inputs & select ──────────────────────────────────────── */
-input,
-select,
-textarea {
+/* ── 8. Focus visible global ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── 9. Liens sidebar ────────────────────────────────────────────────────── */
+.sidebar a,
+.nav-item {
   transition:
-    border-color var(--t-fast) var(--ease-std),
-    box-shadow   var(--t-fast) var(--ease-std);
+    color            var(--t-std) var(--ease-std),
+    background-color var(--t-std) var(--ease-std),
+    border-color     var(--t-std) var(--ease-std);
 }
 
-/* ── Skeleton Loading ────────────────────────────────────────────────────── */
+/* ── 10. Scrollbar discrète ──────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #C8C5BE; }
+
+/* ── 11. Skeleton Loading ────────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
   100% { background-position:  600px 0; }
 }
-
 .skeleton {
   background:
-    linear-gradient(
-      90deg,
-      rgba(20, 22, 26, 0)    0%,
-      rgba(0, 200, 150, 0.06) 40%,
-      rgba(61, 38, 69,  0.06) 60%,
-      rgba(20, 22, 26, 0)    100%
-    )
-    #E8E6E1;
+    linear-gradient(90deg,
+      rgba(250,249,247,0)     0%,
+      rgba(0,200,150,.06)    40%,
+      rgba(61,38,69,.04)     60%,
+      rgba(250,249,247,0)   100%
+    ) #E8E6E1;
   background-size: 600px 100%;
   animation: shimmer 1.5s infinite linear;
   border-radius: 6px;
@@ -115,8 +288,6 @@ textarea {
   user-select: none;
   pointer-events: none;
 }
-
-/* Variantes de hauteur */
 .skeleton-text   { height: 14px; margin-bottom: 8px; }
 .skeleton-title  { height: 22px; margin-bottom: 12px; }
 .skeleton-badge  { height: 20px; width: 70px; border-radius: 20px; }
@@ -124,41 +295,141 @@ textarea {
 .skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; }
 .skeleton-line   { height: 12px; }
 .skeleton-block  { height: 80px; }
-
-/* Conteneurs pré-chargement */
 .skeleton-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border, #E8E6E1);
+  border-bottom: 1px solid var(--border);
 }
-
-/* Fade de transition skeleton → contenu réel */
 .skeleton-fade-out {
-  animation: skFadeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: skFadeOut .4s var(--ease-std) forwards;
 }
 @keyframes skFadeOut {
   to { opacity: 0; height: 0; overflow: hidden; margin: 0; padding: 0; }
 }
-
 .content-fade-in {
-  animation: skFadeIn 0.5s cubic-bezier(0.0, 0, 0.2, 1) both;
+  animation: skFadeIn .5s var(--ease-out) both;
 }
 @keyframes skFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(6px); }
 }
 
-/* ── Utilitaires globaux pro ─────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--emerald, #00C896);
-  outline-offset: 3px;
-  border-radius: 4px;
+/* ── 12. Mobile — sidebar cachée + header hamburger ─────────────────────── */
+.mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.mobile-logo {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mobile-logo-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--emerald);
+}
+.hamburger {
+  width: 36px; height: 36px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  border-radius: var(--rs);
+  background: transparent;
+  padding: 0;
+  transition: border-color var(--t-fast);
+}
+.hamburger span {
+  width: 15px; height: 1.5px;
+  background: var(--ink);
+  border-radius: 99px;
+  display: block;
+}
+.hamburger:hover { border-color: var(--ink); }
+
+/* Overlay (fermer la sidebar mobile en cliquant dehors) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.3);
+  z-index: 149;
+}
+.sidebar-overlay.open { display: block; }
+
+@media (max-width: 840px) {
+  /* Cacher la sidebar dans la grille, l'afficher en overlay */
+  .app,
+  .layout { grid-template-columns: 1fr !important; }
+
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 150;
+    width: 224px;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform .25s var(--ease-std);
+    box-shadow: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,.12);
+  }
+
+  .mobile-header { display: flex !important; }
+
+  .main,
+  .page-main { padding: 20px 16px 48px !important; }
 }
 
-/* Scrollbar discrète dans l'espace pro (Webkit) */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border, #E8E6E1); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #C8C5BE; }
+@media (min-width: 841px) {
+  .mobile-header { display: none !important; }
+  .sidebar-overlay { display: none !important; }
+}
+
+/* ── 13. Responsive tableaux (scroll horizontal sur mobile) ─────────────── */
+@media (max-width: 640px) {
+  .panel,
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
+}
+
+/* ── 14. Typographie — hiérarchie unifiée ───────────────────────────────── */
+/* H1 de page */
+.page-title,
+.topbar h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.025em; }
+
+/* H2 section / module-title */
+.module-title,
+.section-title { font-size: .85rem; font-weight: 600; }
+
+/* Labels de champs */
+label,
+.field-label { font-size: .82rem; font-weight: 600; color: var(--text-2); }
+
+/* Texte secondaire */
+.text-2,
+.sub { color: var(--text-2); font-size: .83rem; }
+
+/* ── 15. Espacements unifiés — utilitaires 8px grid ─────────────────────── */
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.mb-8   { margin-bottom: 8px; }
+.mb-16  { margin-bottom: 16px; }
+.mb-24  { margin-bottom: 24px; }
+.mb-32  { margin-bottom: 32px; }

@@ -26,7 +26,7 @@
   button{font-family:'Inter',sans-serif;}
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
-  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  .layout{display:grid;grid-template-columns: 220px 1fr;min-height:100vh;}
   .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
   .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
   .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
@@ -184,5 +184,16 @@
   document.addEventListener('click', () => userMenu.classList.remove('open'));
 </script>
 
+<script>
+  function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+</script>
 </body>
 </html>
+
