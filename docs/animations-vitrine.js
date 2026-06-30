@@ -22,143 +22,24 @@
     return;
   }
 
-  /* ── Entrée hero (index uniquement) ─────────────────────────────────────── */
+  /* ── Entrée hero (index uniquement, au chargement — pas au scroll) ──────── */
   if (isIndex) {
     if (!reduced) {
-      gsap.set('.hero-content', { scale: 0.95, transformOrigin: 'center center' });
-      gsap.set('.hero-visual',  { transformPerspective: 1200, rotationX: 15, scale: 0.92 });
-
-      gsap.timeline({ defaults: { ease: 'power4.out' } })
-        .to('.hero-content',   { scale: 1,   duration: 1.4 },                           0.10)
-        .fromTo('.hero-eyebrow', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, 0.15)
-        .fromTo('.hero h1',      { y: 55, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0 }, 0.30)
-        .fromTo('.hero-lede',    { y: 35, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.50)
-        .fromTo('.hero-ctas',    { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, 0.65)
-        .fromTo('.hero-visual',  { opacity: 0 },         { opacity: 1, duration: 1.1 },       0.55);
+      gsap.timeline({ defaults: { ease: 'power3.out' } })
+        .fromTo('.hero-eyebrow', { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, 0.10)
+        .fromTo('.hero h1',      { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.22)
+        .fromTo('.hero-lede',    { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, 0.40)
+        .fromTo('.hero-ctas',    { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, 0.54)
+        .fromTo('.hero-visual',  { opacity: 0 },         { opacity: 1, duration: 0.9 },       0.48);
     } else {
       document.querySelectorAll('.hero-eyebrow,.hero h1,.hero-lede,.hero-ctas,.hero-visual')
         .forEach(function (el) { el.style.opacity = '1'; });
     }
   }
 
-  /* ── ScrollTrigger (index uniquement) ─────────────────────────────────── */
+  /* ── ScrollTrigger : détection de section pour les particules uniquement ── */
   if (isIndex && typeof ScrollTrigger !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
-
-    /* Lenis smooth scroll — intégration avec ScrollTrigger */
-    if (typeof Lenis !== 'undefined' && !reduced) {
-      var lenis = new Lenis({
-        duration: 1.2,
-        easing: function (t) { return 1 - Math.pow(1 - t, 4); },
-        touchMultiplier: 1.5,
-      });
-      lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
-      gsap.ticker.lagSmoothing(0);
-    }
-
-    if (!reduced) {
-      /* Dashboard tilt → plat */
-      ScrollTrigger.create({
-        trigger: '.hero', start: 'top top', end: '+=700', scrub: 1.5,
-        onUpdate: function (self) {
-          gsap.set('.hero-visual', {
-            rotationX: 15 * (1 - self.progress),
-            scale: 0.92 + 0.08 * self.progress,
-          });
-        },
-      });
-      /* Parallaxe hero visual */
-      gsap.to('.hero-visual', {
-        y: -90, ease: 'none',
-        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1.5 },
-      });
-    }
-
-    /* Titres de section */
-    gsap.utils.toArray('.section-head').forEach(function (el) {
-      gsap.fromTo(el, { y: 60, opacity: 0 }, {
-        y: 0, opacity: 1,
-        scrollTrigger: { trigger: el, start: 'top 88%', end: 'top 42%', scrub: 1.5 },
-      });
-    });
-
-    /* Liens "voir plus" */
-    gsap.utils.toArray('.section-more').forEach(function (el) {
-      gsap.fromTo(el, { y: 28, opacity: 0 }, {
-        y: 0, opacity: 1,
-        scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 65%', scrub: 1.5 },
-      });
-    });
-
-    /* Section Problème : stagger 0.1 séquentiel */
-    var problemCards = document.querySelectorAll('.section-problem .bento-card');
-    if (problemCards.length) {
-      gsap.timeline({
-        scrollTrigger: {
-          trigger: '.section-problem', start: 'top 75%', end: 'center 30%', scrub: 1.5,
-        },
-      }).fromTo(problemCards, { y: 60, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.1 });
-    }
-
-    /* Autres cartes Bento (solution, etc.) — animation individuelle */
-    gsap.utils.toArray('.bento-card').forEach(function (el) {
-      if (el.closest('.section-problem')) return;
-      gsap.fromTo(el, { y: 55, opacity: 0 }, {
-        y: 0, opacity: 1,
-        scrollTrigger: { trigger: el, start: 'top 90%', end: 'top 48%', scrub: 1.5 },
-      });
-    });
-
-    /* Cartes Métiers */
-    var metierCards = document.querySelectorAll('.metier-card');
-    if (metierCards.length) {
-      gsap.timeline({
-        scrollTrigger: { trigger: '.metier-grid', start: 'top 85%', end: 'bottom 40%', scrub: 1.5 },
-      }).fromTo(metierCards, { y: 55, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.12 });
-    }
-
-    /* Cartes Intelligence */
-    var intelCards = document.querySelectorAll('.intel-card');
-    if (intelCards.length) {
-      gsap.timeline({
-        scrollTrigger: { trigger: '.intel-grid', start: 'top 85%', end: 'bottom 40%', scrub: 1.5 },
-      }).fromTo(intelCards, { y: 55, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.10 });
-    }
-
-    /* Portail colonnes */
-    var pDark  = document.querySelector('.portail-dark');
-    var pLight = document.querySelector('.portail-light');
-    if (pDark && pLight) {
-      var pST = { trigger: '.portail-split', start: 'top 85%', end: 'top 32%', scrub: 1.5 };
-      gsap.fromTo(pDark,  { x: -55, opacity: 0 }, { x: 0, opacity: 1, scrollTrigger: pST });
-      gsap.fromTo(pLight, { x:  55, opacity: 0 }, { x: 0, opacity: 1, scrollTrigger: pST });
-    }
-
-    /* Panneaux Confiance */
-    var trustPanels = document.querySelectorAll('.trust-panel');
-    if (trustPanels.length) {
-      gsap.timeline({
-        scrollTrigger: { trigger: '.trust-panels', start: 'top 88%', end: 'bottom 42%', scrub: 1.5 },
-      }).fromTo(trustPanels, { y: 50, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.13 });
-    }
-
-    /* CTA */
-    var ctaEl = document.querySelector('.cta-inner');
-    if (ctaEl) {
-      gsap.fromTo(ctaEl, { y: 50, opacity: 0 }, {
-        y: 0, opacity: 1,
-        scrollTrigger: { trigger: ctaEl, start: 'top 88%', end: 'top 50%', scrub: 1.5 },
-      });
-    }
-
-    /* Blocs métriques */
-    gsap.utils.toArray('.metric-block').forEach(function (el) {
-      gsap.fromTo(el, { y: 40, opacity: 0 }, {
-        y: 0, opacity: 1,
-        scrollTrigger: { trigger: el, start: 'top 88%', end: 'top 50%', scrub: 1.5 },
-      });
-    });
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
