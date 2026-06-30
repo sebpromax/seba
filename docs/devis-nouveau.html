@@ -108,7 +108,7 @@
 
   @media (max-width:980px){
     .layout{grid-template-columns:1fr;}
-    .sidebar{display:none;}
+    .sidebar{}
     .main{padding:24px 20px;}
     .card{padding:24px 22px;}
     .field-row{grid-template-columns:1fr;}
@@ -119,6 +119,13 @@
 <body>
 <div class="layout">
 
+    <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div>Seba</div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
   <aside class="sidebar">
     <div class="logo"><span class="logo-dot"></span>Seba</div>
     <nav class="nav-section">
@@ -349,4 +356,5 @@
 </script>
 </body>
 </html>
+
 
