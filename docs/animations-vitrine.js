@@ -37,9 +37,20 @@
     }
   }
 
-  /* ── ScrollTrigger : détection de section pour les particules uniquement ── */
-  if (isIndex && typeof ScrollTrigger !== 'undefined') {
-    gsap.registerPlugin(ScrollTrigger);
+  /* ── Détection de section pour les particules — IntersectionObserver ────── */
+  if (isIndex) {
+    [
+      { sel: '.hero',               key: 'hero' },
+      { sel: '.section-problem',    key: 'problem' },
+      { sel: '.section-solution',   key: 'solution' },
+      { sel: '.section-confiance',  key: 'confiance' },
+    ].forEach(function (s) {
+      var el = document.querySelector(s.sel);
+      if (!el) return;
+      new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) transitionTo(s.key);
+      }, { threshold: 0.35 }).observe(el);
+    });
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
