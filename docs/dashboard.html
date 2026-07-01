@@ -296,6 +296,15 @@
   </style>
 </head>
 <body>
+<script>
+(function(){
+  const c=localStorage.getItem('user_theme_color');
+  if(c){
+    document.documentElement.style.setProperty('--emerald',c);
+    document.documentElement.style.setProperty('--em',c);
+  }
+})();
+</script>
 <div class="app">
 
   <!-- ═══════ SIDEBAR ═══════ -->
