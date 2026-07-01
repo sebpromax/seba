@@ -37,8 +37,8 @@ a{color:inherit;text-decoration:none;}
 .mob-link:hover{color:#fff;}
 .mob-sep{width:48px;height:1px;background:rgba(255,255,255,.08);margin:16px 0;}
 .mob-conn{font-size:.9rem;color:rgba(255,255,255,.35);padding:8px 0;}
-.section{padding:100px max(24px,calc((100vw - 1140px)/2));}
-@media(max-width:768px){.section{padding:72px 24px;}.nav-wrap{grid-template-columns:1fr auto;}.nav-center,.nav-right{display:none;}.hamburger{display:flex;}}
+.section{padding:130px max(24px,calc((100vw - 1140px)/2));}
+@media(max-width:768px){.section{padding:94px 24px;}.nav-wrap{grid-template-columns:1fr auto;}.nav-center,.nav-right{display:none;}.hamburger{display:flex;}}
 .badge-glow{display:inline-flex;align-items:center;gap:6px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.2);color:rgba(0,255,136,.85);border-radius:100px;font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:5px 14px;}
 .headline-gradient{background:linear-gradient(135deg,#fff 40%,rgba(0,255,136,.7) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .glow-sep{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,255,136,.25) 40%,rgba(0,255,136,.25) 60%,transparent 100%);}
@@ -65,28 +65,32 @@ a{color:inherit;text-decoration:none;}
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:rgba(0,255,136,.35);box-shadow:0 0 14px rgba(0,255,136,.5);will-change:transform;}
 @media(hover:none){#cursor-trail{display:none;}}
 </style>
+<script src="//cdn.weglot.com/weglot.min.js"></script>
+<script>Weglot.initialize({api_key:'YOUR_API_KEY_HERE'});</script>
 </head>
 <body>
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
-    <a href="solutions.html" class="nav-link">Solutions</a>
-    <a href="tarifs.html"    class="nav-link active">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
+    <a href="solutions.html" class="nav-link">Product</a>
+    <a href="tarifs.html"    class="nav-link active">Pricing</a>
+    <a href="customers.html" class="nav-link">Customers</a>
+    <a href="faq.html"       class="nav-link">Resources</a>
   </div>
   <div class="nav-right">
-    <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer gratuitement</a>
+    <a href="connexion.html" class="nav-connexion">Log in</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Get Started</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
-  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Solutions</a>
-  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Product</a>
+  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Pricing</a>
+  <a href="customers.html" class="mob-link" onclick="closeMobileMenu()">Customers</a>
+  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">Resources</a>
   <div class="mob-sep"></div>
-  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Démarrer gratuitement</a>
+  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Log in</a>
+  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Get Started</a>
 </div>
 
 <!-- HERO -->
@@ -125,7 +129,7 @@ a{color:inherit;text-decoration:none;}
         <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Facturation auto</span></div>
         <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Multi-utilisateurs</span></div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Démarrer gratuitement</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Get Started</a>
     </div>
 
     <!-- Pro -->
@@ -145,7 +149,7 @@ a{color:inherit;text-decoration:none;}
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Relances automatiques</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rapports & analytics</div>
       </div>
-      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Démarrer gratuitement</a>
+      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Get Started</a>
     </div>
 
     <!-- Équipe -->
@@ -164,7 +168,7 @@ a{color:inherit;text-decoration:none;}
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;font-weight:700;">✓</span> <span style="font-weight:600;color:#fff;">Export comptable 1 clic</span></div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Support prioritaire</div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Démarrer gratuitement</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Get Started</a>
     </div>
 
     <!-- Entreprise -->
@@ -260,7 +264,7 @@ a{color:inherit;text-decoration:none;}
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
     <div style="display:flex;align-items:center;gap:8px;"><div class="nav-logo-dot"></div><span style="font-weight:700;letter-spacing:-0.02em;">Seba</span></div>
     <p style="color:#4B5563;font-size:.78rem;flex:1;text-align:center;">© 2026 Seba — Propulsé pour la performance terrain.</p>
-    <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;"><a href="solutions.html">Solutions</a><a href="faq.html">FAQ</a><a href="connexion.html">Connexion</a></div>
+    <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;"><a href="solutions.html">Product</a><a href="faq.html">Resources</a><a href="connexion.html">Log in</a></div>
   </div>
 </footer>
 

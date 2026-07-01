@@ -203,8 +203,8 @@ tailwind.config = {
   }
 
   /* ─── Section spacing ─── */
-  .section{padding:100px max(24px,calc((100vw - 1140px)/2));}
-  @media(max-width:768px){.section{padding:72px 24px;}}
+  .section{padding:130px max(24px,calc((100vw - 1140px)/2));}
+  @media(max-width:768px){.section{padding:94px 24px;}}
 
   /* ─── Stats bar ─── */
   .stat-item{text-align:center;}
@@ -246,6 +246,8 @@ tailwind.config = {
   .bento-lbl{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0a0a0c;margin-bottom:6px;}
   .bento-desc{font-size:.82rem;color:#64748B;line-height:1.6;margin:0;}
 </style>
+<script src="//cdn.weglot.com/weglot.min.js"></script>
+<script>Weglot.initialize({api_key:'YOUR_API_KEY_HERE'});</script>
 </head>
 <body class="font-inter">
 
@@ -257,13 +259,14 @@ tailwind.config = {
     <span class="nav-logo-dot"></span>Seba
   </a>
   <div class="nav-center">
-    <a href="solutions.html" class="nav-link">Solutions</a>
-    <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
+    <a href="solutions.html" class="nav-link">Product</a>
+    <a href="tarifs.html"    class="nav-link">Pricing</a>
+    <a href="customers.html" class="nav-link">Customers</a>
+    <a href="faq.html"       class="nav-link">Resources</a>
   </div>
   <div class="nav-right">
-    <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer gratuitement</a>
+    <a href="connexion.html" class="nav-connexion">Log in</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Get Started</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">
     <span></span><span></span><span></span>
@@ -271,12 +274,13 @@ tailwind.config = {
 </nav>
 
 <div class="mobile-menu" id="mobile-menu">
-  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Solutions</a>
-  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Product</a>
+  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Pricing</a>
+  <a href="customers.html" class="mob-link" onclick="closeMobileMenu()">Customers</a>
+  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">Resources</a>
   <div class="mob-sep"></div>
-  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Démarrer gratuitement</a>
+  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Log in</a>
+  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Get Started</a>
 </div>
 
 
@@ -289,11 +293,11 @@ tailwind.config = {
   <div style="position:relative;z-index:1;text-align:center;max-width:760px;margin:0 auto;">
 
     <h1 style="font-size:clamp(2.4rem,6.5vw,4.6rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px;">
-      <span class="headline-gradient">L'artisanat devient<br>automatique.</span>
+      <span class="headline-gradient">Scale your business<br>with confidence.</span>
     </h1>
 
     <p style="font-size:1.1rem;color:#94A3B8;font-weight:400;line-height:1.65;letter-spacing:-0.01em;margin-bottom:0;max-width:560px;margin-left:auto;margin-right:auto;">
-      Seba : Votre écosystème tout-en-un pour piloter l'activité des entreprises de terrain.
+      Seba is the all-in-one operating system designed to streamline your operations, finances, and growth.
     </p>
 
   </div>
@@ -308,7 +312,7 @@ tailwind.config = {
   <!-- CTA Principal unique -->
   <div style="text-align:center;margin-bottom:28px;">
     <a href="onboarding.html" class="btn-seba" style="padding:18px 52px;font-size:1rem;font-weight:700;">
-      Démarrer gratuitement
+      Get Started
     </a>
     <p style="margin-top:12px;font-size:.77rem;color:#4B5563;letter-spacing:.01em;">Sans carte bancaire · Prêt en 5 minutes · Annulable à tout moment</p>
   </div>
@@ -785,7 +789,7 @@ tailwind.config = {
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:28px;">
         <a href="onboarding.html" class="btn-seba" style="padding:16px 36px;font-size:1.05rem;">
-          Démarrer gratuitement
+          Get Started
         </a>
       </div>
       <p style="font-size:.78rem;color:#4B5563;">
@@ -811,7 +815,7 @@ tailwind.config = {
     <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;">
       <a href="#" style="hover:color:#fff;">Confidentialité</a>
       <a href="#" style="hover:color:#fff;">CGU</a>
-      <a href="connexion.html">Connexion</a>
+      <a href="connexion.html">Log in</a>
     </div>
   </div>
 </footer>

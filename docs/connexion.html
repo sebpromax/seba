@@ -119,6 +119,8 @@ input,button{font-family:'Inter',sans-serif;}
   .hamburger{display:flex;}
 }
 </style>
+<script src="//cdn.weglot.com/weglot.min.js"></script>
+<script>Weglot.initialize({api_key:'YOUR_API_KEY_HERE'});</script>
 </head>
 <body>
 
@@ -126,24 +128,26 @@ input,button{font-family:'Inter',sans-serif;}
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
-    <a href="solutions.html" class="nav-link">Solutions</a>
-    <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
+    <a href="solutions.html" class="nav-link">Product</a>
+    <a href="tarifs.html"    class="nav-link">Pricing</a>
+    <a href="customers.html" class="nav-link">Customers</a>
+    <a href="faq.html"       class="nav-link">Resources</a>
   </div>
   <div class="nav-right">
-    <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer gratuitement</a>
+    <a href="connexion.html" class="nav-connexion">Log in</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Get Started</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 
 <div class="mobile-menu" id="mobile-menu">
-  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Solutions</a>
-  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="solutions.html" class="mob-link" onclick="closeMobileMenu()">Product</a>
+  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Pricing</a>
+  <a href="customers.html" class="mob-link" onclick="closeMobileMenu()">Customers</a>
+  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">Resources</a>
   <div class="mob-sep"></div>
-  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Démarrer gratuitement</a>
+  <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Log in</a>
+  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Get Started</a>
 </div>
 
 <!-- Halo de fond -->
@@ -159,31 +163,31 @@ input,button{font-family:'Inter',sans-serif;}
     </div>
 
     <div class="card-head">
-      <h1>Connexion</h1>
-      <p>Accédez à votre espace professionnel.</p>
+      <h1>Log in</h1>
+      <p>Access your Seba workspace.</p>
     </div>
 
-    <div class="error-msg" id="error-msg">Email ou mot de passe incorrect.</div>
+    <div class="error-msg" id="error-msg">Incorrect email or password.</div>
 
     <div class="field">
-      <label for="email">Adresse email</label>
-      <input type="email" id="email" placeholder="votre@email.fr" autocomplete="email">
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="email">
     </div>
 
     <div class="field">
-      <label for="password">Mot de passe</label>
+      <label for="password">Password</label>
       <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
     </div>
 
-    <div class="forgot"><a href="#">Mot de passe oublié ?</a></div>
+    <div class="forgot"><a href="#">Forgot your password?</a></div>
 
-    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">Se connecter</button>
+    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">Sign in</button>
 
     <hr class="divider">
 
     <p class="foot">
-      Pas encore de compte ?
-      <a href="onboarding.html">Démarrer gratuitement</a>
+      Don't have an account?
+      <a href="onboarding.html">Get Started</a>
     </p>
   </div>
 </div>
@@ -194,13 +198,13 @@ function handleLogin(){
   const password=document.getElementById('password').value;
   const err=document.getElementById('error-msg');
   if(!email||!password){
-    err.textContent='Veuillez renseigner votre email et votre mot de passe.';
+    err.textContent='Please enter your email and password.';
     err.classList.add('visible');
     return;
   }
   err.classList.remove('visible');
   const btn=document.getElementById('btn-connect');
-  btn.textContent='Connexion…';
+  btn.textContent='Signing in…';
   btn.disabled=true;
   setTimeout(()=>{window.location.href='dashboard.html';},600);
 }
