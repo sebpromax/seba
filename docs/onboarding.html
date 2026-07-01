@@ -374,11 +374,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .or-label{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;}
 .or-desc{font-size:.7rem;color:var(--t2);line-height:1.4;}
 /* ── Job tags (multi-select Vocation) ── */
-.job-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;min-height:0;}
-.job-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 12px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.3);border-radius:100px;font-size:.78rem;font-weight:600;color:#00F5A0;}
-.job-tag-rm{background:none;border:none;color:rgba(0,245,160,.55);cursor:pointer;padding:0;font-size:.75rem;line-height:1;transition:color .15s;}
+.job-tags-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.job-tags{display:flex;flex-wrap:wrap;gap:7px;}
+.job-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 14px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.3);border-radius:100px;font-size:.8rem;font-weight:600;color:#00F5A0;white-space:nowrap;}
+.job-tag-rm{background:none;border:none;color:rgba(0,245,160,.45);cursor:pointer;padding:0 2px;font-size:.8rem;line-height:1;transition:color .15s;flex-shrink:0;}
 .job-tag-rm:hover{color:#ff7070;}
-.polyvalent-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(0,195,255,.07);border:1px solid rgba(0,195,255,.2);color:rgba(100,220,255,.8);font-size:.76rem;font-weight:600;border-radius:100px;margin-bottom:10px;}
+.polyvalent-banner{display:none;padding:7px 14px;background:rgba(0,195,255,.06);border:1px solid rgba(0,195,255,.18);border-radius:8px;font-size:.76rem;font-weight:600;color:rgba(100,220,255,.85);line-height:1.35;}
 /* ── Password input ── */
 .pwd-wrap{display:flex;gap:8px;align-items:center;}
 .pwd-wrap input{flex:1;}
@@ -494,7 +495,10 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <h2 class="step-title">Quel type d'activité exercez-vous ?</h2>
       <p class="step-sub">Seba adapte vos devis, relances et indicateurs à votre métier.</p>
 
-      <div class="job-tags" id="job-tags"></div>
+      <div class="job-tags-wrap" id="job-tags-wrap" style="display:none;">
+        <div class="job-tags" id="job-tags"></div>
+        <div class="polyvalent-banner" id="polyvalent-banner">💡 Profil polyvalent — vos prestations combineront plusieurs expertises.</div>
+      </div>
       <div class="sr-wrap">
         <div class="sector-reaction" id="sector-reaction">
           <span id="reaction-text">Parfait !</span>
@@ -1181,9 +1185,27 @@ const ORIENTATIONS={
   beaute:[{key:'soins',icon:'💆',label:'Soins visage & corps',desc:'Soins & épilation'},{key:'onglerie',icon:'💅',label:'Onglerie & nail art',desc:'Gel, résine, nail art'},{key:'maquillage',icon:'💄',label:'Maquillage & événement',desc:'Cérémonie, mariage'}],
   animaux:[{key:'chiens',icon:'🐕',label:'Chiens',desc:'Garde & promenades'},{key:'chats',icon:'🐈',label:'Chats & NAC',desc:'Chats, lapins, rongeurs'},{key:'domicile',icon:'🏠',label:'Garde à domicile',desc:'Chez vous, 24h/24'}],
   pressing:[{key:'costumes',icon:'👔',label:'Chemises & costumes',desc:'Nettoyage courant'},{key:'soiree',icon:'👗',label:'Robes & soirée',desc:'Vêtements délicats'},{key:'cuir',icon:'🧥',label:'Cuir & matières',desc:'Cuir, daim, fourrure'}],
-  __conciergerie__:[{key:'saisonnier',icon:'🏖️',label:'Location saisonnière',desc:'Airbnb, Booking…'},{key:'residentiel',icon:'🏢',label:'Résidentiel premium',desc:'Copropriété & résidences'},{key:'corporate',icon:'🤝',label:'Entreprise & bureau',desc:'Services aux sociétés'}],
+  __conciergerie__:[{key:'airbnb',icon:'🏠',label:'Airbnb & Saisonnière',desc:'Locations courte durée, Booking, gestion voyageurs'},{key:'luxe',icon:'💎',label:'Privée & Luxe',desc:'Propriétés haut de gamme, VIP, protocole 5★'},{key:'corporate',icon:'🏢',label:'Entreprise & Copropriété',desc:'Bureaux, parties communes, syndic'}],
   demenagement:[{key:'residentiel',icon:'🏠',label:'Résidentiel',desc:'Appartements & maisons'},{key:'entreprise',icon:'🏢',label:'Entreprise',desc:'Bureaux & locaux pro'},{key:'fragile',icon:'🎻',label:'Objets fragiles & art',desc:'Piano, œuvres d\'art'}],
   autre:[{key:'particuliers',icon:'👤',label:'Particuliers',desc:'Clients B2C'},{key:'entreprises',icon:'🏢',label:'Entreprises',desc:'Clients B2B'},{key:'mixte',icon:'🔄',label:'Mixte',desc:'Particuliers & pros'}],
+};
+
+/* ─── Services spécifiques par orientation (conciergerie + cas clés) ─── */
+const ORIENTATION_SERVICES={
+  __conciergerie__:{
+    airbnb:{
+      label:'Conciergerie Airbnb & Saisonnière',
+      services:['Gestion des annonces Airbnb / Booking','Check-in & Check-out voyageurs','Ménage hôtelier entre résidents','Remise des clés sécurisée','Linge de maison & literie premium'],
+    },
+    luxe:{
+      label:'Conciergerie Privée & Luxe',
+      services:['Gestion de propriété haut de gamme','Accueil VIP & protocole 5★','Services personnalisés 24h/7j','Coordination personnel de maison','Mise en scène & préparation de résidence'],
+    },
+    corporate:{
+      label:'Conciergerie d\'Entreprise & Copropriété',
+      services:['Accueil & réception en entreprise','Gestion courrier & livraisons','Entretien parties communes','Organisation séminaires & réunions','Coordination prestataires & maintenance'],
+    },
+  },
 };
 
 /* ─── Base de données mondiale des métiers ─── */
@@ -1898,18 +1920,17 @@ function selectSector(key,card){
 }
 
 function updateJobTags(){
+  const wrap=document.getElementById('job-tags-wrap');
   const container=document.getElementById('job-tags');
+  const banner=document.getElementById('polyvalent-banner');
   if(!container) return;
   container.innerHTML='';
-  if(S.selectedJobs.length===0) return;
-  // Polyvalent badge
+  if(S.selectedJobs.length===0){if(wrap)wrap.style.display='none';return;}
+  if(wrap) wrap.style.display='flex';
+  // Polyvalent banner (bloc séparé, toujours sur sa propre ligne)
   const families=new Set(S.selectedJobs.map(j=>SECTOR_FAMILY[j.key]||'other'));
-  if(families.size>1){
-    const badge=document.createElement('span');
-    badge.className='polyvalent-badge';
-    badge.textContent='💡 Profil polyvalent !';
-    container.appendChild(badge);
-  }
+  if(banner) banner.style.display=families.size>1?'block':'none';
+  // Tags des métiers
   S.selectedJobs.forEach(j=>{
     const tag=document.createElement('span');
     tag.className='job-tag';
@@ -1923,7 +1944,7 @@ function updateJobTags(){
       if(card) card.classList.remove('selected');
       updateJobTags();
     };
-    tag.textContent=j.label+' ';tag.appendChild(rm);
+    tag.textContent=j.label+' ';tag.appendChild(rm);
     container.appendChild(tag);
   });
 }
@@ -1968,10 +1989,11 @@ function goStep(toIdx,forward){
   if (toIdx > 0) StateRecovery.save(toIdx);
   // Baptême → show preview panel with current data
   if(toIdx===3) setTimeout(()=>{updatePreview();},100);
-  // Révélation → build services from selected job(s)
+  // Révélation → build services from selected job(s) ou orientation
   if(toIdx===4){
     const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
-    if(builtForSector!==sector||Object.keys(S.svcs).length===0) buildSvcList(sector);
+    const hasOrSvcs=!!(S._orientationServices&&S._orientationServices.length);
+    if(builtForSector!==sector||Object.keys(S.svcs).length===0||hasOrSvcs) buildSvcList(sector);
   }
   // Aiguillage → render orientation cards
   if(toIdx===5) renderOrientations();
@@ -2000,6 +2022,22 @@ function pickOrientation(key){
   document.querySelectorAll('.orientation-card').forEach(c=>c.classList.remove('selected'));
   const card=document.getElementById('or-'+key);
   if(card) card.classList.add('selected');
+  // Mise à jour de la spécialité dans le panneau preview
+  const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
+  const orList=ORIENTATION_SERVICES[sector];
+  if(orList&&orList[key]){
+    const spec=orList[key];
+    // Label affiné : "Conciergerie Airbnb" visible dans la niche du preview
+    S.secteurCustom=spec.label;
+    const nicheEl=document.getElementById('pv-niche');
+    if(nicheEl) nicheEl.textContent=spec.label;
+    // Pré-charger les services orientés en mémoire pour buildSvcList
+    S._orientationServices=spec.services;
+  } else {
+    S._orientationServices=null;
+  }
+  // Forcer rebuild des services quand l'utilisateur arrivera à l'étape 4
+  builtForSector=null;
   setTimeout(()=>goStep(6),420);
 }
 
@@ -2129,7 +2167,10 @@ function buildSvcList(sector){
   if(!container) return;
   container.innerHTML='';S.svcs={};customCount=0;
   let svcEntries=[];
-  if(S.selectedJobs.length>=2){
+  // PRIORITÉ 1 : services spécifiques de l'orientation (ex: Conciergerie Airbnb)
+  if(S._orientationServices&&S._orientationServices.length){
+    svcEntries=S._orientationServices.slice(0,4).map(n=>({name:n,sec:sector}));
+  } else if(S.selectedJobs.length>=2){
     // Multi-job : 2 prestations phares par job, max 4 au total
     S.selectedJobs.slice(0,2).forEach(jRef=>{
       const job=jRef.jobId?JOB_INDEX.find(j=>j.id===jRef.jobId):getDefaultJobForSector(jRef.key);
@@ -2296,7 +2337,7 @@ function fillSummary(){
 /* ─── Save ─── */
 function saveLS(){
   const services=Object.values(S.svcs).filter(s=>s.checked).map(s=>({name:s.name,price:s.price,priceType:s.priceType}));
-  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,secteurCustom:S.secteurCustom,selectedJobId:S.selectedJobId,selectedJobs:S.selectedJobs,orientationKey:S.orientationKey,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,email:S.email,onboardingCompleted:true}));
+  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,secteurCustom:S.secteurCustom,selectedJobId:S.selectedJobId,selectedJobs:S.selectedJobs,orientationKey:S.orientationKey,orientationLabel:S.secteurCustom,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,email:S.email,onboardingCompleted:true}));
 }
 
 function slugify(str){return(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'mon-entreprise';}
