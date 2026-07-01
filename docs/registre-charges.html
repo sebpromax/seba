@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Registre des Charges</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+select{background:#0f172a;color:#e2e8f0;border-color:#334155;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 1.2 // REGISTRE DES CHARGES</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="cockpit-treso.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 1.1</a>
+    <a href="bfr-predictif.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">1.3 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Ajout de charge -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Enregistrer une Charge</h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <input type="text" id="ch-libelle" placeholder="Libellé de la charge" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors">
+      <select id="ch-categorie" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-emerald-500">
+        <option value="fournitures">Fournitures</option>
+        <option value="sous-traitance">Sous-traitance</option>
+        <option value="vehicules">Véhicules / Carburant</option>
+        <option value="outillage">Outillage</option>
+        <option value="formation">Formation</option>
+        <option value="locaux">Locaux / Loyer</option>
+        <option value="assurances">Assurances</option>
+        <option value="autre">Autre</option>
+      </select>
+      <div class="relative">
+        <input type="number" id="ch-ht" placeholder="Montant HT" min="0" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono" oninput="calcTVA()">
+      </div>
+      <div class="flex gap-2">
+        <select id="ch-tva" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2.5 text-sm outline-none focus:border-emerald-500 font-mono" onchange="calcTVA()">
+          <option value="20">TVA 20%</option>
+          <option value="10">TVA 10%</option>
+          <option value="5.5">TVA 5.5%</option>
+          <option value="0">Exonéré</option>
+        </select>
+        <button onclick="addCharge()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm px-4 rounded-lg transition-colors">+</button>
+      </div>
+    </div>
+    <div class="mt-3 flex items-center gap-4 text-2xs text-slate-500 font-mono">
+      <span>TVA déductible calculée : <span id="tva-preview" class="text-amber-400">—</span></span>
+      <span>TTC : <span id="ttc-preview" class="text-slate-300">—</span></span>
+    </div>
+  </div>
+
+  <!-- Filtres + stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="stats-grid"></div>
+
+  <!-- Tableau -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-white font-mono">Charges enregistrées</h3>
+      <div class="flex gap-2">
+        <select id="filter-cat" onchange="renderTable()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs outline-none">
+          <option value="">Toutes catégories</option>
+          <option value="fournitures">Fournitures</option>
+          <option value="sous-traitance">Sous-traitance</option>
+          <option value="vehicules">Véhicules</option>
+          <option value="outillage">Outillage</option>
+          <option value="formation">Formation</option>
+          <option value="locaux">Locaux</option>
+          <option value="assurances">Assurances</option>
+          <option value="autre">Autre</option>
+        </select>
+        <button onclick="exportCSV()" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded hover:text-white transition-colors">↓ CSV</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-900/50">
+          <tr class="text-left">
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider">Date</th>
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider">Libellé</th>
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider">Catégorie</th>
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider text-right">HT</th>
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider text-right">TVA déd.</th>
+            <th class="px-4 py-3 text-slate-500 font-mono uppercase tracking-wider text-right">TTC</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody id="charges-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+let charges=SebaStorage.read('charges')||[];
+
+const CAT_COLORS={fournitures:'text-blue-400',sous-traitance:'text-violet-400',vehicules:'text-amber-400',outillage:'text-orange-400',formation:'text-cyan-400',locaux:'text-pink-400',assurances:'text-teal-400',autre:'text-slate-400'};
+
+function fmt(n){return new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' €';}
+
+function calcTVA(){
+  const ht=parseFloat(document.getElementById('ch-ht').value)||0;
+  const tva=parseFloat(document.getElementById('ch-tva').value)||0;
+  const tvaAmt=ht*(tva/100);
+  document.getElementById('tva-preview').textContent=fmt(tvaAmt);
+  document.getElementById('ttc-preview').textContent=fmt(ht+tvaAmt);
+}
+
+function addCharge(){
+  const libelle=document.getElementById('ch-libelle').value.trim();
+  const ht=parseFloat(document.getElementById('ch-ht').value)||0;
+  if(!libelle||!ht)return;
+  const tva=parseFloat(document.getElementById('ch-tva').value)||0;
+  charges.push({id:Date.now(),date:new Date().toLocaleDateString('fr-FR'),libelle,categorie:document.getElementById('ch-categorie').value,ht,tva,tvaAmt:ht*(tva/100),ttc:ht+(ht*(tva/100))});
+  SebaStorage.write('charges',charges);
+  document.getElementById('ch-libelle').value='';
+  document.getElementById('ch-ht').value='';
+  renderTable();renderStats();
+}
+
+function deleteCharge(id){charges=charges.filter(c=>c.id!==id);SebaStorage.write('charges',charges);renderTable();renderStats();}
+
+function renderTable(){
+  const cat=document.getElementById('filter-cat').value;
+  const list=cat?charges.filter(c=>c.categorie===cat):charges;
+  document.getElementById('charges-table').innerHTML=list.length===0
+    ?'<tr><td colspan="7" class="px-4 py-8 text-center text-slate-600 font-mono text-xs">Aucune charge enregistrée</td></tr>'
+    :list.map(c=>`<tr class="border-t border-slate-800/50 hover:bg-slate-900/30 transition-colors">
+      <td class="px-4 py-3 text-slate-500 font-mono">${c.date}</td>
+      <td class="px-4 py-3 text-slate-200">${c.libelle}</td>
+      <td class="px-4 py-3"><span class="text-2xs font-bold ${CAT_COLORS[c.categorie]||'text-slate-400'} uppercase">${c.categorie}</span></td>
+      <td class="px-4 py-3 text-right text-slate-300 font-mono">${fmt(c.ht)}</td>
+      <td class="px-4 py-3 text-right text-amber-400 font-mono">${fmt(c.tvaAmt)}</td>
+      <td class="px-4 py-3 text-right text-slate-200 font-mono font-bold">${fmt(c.ttc)}</td>
+      <td class="px-4 py-3 text-right"><button onclick="deleteCharge(${c.id})" class="text-slate-600 hover:text-rose-400 text-xs transition-colors">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderStats(){
+  const totHT=charges.reduce((s,c)=>s+c.ht,0);
+  const totTVA=charges.reduce((s,c)=>s+c.tvaAmt,0);
+  const totTTC=charges.reduce((s,c)=>s+c.ttc,0);
+  const maxCat=Object.entries(charges.reduce((acc,c)=>{acc[c.categorie]=(acc[c.categorie]||0)+c.ht;return acc;},{})).sort((a,b)=>b[1]-a[1])[0];
+  const stats=[
+    {label:'Total HT',value:fmt(totHT),color:'text-slate-300'},
+    {label:'TVA Déductible',value:fmt(totTVA),color:'text-amber-400'},
+    {label:'Total TTC',value:fmt(totTTC),color:'text-white'},
+    {label:'Poste Principal',value:maxCat?maxCat[0]:'—',color:'text-emerald-400'},
+  ];
+  document.getElementById('stats-grid').innerHTML=stats.map(s=>`
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+      <div class="text-3xs text-slate-500 uppercase tracking-wider font-mono mb-2">${s.label}</div>
+      <div class="text-base font-bold ${s.color} font-mono">${s.value}</div>
+    </div>`).join('');
+}
+
+function exportCSV(){
+  const rows=[['Date','Libellé','Catégorie','HT','TVA Déductible','TTC'],...charges.map(c=>[c.date,c.libelle,c.categorie,c.ht,c.tvaAmt,c.ttc])];
+  const csv=rows.map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='charges-seba.csv';a.click();
+}
+
+renderTable();renderStats();
+</script>
+</body>
+</html>

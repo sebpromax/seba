@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Crypto Backup</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.audit-row{border-left:2px solid #1e293b;transition:border-color .2s;}
+.audit-row:hover{border-left-color:#10b981;}
+.hash-code{font-family:var(--font-mono);font-size:.5rem;color:#334155;word-break:break-all;letter-spacing:.03em;}
+.encrypt-progress{height:4px;background:#1e293b;border-radius:2px;overflow:hidden;}
+.encrypt-fill{height:100%;background:linear-gradient(90deg,#10b981,#6366f1);transition:width .4s;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 4.4 // JOURNAL AUDIT · BACKUP AES-256</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="rh-compagnonnage.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 4.3</a>
+    <a href="core-ux.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">↩ Core</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Journal d'audit anti-fraude -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Journal d'Audit Anti-Fraude</h2>
+        <p class="text-xs text-slate-500 mt-1">Chaque entrée est hachée avec SHA-256 (Web Crypto API) — chaîne vérifiable</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="audit-integrity-badge" class="text-2xs font-bold font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded">✓ INTÈGRE</span>
+        <button onclick="verifyChain()" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">Vérifier chaîne</button>
+      </div>
+    </div>
+
+    <!-- Ajouter entrée -->
+    <div class="flex gap-3 mb-4">
+      <input type="text" id="audit-action" placeholder="Action (ex: Facture FAC-001 créée)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <select id="audit-module" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none" style="background:#0f172a;">
+        <option value="Facture">Facture</option><option value="Devis">Devis</option><option value="Paiement">Paiement</option>
+        <option value="Client">Client</option><option value="Charge">Charge</option><option value="Système">Système</option>
+      </select>
+      <button onclick="addAuditEntry()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm px-4 rounded-lg transition-colors">+ Log</button>
+    </div>
+
+    <div id="audit-log" class="space-y-2 max-h-64 overflow-y-auto"></div>
+  </div>
+
+  <!-- Backup AES-256 -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Backup Chiffré AES-256 (Web Crypto API)</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Export chiffré -->
+      <div class="space-y-3">
+        <label class="text-2xs font-bold text-slate-400 uppercase font-mono">Exporter & Chiffrer</label>
+        <div class="relative">
+          <input type="password" id="backup-pass" placeholder="Passphrase de chiffrement (min. 12 car.)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-violet-500 font-mono pr-10">
+          <button onclick="document.getElementById('backup-pass').type=document.getElementById('backup-pass').type==='password'?'text':'password'" class="absolute right-3 top-3 text-slate-600 hover:text-slate-400 text-xs">👁</button>
+        </div>
+        <div class="encrypt-progress"><div class="encrypt-fill" id="encrypt-fill" style="width:0%"></div></div>
+        <div id="encrypt-status" class="text-3xs text-slate-600 font-mono"></div>
+        <button onclick="exportBackup()" class="w-full text-sm font-bold bg-violet-500/10 border border-violet-500/30 text-violet-400 py-2.5 rounded-lg hover:bg-violet-500/20 transition-colors font-mono">🔐 Chiffrer & Télécharger .seba</button>
+      </div>
+
+      <!-- Import déchiffré -->
+      <div class="space-y-3">
+        <label class="text-2xs font-bold text-slate-400 uppercase font-mono">Importer & Déchiffrer</label>
+        <input type="password" id="restore-pass" placeholder="Passphrase de déchiffrement" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+        <label class="block w-full text-sm font-bold bg-slate-900 border border-dashed border-slate-700 text-slate-400 py-4 rounded-lg text-center cursor-pointer hover:border-emerald-500/50 hover:text-emerald-400 transition-colors">
+          📂 Sélectionner un fichier .seba
+          <input type="file" accept=".seba,.json" class="hidden" onchange="importBackup(this)">
+        </label>
+        <div id="restore-status" class="text-3xs text-slate-600 font-mono"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques stockage -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Statistiques du Stockage Local</h3>
+    <div id="storage-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+let auditLog=SebaStorage.read('audit_log')||[];
+let prevHash='0000000000000000';
+
+// ─── Web Crypto: SHA-256 réel ───
+async function sha256(msg){
+  const enc=new TextEncoder();
+  const buf=await crypto.subtle.digest('SHA-256',enc.encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function addAuditEntry(){
+  const action=document.getElementById('audit-action').value.trim();if(!action)return;
+  const module=document.getElementById('audit-module').value;
+  const ts=new Date().toISOString();
+  const payload=prevHash+':'+module+':'+action+':'+ts;
+  const hash=await sha256(payload);
+  prevHash=hash;
+  auditLog.push({id:'al_'+Date.now(),action,module,ts,hash,prevHash:auditLog.length>0?auditLog[auditLog.length-1].hash:'genesis'});
+  SebaStorage.write('audit_log',auditLog);
+  document.getElementById('audit-action').value='';
+  renderAuditLog();
+}
+
+function renderAuditLog(){
+  document.getElementById('audit-log').innerHTML=auditLog.length===0
+    ?'<div class="text-xs text-slate-600 font-mono text-center py-4">Journal vide — aucune entrée</div>'
+    :auditLog.slice(-20).reverse().map(e=>`
+    <div class="audit-row pl-3 py-2">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-3xs font-bold font-mono text-violet-400">${e.module.toUpperCase()}</span>
+        <span class="text-3xs text-slate-600 font-mono">${new Date(e.ts).toLocaleString('fr-FR')}</span>
+      </div>
+      <div class="text-xs text-slate-300">${e.action}</div>
+      <div class="hash-code mt-1">SHA256: ${e.hash}</div>
+    </div>`).join('');
+}
+
+async function verifyChain(){
+  const badge=document.getElementById('audit-integrity-badge');
+  if(auditLog.length===0){badge.textContent='— VIDE';badge.className='text-2xs font-bold font-mono bg-slate-800 border border-slate-700 text-slate-400 px-3 py-1.5 rounded';return;}
+  let ok=true;
+  let prev='0000000000000000';
+  for(const entry of auditLog){
+    const payload=prev+':'+entry.module+':'+entry.action+':'+entry.ts;
+    const expected=await sha256(payload);
+    if(expected!==entry.hash){ok=false;break;}
+    prev=entry.hash;
+  }
+  badge.textContent=ok?'✓ INTÈGRE':'⚠ COMPROMIS';
+  badge.className='text-2xs font-bold font-mono px-3 py-1.5 rounded '+(ok?'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400':'bg-rose-500/10 border border-rose-500/20 text-rose-400');
+}
+
+// ─── Backup AES-256 (Web Crypto API réel) ───
+async function deriveKey(pass,salt){
+  const enc=new TextEncoder();
+  const km=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+
+async function exportBackup(){
+  const pass=document.getElementById('backup-pass').value;
+  if(pass.length<12){document.getElementById('encrypt-status').textContent='Passphrase trop courte (min. 12 caractères)';return;}
+  const fill=document.getElementById('encrypt-fill');
+  const status=document.getElementById('encrypt-status');
+  status.textContent='Collecte des données...';fill.style.width='20%';
+  await new Promise(r=>setTimeout(r,300));
+  // Collect all seba_ keys
+  const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('seba_'))data[k]=localStorage.getItem(k);}
+  data['_export_ts']=new Date().toISOString();data['_version']='1.0';
+  fill.style.width='50%';status.textContent='Chiffrement AES-256-GCM...';
+  await new Promise(r=>setTimeout(r,300));
+  try{
+    const enc=new TextEncoder();
+    const salt=crypto.getRandomValues(new Uint8Array(16));
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const key=await deriveKey(pass,salt);
+    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(data)));
+    fill.style.width='85%';status.textContent='Génération du fichier...';
+    await new Promise(r=>setTimeout(r,200));
+    const out={v:1,salt:Array.from(salt),iv:Array.from(iv),data:Array.from(new Uint8Array(cipher))};
+    const blob=new Blob([JSON.stringify(out)],{type:'application/octet-stream'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='seba-backup-'+new Date().toISOString().slice(0,10)+'.seba';a.click();
+    fill.style.width='100%';status.textContent='✓ Backup AES-256 exporté avec succès';
+  }catch(e){status.textContent='Erreur : '+e.message;fill.style.width='0%';}
+}
+
+async function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const pass=document.getElementById('restore-pass').value;
+  const status=document.getElementById('restore-status');
+  if(!pass){status.textContent='Entrez la passphrase.';return;}
+  try{
+    const text=await file.text();
+    const pkg=JSON.parse(text);
+    const salt=new Uint8Array(pkg.salt);
+    const iv=new Uint8Array(pkg.iv);
+    const data=new Uint8Array(pkg.data);
+    const key=await deriveKey(pass,salt);
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data);
+    const obj=JSON.parse(new TextDecoder().decode(plain));
+    let count=0;
+    for(const[k,v] of Object.entries(obj)){if(k.startsWith('seba_')){localStorage.setItem(k,v);count++;}}
+    status.textContent=`✓ ${count} clés restaurées depuis ${new Date(obj._export_ts).toLocaleDateString('fr-FR')}`;
+  }catch(e){status.textContent='✕ Déchiffrement impossible — passphrase incorrecte ?';}
+}
+
+function renderStorageStats(){
+  const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('seba_'))keys.push(k);}
+  const totalBytes=keys.reduce((s,k)=>s+(localStorage.getItem(k)||'').length,0);
+  const stats=[
+    {label:'Clés stockées',value:keys.length,color:'text-blue-400'},
+    {label:'Taille totale',value:Math.round(totalBytes/1024*10)/10+' Ko',color:'text-violet-400'},
+    {label:'Entrées journal',value:auditLog.length,color:'text-emerald-400'},
+    {label:'Dernière entrée',value:auditLog.length?new Date(auditLog[auditLog.length-1].ts).toLocaleDateString('fr-FR'):'—',color:'text-amber-400'},
+  ];
+  document.getElementById('storage-stats').innerHTML=stats.map(s=>`
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <div class="text-3xs text-slate-500 font-mono uppercase mb-2">${s.label}</div>
+      <div class="text-lg font-bold ${s.color} font-mono">${s.value}</div>
+    </div>`).join('');
+}
+
+// Auto-log system start
+(async()=>{
+  if(auditLog.length===0){
+    const ts=new Date().toISOString();
+    const hash=await sha256('genesis:Système:Initialisation journal audit:'+ts);
+    auditLog.push({id:'al_0',action:'Initialisation du journal d\'audit',module:'Système',ts,hash,prevHash:'genesis'});
+    prevHash=hash;
+    SebaStorage.write('audit_log',auditLog);
+  }else{prevHash=auditLog[auditLog.length-1].hash;}
+  renderAuditLog();renderStorageStats();
+})();
+</script>
+</body>
+</html>

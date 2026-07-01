@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Trava & Déchets</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+input[type=range]{accent-color:#10b981;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 4.1 // ÉCOTAXE · BSD · RSE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="contentieux-recouvrement.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 3.4</a>
+    <a href="prevention-risques.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">4.2 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Calculateur écotaxe -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Calculateur Écotaxe & Taxes Environnementales</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="text-2xs font-bold text-slate-400 uppercase font-mono">Produits détergents (kg)</label>
+        <input type="number" id="eco-detergent" value="0" min="0" step="0.1" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono" oninput="calcEcotaxe()">
+        <div class="text-3xs text-slate-600 font-mono mt-1">0.36 €/kg (TEP)</div>
+      </div>
+      <div>
+        <label class="text-2xs font-bold text-slate-400 uppercase font-mono">Emballages plastique (kg)</label>
+        <input type="number" id="eco-plastique" value="0" min="0" step="0.1" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono" oninput="calcEcotaxe()">
+        <div class="text-3xs text-slate-600 font-mono mt-1">0.18 €/kg (TGN)</div>
+      </div>
+      <div>
+        <label class="text-2xs font-bold text-slate-400 uppercase font-mono">Déchets dangereux (kg)</label>
+        <input type="number" id="eco-dangereux" value="0" min="0" step="0.1" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono" oninput="calcEcotaxe()">
+        <div class="text-3xs text-slate-600 font-mono mt-1">0.54 €/kg (TGAP)</div>
+      </div>
+    </div>
+    <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+      <div>
+        <div class="text-2xs text-slate-500 font-mono uppercase mb-1">Écotaxe trimestrielle estimée</div>
+        <div id="eco-total" class="text-3xl font-bold text-emerald-400 font-mono">0,00 €</div>
+      </div>
+      <button onclick="saveEcotaxe()" class="text-sm font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-5 py-2.5 rounded-lg hover:bg-emerald-500/20 transition-colors font-mono">Enregistrer période</button>
+    </div>
+    <div id="ecotaxe-history" class="mt-4 space-y-2"></div>
+  </div>
+
+  <!-- BSD — Bordereau de Suivi des Déchets -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-white font-mono">BSD — Bordereau de Suivi des Déchets</h3>
+        <p class="text-xs text-slate-500 mt-1">Obligatoire pour déchets dangereux (Articles R.541-42 à R.541-58 du Code de l'environnement)</p>
+      </div>
+      <button onclick="addBSD()" class="text-sm font-bold bg-violet-500/10 border border-violet-500/30 text-violet-400 px-4 py-2 rounded-lg hover:bg-violet-500/20 transition-colors">+ BSD</button>
+    </div>
+    <div id="bsd-add-form" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-slate-900 border border-violet-500/20 rounded-xl">
+      <input type="text" id="bsd-type" placeholder="Type de déchet (ex: solvants)" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500">
+      <input type="number" id="bsd-qte" placeholder="Quantité (kg)" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500 font-mono">
+      <input type="text" id="bsd-collecteur" placeholder="Collecteur agréé" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-500">
+      <div class="flex gap-2">
+        <button onclick="saveBSD()" class="flex-1 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded text-sm">✓</button>
+        <button onclick="document.getElementById('bsd-add-form').classList.add('hidden')" class="bg-slate-700 text-slate-300 px-3 rounded text-sm">✕</button>
+      </div>
+    </div>
+    <div id="bsd-list" class="space-y-2"></div>
+  </div>
+
+  <!-- RSE Tableau de bord -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Tableau de Bord RSE</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">🌱</div>
+        <div class="text-2xs text-slate-500 font-mono uppercase">CO2 évité (kg)</div>
+        <input type="number" id="rse-co2" value="0" class="mt-2 w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-center text-sm text-emerald-400 font-mono outline-none" onchange="saveRSE()">
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">💧</div>
+        <div class="text-2xs text-slate-500 font-mono uppercase">Eau économisée (L)</div>
+        <input type="number" id="rse-eau" value="0" class="mt-2 w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-center text-sm text-blue-400 font-mono outline-none" onchange="saveRSE()">
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">♻️</div>
+        <div class="text-2xs text-slate-500 font-mono uppercase">Déchets recyclés (kg)</div>
+        <input type="number" id="rse-recyclage" value="0" class="mt-2 w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-center text-sm text-amber-400 font-mono outline-none" onchange="saveRSE()">
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">⚡</div>
+        <div class="text-2xs text-slate-500 font-mono uppercase">Énergie verte (%)</div>
+        <input type="number" id="rse-energie" value="0" min="0" max="100" class="mt-2 w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-center text-sm text-violet-400 font-mono outline-none" onchange="saveRSE()">
+      </div>
+    </div>
+    <button onclick="exportRSE()" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">↓ Rapport RSE annuel</button>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const RATES={detergent:0.36,plastique:0.18,dangereux:0.54};
+
+let ecotaxeHistory=SebaStorage.read('ecotaxe_history')||[];
+let bsdList=SebaStorage.read('bsd_list')||[];
+const rseData=SebaStorage.read('rse_data')||{co2:0,eau:0,recyclage:0,energie:0};
+
+function calcEcotaxe(){
+  const d=parseFloat(document.getElementById('eco-detergent').value)||0;
+  const p=parseFloat(document.getElementById('eco-plastique').value)||0;
+  const dd=parseFloat(document.getElementById('eco-dangereux').value)||0;
+  const total=d*RATES.detergent+p*RATES.plastique+dd*RATES.dangereux;
+  document.getElementById('eco-total').textContent=total.toFixed(2)+' €';
+}
+
+function saveEcotaxe(){
+  const d=parseFloat(document.getElementById('eco-detergent').value)||0;
+  const p=parseFloat(document.getElementById('eco-plastique').value)||0;
+  const dd=parseFloat(document.getElementById('eco-dangereux').value)||0;
+  const total=d*RATES.detergent+p*RATES.plastique+dd*RATES.dangereux;
+  ecotaxeHistory.push({id:'eco_'+Date.now(),date:new Date().toLocaleDateString('fr-FR'),detergent:d,plastique:p,dangereux:dd,total});
+  SebaStorage.write('ecotaxe_history',ecotaxeHistory);renderEcotaxeHistory();
+}
+
+function renderEcotaxeHistory(){
+  document.getElementById('ecotaxe-history').innerHTML=ecotaxeHistory.slice(-5).reverse().map(e=>`
+    <div class="flex justify-between text-xs py-2 border-b border-slate-800/50">
+      <span class="text-slate-500 font-mono">${e.date}</span>
+      <span class="text-slate-400">Détergents ${e.detergent}kg · Plastique ${e.plastique}kg · Dangereux ${e.dangereux}kg</span>
+      <span class="text-emerald-400 font-mono font-bold">${e.total.toFixed(2)} €</span>
+    </div>`).join('');
+}
+
+function addBSD(){document.getElementById('bsd-add-form').classList.remove('hidden');}
+
+function saveBSD(){
+  const type=document.getElementById('bsd-type').value.trim();
+  const qte=parseFloat(document.getElementById('bsd-qte').value)||0;
+  const collecteur=document.getElementById('bsd-collecteur').value.trim();
+  if(!type||!qte)return;
+  const num='BSD-'+new Date().getFullYear()+'-'+String(bsdList.length+1).padStart(4,'0');
+  bsdList.push({id:'bsd_'+Date.now(),num,type,qte,collecteur,date:new Date().toLocaleDateString('fr-FR'),statut:'en-cours'});
+  SebaStorage.write('bsd_list',bsdList);
+  ['bsd-type','bsd-qte','bsd-collecteur'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bsd-add-form').classList.add('hidden');
+  renderBSD();
+}
+
+function closeBSD(id){
+  const b=bsdList.find(x=>x.id===id);if(b)b.statut='clôturé';
+  SebaStorage.write('bsd_list',bsdList);renderBSD();
+}
+
+function renderBSD(){
+  document.getElementById('bsd-list').innerHTML=bsdList.length===0
+    ?'<div class="text-xs text-slate-600 font-mono text-center py-4">Aucun BSD enregistré</div>'
+    :bsdList.map(b=>`
+    <div class="flex items-center justify-between bg-slate-900 border ${b.statut==='clôturé'?'border-slate-800':'border-violet-500/20'} rounded-lg px-4 py-3">
+      <div>
+        <div class="text-2xs font-bold text-violet-400 font-mono">${b.num}</div>
+        <div class="text-xs font-bold text-slate-200">${b.type} — ${b.qte} kg</div>
+        <div class="text-3xs text-slate-500">${b.date} · Collecteur : ${b.collecteur||'—'}</div>
+      </div>
+      ${b.statut==='clôturé'
+        ?'<span class="text-3xs font-bold text-emerald-400 font-mono">✓ CLÔTURÉ</span>'
+        :`<button onclick="closeBSD('${b.id}')" class="text-2xs font-bold bg-violet-500/10 text-violet-400 px-3 py-1.5 rounded font-mono hover:bg-violet-500/20">Clôturer BSD</button>`}
+    </div>`).join('');
+}
+
+function saveRSE(){
+  const data={co2:parseFloat(document.getElementById('rse-co2').value)||0,eau:parseFloat(document.getElementById('rse-eau').value)||0,recyclage:parseFloat(document.getElementById('rse-recyclage').value)||0,energie:parseFloat(document.getElementById('rse-energie').value)||0};
+  SebaStorage.write('rse_data',data);
+}
+
+function exportRSE(){
+  const d={co2:document.getElementById('rse-co2').value,eau:document.getElementById('rse-eau').value,recyclage:document.getElementById('rse-recyclage').value,energie:document.getElementById('rse-energie').value};
+  const biz=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+  const txt=`RAPPORT RSE ANNUEL — ${new Date().getFullYear()}\n${biz.nomEntreprise||'Mon Entreprise'}\n\n• CO2 évité : ${d.co2} kg\n• Eau économisée : ${d.eau} L\n• Déchets recyclés : ${d.recyclage} kg\n• Part énergie verte : ${d.energie}%\n\nBSD enregistrés : ${bsdList.length}\nÉcotaxes acquittées : ${ecotaxeHistory.reduce((s,e)=>s+e.total,0).toFixed(2)} €\n`;
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='RSE_'+new Date().getFullYear()+'.txt';a.click();
+}
+
+// Init RSE fields
+document.getElementById('rse-co2').value=rseData.co2;
+document.getElementById('rse-eau').value=rseData.eau;
+document.getElementById('rse-recyclage').value=rseData.recyclage;
+document.getElementById('rse-energie').value=rseData.energie;
+renderEcotaxeHistory();renderBSD();
+</script>
+</body>
+</html>

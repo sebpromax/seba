@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Contentieux & Recouvrement</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.relance-step{border-left:2px solid #334155;padding-left:16px;position:relative;}
+.relance-step::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:#334155;}
+.relance-step.done::before{background:#10b981;}
+.relance-step.active::before{background:#f59e0b;}
+.relance-step.critical::before{background:#ef4444;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 3.4 // CONTENTIEUX & RECOUVREMENT</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="crm-tech.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 3.3</a>
+    <a href="trava-dechets.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">Lot 4.1 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Créances impayées -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Créances Impayées</h2>
+      <button onclick="openNewCreance()" class="text-sm font-bold bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-2 rounded-lg hover:bg-rose-500/20 transition-colors">+ Créance</button>
+    </div>
+    <div id="new-creance-form" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-slate-900 border border-rose-500/20 rounded-xl">
+      <input type="text" id="cr-client" placeholder="Débiteur" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-rose-500">
+      <input type="number" id="cr-montant" placeholder="Montant TTC €" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-rose-500 font-mono">
+      <input type="text" id="cr-ref" placeholder="Référence facture" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-200 outline-none focus:border-rose-500">
+      <div class="flex gap-2">
+        <button onclick="saveCreance()" class="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded text-sm">+</button>
+        <button onclick="document.getElementById('new-creance-form').classList.add('hidden')" class="bg-slate-700 text-slate-300 px-3 rounded text-sm">✕</button>
+      </div>
+    </div>
+    <div id="creances-list" class="space-y-3"></div>
+    <div class="mt-4 pt-4 border-t border-slate-800 flex justify-between">
+      <span class="text-2xs text-slate-500 font-mono">Encours total impayé</span>
+      <span class="text-sm font-bold text-rose-400 font-mono" id="total-encours">0,00 €</span>
+    </div>
+  </div>
+
+  <!-- CGV & Mentions légales -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">CGV — Clause de Recouvrement</h3>
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4 text-xs text-slate-400 leading-relaxed space-y-2">
+      <p><strong class="text-slate-300">Article 9 — Retard de paiement :</strong> Conformément à la loi n°92-1442 et à l'article L441-6 du Code de commerce, tout retard de paiement entraîne de plein droit et sans mise en demeure préalable l'application de pénalités de retard au taux de 3 fois le taux d'intérêt légal.</p>
+      <p><strong class="text-slate-300">Indemnité forfaitaire :</strong> Une indemnité forfaitaire pour frais de recouvrement d'un montant de <strong>40 €</strong> sera due par le débiteur en cas de retard de paiement (Décret n°2012-1115 du 2 octobre 2012).</p>
+      <p><strong class="text-slate-300">Clause de réserve de propriété :</strong> Les marchandises et prestations demeurent la propriété du vendeur jusqu'au paiement complet du prix.</p>
+    </div>
+    <button onclick="exportCGV()" class="mt-3 text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">↓ Exporter CGV</button>
+  </div>
+
+  <!-- Export Huissier / LRE -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Export Huissier / Lettre Recommandée Électronique</h3>
+    <div id="export-target-select" class="mb-4">
+      <div class="text-xs text-slate-500 mb-2">Sélectionnez une créance pour générer le courrier :</div>
+      <select id="export-creance-select" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none w-full" style="background:#0f172a;" onchange="renderExportPreview()">
+        <option value="">— Choisir —</option>
+      </select>
+    </div>
+    <div id="export-preview" class="hidden bg-slate-900 border border-slate-800 rounded-lg p-4 text-xs text-slate-300 font-mono leading-relaxed mb-4 whitespace-pre-wrap"></div>
+    <div class="flex gap-3">
+      <button onclick="exportLRE()" class="text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 px-5 py-2.5 rounded-lg hover:bg-amber-500/20 transition-colors font-mono">↓ Courrier LRE .txt</button>
+      <button onclick="exportHuissier()" class="text-sm font-bold bg-rose-500/10 border border-rose-500/30 text-rose-400 px-5 py-2.5 rounded-lg hover:bg-rose-500/20 transition-colors font-mono">↓ Dossier Huissier .txt</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const biz=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+const RELANCES=['Amiable J+8','Relance 1 J+30','Relance 2 J+60','Mise en demeure J+90','Huissier / LRE'];
+
+let creances=SebaStorage.read('creances_imp')||[
+  {id:'c1',client:'M. Dupont Jean-Pierre',montant:640,ref:'FAC-2026-0042',date:'15/04/2026',relanceStep:1},
+  {id:'c2',client:'Entreprise BATIMULTI',montant:2800,ref:'FAC-2026-0038',date:'01/03/2026',relanceStep:3},
+];
+
+function openNewCreance(){document.getElementById('new-creance-form').classList.remove('hidden');}
+
+function saveCreance(){
+  const client=document.getElementById('cr-client').value.trim();
+  const montant=parseFloat(document.getElementById('cr-montant').value)||0;
+  const ref=document.getElementById('cr-ref').value.trim();
+  if(!client||!montant)return;
+  creances.push({id:'c_'+Date.now(),client,montant,ref,date:new Date().toLocaleDateString('fr-FR'),relanceStep:0});
+  SebaStorage.write('creances_imp',creances);
+  ['cr-client','cr-montant','cr-ref'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-creance-form').classList.add('hidden');
+  renderCreances();
+}
+
+function advanceRelance(id){
+  const c=creances.find(x=>x.id===id);
+  if(c&&c.relanceStep<RELANCES.length-1){c.relanceStep++;SebaStorage.write('creances_imp',creances);renderCreances();}
+}
+
+function renderCreances(){
+  const total=creances.reduce((s,c)=>s+c.montant,0);
+  document.getElementById('total-encours').textContent=total.toLocaleString('fr-FR',{minimumFractionDigits:2})+' €';
+  document.getElementById('creances-list').innerHTML=creances.length===0
+    ?'<div class="text-xs text-slate-600 font-mono text-center py-4">✓ Aucune créance impayée</div>'
+    :creances.map(c=>`
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="text-sm font-bold text-slate-200">${c.client}</div>
+          <div class="text-2xs text-slate-500 font-mono">${c.ref} · Échue le ${c.date}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-lg font-bold text-rose-400 font-mono">${c.montant.toLocaleString('fr-FR',{minimumFractionDigits:2})} €</div>
+          <div class="text-3xs text-slate-500 font-mono">Étape ${c.relanceStep+1}/${RELANCES.length}</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        ${RELANCES.map((r,i)=>`<div class="relance-step ${i<c.relanceStep?'done':i===c.relanceStep?'active':i===RELANCES.length-1?'critical':''}">
+          <span class="text-2xs font-bold ${i<c.relanceStep?'text-emerald-400':i===c.relanceStep?'text-amber-400':i===RELANCES.length-1?'text-rose-400':'text-slate-600'} font-mono">${r}</span>
+          ${i===c.relanceStep?'<span class="ml-2 text-3xs bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-mono">EN COURS</span>':''}
+        </div>`).join('')}
+      </div>
+      <button onclick="advanceRelance('${c.id}')" class="mt-4 w-full text-2xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 py-2 rounded-lg hover:bg-amber-500/20 transition-colors font-mono" ${c.relanceStep>=RELANCES.length-1?'disabled style="opacity:.4"':''}>Passer à l'étape suivante →</button>
+    </div>`).join('');
+  // Populate export select
+  const sel=document.getElementById('export-creance-select');
+  sel.innerHTML='<option value="">— Choisir —</option>'+creances.map(c=>`<option value="${c.id}">${c.client} — ${c.ref} (${c.montant} €)</option>`).join('');
+}
+
+function renderExportPreview(){
+  const id=document.getElementById('export-creance-select').value;
+  const c=creances.find(x=>x.id===id);
+  if(!c){document.getElementById('export-preview').classList.add('hidden');return;}
+  const nomBiz=biz.nomEntreprise||biz.nomComplet||'Mon Entreprise';
+  const texte=`LETTRE DE MISE EN DEMEURE
+
+${new Date().toLocaleDateString('fr-FR')}
+
+De : ${nomBiz}
+À : ${c.client}
+
+Objet : Mise en demeure de payer — Facture ${c.ref}
+
+Monsieur / Madame,
+
+Malgré nos relances précédentes restées sans réponse, nous constatons que la facture ${c.ref} du ${c.date}, d'un montant de ${c.montant.toLocaleString('fr-FR',{minimumFractionDigits:2})} €, demeure impayée à ce jour.
+
+Par la présente, nous vous mettons en demeure de procéder au règlement intégral de cette somme dans un délai de 8 jours à compter de la réception du présent courrier.
+
+À défaut de règlement dans ce délai, nous nous verrons contraints d'engager toute procédure de recouvrement judiciaire à votre encontre, dont les frais resteront à votre charge.
+
+Des pénalités de retard au taux de 3× le taux légal sont applicables de plein droit, ainsi qu'une indemnité forfaitaire de 40 € pour frais de recouvrement.
+
+Veuillez agréer, Monsieur / Madame, nos salutations.
+
+${nomBiz}`;
+  document.getElementById('export-preview').textContent=texte;
+  document.getElementById('export-preview').classList.remove('hidden');
+}
+
+function exportLRE(){
+  const id=document.getElementById('export-creance-select').value;
+  const c=creances.find(x=>x.id===id);if(!c)return;
+  const txt=document.getElementById('export-preview').textContent;
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`LRE_${c.ref}_${c.client.replace(/\s/g,'_')}.txt`;a.click();
+}
+
+function exportHuissier(){
+  const id=document.getElementById('export-creance-select').value;
+  const c=creances.find(x=>x.id===id);if(!c)return;
+  const nomBiz=biz.nomEntreprise||biz.nomComplet||'Mon Entreprise';
+  const txt=`DOSSIER DE RECOUVREMENT — HUISSIER DE JUSTICE\n\nCréancier : ${nomBiz}\nDébiteur : ${c.client}\nMontant : ${c.montant.toFixed(2)} €\nRéférence : ${c.ref}\nDate échéance : ${c.date}\n\nHistorique relances :\n${RELANCES.slice(0,c.relanceStep+1).map((r,i)=>`  ${i+1}. ${r}`).join('\n')}\n\nPièces jointes :\n  - Facture originale ${c.ref}\n  - Courriers de relance\n  - Conditions Générales de Vente\n`;
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`HUISSIER_${c.ref}.txt`;a.click();
+}
+
+function exportCGV(){
+  const txt=`CONDITIONS GÉNÉRALES DE VENTE\n\n[...]\n\nArticle 9 — Retard de paiement\nTout retard entraîne pénalités de 3× taux légal + indemnité forfaitaire 40€.\nClause de réserve de propriété jusqu'au paiement complet.`;
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='CGV_SEBA.txt';a.click();
+}
+
+renderCreances();
+</script>
+</body>
+</html>

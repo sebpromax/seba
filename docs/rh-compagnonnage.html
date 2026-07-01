@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // RH & Compagnonnage</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.pointage-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-family:var(--font-mono);font-weight:700;}
+.pointage-dot.in{background:rgba(16,185,129,.2);border:1.5px solid #10b981;color:#10b981;}
+.pointage-dot.absent{background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:#ef4444;}
+.pointage-dot.empty{background:#1e293b;border:1.5px solid #334155;color:#475569;}
+.hash-badge{font-family:var(--font-mono);font-size:.5rem;color:#475569;word-break:break-all;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 4.3 // RH & COMPAGNONNAGE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="prevention-risques.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 4.2</a>
+    <a href="crypto-backup.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">4.4 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Registre personnel -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Registre du Personnel</h2>
+      <button onclick="addEmployee()" class="text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-4 py-2 rounded-lg transition-colors">+ Collaborateur</button>
+    </div>
+    <div id="employee-add-form" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-slate-900 border border-emerald-500/20 rounded-xl">
+      <input type="text" id="emp-nom" placeholder="Nom complet" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="text" id="emp-poste" placeholder="Poste / Compétence" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <select id="emp-contrat" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none" style="background:#1e293b;">
+        <option value="CDI">CDI</option><option value="CDD">CDD</option><option value="Apprenti">Apprentissage</option><option value="Interim">Intérim</option><option value="SousTraitant">Sous-traitant</option>
+      </select>
+      <div class="flex gap-2">
+        <button onclick="saveEmployee()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded text-sm">✓</button>
+        <button onclick="document.getElementById('employee-add-form').classList.add('hidden')" class="bg-slate-700 text-slate-300 px-3 rounded text-sm">✕</button>
+      </div>
+    </div>
+    <div id="employees-list" class="space-y-3"></div>
+  </div>
+
+  <!-- Pointeuse crypto-vérifiée -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Pointeuse Crypto-vérifiée</h3>
+        <p class="text-xs text-slate-500 mt-1">Chaque pointage est haché SHA-256 simulé pour garantir l'intégrité (anti-fraude)</p>
+      </div>
+      <div class="text-2xs font-mono text-slate-500" id="clock-now"></div>
+    </div>
+    <div id="pointage-controls" class="flex gap-3 mb-4 flex-wrap"></div>
+    <div id="pointage-log" class="space-y-2 max-h-48 overflow-y-auto"></div>
+  </div>
+
+  <!-- Paniers repas & Zones -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Paniers Repas & Indemnités de Zone</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="text-2xs font-bold text-slate-400 font-mono uppercase mb-2 block">Enregistrer panier / zone</label>
+        <div class="space-y-2">
+          <select id="panier-emp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none" style="background:#0f172a;">
+            <option value="">— Sélectionner collaborateur —</option>
+          </select>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-3xs text-slate-600 font-mono">Paniers repas</label>
+              <input type="number" id="panier-nb" placeholder="Nombre" min="0" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+            </div>
+            <div>
+              <label class="text-3xs text-slate-600 font-mono">Zone (1/2/3)</label>
+              <select id="zone-type" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none" style="background:#0f172a;">
+                <option value="0">Pas de zone</option>
+                <option value="1">Zone 1 — 7.30€/j</option>
+                <option value="2">Zone 2 — 14.66€/j</option>
+                <option value="3">Zone 3 — 21.97€/j</option>
+              </select>
+            </div>
+          </div>
+          <input type="number" id="zone-jours" placeholder="Nombre de jours en zone" min="0" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+          <button onclick="savePanier()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm py-2.5 rounded-lg">Enregistrer</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-2xs font-bold text-slate-400 font-mono uppercase mb-2 block">Récapitulatif mensuel</label>
+        <div id="panier-recap" class="space-y-2"></div>
+        <div class="mt-3 pt-3 border-t border-slate-800 flex justify-between text-sm font-mono">
+          <span class="text-slate-500 text-2xs">Total indemnités</span>
+          <span class="font-bold text-emerald-400" id="panier-total">0,00 €</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const ZONE_RATES={0:0,1:7.30,2:14.66,3:21.97};
+const PANIER_RATE=9.90; // taux 2026 estimé
+
+let employees=SebaStorage.read('rh_employees')||[];
+let pointages=SebaStorage.read('rh_pointages')||[];
+let paniers=SebaStorage.read('rh_paniers')||[];
+
+// ─── Simulation SHA-256 (djb2 pour demo) ───
+function fakeHash(str){let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h)+str.charCodeAt(i)>>>0;return h.toString(16).padStart(8,'0').repeat(8).slice(0,64);}
+
+function clockUpdate(){document.getElementById('clock-now').textContent=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(clockUpdate,1000);clockUpdate();
+
+function addEmployee(){document.getElementById('employee-add-form').classList.remove('hidden');}
+
+function saveEmployee(){
+  const nom=document.getElementById('emp-nom').value.trim();if(!nom)return;
+  employees.push({id:'emp_'+Date.now(),nom,poste:document.getElementById('emp-poste').value,contrat:document.getElementById('emp-contrat').value,entree:new Date().toLocaleDateString('fr-FR')});
+  SebaStorage.write('rh_employees',employees);
+  document.getElementById('emp-nom').value='';document.getElementById('emp-poste').value='';
+  document.getElementById('employee-add-form').classList.add('hidden');
+  renderAll();
+}
+
+function renderEmployees(){
+  document.getElementById('employees-list').innerHTML=employees.length===0
+    ?'<div class="text-xs text-slate-600 font-mono text-center py-4">Aucun collaborateur</div>'
+    :employees.map(e=>`
+    <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+      <div>
+        <div class="text-sm font-bold text-slate-200">${e.nom}</div>
+        <div class="text-2xs text-slate-500">${e.poste||'—'} · <span class="font-mono text-slate-600">${e.contrat}</span> · Entrée ${e.entree}</div>
+      </div>
+      <button onclick="deleteEmployee('${e.id}')" class="text-slate-600 hover:text-rose-400 text-xs transition-colors">✕</button>
+    </div>`).join('');
+}
+
+function deleteEmployee(id){employees=employees.filter(x=>x.id!==id);SebaStorage.write('rh_employees',employees);renderAll();}
+
+function renderPointageControls(){
+  document.getElementById('pointage-controls').innerHTML=employees.length===0
+    ?'<div class="text-xs text-slate-600 font-mono">Ajoutez des collaborateurs pour pointer</div>'
+    :employees.map(e=>`
+    <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+      <span class="text-xs text-slate-300">${e.nom.split(' ')[0]}</span>
+      <button onclick="pointer('${e.id}','${e.nom}','IN')" class="text-2xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded font-mono hover:bg-emerald-500/20">▶ IN</button>
+      <button onclick="pointer('${e.id}','${e.nom}','OUT')" class="text-2xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-1 rounded font-mono hover:bg-rose-500/20">◼ OUT</button>
+    </div>`).join('');
+}
+
+function pointer(empId,nom,type){
+  const ts=new Date().toISOString();
+  const payload=empId+':'+type+':'+ts;
+  const hash=fakeHash(payload);
+  pointages.push({id:'pt_'+Date.now(),empId,nom,type,ts,hash});
+  SebaStorage.write('rh_pointages',pointages);renderPointageLog();
+}
+
+function renderPointageLog(){
+  document.getElementById('pointage-log').innerHTML=pointages.slice(-10).reverse().map(p=>`
+    <div class="flex items-start gap-3 py-2 border-b border-slate-800/50">
+      <span class="text-2xs font-bold font-mono ${p.type==='IN'?'text-emerald-400':'text-rose-400'} w-8">${p.type}</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-slate-300">${p.nom} · ${new Date(p.ts).toLocaleTimeString('fr-FR')}</div>
+        <div class="hash-badge mt-0.5">${p.hash}</div>
+      </div>
+    </div>`).join('');
+}
+
+function savePanier(){
+  const empId=document.getElementById('panier-emp').value;if(!empId)return;
+  const nb=parseInt(document.getElementById('panier-nb').value)||0;
+  const zone=parseInt(document.getElementById('zone-type').value)||0;
+  const jours=parseInt(document.getElementById('zone-jours').value)||0;
+  const emp=employees.find(e=>e.id===empId);if(!emp)return;
+  const total=nb*PANIER_RATE+jours*ZONE_RATES[zone];
+  paniers.push({id:'pan_'+Date.now(),nom:emp.nom,nb,zone,jours,total,date:new Date().toLocaleDateString('fr-FR')});
+  SebaStorage.write('rh_paniers',paniers);renderPaniers();
+}
+
+function renderPaniers(){
+  document.getElementById('panier-recap').innerHTML=paniers.slice(-6).reverse().map(p=>`
+    <div class="flex justify-between items-center text-xs py-2 border-b border-slate-800/50">
+      <div><span class="text-slate-300 font-bold">${p.nom.split(' ')[0]}</span><span class="text-slate-600 font-mono ml-2">${p.date}</span></div>
+      <div class="text-right"><div class="text-emerald-400 font-mono font-bold">${p.total.toFixed(2)} €</div><div class="text-3xs text-slate-600">${p.nb} paniers${p.jours>0?' + Zone '+p.jours+'j':''}</div></div>
+    </div>`).join('');
+  const total=paniers.reduce((s,p)=>s+p.total,0);
+  document.getElementById('panier-total').textContent=total.toFixed(2)+' €';
+}
+
+function populatePanierSelect(){
+  const sel=document.getElementById('panier-emp');
+  sel.innerHTML='<option value="">— Sélectionner —</option>'+employees.map(e=>`<option value="${e.id}">${e.nom}</option>`).join('');
+}
+
+function renderAll(){renderEmployees();renderPointageControls();populatePanierSelect();}
+renderAll();renderPointageLog();renderPaniers();
+</script>
+</body>
+</html>

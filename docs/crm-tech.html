@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // CRM Tech</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.client-card{transition:border-color .2s;}
+.client-card:hover{border-color:rgba(16,185,129,.3);}
+.note-bubble{border-left:2px solid rgba(99,102,241,.4);}
+.star{color:#94a3b8;cursor:pointer;transition:color .1s;}
+.star.filled{color:#f59e0b;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 3.3 // CRM TECHNIQUE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="signature-payment.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 3.2</a>
+    <a href="contentieux-recouvrement.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">3.4 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Liste clients -->
+    <div class="lg:col-span-1 space-y-4">
+      <!-- Recherche -->
+      <div class="relative">
+        <input type="text" id="search-client" placeholder="Rechercher un client..." oninput="filterClients()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-emerald-500 pr-10">
+        <span class="absolute right-3 top-3 text-slate-600 text-sm">🔍</span>
+      </div>
+      <button onclick="openNewClient()" class="w-full text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 py-2.5 rounded-xl transition-colors">+ Nouveau client</button>
+
+      <!-- Form nouveau client -->
+      <div id="new-client-form" class="hidden bg-slate-950 border border-emerald-500/20 rounded-xl p-4 space-y-2">
+        <input type="text" id="nc-nom" placeholder="Nom complet" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+        <input type="tel" id="nc-tel" placeholder="Téléphone" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+        <input type="text" id="nc-adresse" placeholder="Adresse chantier" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+        <select id="nc-cat" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none" style="background:#0f172a;">
+          <option value="particulier">Particulier</option>
+          <option value="entreprise">Entreprise</option>
+          <option value="copro">Copropriété</option>
+          <option value="syndic">Syndic</option>
+        </select>
+        <div class="flex gap-2">
+          <button onclick="saveNewClient()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm py-2 rounded-lg">Créer</button>
+          <button onclick="document.getElementById('new-client-form').classList.add('hidden')" class="bg-slate-800 text-slate-400 text-sm px-4 rounded-lg">✕</button>
+        </div>
+      </div>
+
+      <div id="clients-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1"></div>
+    </div>
+
+    <!-- Fiche client -->
+    <div class="lg:col-span-2" id="client-detail">
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-8 text-center">
+        <div class="text-4xl mb-3">👤</div>
+        <div class="text-sm text-slate-600 font-mono">Sélectionnez un client pour voir sa fiche</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const CAT_COLORS={particulier:'text-blue-400',entreprise:'text-violet-400',copro:'text-amber-400',syndic:'text-emerald-400'};
+
+let clients=SebaStorage.read('crm_clients')||[
+  {id:'cl1',nom:'Mme Sophie Lacroix',tel:'06 12 34 56 78',adresse:'12 rue des Lilas, Paris 15e',cat:'particulier',stars:4,notes:[{id:'n1',txt:'Prévenir 1h avant · Chien dans l\'appartement',date:'15/05/2026',type:'alerte'}],photos:[]},
+  {id:'cl2',nom:'Résidence Les Pins',tel:'01 45 67 89 01',adresse:'5 allée des Pins, Évry-Courcouronnes',cat:'copro',stars:5,notes:[{id:'n2',txt:'Badge magnétique fourni. Contact: M. Moreau syndic.',date:'01/04/2026',type:'info'}],photos:[]},
+];
+let activeClientId=null;
+
+function openNewClient(){document.getElementById('new-client-form').classList.remove('hidden');}
+
+function saveNewClient(){
+  const nom=document.getElementById('nc-nom').value.trim();
+  if(!nom)return;
+  clients.push({id:'cl_'+Date.now(),nom,tel:document.getElementById('nc-tel').value,adresse:document.getElementById('nc-adresse').value,cat:document.getElementById('nc-cat').value,stars:0,notes:[],photos:[]});
+  SebaStorage.write('crm_clients',clients);
+  ['nc-nom','nc-tel','nc-adresse'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-client-form').classList.add('hidden');
+  renderList();
+}
+
+function filterClients(){
+  const q=document.getElementById('search-client').value.toLowerCase();
+  renderList(q);
+}
+
+function renderList(q=''){
+  const filtered=q?clients.filter(c=>c.nom.toLowerCase().includes(q)||c.adresse.toLowerCase().includes(q)):clients;
+  document.getElementById('clients-list').innerHTML=filtered.length===0
+    ?'<div class="text-xs text-slate-600 font-mono text-center py-4">Aucun client trouvé</div>'
+    :filtered.map(c=>`
+    <div class="client-card bg-slate-950 border ${activeClientId===c.id?'border-emerald-500/40':'border-slate-800'} rounded-xl p-4 cursor-pointer" onclick="selectClient('${c.id}')">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-sm font-bold text-slate-200">${c.nom}</div>
+          <div class="text-3xs text-slate-500 mt-0.5">${c.adresse||'—'}</div>
+        </div>
+        <span class="text-2xs font-bold ${CAT_COLORS[c.cat]||'text-slate-400'} uppercase ml-2">${c.cat}</span>
+      </div>
+      <div class="mt-2 flex items-center justify-between">
+        <span class="text-3xs font-mono text-slate-600">${c.tel||'—'}</span>
+        <span class="text-xs">${'★'.repeat(c.stars)+'☆'.repeat(5-c.stars)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectClient(id){
+  activeClientId=id;
+  const c=clients.find(x=>x.id===id);
+  renderList(document.getElementById('search-client').value.toLowerCase());
+  document.getElementById('client-detail').innerHTML=`
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-lg font-bold text-slate-100">${c.nom}</div>
+          <div class="text-2xs text-slate-500 font-mono mt-1">${c.adresse||'—'} · ${c.tel||'—'}</div>
+          <div class="mt-2"><span class="text-2xs font-bold ${CAT_COLORS[c.cat]} uppercase bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">${c.cat}</span></div>
+        </div>
+        <div class="flex gap-1">${[1,2,3,4,5].map(n=>`<span class="star ${n<=c.stars?'filled':''} text-xl" onclick="setStars('${c.id}',${n})">★</span>`).join('')}</div>
+      </div>
+
+      <!-- Notes techniques -->
+      <div>
+        <div class="text-2xs font-bold text-slate-400 uppercase font-mono mb-3">Notes techniques</div>
+        <div class="space-y-2 mb-3" id="notes-list-${c.id}"></div>
+        <div class="flex gap-2">
+          <input type="text" id="note-input-${c.id}" placeholder="Ajouter une note technique..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+          <select id="note-type-${c.id}" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200 outline-none" style="background:#0f172a;">
+            <option value="info">Info</option>
+            <option value="alerte">⚠ Alerte</option>
+            <option value="technique">Technique</option>
+          </select>
+          <button onclick="addNote('${c.id}')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm px-3 rounded-lg">+</button>
+        </div>
+      </div>
+
+      <!-- Photo simulée -->
+      <div>
+        <div class="text-2xs font-bold text-slate-400 uppercase font-mono mb-2">Photos Chantier</div>
+        <div class="flex gap-2 flex-wrap" id="photos-${c.id}">
+          ${c.photos.map(p=>`<div class="h-16 w-16 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden"><img src="${p}" class="w-full h-full object-cover"></div>`).join('')}
+          <label class="h-16 w-16 bg-slate-900 border border-dashed border-slate-700 rounded-lg flex items-center justify-center cursor-pointer text-slate-600 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors text-xl">
+            📷<input type="file" accept="image/*" class="hidden" onchange="addPhoto('${c.id}',this)">
+          </label>
+        </div>
+      </div>
+    </div>`;
+  renderNotes(c.id);
+}
+
+function renderNotes(id){
+  const c=clients.find(x=>x.id===id);
+  const el=document.getElementById('notes-list-'+id);if(!el)return;
+  el.innerHTML=c.notes.length===0
+    ?'<div class="text-xs text-slate-600 font-mono">Aucune note</div>'
+    :c.notes.map(n=>`
+    <div class="note-bubble pl-3 py-1.5">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-3xs font-bold ${n.type==='alerte'?'text-amber-400':'text-blue-400'} font-mono uppercase">${n.type}</span>
+        <span class="text-3xs text-slate-600 font-mono">${n.date}</span>
+      </div>
+      <div class="text-xs text-slate-300">${n.txt}</div>
+    </div>`).join('');
+}
+
+function addNote(id){
+  const inp=document.getElementById('note-input-'+id);
+  const txt=inp.value.trim();if(!txt)return;
+  const type=document.getElementById('note-type-'+id).value;
+  const c=clients.find(x=>x.id===id);
+  c.notes.push({id:'n_'+Date.now(),txt,type,date:new Date().toLocaleDateString('fr-FR')});
+  SebaStorage.write('crm_clients',clients);
+  inp.value='';renderNotes(id);
+}
+
+function setStars(id,n){
+  const c=clients.find(x=>x.id===id);c.stars=n;
+  SebaStorage.write('crm_clients',clients);selectClient(id);
+}
+
+function addPhoto(id,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const c=clients.find(x=>x.id===id);
+    c.photos.push(e.target.result);
+    SebaStorage.write('crm_clients',clients);
+    const zone=document.getElementById('photos-'+id);
+    const img=document.createElement('div');img.className='h-16 w-16 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden';
+    img.innerHTML=`<img src="${e.target.result}" class="w-full h-full object-cover">`;
+    zone.insertBefore(img,zone.lastElementChild);
+  };
+  reader.readAsDataURL(file);
+}
+
+renderList();
+</script>
+</body>
+</html>

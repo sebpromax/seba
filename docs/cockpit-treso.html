@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Cockpit Trésorerie</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+input[type=range]{accent-color:#10b981;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 1.1 // COCKPIT TRÉSORERIE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="registre-charges.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">Lot 1.2 →</a>
+    <a href="dashboard.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">Dashboard Pro</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Régime fiscal -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Simulateur de Matelas Fiscal</h2>
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <button onclick="setRegime('micro')" id="btn-micro" class="regime-btn px-4 py-3 rounded-lg border text-sm font-bold transition-all bg-emerald-500/10 border-emerald-500 text-emerald-400">📝 Micro-Entreprise</button>
+      <button onclick="setRegime('sasu')" id="btn-sasu" class="regime-btn px-4 py-3 rounded-lg border text-sm font-bold transition-all bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600">🏢 SASU / SAS</button>
+      <button onclick="setRegime('eurl')" id="btn-eurl" class="regime-btn px-4 py-3 rounded-lg border text-sm font-bold transition-all bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600">👤 EURL / SARL</button>
+    </div>
+
+    <!-- Curseur CA -->
+    <div class="space-y-2 mb-6">
+      <div class="flex justify-between items-center">
+        <label class="text-2xs font-bold text-slate-400 uppercase tracking-wider font-mono">Chiffre d'Affaires Annuel Estimé</label>
+        <span id="ca-display" class="text-lg font-bold text-emerald-400 font-mono">45 000 €</span>
+      </div>
+      <input type="range" id="ca-slider" min="5000" max="300000" step="1000" value="45000" class="w-full h-2 rounded-lg" oninput="updateCalc()">
+      <div class="flex justify-between text-3xs text-slate-600 font-mono"><span>5 000 €</span><span>300 000 €</span></div>
+    </div>
+
+    <!-- Résultats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="results-grid">
+      <!-- rempli par JS -->
+    </div>
+  </div>
+
+  <!-- Prévision mensuelle -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+      <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Entrées de Cash ce Mois</h3>
+      <div id="cash-in-list" class="space-y-2 mb-3"></div>
+      <button onclick="addCashLine('in')" class="w-full text-xs font-bold text-slate-400 border border-dashed border-slate-700 rounded-lg py-2 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors">+ Ajouter une entrée</button>
+      <div class="mt-4 pt-4 border-t border-slate-800 flex justify-between">
+        <span class="text-2xs text-slate-500 font-mono uppercase">Total entrées</span>
+        <span id="total-in" class="text-sm font-bold text-emerald-400 font-mono">0 €</span>
+      </div>
+    </div>
+
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+      <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Sorties de Cash ce Mois</h3>
+      <div id="cash-out-list" class="space-y-2 mb-3"></div>
+      <button onclick="addCashLine('out')" class="w-full text-xs font-bold text-slate-400 border border-dashed border-slate-700 rounded-lg py-2 hover:border-rose-500/50 hover:text-rose-400 transition-colors">+ Ajouter une sortie</button>
+      <div class="mt-4 pt-4 border-t border-slate-800 flex justify-between">
+        <span class="text-2xs text-slate-500 font-mono uppercase">Total sorties</span>
+        <span id="total-out" class="text-sm font-bold text-rose-400 font-mono">0 €</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Solde net -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
+    <div>
+      <div class="text-2xs font-bold text-slate-400 uppercase tracking-wider font-mono mb-1">Solde Net du Mois</div>
+      <div id="solde-net" class="text-3xl font-bold text-white font-mono">0 €</div>
+    </div>
+    <div id="solde-indicator" class="h-12 w-12 rounded-full flex items-center justify-center text-xl">—</div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+
+let regime='micro';
+const REGIMES={
+  micro:{label:'Micro-Entreprise',cotisations:.246,impot:(ca)=>ca>.27478*1?0:0,note:'Cotisations : 24.6% du CA. Exonéré IS.',detail:(ca)=>({cotis:ca*.246,is:0,net:ca-(ca*.246),provision:ca*.246})},
+  sasu:{label:'SASU',cotisations:.45,note:'Charges sociales ~45% de la rémunération. IS 15% jusqu\'à 42 500€.',detail:(ca)=>{const rem=ca*.6,cotis=rem*.45,brut=ca-cotis,is=Math.min(brut,42500)*.15+Math.max(0,brut-42500)*.25;return{cotis,is,net:brut-is,provision:cotis+is};}},
+  eurl:{label:'EURL / SARL',cotisations:.40,note:'TNS : ~40% cotisations. IS identique SASU.',detail:(ca)=>{const rem=ca*.65,cotis=rem*.40,brut=ca-cotis,is=Math.min(brut,42500)*.15+Math.max(0,brut-42500)*.25;return{cotis,is,net:brut-is,provision:cotis+is};}}
+};
+
+function setRegime(r){
+  regime=r;
+  document.querySelectorAll('.regime-btn').forEach(b=>{b.className='regime-btn px-4 py-3 rounded-lg border text-sm font-bold transition-all bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600';});
+  document.getElementById('btn-'+r).className='regime-btn px-4 py-3 rounded-lg border text-sm font-bold transition-all bg-emerald-500/10 border-emerald-500 text-emerald-400';
+  updateCalc();
+}
+
+function fmt(n){return new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n)+' €';}
+
+function updateCalc(){
+  const ca=parseInt(document.getElementById('ca-slider').value);
+  document.getElementById('ca-display').textContent=fmt(ca);
+  const d=REGIMES[regime].detail(ca);
+  const cards=[
+    {label:'Cotisations Sociales',value:fmt(d.cotis),color:'text-amber-400'},
+    {label:'Impôt sur les Sociétés',value:fmt(d.is),color:'text-rose-400'},
+    {label:'Revenu Net Estimé',value:fmt(d.net),color:'text-emerald-400'},
+    {label:'Provision Totale',value:fmt(d.provision),color:'text-violet-400'},
+  ];
+  document.getElementById('results-grid').innerHTML=cards.map(c=>`
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div class="text-3xs text-slate-500 uppercase tracking-wider font-mono mb-2">${c.label}</div>
+      <div class="text-lg font-bold ${c.color} font-mono">${c.value}</div>
+    </div>`).join('');
+}
+
+let cashLines={in:[],out:[]};
+function addCashLine(type){
+  const id='cash_'+Date.now();
+  cashLines[type].push({id,label:'',amount:0});
+  renderCashLines(type);
+}
+function removeLine(type,id){cashLines[type]=cashLines[type].filter(l=>l.id!==id);renderCashLines(type);}
+function renderCashLines(type){
+  const el=document.getElementById('cash-'+(type==='in'?'in':'out')+'-list');
+  const color=type==='in'?'emerald':'rose';
+  el.innerHTML=cashLines[type].map(l=>`
+    <div class="flex gap-2 items-center">
+      <input type="text" placeholder="Libellé" value="${l.label}" oninput="cashLines['${type}'].find(x=>x.id==='${l.id}').label=this.value"
+        class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-${color}-500">
+      <input type="number" placeholder="Montant" value="${l.amount||''}" oninput="cashLines['${type}'].find(x=>x.id==='${l.id}').amount=parseFloat(this.value)||0;updateTotals()"
+        class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-right text-${color}-400 outline-none focus:border-${color}-500 font-mono">
+      <button onclick="removeLine('${type}','${l.id}')" class="text-slate-600 hover:text-rose-400 text-xs px-1">✕</button>
+    </div>`).join('');
+}
+function updateTotals(){
+  const tin=cashLines.in.reduce((s,l)=>s+l.amount,0);
+  const tout=cashLines.out.reduce((s,l)=>s+l.amount,0);
+  const net=tin-tout;
+  document.getElementById('total-in').textContent=fmt(tin);
+  document.getElementById('total-out').textContent=fmt(tout);
+  document.getElementById('solde-net').textContent=fmt(net);
+  document.getElementById('solde-net').className='text-3xl font-bold font-mono '+(net>=0?'text-emerald-400':'text-rose-400');
+  document.getElementById('solde-indicator').textContent=net>=0?'✓':'⚠';
+  document.getElementById('solde-indicator').className='h-12 w-12 rounded-full flex items-center justify-center text-xl '+(net>=0?'bg-emerald-500/10 text-emerald-400':'bg-rose-500/10 text-rose-400');
+}
+
+updateCalc();
+updateTotals();
+</script>
+</body>
+</html>

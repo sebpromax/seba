@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Mutation Contextuelle</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.pipe-step{position:relative;transition:all .3s;}
+.pipe-step.active .step-ring{border-color:#10b981;background:rgba(16,185,129,.1);}
+.pipe-step.done .step-ring{border-color:#6366f1;background:rgba(99,102,241,.1);}
+.pipe-step .step-ring{border:1.5px solid #334155;background:#0f172a;transition:all .3s;}
+.pipe-arrow{color:#475569;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 2.3 // MUTATION CONTEXTUELLE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="haversine-engine.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 2.2</a>
+    <a href="flotte-telemetrie.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">2.4 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Pipeline visuel -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-white mb-6 font-mono">Pipeline de Mutation</h2>
+    <div class="flex items-center gap-2">
+      <div class="pipe-step flex-1 text-center" id="step-rdv">
+        <div class="step-ring rounded-xl p-4 mx-auto">
+          <div class="text-2xl mb-1">📅</div>
+          <div class="text-xs font-bold text-slate-300">RDV / Intervention</div>
+          <div class="text-3xs text-slate-600 font-mono mt-1">Origine</div>
+        </div>
+      </div>
+      <div class="pipe-arrow text-xl font-bold">→</div>
+      <div class="pipe-step flex-1 text-center" id="step-devis">
+        <div class="step-ring rounded-xl p-4 mx-auto">
+          <div class="text-2xl mb-1">📋</div>
+          <div class="text-xs font-bold text-slate-300">Devis</div>
+          <div class="text-3xs text-slate-600 font-mono mt-1">Proposition</div>
+        </div>
+      </div>
+      <div class="pipe-arrow text-xl font-bold">→</div>
+      <div class="pipe-step flex-1 text-center" id="step-facture">
+        <div class="step-ring rounded-xl p-4 mx-auto">
+          <div class="text-2xl mb-1">🧾</div>
+          <div class="text-xs font-bold text-slate-300">Facture</div>
+          <div class="text-3xs text-slate-600 font-mono mt-1">Émission</div>
+        </div>
+      </div>
+      <div class="pipe-arrow text-xl font-bold">→</div>
+      <div class="pipe-step flex-1 text-center" id="step-encaisse">
+        <div class="step-ring rounded-xl p-4 mx-auto">
+          <div class="text-2xl mb-1">✅</div>
+          <div class="text-xs font-bold text-slate-300">Encaissé</div>
+          <div class="text-3xs text-slate-600 font-mono mt-1">Clos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Création document racine -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Nouveau Document Racine (RDV)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <input type="text" id="rdv-client" placeholder="Client" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="text" id="rdv-desc" placeholder="Description de l'intervention" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <button onclick="createRDV()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm rounded-lg transition-colors">Créer RDV</button>
+    </div>
+  </div>
+
+  <!-- Kanban pipeline -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-2xs font-bold text-slate-400 uppercase font-mono">RDV</span>
+        <span class="text-3xs bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono" id="cnt-rdv">0</span>
+      </div>
+      <div id="col-rdv" class="p-3 space-y-2 min-h-[200px]"></div>
+    </div>
+    <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-2xs font-bold text-blue-400 uppercase font-mono">Devis</span>
+        <span class="text-3xs bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded font-mono" id="cnt-devis">0</span>
+      </div>
+      <div id="col-devis" class="p-3 space-y-2 min-h-[200px]"></div>
+    </div>
+    <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-2xs font-bold text-amber-400 uppercase font-mono">Facture</span>
+        <span class="text-3xs bg-amber-900/30 text-amber-400 px-1.5 py-0.5 rounded font-mono" id="cnt-facture">0</span>
+      </div>
+      <div id="col-facture" class="p-3 space-y-2 min-h-[200px]"></div>
+    </div>
+    <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-2xs font-bold text-emerald-400 uppercase font-mono">Encaissé</span>
+        <span class="text-3xs bg-emerald-900/30 text-emerald-400 px-1.5 py-0.5 rounded font-mono" id="cnt-encaisse">0</span>
+      </div>
+      <div id="col-encaisse" class="p-3 space-y-2 min-h-[200px]"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const STAGES=['rdv','devis','facture','encaisse'];
+const STAGE_NEXT={rdv:'devis',devis:'facture',facture:'encaisse'};
+const STAGE_COLORS={rdv:'border-l-2 border-slate-500',devis:'border-l-2 border-blue-500',facture:'border-l-2 border-amber-500',encaisse:'border-l-2 border-emerald-500'};
+const STAGE_BTN={rdv:'Convertir en Devis',devis:'Émettre Facture',facture:'Marquer Encaissé'};
+
+let docs=SebaStorage.read('mutation_docs')||[];
+
+function createRDV(){
+  const client=document.getElementById('rdv-client').value.trim();
+  const desc=document.getElementById('rdv-desc').value.trim();
+  if(!client)return;
+  const id='DOC-'+String(docs.length+1).padStart(3,'0');
+  docs.push({id,client,desc,stage:'rdv',date:new Date().toLocaleDateString('fr-FR'),history:[{stage:'rdv',date:new Date().toLocaleDateString('fr-FR')}]});
+  SebaStorage.write('mutation_docs',docs);
+  document.getElementById('rdv-client').value='';
+  document.getElementById('rdv-desc').value='';
+  render();
+}
+
+function advance(id){
+  const doc=docs.find(d=>d.id===id);if(!doc||!STAGE_NEXT[doc.stage])return;
+  doc.stage=STAGE_NEXT[doc.stage];
+  doc.history.push({stage:doc.stage,date:new Date().toLocaleDateString('fr-FR')});
+  SebaStorage.write('mutation_docs',docs);render();
+}
+
+function render(){
+  STAGES.forEach(s=>{
+    const items=docs.filter(d=>d.stage===s);
+    document.getElementById('cnt-'+s).textContent=items.length;
+    document.getElementById('col-'+s).innerHTML=items.length===0
+      ?'<div class="text-3xs text-slate-700 font-mono text-center pt-4">—</div>'
+      :items.map(d=>`
+      <div class="bg-slate-900 border ${STAGE_COLORS[s]} rounded-lg p-3 space-y-2">
+        <div class="text-2xs font-bold text-slate-300 font-mono">${d.id}</div>
+        <div class="text-xs font-bold text-slate-200">${d.client}</div>
+        ${d.desc?`<div class="text-3xs text-slate-500">${d.desc}</div>`:''}
+        <div class="text-3xs text-slate-600 font-mono">${d.history.map(h=>`${h.stage.toUpperCase()}·${h.date}`).join(' → ')}</div>
+        ${STAGE_BTN[s]?`<button onclick="advance('${d.id}')" class="w-full text-3xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded transition-colors font-mono">${STAGE_BTN[s]} →</button>`:'<div class="text-3xs text-emerald-400 font-mono font-bold">✓ Dossier clôturé</div>'}
+      </div>`).join('');
+  });
+  // Pipeline highlight
+  const lastStage=docs.length?docs[docs.length-1].stage:'rdv';
+  document.getElementById('step-rdv').className='pipe-step flex-1 text-center '+(lastStage==='rdv'?'active':'done');
+  document.getElementById('step-devis').className='pipe-step flex-1 text-center '+(lastStage==='devis'?'active':(['facture','encaisse'].includes(lastStage)?'done':''));
+  document.getElementById('step-facture').className='pipe-step flex-1 text-center '+(lastStage==='facture'?'active':(lastStage==='encaisse'?'done':''));
+  document.getElementById('step-encaisse').className='pipe-step flex-1 text-center '+(lastStage==='encaisse'?'active':'');
+}
+
+render();
+</script>
+</body>
+</html>

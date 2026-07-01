@@ -222,6 +222,63 @@
     .team-av-status.pause{background:#f59e0b;}
     .team-av-status.off{background:#9ca3af;}
 
+    /* ── Welcome Checklist ── */
+    .welcome-checklist{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden;}
+    .welcome-checklist::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--emerald),#8B5CF6);}
+    .wc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+    .wc-title{font-size:.95rem;font-weight:700;}
+    .wc-close{background:none;border:none;cursor:pointer;color:var(--text-2);font-size:1.1rem;line-height:1;padding:2px;}
+    .wc-close:hover{color:var(--ink);}
+    .wc-items{display:flex;flex-direction:column;gap:10px;}
+    .wc-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--rs);border:1px solid var(--border);transition:border-color .2s,background .2s;cursor:default;}
+    .wc-item.done{background:rgba(0,200,150,.04);border-color:rgba(0,200,150,.2);}
+    .wc-item.clickable{cursor:pointer;}
+    .wc-item.clickable:hover{border-color:var(--emerald);background:rgba(0,200,150,.04);}
+    .wc-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,border-color .2s;}
+    .wc-item.done .wc-check{background:var(--emerald);border-color:var(--emerald);}
+    .wc-check-ico{font-size:.65rem;color:#fff;opacity:0;transition:opacity .15s;}
+    .wc-item.done .wc-check-ico{opacity:1;}
+    .wc-text{font-size:.865rem;font-weight:500;flex:1;}
+    .wc-item.done .wc-text{color:var(--text-2);text-decoration:line-through;}
+    .wc-cta{font-size:.78rem;font-weight:600;color:var(--emerald);white-space:nowrap;}
+    .wc-progress{margin-top:14px;display:flex;align-items:center;gap:10px;}
+    .wc-bar-track{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+    .wc-bar-fill{height:100%;background:var(--emerald);border-radius:99px;transition:width .5s cubic-bezier(0.4,0,0.2,1);}
+    .wc-pct{font-size:.73rem;font-weight:700;color:var(--text-2);white-space:nowrap;}
+
+    /* ── Floating Action Button ── */
+    .fab{position:fixed;bottom:28px;right:28px;width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,0,0,.2),0 1px 6px rgba(0,0,0,.15);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}
+    .fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,0,0,.25);}
+    .fab:active{transform:scale(.96);}
+    .fab-menu{position:fixed;bottom:92px;right:28px;display:flex;flex-direction:column;gap:8px;z-index:299;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s;}
+    .fab-menu.open{opacity:1;pointer-events:auto;transform:translateY(0);}
+    .fab-item{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;font-weight:600;color:var(--ink);text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:border-color .15s,transform .15s;}
+    .fab-item:hover{border-color:var(--emerald);transform:translateX(-2px);}
+    .fab-item-ico{font-size:.9rem;}
+
+    /* ── Cmd+K palette ── */
+    .palette-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
+    .palette-overlay.open{display:flex;}
+    .palette-box{background:#fff;border-radius:14px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,.18),0 4px 16px rgba(0,0,0,.1);overflow:hidden;}
+    .palette-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
+    .palette-ico{color:var(--text-2);font-size:1rem;}
+    .palette-inp{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.95rem;color:var(--ink);background:transparent;}
+    .palette-inp::placeholder{color:#C0C4CD;}
+    .palette-results{max-height:320px;overflow-y:auto;}
+    .pal-section{padding:8px 0;}
+    .pal-section-lbl{font-size:.67rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;padding:4px 18px 6px;}
+    .pal-item{display:flex;align-items:center;gap:12px;padding:9px 18px;cursor:pointer;transition:background .12s;}
+    .pal-item:hover,.pal-item.focused{background:rgba(0,200,150,.07);}
+    .pal-item-ico{width:28px;height:28px;border-radius:7px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
+    .pal-item-lbl{font-size:.875rem;font-weight:500;}
+    .pal-item-sub{font-size:.75rem;color:var(--text-2);margin-top:1px;}
+    .palette-foot{padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:16px;align-items:center;}
+    .pal-hint{font-size:.7rem;color:var(--text-2);display:flex;align-items:center;gap:5px;}
+    .pal-key{display:inline-block;padding:2px 6px;background:var(--border);border-radius:4px;font-size:.65rem;font-weight:600;}
+
+    /* ── Confetti canvas ── */
+    #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:499;}
+
     /* ── Responsive ── */
     @media (max-width: 1120px) {
       .metrics-strip { grid-template-columns: repeat(2, 1fr); }
@@ -310,6 +367,34 @@
               <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Welcome Checklist (shown only after onboarding) -->
+      <div class="welcome-checklist" id="welcome-checklist" style="display:none;">
+        <div class="wc-head">
+          <span class="wc-title">🎯 Démarrez en 3 étapes</span>
+          <button class="wc-close" onclick="closeChecklist()" aria-label="Fermer">✕</button>
+        </div>
+        <div class="wc-items">
+          <div class="wc-item done" id="wci-0">
+            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
+            <span class="wc-text">Création de votre compte professionnel</span>
+          </div>
+          <a href="devis-nouveau.html" class="wc-item clickable" id="wci-1" onclick="checkItem(1)">
+            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
+            <span class="wc-text">Simuler la création de votre premier devis</span>
+            <span class="wc-cta">Créer →</span>
+          </a>
+          <div class="wc-item clickable" id="wci-2" onclick="checkItem(2)">
+            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
+            <span class="wc-text">Copier votre lien public et le partager</span>
+            <span class="wc-cta">Copier →</span>
+          </div>
+        </div>
+        <div class="wc-progress">
+          <div class="wc-bar-track"><div class="wc-bar-fill" id="wc-bar" style="width:33%"></div></div>
+          <span class="wc-pct" id="wc-pct">1 / 3</span>
         </div>
       </div>
 
@@ -452,6 +537,33 @@
     </div><!-- /dash-content -->
   </main>
 </div>
+
+<!-- FAB + menu -->
+<button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>
+<div class="fab-menu" id="fab-menu">
+  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client</a>
+  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis</a>
+  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention</a>
+</div>
+
+<!-- Cmd+K palette -->
+<div class="palette-overlay" id="palette-overlay" onclick="closePalette(event)">
+  <div class="palette-box" onclick="event.stopPropagation()">
+    <div class="palette-inp-wrap">
+      <span class="palette-ico">⌘</span>
+      <input type="text" class="palette-inp" id="palette-inp" placeholder="Rechercher une page ou une action…" oninput="filterPalette(this.value)">
+    </div>
+    <div class="palette-results" id="palette-results"></div>
+    <div class="palette-foot">
+      <span class="pal-hint"><span class="pal-key">↑↓</span> naviguer</span>
+      <span class="pal-hint"><span class="pal-key">↵</span> ouvrir</span>
+      <span class="pal-hint"><span class="pal-key">Esc</span> fermer</span>
+    </div>
+  </div>
+</div>
+
+<!-- Confetti canvas -->
+<canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
 <script src="businessTypes.js"></script>
 <script>
@@ -1091,6 +1203,233 @@
   const menuEl    = document.getElementById('user-menu');
   avatarEl.addEventListener('click', e => { e.stopPropagation(); menuEl.classList.toggle('open'); });
   document.addEventListener('click', () => menuEl.classList.remove('open'));
+
+  /* ═══════════════════════════════════════════════════════
+     WELCOME CHECKLIST
+  ═══════════════════════════════════════════════════════ */
+  (function initChecklist() {
+    const biz2 = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
+    const dismissed = localStorage.getItem('seba_checklist_dismissed');
+    if (!biz2.secteur || dismissed) return;
+    const wc = document.getElementById('welcome-checklist');
+    if (!wc) return;
+    wc.style.display = '';
+    const done1 = localStorage.getItem('seba_check_1') === '1';
+    const done2 = localStorage.getItem('seba_check_2') === '1';
+    if (done1) { const e1 = document.getElementById('wci-1'); if (e1) e1.classList.add('done'); }
+    if (done2) { const e2 = document.getElementById('wci-2'); if (e2) e2.classList.add('done'); }
+    updateChecklistBar();
+  })();
+
+  function checkItem(n) {
+    localStorage.setItem('seba_check_' + n, '1');
+    const el = document.getElementById('wci-' + n);
+    if (el) el.classList.add('done');
+    if (n === 2) {
+      const biz3 = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
+      const url = 'https://seba.app/p/' + (biz3.slug || 'mon-entreprise');
+      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+    }
+    updateChecklistBar();
+    const done1 = localStorage.getItem('seba_check_1') === '1';
+    const done2 = localStorage.getItem('seba_check_2') === '1';
+    if (done1 && done2) {
+      setTimeout(fireConfetti, 400);
+      setTimeout(() => {
+        const wc = document.getElementById('welcome-checklist');
+        if (wc) { wc.style.transition = 'opacity .5s'; wc.style.opacity = '0'; setTimeout(() => { wc.style.display = 'none'; }, 500); }
+      }, 2800);
+    }
+  }
+
+  function updateChecklistBar() {
+    const d0 = true;
+    const d1 = localStorage.getItem('seba_check_1') === '1';
+    const d2 = localStorage.getItem('seba_check_2') === '1';
+    const total = [d0, d1, d2].filter(Boolean).length;
+    const pct = Math.round((total / 3) * 100);
+    const bar = document.getElementById('wc-bar');
+    const lbl = document.getElementById('wc-pct');
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = total + ' / 3';
+  }
+
+  function closeChecklist() {
+    localStorage.setItem('seba_checklist_dismissed', '1');
+    const wc = document.getElementById('welcome-checklist');
+    if (wc) { wc.style.transition = 'opacity .3s'; wc.style.opacity = '0'; setTimeout(() => wc.style.display = 'none', 320); }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     CONFETTI
+  ═══════════════════════════════════════════════════════ */
+  function fireConfetti() {
+    const canvas = document.getElementById('confetti-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const pieces = Array.from({length: 90}, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 80,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 3,
+      size: 6 + Math.random() * 6,
+      color: ['#00C896','#8B5CF6','#F59E0B','#3D2645','#EF4444','#3B82F6'][Math.floor(Math.random()*6)],
+      rot: Math.random() * 360,
+      spin: (Math.random() - 0.5) * 8,
+    }));
+    let t = 0; const MAX = 120;
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.rot += p.spin; p.vy += 0.08;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - t / MAX);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
+        ctx.restore();
+      });
+      if (++t < MAX) requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    frame();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     FLOATING ACTION BUTTON
+  ═══════════════════════════════════════════════════════ */
+  let _fabOpen = false;
+  function toggleFab() {
+    _fabOpen = !_fabOpen;
+    const menu = document.getElementById('fab-menu');
+    const btn = document.getElementById('fab');
+    if (menu) menu.classList.toggle('open', _fabOpen);
+    if (btn) { btn.textContent = _fabOpen ? '✕' : '+'; btn.style.transform = _fabOpen ? 'rotate(45deg)' : ''; }
+  }
+  document.addEventListener('click', e => {
+    if (_fabOpen && !e.target.closest('.fab') && !e.target.closest('.fab-menu')) {
+      _fabOpen = false;
+      const menu = document.getElementById('fab-menu'); const btn = document.getElementById('fab');
+      if (menu) menu.classList.remove('open');
+      if (btn) { btn.textContent = '+'; btn.style.transform = ''; }
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     CMD+K PALETTE
+  ═══════════════════════════════════════════════════════ */
+  const PAL_ITEMS = [
+    { section: 'Navigation', items: [
+      { ico: '🏠', lbl: 'Tableau de bord', sub: 'Vue d\'ensemble', href: 'dashboard.html' },
+      { ico: '👥', lbl: 'Clients', sub: 'Gérer vos clients', href: 'clients.html' },
+      { ico: '📅', lbl: 'Planning', sub: 'Agenda des interventions', href: 'planning.html' },
+      { ico: '📄', lbl: 'Devis', sub: 'Créer et suivre vos devis', href: 'devis.html' },
+      { ico: '🧾', lbl: 'Factures', sub: 'Historique de facturation', href: 'factures.html' },
+      { ico: '👤', lbl: 'Équipe', sub: 'Gérer vos collaborateurs', href: 'equipe.html' },
+      { ico: '⚙️', lbl: 'Réglages', sub: 'Paramètres du compte', href: 'reglages.html' },
+    ]},
+    { section: 'Actions rapides', items: [
+      { ico: '➕', lbl: 'Nouveau client', sub: 'Ajouter une fiche client', href: 'clients.html' },
+      { ico: '📝', lbl: 'Nouveau devis', sub: 'Créer un devis signable', href: 'devis-nouveau.html' },
+      { ico: '🗓️', lbl: 'Nouvelle intervention', sub: 'Planifier une mission', href: 'planning.html' },
+    ]},
+  ];
+  let _palFocused = 0;
+  let _palFiltered = [];
+
+  const CmdHistory = {
+    KEY: 'seba_cmd_history',
+    push(lbl) {
+      const h = this.get();
+      const next = [lbl, ...h.filter(x => x !== lbl)].slice(0, 3);
+      localStorage.setItem(this.KEY, JSON.stringify(next));
+    },
+    get() { try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch(e) { return []; } }
+  };
+
+  function openPalette() {
+    const ov = document.getElementById('palette-overlay');
+    const inp = document.getElementById('palette-inp');
+    if (!ov) return;
+    ov.classList.add('open');
+    if (inp) { inp.value = ''; inp.focus(); }
+    filterPalette('');
+  }
+  function closePalette(e) {
+    if (e && e.target !== document.getElementById('palette-overlay')) return;
+    document.getElementById('palette-overlay').classList.remove('open');
+  }
+  function closePaletteForce() { document.getElementById('palette-overlay').classList.remove('open'); }
+
+  function filterPalette(q) {
+    const res = document.getElementById('palette-results');
+    if (!res) return;
+    _palFiltered = [];
+    let html = '';
+
+    /* Recents section when no query */
+    if (!q) {
+      const recents = CmdHistory.get();
+      if (recents.length) {
+        const recentItems = recents.map(lbl => {
+          for (const sec of PAL_ITEMS) {
+            const found = sec.items.find(it => it.lbl === lbl);
+            if (found) return found;
+          }
+          return null;
+        }).filter(Boolean);
+        if (recentItems.length) {
+          html += '<div class="pal-section"><div class="pal-section-lbl">Récents</div>';
+          recentItems.forEach(it => {
+            const idx = _palFiltered.length;
+            _palFiltered.push(it);
+            html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" onclick="palGo(' + idx + ')">' +
+              '<div class="pal-item-ico" style="background:rgba(0,200,150,.1);">🕐</div>' +
+              '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
+              '</div>';
+          });
+          html += '</div>';
+        }
+      }
+    }
+
+    PAL_ITEMS.forEach(sec => {
+      const matches = sec.items.filter(it => !q || it.lbl.toLowerCase().includes(q.toLowerCase()) || it.sub.toLowerCase().includes(q.toLowerCase()));
+      if (!matches.length) return;
+      html += '<div class="pal-section"><div class="pal-section-lbl">' + sec.section + '</div>';
+      matches.forEach(it => {
+        const idx = _palFiltered.length;
+        _palFiltered.push(it);
+        html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" onclick="palGo(' + idx + ')">' +
+          '<div class="pal-item-ico">' + it.ico + '</div>' +
+          '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
+          '</div>';
+      });
+      html += '</div>';
+    });
+    res.innerHTML = html || '<div style="padding:20px 18px;font-size:.88rem;color:var(--text-2);">Aucun résultat</div>';
+    _palFocused = 0;
+  }
+
+  function palGo(idx) {
+    const it = _palFiltered[idx];
+    if (!it) return;
+    CmdHistory.push(it.lbl);
+    window.location.href = it.href;
+  }
+
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openPalette(); return; }
+    const ov = document.getElementById('palette-overlay');
+    if (!ov || !ov.classList.contains('open')) return;
+    if (e.key === 'Escape') { closePaletteForce(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); _palFocused = Math.min(_palFocused + 1, _palFiltered.length - 1); filterPalette(document.getElementById('palette-inp').value); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); _palFocused = Math.max(_palFocused - 1, 0); filterPalette(document.getElementById('palette-inp').value); }
+    if (e.key === 'Enter') { palGo(_palFocused); }
+    if (e.key === 'Backspace') {
+      const inp = document.getElementById('palette-inp');
+      if (inp && inp.value === '') filterPalette('');
+    }
+  });
 </script>
 </body>
 </html>

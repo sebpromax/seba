@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Studio Factures</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+/* Aperçu document imprimable */
+.doc-preview{background:#fff;color:#111;font-family:'Plus Jakarta Sans',sans-serif;padding:40px;min-height:600px;border-radius:8px;}
+.doc-preview h1{font-size:1.5rem;font-weight:800;color:#0f172a;}
+.doc-preview table{width:100%;border-collapse:collapse;}
+.doc-preview th{background:#f1f5f9;padding:8px;text-align:left;font-size:.7rem;text-transform:uppercase;color:#475569;}
+.doc-preview td{padding:8px;border-bottom:1px solid #e2e8f0;font-size:.8rem;color:#0f172a;}
+.doc-preview .total-row td{font-weight:700;border-top:2px solid #0f172a;}
+.doc-preview .legal{font-size:.6rem;color:#94a3b8;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;}
+@media print{body{background:white!important;}.doc-preview{padding:0;}}
+input[type=range]{accent-color:#10b981;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 3.1 // STUDIO FACTURES</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="flotte-telemetrie.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 2.4</a>
+    <a href="signature-payment.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">3.2 →</a>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Éditeur -->
+    <div class="space-y-4">
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Éditeur de Document</h2>
+          <div class="flex gap-2">
+            <select id="doc-type" class="text-2xs font-bold bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-300 outline-none" style="background:#0f172a;" onchange="updateDocNum()">
+              <option value="FACTURE">Facture</option>
+              <option value="DEVIS">Devis</option>
+              <option value="AVOIR">Avoir</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-3xs text-slate-500 font-mono uppercase">Client</label>
+            <input type="text" id="cl-nom" placeholder="Nom / Société" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500" oninput="renderPreview()">
+          </div>
+          <div>
+            <label class="text-3xs text-slate-500 font-mono uppercase">Adresse client</label>
+            <input type="text" id="cl-adresse" placeholder="Adresse de facturation" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500" oninput="renderPreview()">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-3xs text-slate-500 font-mono uppercase">TVA applicable</label>
+            <select id="doc-tva" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none" style="background:#0f172a;" onchange="renderPreview()">
+              <option value="20">20% (standard)</option>
+              <option value="10">10% (travaux)</option>
+              <option value="5.5">5.5% (rénov. énerg.)</option>
+              <option value="0">0% (art. 293B)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-3xs text-slate-500 font-mono uppercase">Conditions paiement</label>
+            <select id="doc-paye" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none" style="background:#0f172a;" onchange="renderPreview()">
+              <option value="30 jours">30 jours net</option>
+              <option value="15 jours">15 jours</option>
+              <option value="À réception">À réception</option>
+              <option value="Acompte 30%">Acompte 30%</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-3xs text-slate-500 font-mono uppercase">Date</label>
+            <input type="date" id="doc-date" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500" oninput="renderPreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lignes -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-2xs font-bold text-slate-400 uppercase font-mono mb-3">Lignes de Prestation</h3>
+        <div id="lignes-list" class="space-y-2 mb-3"></div>
+        <button onclick="addLigne()" class="w-full text-xs font-bold text-slate-400 border border-dashed border-slate-700 rounded-lg py-2 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors">+ Ajouter une ligne</button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3">
+        <button onclick="window.print()" class="flex-1 text-sm font-bold bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2.5 rounded-lg hover:text-white transition-colors">🖨 Imprimer / PDF</button>
+        <button onclick="saveDoc()" class="flex-1 text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-4 py-2.5 rounded-lg transition-colors">✓ Enregistrer</button>
+      </div>
+    </div>
+
+    <!-- Aperçu -->
+    <div>
+      <div class="text-2xs font-bold text-slate-500 uppercase font-mono mb-2">Aperçu Document</div>
+      <div class="doc-preview shadow-2xl" id="doc-preview-area">
+        <!-- généré par JS -->
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+const biz=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+const fmtE=(n)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' €';
+
+let lignes=[{id:'l1',desc:'Prestation de service',qte:1,pu:100}];
+let docCounter=SebaStorage.read('doc_counter')||1;
+
+// Init date
+document.getElementById('doc-date').value=new Date().toISOString().slice(0,10);
+
+function updateDocNum(){renderPreview();}
+
+function addLigne(){
+  lignes.push({id:'l_'+Date.now(),desc:'',qte:1,pu:0});
+  renderLignes();renderPreview();
+}
+
+function removeLigne(id){lignes=lignes.filter(l=>l.id!==id);renderLignes();renderPreview();}
+
+function renderLignes(){
+  document.getElementById('lignes-list').innerHTML=lignes.map(l=>`
+    <div class="flex gap-2 items-center">
+      <input type="text" value="${l.desc}" placeholder="Description" oninput="lignes.find(x=>x.id==='${l.id}').desc=this.value;renderPreview()"
+        class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500">
+      <input type="number" value="${l.qte}" min="1" oninput="lignes.find(x=>x.id==='${l.id}').qte=parseFloat(this.value)||1;renderPreview()"
+        class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-right text-slate-200 outline-none focus:border-emerald-500 font-mono">
+      <input type="number" value="${l.pu}" min="0" step="0.01" placeholder="PU HT" oninput="lignes.find(x=>x.id==='${l.id}').pu=parseFloat(this.value)||0;renderPreview()"
+        class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-right text-emerald-400 outline-none focus:border-emerald-500 font-mono">
+      <button onclick="removeLigne('${l.id}')" class="text-slate-600 hover:text-rose-400 text-xs">✕</button>
+    </div>`).join('');
+}
+
+function renderPreview(){
+  const type=document.getElementById('doc-type').value;
+  const tva=parseFloat(document.getElementById('doc-tva').value)||20;
+  const paye=document.getElementById('doc-paye').value;
+  const date=document.getElementById('doc-date').value;
+  const client=document.getElementById('cl-nom').value||'Client';
+  const adresse=document.getElementById('cl-adresse').value||'—';
+  const nomBiz=biz.nomEntreprise||biz.nomComplet||'Mon Entreprise';
+  const totalHT=lignes.reduce((s,l)=>s+l.qte*l.pu,0);
+  const totalTVA=totalHT*(tva/100);
+  const totalTTC=totalHT+totalTVA;
+  const numDoc=type+'-'+new Date().getFullYear()+'-'+String(docCounter).padStart(4,'0');
+  document.getElementById('doc-preview-area').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;">
+      <div><h1>${nomBiz}</h1><div style="font-size:.75rem;color:#475569;margin-top:4px;">${biz.siret?'SIRET : '+biz.siret:''}</div></div>
+      <div style="text-align:right;"><div style="font-size:1.5rem;font-weight:800;color:#0f172a;">${type}</div><div style="font-size:.8rem;font-weight:700;font-family:monospace;color:#6366f1;">${numDoc}</div><div style="font-size:.75rem;color:#475569;">${date}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;">
+      <div><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px;">Émetteur</div><div style="font-size:.85rem;font-weight:700;">${nomBiz}</div></div>
+      <div><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px;">Destinataire</div><div style="font-size:.85rem;font-weight:700;">${client}</div><div style="font-size:.75rem;color:#475569;">${adresse}</div></div>
+    </div>
+    <table><thead><tr><th>Description</th><th>Qté</th><th>PU HT</th><th>Total HT</th></tr></thead><tbody>
+    ${lignes.map(l=>`<tr><td>${l.desc||'—'}</td><td>${l.qte}</td><td>${fmtE(l.pu)}</td><td>${fmtE(l.qte*l.pu)}</td></tr>`).join('')}
+    <tr class="total-row"><td colspan="3">Total HT</td><td>${fmtE(totalHT)}</td></tr>
+    <tr><td colspan="3">TVA ${tva}%</td><td>${fmtE(totalTVA)}</td></tr>
+    <tr class="total-row"><td colspan="3" style="font-size:1rem;">TOTAL TTC</td><td style="font-size:1rem;color:#059669;">${fmtE(totalTTC)}</td></tr>
+    </tbody></table>
+    <div class="legal">Paiement : ${paye} · ${tva===0?'TVA non applicable, article 293 B du CGI':'TVA '+tva+'% incluse'} · Pas d'escompte pour paiement anticipé. En cas de retard : pénalité 3× taux légal + indemnité forfaitaire 40€.</div>`;
+}
+
+function saveDoc(){
+  const docs=SebaStorage.read('saved_docs')||[];
+  docs.push({id:'doc_'+Date.now(),type:document.getElementById('doc-type').value,client:document.getElementById('cl-nom').value,date:document.getElementById('doc-date').value,total:lignes.reduce((s,l)=>s+l.qte*l.pu,0)});
+  SebaStorage.write('saved_docs',docs);
+  docCounter++;SebaStorage.write('doc_counter',docCounter);
+  alert('Document enregistré.');
+}
+
+renderLignes();renderPreview();
+</script>
+</body>
+</html>

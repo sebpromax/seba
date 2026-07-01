@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>seba. // Core Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        :root { --font-sans: 'Plus Jakarta Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace; }
+        body { font-family: var(--font-sans); }
+        .font-numeric { font-family: var(--font-mono); }
+
+        /* Contraintes d'affichage Mode Terrain Haute-Visibilité */
+        .theme-terrain {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .theme-terrain .interactive-card {
+            border: 2px solid #000000 !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+        }
+        .theme-terrain .text-muted { color: #4b5563 !important; }
+
+        /* Utilitaires non-standard */
+        .text-2xs { font-size: 0.65rem; line-height: 1rem; }
+        .text-3xs { font-size: 0.55rem; line-height: 0.85rem; }
+    </style>
+</head>
+<body class="h-full text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950 transition-colors duration-150">
+
+    <!-- PALETTE DE COMMANDE OMNIPRÉSENTE (Cmd + K) -->
+    <div id="seba-palette" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-start justify-center pt-[15vh] px-4">
+        <div class="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+            <div class="flex items-center border-b border-slate-800 px-4 py-3.5">
+                <span class="text-emerald-500 font-mono text-sm mr-3">❯</span>
+                <input type="text" id="seba-cmd-input"
+                    placeholder="Rechercher une commande ou un lot... (Ex: 'Lot 1', 'Terrain')"
+                    class="w-full bg-transparent border-0 outline-none text-sm text-slate-200 placeholder-slate-500"
+                    style="font-family: var(--font-sans);">
+            </div>
+            <div class="p-2 max-h-80 overflow-y-auto space-y-1" id="seba-cmd-results">
+                <!-- Généré dynamiquement -->
+            </div>
+            <div class="bg-slate-950 px-4 py-2 border-t border-slate-800 flex items-center justify-between text-3xs text-slate-500" style="font-family: var(--font-mono);">
+                <span>Navigation : ↑↓ &nbsp;|&nbsp; Exécuter : Entrée</span>
+                <span>Fermer : Échap</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div class="min-h-full flex flex-col">
+
+        <!-- APP BAR -->
+        <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <span class="text-xl font-bold tracking-tighter text-white" style="font-family: var(--font-mono);">
+                    seba<span class="text-emerald-500">.</span>
+                </span>
+                <div class="h-4 w-px bg-slate-800"></div>
+                <span id="current-view-title" class="text-2xs font-bold text-slate-400 uppercase tracking-widest" style="font-family: var(--font-mono);">
+                    CORE_ENGINE // READY
+                </span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="SebaCore.toggleTerrain()"
+                    class="text-2xs font-bold bg-slate-900 border border-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded transition-colors">
+                    ⚡ MODE TERRAIN ☀️
+                </button>
+                <div id="sync-status" class="bg-emerald-950 text-emerald-400 border border-emerald-900 text-3xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5" style="font-family: var(--font-mono);">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" id="sync-dot" style="box-shadow:0 0 6px #10b981;"></span>
+                    <span id="sync-text">ONLINE // DB SYNCHRONISÉE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTAINER DYNAMIQUE DE VUES -->
+        <main id="seba-viewport" class="flex-1 max-w-7xl w-full mx-auto p-6">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-8 text-center max-w-md mx-auto mt-20 space-y-4">
+                <div class="h-10 w-10 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto text-sm" style="font-family: var(--font-mono);">✓</div>
+                <h1 class="text-sm font-bold uppercase tracking-wider text-white">Noyau Core UX Initialisé</h1>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    L'architecture globale et les écouteurs d'événements sont opérationnels.
+                    Utilisez <kbd class="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-3xs" style="font-family:var(--font-mono);">Cmd+K</kbd>
+                    ou cliquez ci-dessous pour tester la palette de commande.
+                </p>
+                <div class="pt-2">
+                    <button onclick="SebaCmdPalette.toggle()"
+                        class="text-3xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 px-4 py-2 rounded uppercase tracking-wider transition-colors" style="font-family: var(--font-mono);">
+                        Ouvrir l'invite de commande
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         LOT 0 — LOGIQUE FUSIONNÉE
+    ═══════════════════════════════════════════════════ -->
+    <script>
+    /* ── 0.1 : PERSISTANCE LOCALE ── */
+    const SebaStorage = {
+        write(key, data) {
+            try {
+                localStorage.setItem('seba_' + key, JSON.stringify(data));
+                return true;
+            } catch(e) {
+                console.error('Échec écriture localStorage :', e);
+                return false;
+            }
+        },
+        read(key) {
+            const d = localStorage.getItem('seba_' + key);
+            return d ? JSON.parse(d) : null;
+        },
+        remove(key) { localStorage.removeItem('seba_' + key); }
+    };
+
+    /* ── 0.3 : SYNC OFFLINE-FIRST ── */
+    const SebaSync = {
+        queue: SebaStorage.read('sync_queue') || [],
+        isOnline: navigator.onLine,
+
+        init() {
+            window.addEventListener('online',  () => this.statusChanged(true));
+            window.addEventListener('offline', () => this.statusChanged(false));
+            this.statusChanged(navigator.onLine);
+        },
+
+        statusChanged(online) {
+            this.isOnline = online;
+            const badge = document.getElementById('sync-status');
+            const dot   = document.getElementById('sync-dot');
+            const txt   = document.getElementById('sync-text');
+            if (online) {
+                badge.className = 'bg-emerald-950 text-emerald-400 border border-emerald-900 text-3xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5';
+                dot.style.background   = '#10b981';
+                dot.style.boxShadow    = '0 0 6px #10b981';
+                txt.textContent        = 'ONLINE // DB SYNCHRONISÉE';
+                this.processQueue();
+            } else {
+                badge.className = 'bg-rose-950 text-rose-400 border border-rose-900 text-3xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5';
+                dot.style.background   = '#f43f5e';
+                dot.style.boxShadow    = '0 0 6px #f43f5e';
+                txt.textContent        = 'OFFLINE // PERSISTANCE LOCALE';
+            }
+        },
+
+        pushAction(type, payload) {
+            const entry = { id: crypto.randomUUID(), type, data: payload, ts: Date.now() };
+            this.queue.push(entry);
+            SebaStorage.write('sync_queue', this.queue);
+            if (this.isOnline) this.processQueue();
+        },
+
+        async processQueue() {
+            if (!this.queue.length) return;
+            console.log('[SebaSync] Traitement queue :', this.queue.length, 'opérations');
+            await new Promise(r => setTimeout(r, 800));
+            this.queue = [];
+            SebaStorage.write('sync_queue', this.queue);
+            console.log('[SebaSync] Queue vidée — synchronisation complète.');
+        }
+    };
+
+    /* ── 0.2 : PALETTE DE COMMANDE ── */
+    const SebaCmdPalette = {
+        _focused: 0,
+        _visible: [],
+        commands: [
+            { trigger: 'lot 0', label: 'LOT 0 — Core Engine',          desc: 'Vous êtes ici. Architecture de base.',       href: 'core-ux.html' },
+            { trigger: 'lot 1', label: 'LOT 1 — Finances & Tréso',      desc: 'Cockpit fiscal, charges, BFR, compta.',       href: 'cockpit-treso.html' },
+            { trigger: 'lot 2', label: 'LOT 2 — Logistique Terrain',    desc: 'Agenda élastique, haversine, flotte.',        href: 'agenda-elastique.html' },
+            { trigger: 'lot 3', label: 'LOT 3 — Juridique & Ventes',    desc: 'Factures, signature, CRM, contentieux.',      href: 'studio-factures.html' },
+            { trigger: 'lot 4', label: 'LOT 4 — Sécurité & RH',         desc: 'RSE, PPSPS, pointeuse, backup AES-256.',      href: 'prevention-risques.html' },
+            { trigger: 'dashboard', label: 'Tableau de bord',           desc: 'Retour au dashboard Seba Pro.',               href: 'dashboard.html' },
+            { trigger: 'terrain',   label: '⚡ Mode Terrain',           desc: 'Basculer haute visibilité / fond blanc.',     action: () => SebaCore.toggleTerrain() },
+            { trigger: 'statut',    label: '📡 Diagnostic réseau',      desc: 'Afficher état sync et queue locale.',         action: () => SebaSync.showDiag() },
+        ],
+
+        init() {
+            const inp = document.getElementById('seba-cmd-input');
+            inp.addEventListener('input', () => this.filter(inp.value));
+            inp.addEventListener('keydown', e => {
+                if (e.key === 'ArrowDown') { e.preventDefault(); this._focused = Math.min(this._focused + 1, this._visible.length - 1); this._highlightFocused(); }
+                if (e.key === 'ArrowUp')   { e.preventDefault(); this._focused = Math.max(this._focused - 1, 0); this._highlightFocused(); }
+                if (e.key === 'Enter')     { this._execFocused(); }
+            });
+            this.render(this.commands);
+        },
+
+        toggle(forceOpen) {
+            const pal = document.getElementById('seba-palette');
+            const open = forceOpen !== undefined ? forceOpen : pal.classList.contains('hidden');
+            if (open) {
+                pal.classList.remove('hidden');
+                const inp = document.getElementById('seba-cmd-input');
+                inp.value = '';
+                this._focused = 0;
+                this.render(this.commands);
+                setTimeout(() => inp.focus(), 30);
+            } else {
+                pal.classList.add('hidden');
+            }
+        },
+
+        filter(q) {
+            const s = q.toLowerCase().trim();
+            const res = s ? this.commands.filter(c => c.trigger.includes(s) || c.label.toLowerCase().includes(s) || c.desc.toLowerCase().includes(s)) : this.commands;
+            this._focused = 0;
+            this.render(res);
+        },
+
+        render(list) {
+            this._visible = list;
+            const box = document.getElementById('seba-cmd-results');
+            if (!list.length) {
+                box.innerHTML = '<div class="px-3 py-4 text-center text-slate-500 text-xs" style="font-family:var(--font-mono);">Aucune commande trouvée</div>';
+                return;
+            }
+            box.innerHTML = list.map((cmd, i) =>
+                '<button class="w-full text-left px-3 py-2.5 rounded flex flex-col transition-colors cmd-item ' + (i === this._focused ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white') + '" data-idx="' + i + '" onclick="SebaCmdPalette._exec(' + i + ')">' +
+                    '<span class="font-bold text-sm">' + cmd.label + '</span>' +
+                    '<span class="text-3xs text-slate-500 mt-0.5">' + cmd.desc + '</span>' +
+                '</button>'
+            ).join('');
+        },
+
+        _exec(i) {
+            const cmd = this._visible[i];
+            if (!cmd) return;
+            this.toggle(false);
+            if (cmd.action) { cmd.action(); return; }
+            if (cmd.href) window.location.href = cmd.href;
+        },
+        _execFocused() { this._exec(this._focused); },
+        _highlightFocused() {
+            document.querySelectorAll('.cmd-item').forEach((el, i) => {
+                el.classList.toggle('bg-slate-800', i === this._focused);
+                el.classList.toggle('text-white', i === this._focused);
+            });
+        }
+    };
+
+    /* ── 0.1 : CORE ROUTER & UX ── */
+    const SebaCore = {
+        init() {
+            SebaSync.init();
+            SebaCmdPalette.init();
+
+            window.addEventListener('keydown', e => {
+                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    SebaCmdPalette.toggle();
+                }
+                if (e.key === 'Escape') SebaCmdPalette.toggle(false);
+            });
+
+            /* Fermer en cliquant l'overlay */
+            document.getElementById('seba-palette').addEventListener('click', e => {
+                if (e.target === document.getElementById('seba-palette')) SebaCmdPalette.toggle(false);
+            });
+
+            /* Restaurer l'état terrain depuis localStorage */
+            if (SebaStorage.read('terrain_mode')) {
+                document.body.classList.add('theme-terrain');
+                document.body.classList.remove('bg-slate-900');
+                document.body.classList.add('bg-white');
+            }
+
+            console.log('[SebaCore] Lot 0 initialisé — Core Engine opérationnel.');
+        },
+
+        toggleTerrain() {
+            const active = document.body.classList.toggle('theme-terrain');
+            document.body.classList.toggle('bg-slate-900', !active);
+            document.body.classList.toggle('bg-white', active);
+            SebaStorage.write('terrain_mode', active);
+        }
+    };
+
+    SebaSync.showDiag = function() {
+        const msg = 'Mode : ' + (SebaSync.isOnline ? 'ONLINE' : 'OFFLINE') + '\nQueue : ' + SebaSync.queue.length + ' opération(s) en attente\nNavigateur : ' + navigator.userAgent.split(') ')[0].split('(')[1];
+        alert(msg);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => SebaCore.init());
+    </script>
+</body>
+</html>

@@ -78,6 +78,8 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 | 0.20 | **Refonte index.html v3** — Nouvelle palette encre/émeraude (`--ink:#08090B`, `--emerald:#00F5A0`, etc.), dead code supprimé (`.ha1-.ha5`, `.pipeline`, `.seamless-grid`, `.reveal`), nav flottante `Industries · Automations · Tarifs`, hero glassmorphism cockpit (4s scenes ménage/conciergerie/maintenance), section problème 10 colonnes asymétriques (pc-01=span6, pc-02=span4, pc-03=span4, pc-04=span6), section solution remplacée par 4 métriques vitesse (30s/15s/20s/10s, font-size:68px émeraude), CTA dark `"Reprenez le contrôle de votre entreprise dès aujourd'hui."`, `#cursor-glow` (300px radial, opacity 0.04, blur 40px, suit la souris), Lenis CDN ajouté, boutons spring `cubic-bezier(0.34,1.56,0.64,1)`, View Transitions API + fallback JS. | ✅ Fait |
 | 0.19 | **Particules contextuelles** — Refonte Three.js multi-pages (index, problème, solution, confiance, connexion) : opacité 0.18 (était 0.85), taille ~1px (0.028), canvas `position:fixed` couvrant le viewport. Transitions d'état 2.5s `sine.inOut` (machine à blends). Comportements par section : Problem → micro-bruit sur particules de bord uniquement (|nx|>0.62) ; Solution → magnétisme vers AABB des cartes Bento (force 0.004) ; Confiance → halo radial au survol de `.trust-panel` ; Connexion → ligne d'horizon horizontale sous le formulaire. Gravitation CTA : 30-40 particules dans rayon 1.25 unités attirées doucement au survol des boutons principaux. CDN Three.js + GSAP ajoutés à probleme/solution/confiance/connexion.html. | ✅ Fait |
 | 0.18 | **Réingénierie visuelle — Part 3 Espace Pro** : `pro-global.css` créé — transitions 0.25s cubic-bezier(0.4,0,0.2,1) sur boutons/sidebar/liens/fiches/modules, hover émeraude sur rows, @keyframes shimmer (dégradé sombre→émeraude+prune, 1.5s), classes .skeleton/.skeleton-text/.skeleton-title/.skeleton-badge/.skeleton-metric/.skeleton-avatar/.skeleton-block + .content-fade-in, scrollbar discrète, :focus-visible global. Lié dans 11 pages pro. | ✅ Fait |
+| 0.24 | **Bible de Production Interactive** — `onboarding.html` : Globe CSS pur (sphère radial-gradient + grille repeating-linear-gradient + dot positionné via formule lat/lng), switch globe↔phone selon l'étape, Mouse Glow Pointer sur cartes secteur, Nouveau step 5 Fiscal (Micro-Entreprise/Société/En cours + TVA 20/10/5.5%), renommage steps 5→6, 6→7, 7→8, 8→9, 7 points de progression, 4 phases de chargement cinématiques (0–25%/25–65%/65–90%/90–100%), `saveLS()` étendu (régimeFiscal, tvaRate, tvaTexte). `dashboard.html` : Welcome checklist 3 objectifs (auto-checked, devis, partage lien), confetti canvas sur complétion, Floating Action Button (+/✕) + menu 3 actions, palette Cmd+K (7 pages + 3 actions rapides, navigation clavier ↑↓↵). | ✅ Fait |
+| 0.25 | **UX Invisible** — `onboarding.html` : `AudioUI` (Web Audio API, zéro fichier externe) — `playClick()` 660→330 Hz, `playSuccess()` accord mi-sol, `playComplete()` accord do-mi-sol — câblé sur sélection pays/secteur/fiscal/sous-secteur + chaque `validateStep()` réussie + fin de chargement. Globe inertia physique : drag souris et touch, vecteur vitesse, `friction=0.92`, clamp ±40°, rotateX/rotateY sur `globe-wrap` (preserve-3d, perspective 900px). `StateRecovery` : checkpoint sauvegardé à chaque `goStep()`, restauration non-bloquante via bannière fixe bas-centre (8s auto-dismiss, TTL 2h), clear automatique à la complétion. `dashboard.html` : `CmdHistory` localStorage mémorise les 3 dernières navigations, section "Récents" en tête de palette quand recherche vide, icône 🕐 distincte ; `Backspace` sur champ vide re-affiche les recents ; `ArrowUp/Down` avec `preventDefault()`. | ✅ Fait |
 
 **Identité visuelle active du projet (à partir du Bloc 0.7) :**
 - Palette : `#14161A` (ink) · `#00C896` (emerald, accent signal) · `#3D2645` (plum) · `#FAF9F7` (bg) · `#6B6A6F` (text-2) · `#E8E6E1` (border)
@@ -119,3 +121,27 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 
 ### Prochaine étape immédiate
 → Blocs 0.14–0.18 terminés. Réingénierie visuelle complète (Three.js + GSAP + Bento Grid + onboarding cinématique + transitions pro). Prochains blocs structurels : **1.14** (formulaire création d'intervention depuis planning.html) et **1.15** (vue détaillée d'un devis/facture) pour compléter la Phase 1.
+
+---
+
+## INFRASTRUCTURE AVANCÉE — Lots 0 à 4 (Engine interne + Modules métier)
+
+| # | Module | Fichier | État |
+|---|--------|---------|------|
+| 0.1 | **Core Engine** — SebaStorage, SebaSync offline-first, SebaCmdPalette, Mode Terrain | `core-ux.html` | ✅ Fait |
+| 1.1 | **Cockpit Trésorerie** — Simulateur fiscal Micro/SASU/EURL, slider CA 5k–300k€, cash-flow mensuel | `cockpit-treso.html` | ✅ Fait |
+| 1.2 | **Registre des Charges** — TVA déductible auto, 8 catégories, filtre, export CSV | `registre-charges.html` | ✅ Fait |
+| 1.3 | **BFR Prédictif** — Stocks + Créances − Dettes, acomptes & situations de travaux avec slider % | `bfr-predictif.html` | ✅ Fait |
+| 1.4 | **Compta Expert FEC** — Agrégateur bancaire fictif DSP2, rapprochement de factures, export FEC DGFiP | `compta-expert.html` | ✅ Fait |
+| 2.1 | **Agenda Élastique** — Vue semaine drag & drop, couleurs par type, multi-semaines | `agenda-elastique.html` | ✅ Fait |
+| 2.2 | **Haversine Engine** — Formule orthodromique, carte schématique SVG, matrice distances, optimiseur Nearest Neighbor | `haversine-engine.html` | ✅ Fait |
+| 2.3 | **Mutation Contextuelle** — Pipeline RDV → Devis → Facture → Encaissé, Kanban 4 colonnes | `mutation-contextuelle.html` | ✅ Fait |
+| 2.4 | **Flotte & Télémétrie** — Véhicules (batterie VE), IK DGFiP 2026, outillage QR/NFC simulé | `flotte-telemetrie.html` | ✅ Fait |
+| 3.1 | **Studio Factures** — Éditeur live (Facture/Devis/Avoir), TVA multisite, aperçu imprimable, export PDF | `studio-factures.html` | ✅ Fait |
+| 3.2 | **Signature & Paiement** — Canvas tactile SHA-signé, QR code paiement canvas, Tap-to-Pay NFC simulé | `signature-payment.html` | ✅ Fait |
+| 3.3 | **CRM Technique** — Fiches clients, notes techniques, rating ★, photos base64, recherche live | `crm-tech.html` | ✅ Fait |
+| 3.4 | **Contentieux & Recouvrement** — 5 niveaux de relance, CGV art. L441-6, export LRE + dossier Huissier | `contentieux-recouvrement.html` | ✅ Fait |
+| 4.1 | **Écotaxe · BSD · RSE** — Calculateur TEP/TGN/TGAP, Bordereau Suivi Déchets, tableau RSE annuel | `trava-dechets.html` | ✅ Fait |
+| 4.2 | **PPSPS & Risques** — Plans de prévention (R4532-68), grille risques INRS F×G, attestations | `prevention-risques.html` | ✅ Fait |
+| 4.3 | **RH & Compagnonnage** — Registre personnel, pointeuse crypto-vérifiée (SHA-256 Web Crypto), paniers/zones DGFiP | `rh-compagnonnage.html` | ✅ Fait |
+| 4.4 | **Crypto Backup** — Journal audit SHA-256 chaîné (Web Crypto API réel), export/import AES-256-GCM PBKDF2 | `crypto-backup.html` | ✅ Fait |

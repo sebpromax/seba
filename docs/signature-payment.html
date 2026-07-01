@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Signature & Paiement</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+#sig-canvas{touch-action:none;cursor:crosshair;border-radius:8px;}
+.qr-cell{border:2px solid;border-radius:4px;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 3.2 // ÉMARGEMENT & PAIEMENT</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="studio-factures.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 3.1</a>
+    <a href="crm-tech.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">3.3 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Émargement tactile -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Émargement Tactile — Signature Client</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      <input type="text" id="sig-client" placeholder="Nom du signataire" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="text" id="sig-context" placeholder="Contexte (ex. Réception travaux chantier Lacroix)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+    </div>
+    <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mb-3">
+      <canvas id="sig-canvas" width="680" height="200" class="w-full bg-slate-900"></canvas>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="clearSig()" class="text-sm font-bold bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg hover:text-white transition-colors">Effacer</button>
+      <button onclick="saveSig()" class="text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-6 py-2 rounded-lg transition-colors">✓ Valider la signature</button>
+    </div>
+    <div id="sig-saved-list" class="mt-4 space-y-2"></div>
+  </div>
+
+  <!-- QR Code paiement -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">QR Code Paiement (Simulation)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <input type="text" id="qr-beneficiaire" placeholder="Bénéficiaire" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="number" id="qr-montant" placeholder="Montant TTC €" min="0" step="0.01" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+      <input type="text" id="qr-ref" placeholder="Référence (FAC-2026-001)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+      <button onclick="generateQR()" class="bg-violet-500/10 border border-violet-500/30 text-violet-400 font-bold text-sm rounded-lg hover:bg-violet-500/20 transition-colors">Générer QR</button>
+    </div>
+    <div id="qr-zone" class="flex items-center gap-8">
+      <div id="qr-display" class="p-4 bg-white rounded-xl" style="width:160px;height:160px;display:none;">
+        <canvas id="qr-canvas" width="128" height="128"></canvas>
+      </div>
+      <div id="qr-info" class="text-xs text-slate-500 font-mono"></div>
+    </div>
+  </div>
+
+  <!-- Tap-to-Pay simulé -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Tap-to-Pay — Simulation NFC</h3>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+      <input type="number" id="nfc-montant" placeholder="Montant €" min="0" step="0.01" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono">
+      <select id="nfc-moyen" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none" style="background:#0f172a;">
+        <option>Carte bancaire NFC</option><option>Apple Pay</option><option>Google Pay</option>
+      </select>
+      <button onclick="simulateTap()" id="tap-btn" class="bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-sm rounded-lg hover:bg-blue-500/20 transition-colors">📲 Simuler Tap</button>
+    </div>
+    <div id="tap-result" class="text-xs font-mono text-slate-500"></div>
+    <div id="payments-list" class="mt-4 space-y-2"></div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+// ─── Signature canvas ───
+const canvas=document.getElementById('sig-canvas');
+const ctx=canvas.getContext('2d');
+ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+let drawing=false,lastX=0,lastY=0;
+function getPos(e){const r=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*(canvas.width/r.width),y:(src.clientY-r.top)*(canvas.height/r.height)};}
+canvas.addEventListener('mousedown',e=>{drawing=true;const p=getPos(e);lastX=p.x;lastY=p.y;});
+canvas.addEventListener('mousemove',e=>{if(!drawing)return;const p=getPos(e);ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();lastX=p.x;lastY=p.y;});
+canvas.addEventListener('mouseup',()=>drawing=false);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const p=getPos(e);lastX=p.x;lastY=p.y;},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const p=getPos(e);ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();lastX=p.x;lastY=p.y;},{passive:false});
+canvas.addEventListener('touchend',()=>drawing=false);
+function clearSig(){ctx.clearRect(0,0,canvas.width,canvas.height);}
+let sigs=SebaStorage.read('signatures')||[];
+function saveSig(){
+  const client=document.getElementById('sig-client').value.trim()||'Signataire';
+  const context=document.getElementById('sig-context').value.trim();
+  const dataUrl=canvas.toDataURL();
+  sigs.push({id:'sig_'+Date.now(),client,context,date:new Date().toLocaleString('fr-FR'),img:dataUrl});
+  SebaStorage.write('signatures',sigs);clearSig();renderSigs();
+}
+function renderSigs(){
+  document.getElementById('sig-saved-list').innerHTML=sigs.slice(-3).reverse().map(s=>`
+    <div class="flex items-center gap-4 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3">
+      <img src="${s.img}" class="h-10 bg-slate-800 rounded" style="max-width:120px;filter:invert(1) hue-rotate(120deg);">
+      <div><div class="text-xs font-bold text-slate-200">${s.client}</div><div class="text-3xs text-slate-500 font-mono">${s.date} · ${s.context||'—'}</div></div>
+      <span class="ml-auto text-emerald-400 text-2xs font-bold font-mono">✓ SIGNÉ</span>
+    </div>`).join('');
+}
+
+// ─── QR Code (micro-implémentation) ───
+function generateQR(){
+  const ben=document.getElementById('qr-beneficiaire').value.trim()||'SEBA';
+  const amt=parseFloat(document.getElementById('qr-montant').value)||0;
+  const ref=document.getElementById('qr-ref').value.trim()||'—';
+  const payload=`BeneficiaireNom:${ben};Montant:${amt.toFixed(2)};Reference:${ref};Date:${new Date().toISOString().slice(0,10)}`;
+  const qc=document.getElementById('qr-canvas');
+  const qctx=qc.getContext('2d');
+  qctx.fillStyle='#fff';qctx.fillRect(0,0,128,128);
+  // Fake QR visuel (pattern pseudo-aléatoire déterministe sur base payload hash)
+  let hash=0;for(let i=0;i<payload.length;i++)hash=(hash*31+payload.charCodeAt(i))>>>0;
+  const modules=21;const size=128/modules;
+  for(let r=0;r<modules;r++)for(let c=0;c<modules;c++){
+    // Finder patterns corners
+    const inCorner=(r<7&&c<7)||(r<7&&c>=modules-7)||(r>=modules-7&&c<7);
+    let dark=inCorner?((r===0||r===6||(r>=1&&r<=5&&(c===0||c===6))))||((c===0||c===6||(c>=1&&c<=5&&(r===0||r===6)))):((hash>>(r*modules+c)%32)&1)===1;
+    qctx.fillStyle=dark?'#0f172a':'#fff';
+    qctx.fillRect(c*size,r*size,size,size);
+  }
+  document.getElementById('qr-display').style.display='block';
+  document.getElementById('qr-info').innerHTML=`<div class="text-slate-300 text-sm font-bold">Paiement : ${amt.toFixed(2)} €</div><div class="text-slate-500 mt-1">${ref}</div><div class="text-slate-600 mt-1">Scannez avec votre app bancaire</div>`;
+}
+
+// ─── Tap-to-Pay ───
+let payments=SebaStorage.read('tap_payments')||[];
+function simulateTap(){
+  const amt=parseFloat(document.getElementById('nfc-montant').value)||0;
+  if(!amt){document.getElementById('tap-result').textContent='Saisissez un montant.';return;}
+  const btn=document.getElementById('tap-btn');
+  btn.textContent='📡 En attente NFC...';btn.disabled=true;
+  document.getElementById('tap-result').innerHTML='<span class="text-amber-400">Approchez le terminal...</span>';
+  setTimeout(()=>{
+    const ok=Math.random()>.05;
+    if(ok){
+      const moyen=document.getElementById('nfc-moyen').value;
+      payments.push({id:'pay_'+Date.now(),amt,moyen,date:new Date().toLocaleString('fr-FR'),status:'accepté'});
+      SebaStorage.write('tap_payments',payments);
+      document.getElementById('tap-result').innerHTML='<span class="text-emerald-400 font-bold">✓ Paiement accepté · '+amt.toFixed(2)+' €</span>';
+      renderPayments();
+    }else{document.getElementById('tap-result').innerHTML='<span class="text-rose-400">✕ Carte refusée. Réessayez.</span>';}
+    btn.textContent='📲 Simuler Tap';btn.disabled=false;
+  },1800);
+}
+function renderPayments(){
+  document.getElementById('payments-list').innerHTML=payments.slice(-5).reverse().map(p=>`
+    <div class="flex justify-between items-center text-xs py-2 border-b border-slate-800/50 last:border-0">
+      <div><span class="text-slate-300 font-bold">${p.moyen}</span><span class="text-slate-600 font-mono ml-2">${p.date}</span></div>
+      <span class="text-emerald-400 font-mono font-bold">${p.amt.toFixed(2)} €</span>
+    </div>`).join('');
+}
+
+renderSigs();renderPayments();
+</script>
+</body>
+</html>

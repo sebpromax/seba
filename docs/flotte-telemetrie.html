@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seba. // Flotte & Télémétrie</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{--font-sans:'Plus Jakarta Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;}
+body{font-family:var(--font-sans);}
+.font-mono{font-family:var(--font-mono)!important;}
+.text-2xs{font-size:.65rem;line-height:1rem;}
+.text-3xs{font-size:.55rem;line-height:.85rem;}
+.battery-bar{height:6px;border-radius:3px;background:#1e293b;overflow:hidden;}
+.battery-fill{height:100%;border-radius:3px;transition:width .4s;}
+input[type=range]{accent-color:#10b981;}
+</style>
+</head>
+<body class="h-full text-slate-100 antialiased">
+
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center space-x-4">
+    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
+    <div class="h-4 w-px bg-slate-800"></div>
+    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 2.4 // FLOTTE & TÉLÉMÉTRIE</span>
+  </div>
+  <div class="flex items-center space-x-3">
+    <a href="mutation-contextuelle.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 2.3</a>
+    <a href="studio-factures.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">Lot 3.1 →</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <!-- Véhicules -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Véhicules de la Flotte</h2>
+      <button onclick="openAddVeh()" class="text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-4 py-2 rounded-lg transition-colors">+ Ajouter</button>
+    </div>
+    <div id="veh-add-form" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-slate-900 border border-emerald-500/20 rounded-xl">
+      <input type="text" id="veh-nom" placeholder="Nom (ex. Ford Transit)" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="text" id="veh-immat" placeholder="Immatriculation" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-200 outline-none focus:border-emerald-500 uppercase">
+      <select id="veh-type" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 outline-none" style="background:#1e293b;">
+        <option value="thermique">Thermique</option>
+        <option value="electrique">Électrique</option>
+        <option value="hybride">Hybride</option>
+      </select>
+      <div class="flex gap-2">
+        <button onclick="saveVeh()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded transition-colors text-sm">✓</button>
+        <button onclick="document.getElementById('veh-add-form').classList.add('hidden')" class="bg-slate-700 text-slate-300 px-3 rounded text-sm">✕</button>
+      </div>
+    </div>
+    <div id="veh-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+  </div>
+
+  <!-- Indemnités Kilométriques -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-4 font-mono">Calcul Indemnités Kilométriques (IK)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <input type="text" id="ik-client" placeholder="Déplacement pour" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500">
+      <input type="number" id="ik-km" placeholder="Kilomètres" min="0" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500 font-mono" oninput="calcIK()">
+      <select id="ik-cv" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none" style="background:#0f172a;" onchange="calcIK()">
+        <option value="3">3CV</option><option value="4">4CV</option><option value="5" selected>5CV</option>
+        <option value="6">6CV</option><option value="7">7CV+</option>
+      </select>
+      <button onclick="saveIK()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm rounded-lg">Enregistrer</button>
+    </div>
+    <div id="ik-preview" class="text-2xs text-slate-500 font-mono mb-4"></div>
+    <div id="ik-list" class="space-y-2"></div>
+    <div class="mt-4 pt-4 border-t border-slate-800 flex justify-between text-sm font-mono">
+      <span class="text-slate-500 text-2xs uppercase">Total IK ce mois</span>
+      <span id="ik-total" class="font-bold text-emerald-400">0,00 €</span>
+    </div>
+  </div>
+
+  <!-- Outillage QR -->
+  <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold uppercase tracking-wider text-white font-mono">Registre Outillage (Simulation QR/NFC)</h3>
+      <button onclick="addTool()" class="text-sm font-bold bg-violet-500/10 border border-violet-500/30 text-violet-400 px-4 py-2 rounded-lg hover:bg-violet-500/20 transition-colors">+ Outil</button>
+    </div>
+    <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+  </div>
+
+</main>
+
+<script>
+const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
+
+// IK barèmes 2026 (approximatifs DGFiP)
+const IK_BAREME={3:0.502,4:0.575,5:0.601,6:0.631,7:0.661};
+let ikRecords=SebaStorage.read('ik_records')||[];
+let vehicles=SebaStorage.read('fleet_vehicles')||[];
+let tools=SebaStorage.read('fleet_tools')||[
+  {id:'t1',nom:'Aspirateur Pro Karcher',qr:'QR-001',status:'disponible',location:'Camion principal'},
+  {id:'t2',nom:'Machine à laver tapis',qr:'QR-002',status:'en-cours',location:'Chantier Lacroix'},
+  {id:'t3',nom:'Chariot de ménage',qr:'QR-003',status:'disponible',location:'Dépôt'},
+];
+
+function calcIK(){
+  const km=parseFloat(document.getElementById('ik-km').value)||0;
+  const cv=parseInt(document.getElementById('ik-cv').value)||5;
+  const rate=IK_BAREME[cv]||IK_BAREME[5];
+  const amount=km*rate;
+  document.getElementById('ik-preview').textContent=`${km} km × ${rate.toFixed(3)} €/km = ${amount.toFixed(2)} €`;
+}
+
+function saveIK(){
+  const client=document.getElementById('ik-client').value.trim();
+  const km=parseFloat(document.getElementById('ik-km').value)||0;
+  const cv=parseInt(document.getElementById('ik-cv').value)||5;
+  if(!km)return;
+  ikRecords.push({id:'ik_'+Date.now(),client,km,cv,amount:km*IK_BAREME[cv],date:new Date().toLocaleDateString('fr-FR')});
+  SebaStorage.write('ik_records',ikRecords);
+  document.getElementById('ik-client').value='';document.getElementById('ik-km').value='';
+  renderIK();
+}
+
+function renderIK(){
+  const total=ikRecords.reduce((s,r)=>s+r.amount,0);
+  document.getElementById('ik-total').textContent=total.toFixed(2)+' €';
+  document.getElementById('ik-list').innerHTML=ikRecords.slice(-5).reverse().map(r=>`
+    <div class="flex items-center justify-between text-xs py-2 border-b border-slate-800/50 last:border-0">
+      <div><span class="text-slate-300">${r.client||'Déplacement'}</span><span class="text-slate-600 font-mono ml-2">${r.date} · ${r.km} km</span></div>
+      <span class="text-emerald-400 font-mono font-bold">${r.amount.toFixed(2)} €</span>
+    </div>`).join('');
+}
+
+function openAddVeh(){document.getElementById('veh-add-form').classList.remove('hidden');}
+
+function saveVeh(){
+  const nom=document.getElementById('veh-nom').value.trim();
+  const immat=document.getElementById('veh-immat').value.trim().toUpperCase();
+  const type=document.getElementById('veh-type').value;
+  if(!nom||!immat)return;
+  const charge=Math.floor(Math.random()*60)+20;
+  vehicles.push({id:'v_'+Date.now(),nom,immat,type,km:Math.floor(Math.random()*80000)+10000,charge,status:'actif'});
+  SebaStorage.write('fleet_vehicles',vehicles);
+  document.getElementById('veh-nom').value='';document.getElementById('veh-immat').value='';
+  document.getElementById('veh-add-form').classList.add('hidden');
+  renderVehicles();
+}
+
+function renderVehicles(){
+  document.getElementById('veh-list').innerHTML=vehicles.length===0
+    ?'<div class="col-span-3 text-xs text-slate-600 font-mono text-center py-4">Aucun véhicule enregistré</div>'
+    :vehicles.map(v=>`
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-sm font-bold text-slate-200">${v.nom}</div>
+          <div class="text-2xs font-mono text-slate-500">${v.immat}</div>
+        </div>
+        <span class="text-2xs font-bold text-emerald-400 font-mono">${v.status.toUpperCase()}</span>
+      </div>
+      <div class="text-2xs text-slate-500 font-mono">${v.km.toLocaleString('fr-FR')} km</div>
+      ${v.type==='electrique'||v.type==='hybride'?`
+      <div>
+        <div class="flex justify-between text-3xs font-mono text-slate-500 mb-1"><span>Charge batterie</span><span class="${v.charge>50?'text-emerald-400':'text-amber-400'}">${v.charge}%</span></div>
+        <div class="battery-bar"><div class="battery-fill ${v.charge>50?'bg-emerald-500':'bg-amber-500'}" style="width:${v.charge}%"></div></div>
+      </div>`:'<div class="text-3xs text-slate-600 font-mono">⛽ Thermique</div>'}
+    </div>`).join('');
+}
+
+function addTool(){
+  const nom=prompt('Nom de l\'outil :');if(!nom)return;
+  tools.push({id:'t_'+Date.now(),nom,qr:'QR-'+String(tools.length+1).padStart(3,'0'),status:'disponible',location:'Dépôt'});
+  SebaStorage.write('fleet_tools',tools);renderTools();
+}
+
+function toggleToolStatus(id){
+  const t=tools.find(x=>x.id===id);if(!t)return;
+  t.status=t.status==='disponible'?'en-cours':'disponible';
+  SebaStorage.write('fleet_tools',tools);renderTools();
+}
+
+function renderTools(){
+  document.getElementById('tools-grid').innerHTML=tools.map(t=>`
+    <div class="bg-slate-900 border ${t.status==='disponible'?'border-emerald-500/20':'border-amber-500/20'} rounded-xl p-4 space-y-2">
+      <div class="text-3xs font-bold font-mono ${t.status==='disponible'?'text-emerald-400':'text-amber-400'}">${t.qr}</div>
+      <div class="text-xs font-bold text-slate-200">${t.nom}</div>
+      <div class="text-3xs text-slate-500">${t.location}</div>
+      <button onclick="toggleToolStatus('${t.id}')" class="w-full text-3xs font-bold font-mono py-1 rounded ${t.status==='disponible'?'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20':'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'} transition-colors">${t.status==='disponible'?'✓ DISPONIBLE':'⚙ EN COURS'}</button>
+    </div>`).join('');
+}
+
+renderVehicles();renderIK();renderTools();
+</script>
+</body>
+</html>
