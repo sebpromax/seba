@@ -335,6 +335,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 @media(max-width:880px){.ob-layout{grid-template-columns:1fr;}.ob-right{display:none;}.step-container{padding:84px 32px 88px;height:calc(100vh - 60px);}.ob-progress{left:32px;right:32px;}.nav-btns{left:32px;right:32px;}}
 @media(max-width:480px){.step-container{padding:80px 22px 88px;}.ob-progress{left:22px;right:22px;}.nav-btns{left:22px;right:22px;}.sector-grid{grid-template-columns:repeat(2,1fr);}.svc-row{grid-template-columns:1fr 68px 78px 20px;}}
 
+/* ── Step-8 : formulaire scrollable + barre de nav fixe ── */
+#step-8{overflow-y:auto;padding-bottom:130px;}
+#step-8 .nav-btns{position:fixed;bottom:0;left:0;right:0;padding:16px 60px;background:rgba(6,9,19,.97);border-top:1px solid rgba(255,255,255,.07);z-index:1000;backdrop-filter:blur(8px);}
+@media(max-width:880px){#step-8 .nav-btns{padding-left:32px;padding-right:32px;}}
+@media(max-width:480px){#step-8 .nav-btns{padding-left:22px;padding-right:22px;}}
+
 /* Globe panel */
 .ob-globe-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .45s ease;z-index:2;pointer-events:none;perspective:900px;}
 .ob-globe-panel.panel-hidden{opacity:0;pointer-events:none;}
