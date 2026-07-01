@@ -76,7 +76,7 @@ a{color:inherit;text-decoration:none;}
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Déployer mon espace</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Démarrer gratuitement</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
@@ -86,7 +86,7 @@ a{color:inherit;text-decoration:none;}
   <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">⚡ Déployer</a>
+  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Démarrer gratuitement</a>
 </div>
 
 <!-- HERO -->
@@ -100,69 +100,89 @@ a{color:inherit;text-decoration:none;}
       <button class="toggle-btn active" id="btn-monthly" onclick="setBilling('monthly')">Mensuel</button>
       <button class="toggle-btn" id="btn-annual" onclick="setBilling('annual')">Annuel <span style="color:#00ff88;font-size:.7rem;font-weight:700;">−20%</span></button>
     </div>
+    <div id="savings-banner" style="display:none;margin-top:14px;font-size:.8rem;color:#00ff88;font-weight:700;letter-spacing:.01em;">
+      🎁 Économisez 72€/an sur le plan Pro · 192€/an sur le plan Équipe — 2 mois offerts
+    </div>
   </div>
 </section>
 
 <!-- PRICING GRID -->
 <section class="section" style="padding-top:40px;padding-bottom:80px;">
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:980px;margin:0 auto;" id="pricing-grid">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:1240px;margin:0 auto;" id="pricing-grid">
 
     <!-- Découverte -->
     <div class="price-card">
       <div style="margin-bottom:24px;">
-        <div style="font-size:.8rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Découverte</div>
-        <div style="font-size:3rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;">0 <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.82rem;color:rgba(255,255,255,.35);">Pour toujours · Aucune carte requise</div>
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Découverte</div>
+        <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;">0 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);">Pour toujours · Sans carte</div>
       </div>
-      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:28px;">
+      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> 5 devis / mois</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> 15 clients</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Planning basique</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Vitrine publique</div>
-        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Facturation automatique</span></div>
-        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Relances automatiques</span></div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Facturation auto</span></div>
         <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Multi-utilisateurs</span></div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:12px;font-size:.9rem;">Commencer gratuit</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Démarrer gratuitement</a>
     </div>
 
     <!-- Pro -->
     <div class="price-card recommended">
       <div class="rec-badge">Recommandé</div>
       <div style="margin-bottom:24px;">
-        <div style="font-size:.8rem;font-weight:700;color:#00ff88;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Pro</div>
-        <div style="font-size:3rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="pro-price">29 <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.82rem;color:rgba(255,255,255,.35);" id="pro-period">/ mois · Sans engagement</div>
+        <div style="font-size:.75rem;font-weight:700;color:#00ff88;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Pro</div>
+        <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="pro-price">29 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="pro-period">/ mois · Sans engagement</div>
       </div>
-      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:28px;">
+      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Devis illimités</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Clients illimités</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Planning intelligent</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Vitrine premium</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Facturation automatique</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Signature électronique</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Relances automatiques</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rapports & analytics</div>
       </div>
-      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:13px;font-size:.9rem;">⚡ Déployer mon espace</a>
+      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Démarrer gratuitement</a>
     </div>
 
     <!-- Équipe -->
     <div class="price-card">
       <div style="margin-bottom:24px;">
-        <div style="font-size:.8rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Équipe</div>
-        <div style="font-size:3rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="team-price">79 <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.82rem;color:rgba(255,255,255,.35);" id="team-period">/ mois · Sans engagement</div>
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Équipe</div>
+        <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:4px;" id="team-price">79 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="team-period">/ mois · Sans engagement</div>
+        <div style="margin-top:8px;font-size:.72rem;color:rgba(0,255,136,.6);font-weight:600;">10 utilisateurs inclus · +5 €/utilisateur suppl.</div>
       </div>
-      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:28px;">
+      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Tout le plan Pro</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Jusqu'à 10 utilisateurs</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Gestion des équipes</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rapports avancés</div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rôles & permissions</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Export comptable</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;font-weight:700;">✓</span> <span style="font-weight:600;color:#fff;">Export comptable 1 clic</span></div>
         <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Support prioritaire</div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:12px;font-size:.9rem;">Démarrer en équipe</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Démarrer gratuitement</a>
+    </div>
+
+    <!-- Entreprise -->
+    <div class="price-card" style="border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.02);">
+      <div style="margin-bottom:24px;">
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Entreprise</div>
+        <div style="font-size:2rem;font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:6px;color:#fff;">Sur<br>devis</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);">Pour les structures +10 personnes</div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Tout le plan Équipe</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Utilisateurs illimités</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> API & intégrations</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Manager dédié</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> SLA garanti</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Formation incluse</div>
+      </div>
+      <a href="mailto:bonjour@seba.app" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Nous contacter →</a>
     </div>
 
   </div>
@@ -184,21 +204,22 @@ a{color:inherit;text-decoration:none;}
   <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
     <table class="comp-table">
       <thead><tr>
-        <th style="width:40%;">Fonctionnalité</th>
+        <th style="width:35%;">Fonctionnalité</th>
         <th style="text-align:center;">Découverte</th>
         <th style="text-align:center;color:#00ff88;">Pro</th>
         <th style="text-align:center;">Équipe</th>
+        <th style="text-align:center;">Entreprise</th>
       </tr></thead>
       <tbody>
-        <tr><td>Devis</td><td style="text-align:center;color:rgba(255,255,255,.4);">5/mois</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
-        <tr><td>Clients</td><td style="text-align:center;color:rgba(255,255,255,.4);">15</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
-        <tr><td>Facturation automatique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Signature électronique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Relances automatiques</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Rapports & analytics</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Utilisateurs</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:#00ff88;">Jusqu'à 10</td></tr>
-        <tr><td>Export comptable</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Support</td><td style="text-align:center;color:rgba(255,255,255,.4);">Email</td><td style="text-align:center;color:rgba(255,255,255,.7);">Email + Chat</td><td style="text-align:center;color:#00ff88;">Prioritaire</td></tr>
+        <tr><td>Devis</td><td style="text-align:center;color:rgba(255,255,255,.4);">5/mois</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
+        <tr><td>Clients</td><td style="text-align:center;color:rgba(255,255,255,.4);">15</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
+        <tr><td>Facturation automatique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Signature électronique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Relances automatiques</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td><strong>Export comptable 1 clic</strong></td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td></tr>
+        <tr><td>Utilisateurs</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:#00ff88;">10 inclus +5€/suppl.</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
+        <tr><td>API & intégrations</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Support</td><td style="text-align:center;color:rgba(255,255,255,.4);">Email</td><td style="text-align:center;color:rgba(255,255,255,.7);">Email + Chat</td><td style="text-align:center;color:#00ff88;">Prioritaire</td><td style="text-align:center;color:#00ff88;">Manager dédié</td></tr>
       </tbody>
     </table>
   </div>
@@ -248,6 +269,7 @@ const prices={monthly:{pro:'29',team:'79'},annual:{pro:'23',team:'63'}};
 function setBilling(m){
   document.getElementById('btn-monthly').classList.toggle('active',m==='monthly');
   document.getElementById('btn-annual').classList.toggle('active',m==='annual');
+  document.getElementById('savings-banner').style.display=m==='annual'?'block':'none';
   const p=prices[m];
   document.getElementById('pro-price').innerHTML=p.pro+' <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span>';
   document.getElementById('team-price').innerHTML=p.team+' <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span>';
@@ -267,6 +289,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();})
 (function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
 document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
-<style>@media(max-width:768px){#pricing-grid{grid-template-columns:1fr !important;}}</style>
+<style>@media(max-width:900px){#pricing-grid{grid-template-columns:1fr 1fr !important;}}@media(max-width:560px){#pricing-grid{grid-template-columns:1fr !important;}}</style>
 </body>
 </html>
