@@ -55,7 +55,7 @@ a{color:inherit;text-decoration:none;}
 .prog-label{font-size:.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;}
 
 .ob-steps-wrap{display:grid;height:100%;}
-.step-container{grid-area:1/1;padding:76px 60px 100px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;position:relative;}
+.step-container{grid-area:1/1;padding:76px 60px 140px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;position:relative;}
 .step-container.step-dense{overflow-y:auto;padding-right:50px;}
 .step-container.step-dense::-webkit-scrollbar{width:3px;}
 .step-container.step-dense::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
@@ -247,9 +247,16 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .phone-home{width:38px;height:3px;background:rgba(255,255,255,.14);border-radius:2px;margin:10px auto 0;}
 
 /* ─── Contenu défilable dans étapes à liste longue ─── */
-#step-4 .svc-list{flex:1;overflow-y:auto;min-height:0;}
-#step-4 .subsector-list{flex:1;overflow-y:auto;min-height:0;}
-#step-9 .summary-ticket{flex:1;overflow-y:auto;min-height:0;}
+#step-6 .svc-list{flex:1;overflow-y:auto;min-height:0;}
+#step-6 .subsector-list{flex:1;overflow-y:auto;min-height:0;}
+#step-10 .summary-ticket{flex:1;overflow-y:auto;min-height:0;}
+/* ── Baptême centré (nom seul) ── */
+#step-4{justify-content:center;padding-top:56px;padding-bottom:140px;}
+/* ── Aiguillage premium (cartes agrandies) ── */
+.or-premium .orientation-card{padding:34px 16px;}
+.or-premium .or-icon{font-size:2.2rem;margin-bottom:14px;}
+.or-premium .or-label{font-size:1rem;font-weight:800;}
+.or-premium .or-desc{font-size:.76rem;line-height:1.5;}
 
 /* ─── Module de recherche "Autre activité" ─── */
 .sector-grid-wrap{transition:opacity .3s ease,height .3s ease;}
@@ -432,7 +439,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <span class="prog-dot"></span><span class="prog-dot"></span>
       <span class="prog-dot"></span><span class="prog-dot"></span>
       <span class="prog-dot"></span><span class="prog-dot"></span>
-      <span class="prog-dot"></span>
+      <span class="prog-dot"></span><span class="prog-dot"></span>
     </div>
     <span class="prog-label" id="prog-label"></span>
   </div>
@@ -529,22 +536,50 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
     </div>
 
-    <!-- 3 BAPTÊME — Identité -->
+    <!-- 3 AIGUILLAGE IMMÉDIAT — Niche (conditionnel, secteurs parapluie) -->
     <div class="step-container" id="step-3">
+      <div class="step-eyebrow">Votre spécialité</div>
+      <h2 class="step-title">Précisez votre cœur de métier</h2>
+      <p class="step-sub">Ces quelques secondes calibrent vos services, vos tarifs et vos suggestions tout au long du tunnel.</p>
+
+      <div class="orientation-grid or-premium" id="orientation-grid"></div>
+      <p style="font-size:.72rem;color:rgba(197,208,230,.3);margin-top:-10px;margin-bottom:24px;text-align:center;">Vous pourrez ajuster cela depuis votre tableau de bord.</p>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
+        <button class="btn btn-ghost" onclick="goStep(4)" style="opacity:.7;">Passer →</button>
+      </div>
+    </div>
+
+    <!-- 4 BAPTÊME — Nom uniquement -->
+    <div class="step-container" id="step-4">
       <div class="step-eyebrow">Votre identité</div>
       <h2 class="step-title">Donnez un nom à votre aventure</h2>
       <p class="step-sub">Il apparaîtra sur vos devis et votre vitrine publique.</p>
 
-      <div class="field">
+      <div class="field" style="max-width:420px;">
         <label for="inp-nom">Nom de votre entreprise</label>
         <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60" oninput="onNomInput(this.value)">
         <div class="err" id="err-nom">Le nom est obligatoire.</div>
       </div>
-      <div class="field">
+      <div class="field" style="max-width:420px;">
         <label for="inp-pub">Nom public (portail client)</label>
         <input type="text" id="inp-pub" placeholder="ex. Services Martin" maxlength="50" oninput="updatePreview()">
         <div class="field-hint">Par défaut, identique au nom d'entreprise.</div>
       </div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="backFromBapteme()">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 5 SIGNATURE — Slogan + Description + Couleur -->
+    <div class="step-container" id="step-5">
+      <div class="step-eyebrow">Votre signature</div>
+      <h2 class="step-title">Votre voix, votre univers</h2>
+      <p class="step-sub">Un slogan accrocheur et une description juste — les clients décident en 3 secondes.</p>
+
       <div class="field suggest-field">
         <label for="inp-welcome">Slogan / Message d'accueil</label>
         <div class="suggest-wrap">
@@ -567,13 +602,13 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
 
       <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
-        <button class="btn btn-em"    onclick="validateStep(3)">Continuer →</button>
+        <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(5)">Continuer →</button>
       </div>
     </div>
 
-    <!-- 4 RÉVÉLATION — Prestations -->
-    <div class="step-container step-dense" id="step-4">
+    <!-- 6 RÉVÉLATION — Prestations -->
+    <div class="step-container step-dense" id="step-6">
       <div class="step-eyebrow">Vos prestations</div>
       <h2 class="step-title">Vos services phares</h2>
       <p class="step-sub">Pré-remplis selon votre métier. Ajustez les tarifs librement — tout reste modifiable.</p>
@@ -583,29 +618,14 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation.</div>
 
       <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(3,false)">← Retour</button>
+        <button class="btn btn-ghost" onclick="goStep(5,false)">← Retour</button>
         <p class="reassurance-hint"><em>✨</em> Configuration rapide. Tarifs et statut juridique modifiables à tout moment depuis votre tableau de bord.</p>
-        <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
+        <button class="btn btn-em"    onclick="validateStep(6)">Continuer →</button>
       </div>
     </div>
 
-    <!-- 5 AIGUILLAGE — Orientations -->
-    <div class="step-container" id="step-5">
-      <div class="step-eyebrow">Votre fil conducteur</div>
-      <h2 class="step-title">Quel est votre cœur d'activité ?</h2>
-      <p class="step-sub">Affinez votre profil pour des recommandations encore plus pertinentes.</p>
-
-      <div class="orientation-grid" id="orientation-grid"></div>
-      <p style="font-size:.72rem;color:rgba(197,208,230,.3);margin-top:-10px;margin-bottom:24px;text-align:center;">Vous pourrez ajuster cela depuis votre tableau de bord.</p>
-
-      <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
-        <button class="btn btn-ghost" onclick="goStep(6)" style="opacity:.7;">Passer →</button>
-      </div>
-    </div>
-
-    <!-- 6 RYTHME — Horaires -->
-    <div class="step-container step-dense" id="step-6">
+    <!-- 7 RYTHME — Horaires -->
+    <div class="step-container step-dense" id="step-7">
       <div class="step-eyebrow">Vos horaires</div>
       <h2 class="step-title">Quand êtes-vous disponible ?</h2>
       <p class="step-sub">Sélectionnez un ou plusieurs profils. Tout est modifiable depuis votre tableau de bord.</p>
@@ -620,14 +640,14 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
 
       <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(5,false)">← Retour</button>
+        <button class="btn btn-ghost" onclick="goStep(6,false)">← Retour</button>
         <p class="reassurance-hint"><em>✨</em> Configuration rapide. Horaires, tarifs et statut juridique configurables à tout moment dans votre tableau de bord.</p>
-        <button class="btn btn-em"    onclick="validateStep(6)">Continuer →</button>
+        <button class="btn btn-em"    onclick="validateStep(7)">Continuer →</button>
       </div>
     </div>
 
-    <!-- 7 APOTHÉOSE — Compte -->
-    <div class="step-container" id="step-7">
+    <!-- 8 APOTHÉOSE — Compte -->
+    <div class="step-container" id="step-8">
       <div class="step-eyebrow">Dernière étape ✨</div>
       <h2 class="step-title">Votre espace est prêt à naître</h2>
       <p class="step-sub">Créez votre accès sécurisé pour déployer votre vitrine professionnelle.</p>
@@ -652,13 +672,13 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
 
       <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(6,false)">← Retour</button>
-        <button class="btn btn-em" onclick="validateStep(7)" style="font-size:1rem;height:52px;padding:0 32px;">🚀 Créer mon espace →</button>
+        <button class="btn btn-ghost" onclick="goStep(7,false)">← Retour</button>
+        <button class="btn btn-em" onclick="validateStep(8)" style="font-size:1rem;height:52px;padding:0 32px;">🚀 Créer mon espace →</button>
       </div>
     </div>
 
-    <!-- 8 CHARGEMENT (ex-7) -->
-    <div class="step-container" id="step-8">
+    <!-- 9 DÉPLOIEMENT -->
+    <div class="step-container" id="step-9">
       <div class="loading-cinema">
         <div class="ring-wrap">
           <svg class="ring-svg" viewBox="0 0 136 136" fill="none">
@@ -675,8 +695,8 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
     </div>
 
-    <!-- 9 RÉSUMÉ (ex-8) -->
-    <div class="step-container" id="step-9">
+    <!-- 10 RÉSUMÉ -->
+    <div class="step-container" id="step-10">
       <div class="step-eyebrow">Compte créé</div>
       <h2 class="step-title">C'est parti !</h2>
       <p class="step-sub" id="s9-sub">Votre espace Seba est configuré et prêt à l'emploi.</p>
@@ -856,7 +876,7 @@ const StateRecovery = {
       if (!raw) return;
       const cp = JSON.parse(raw);
       if (Date.now() - cp.ts > this.TTL || !cp.step || cp.step < 1) { this.clear(); return; }
-      const lbl = ['Votre situation','Votre activité','Votre activité','Vos services','Régime fiscal','Votre identité','Votre écosystème'][Math.min(cp.step - 1, 6)] || 'étape ' + cp.step;
+      const lbl = {1:'Votre situation',2:'Votre activité',3:'Votre niche',4:'Votre identité',5:'Votre signature',6:'Vos prestations',7:'Vos horaires',8:'Votre compte'}[cp.step] || 'étape ' + cp.step;
       document.getElementById('rb-step-lbl').textContent = lbl;
       const banner = document.getElementById('recovery-banner');
       banner.classList.add('show');
@@ -1023,6 +1043,9 @@ const SMART_SUGGEST={
     demenagement:['Votre déménagement, sans stress.','Nous déplaçons vos souvenirs avec soin.','Rapide, fiable, assuré.'],
     pressing:['Impeccable, livré chez vous.','Vos vêtements, toujours parfaits.','La qualité pressing à votre porte.'],
     __conciergerie__:['Votre bien géré comme un hôtel 5 ⭐.','La tranquillité d\'esprit, tout compris.','Conciergerie premium, sans faille.'],
+    '__conciergerie__.airbnb':['Vos logements, gérés comme un palace.','Airbnb clés en main, voyageurs ravis.','Votre conciergerie saisonnière, sans souci.'],
+    '__conciergerie__.luxe':['L\'excellence d\'un palace, l\'âme du sur-mesure.','La discrétion au service de votre prestige.','Conciergerie privée 5★ — rares, irréprochables.'],
+    '__conciergerie__.corporate':['Votre immeuble, géré avec rigueur et élégance.','La tranquillité d\'esprit pour vos collaborateurs.','Conciergerie d\'entreprise — zéro friction, 100 % professionnel.'],
     autre:['L\'excellence à votre service.','Votre spécialiste de confiance.','Qualité premium, résultats garantis.'],
   },
   description:{
@@ -1034,6 +1057,9 @@ const SMART_SUGGEST={
     demenagement:['Déménageur professionnel assurant transport résidentiel et d\'entreprise avec soin et ponctualité.','Équipe de déménageurs qualifiés : déménagement clé en main, emballage, garde-meuble.','Déménagement propre et efficace. Assurance tous risques incluse. Devis gratuit.'],
     pressing:['Service pressing et repassage professionnel : collecte et livraison à domicile. Toutes matières.','Pressing traditionnel : nettoyage à sec, repassage au kilo et retouches textiles. Express possible.','Vos vêtements nettoyés, repassés et livrés chez vous. Qualité hôtelière garantie.'],
     __conciergerie__:['Conciergerie premium gérant vos propriétés et locations avec un service hôtelier 5 étoiles.','Service de conciergerie complet : check-in, ménage, maintenance et gestion locative.','Agent de conciergerie discret et réactif pour particuliers et professionnels exigeants.'],
+    '__conciergerie__.airbnb':['Expert Airbnb gérant vos annonces, accueils et ménages hôteliers pour maximiser votre taux d\'occupation.','Service de conciergerie saisonnière tout compris : check-in, ménage, linge et gestion des voyageurs.','Conciergerie Airbnb professionnelle : annonces optimisées, accueil chaleureux, résidence toujours impeccable.'],
+    '__conciergerie__.luxe':['Conciergerie privée haut de gamme pour propriétés d\'exception et résidences VIP. Discrétion et excellence absolues.','Service personnalisé 24h/7j pour propriétaires exigeants : coordination personnel, accueil protocole 5★, maintenance luxe.','Gestionnaire de résidence de prestige — anticipation, confidentialité et attention aux moindres détails.'],
+    '__conciergerie__.corporate':['Conciergerie d\'entreprise et de copropriété : accueil, courrier, entretien et coordination des prestataires.','Service de conciergerie professionnelle pour bureaux et parties communes. Rigueur et réactivité garanties.','Expert en gestion de locaux professionnels : réception, logistique, maintenance et services aux collaborateurs.'],
     autre:['Professionnel qualifié proposant des prestations de qualité adaptées à vos besoins spécifiques.','Expert dans mon domaine, je m\'engage pour des résultats qui vous satisfont pleinement.','Service sur mesure, réactif et fiable. Devis gratuit sous 24h.'],
   }
 };
@@ -1041,7 +1067,8 @@ const SMART_SUGGEST={
 function openSuggest(fieldId,type){
   closeSuggest();
   const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
-  const list=(SMART_SUGGEST[type]||{})[sector]||(SMART_SUGGEST[type]||{})['autre']||[];
+  const nicheKey=S.orientationKey?sector+'.'+S.orientationKey:sector;
+  const list=(SMART_SUGGEST[type]||{})[nicheKey]||(SMART_SUGGEST[type]||{})[sector]||(SMART_SUGGEST[type]||{})['autre']||[];
   const dd=document.getElementById('suggest-'+fieldId);
   if(!dd) return;
   dd.innerHTML='<div class="suggest-hdr">✨ Suggestions pour votre activité</div>'+
@@ -1172,7 +1199,7 @@ const COUNTRIES=[
 const COLORS=['#00F5A0','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E0B','#10B981'];
 const SC_REACT={menage:'Parfait pour le ménage !',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Super pour le jardinage !',maintenance:'Très bien pour la maintenance !',pressing:'Parfait pour le pressing !',beaute:'Idéal pour la beauté à domicile !',animaux:"Super pour les soins d'animaux !",demenagement:'Parfait pour le déménagement !',autre:'On adapte tout à votre activité !',conciergerie:'Idéal pour la location courte durée !',conciergerieCopro:'Parfait pour la copropriété !',conciergerieEntreprise:"Très bien pour la conciergerie d'entreprise !"};
 const SECTOR2=[{key:'menage',label:'Ménage & nettoyage'},{key:'__conciergerie__',label:'Conciergerie'},{key:'jardinage',label:'Jardinage'},{key:'maintenance',label:'Maintenance'},{key:'pressing',label:'Pressing'},{key:'beaute',label:'Beauté à domicile'},{key:'animaux',label:'Animaux de compagnie'},{key:'demenagement',label:'Déménagement'},{key:'autre',label:'Autre activité'}];
-const PROG_LABELS={1:'Votre pays',2:'Votre vocation',3:'Votre identité',4:'Vos prestations',5:'Vos orientations',6:'Vos horaires',7:'Votre compte',8:'Déploiement',9:'Compte créé'};
+const PROG_LABELS={1:'Votre pays',2:'Votre vocation',3:'Votre niche',4:'Votre identité',5:'Votre signature',6:'Vos prestations',7:'Vos horaires',8:'Votre compte',9:'Déploiement',10:'Compte créé'};
 
 /* ─── Familles sectorielles (badge polyvalent) ─── */
 const SECTOR_FAMILY={menage:'domestic',jardinage:'domestic',pressing:'domestic',maintenance:'artisan',__conciergerie__:'artisan',conciergerie:'artisan',beaute:'personal',animaux:'personal',demenagement:'logistics',autre:'other'};
@@ -1987,18 +2014,20 @@ function goStep(toIdx,forward){
   updateProgress(toIdx);
   window.scrollTo({top:0,behavior:'instant'});
   if (toIdx > 0) StateRecovery.save(toIdx);
-  // Baptême → show preview panel with current data
-  if(toIdx===3) setTimeout(()=>{updatePreview();},100);
-  // Révélation → build services from selected job(s) ou orientation
-  if(toIdx===4){
+  // Aiguillage immédiat → render cartes d'orientation
+  if(toIdx===3) renderOrientations();
+  // Baptême → refresh preview avec données actuelles
+  if(toIdx===4) setTimeout(()=>{updatePreview();},100);
+  // Signature → refresh preview (nom déjà sauvé)
+  if(toIdx===5) setTimeout(()=>{updatePreview();},50);
+  // Révélation → build services depuis job(s) ou orientation
+  if(toIdx===6){
     const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
     const hasOrSvcs=!!(S._orientationServices&&S._orientationServices.length);
     if(builtForSector!==sector||Object.keys(S.svcs).length===0||hasOrSvcs) buildSvcList(sector);
   }
-  // Aiguillage → render orientation cards
-  if(toIdx===5) renderOrientations();
-  if(toIdx===8) setTimeout(startLoading,480);
-  if(toIdx===9) fillSummary();
+  if(toIdx===9) setTimeout(startLoading,480);
+  if(toIdx===10) fillSummary();
   updatePhone(toIdx);
 }
 
@@ -2036,16 +2065,23 @@ function pickOrientation(key){
   } else {
     S._orientationServices=null;
   }
-  // Forcer rebuild des services quand l'utilisateur arrivera à l'étape 4
+  // Forcer rebuild des services quand l'utilisateur arrivera à l'étape 6 (Révélation)
   builtForSector=null;
-  setTimeout(()=>goStep(6),420);
+  setTimeout(()=>goStep(4),420);
 }
 
 /* ─── Apothéose — célébration ─── */
 function celebratePreview(){
   const card=document.querySelector('.preview-card');
   if(card){card.classList.remove('celebrate');void card.offsetWidth;card.classList.add('celebrate');}
-  setTimeout(()=>goStep(8),900);
+  setTimeout(()=>goStep(9),900);
+}
+
+/* ─── Retour depuis Baptême — conditionnel selon si aiguillage a été affiché ─── */
+function backFromBapteme(){
+  const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
+  if(S.selectedJobs.length<=1&&sector!=='autre'&&ORIENTATIONS[sector]) goStep(3,false);
+  else goStep(2,false);
 }
 
 function togglePwd(){
@@ -2068,15 +2104,16 @@ function updateProgress(n){
   const lbl=document.getElementById('prog-label');
   if(n===0){prog.classList.remove('show');return;}
   prog.classList.add('show');
-  // Steps 1-7 map to dots 1-7; step-8 (loading) → all done
-  const dot=n>=1&&n<=7?n:n>=8?7:1;
+  // step-3 (aiguillage conditionnel) partage le dot-2 de Vocation
+  const dotMap={1:1,2:2,3:2,4:3,5:4,6:5,7:6,8:7,9:8,10:8};
+  const dot=dotMap[n]||1;
   document.querySelectorAll('.prog-dot').forEach((d,i)=>{
     d.classList.remove('done','active');
     if(i<dot-1) d.classList.add('done');
     else if(i===dot-1) d.classList.add('active');
   });
-  if(n===9){document.querySelectorAll('.prog-dot').forEach(d=>{d.classList.remove('active');d.classList.add('done');});lbl.textContent='Compte configuré ✓';}
-  else lbl.textContent='Étape '+Math.min(dot,7)+'/7 — '+(PROG_LABELS[n]||'');
+  if(n===10){document.querySelectorAll('.prog-dot').forEach(d=>{d.classList.remove('active');d.classList.add('done');});lbl.textContent='Compte configuré ✓';}
+  else lbl.textContent='Étape '+dot+'/8 — '+(PROG_LABELS[n]||'');
 }
 
 /* ─── Validation ─── */
@@ -2087,36 +2124,41 @@ function validateStep(n){
   if(n===1){
     if(!document.getElementById('sel-pays').value){showErr('err-pays');return;}
     hideErr('err-pays');
-    S.phone=document.getElementById('inp-phone').value.trim(); // optionnel
+    S.phone=document.getElementById('inp-phone').value.trim();
     AudioUI.playSuccess();
     goStep(2);
   } else if(n===2){
     if(S.selectedJobs.length===0&&!S.secteur){showErr('err-sector');return;}
     hideErr('err-sector');
     AudioUI.playSuccess();
-    goStep(3);
-  } else if(n===3){
+    // Aiguillage immédiat pour les secteurs à orientations définies (sauf "autre" et multi-job)
+    const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
+    if(S.selectedJobs.length<=1&&sector!=='autre'&&ORIENTATIONS[sector]) goStep(3);
+    else goStep(4);
+  } else if(n===4){
+    // Baptême — nom requis
     const nom=document.getElementById('inp-nom').value.trim();
     if(!nom){showErr('err-nom');return;}
     hideErr('err-nom');
     S.nom=nom;
     S.publicName=document.getElementById('inp-pub').value.trim()||nom;
-    S.welcomePhrase=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
-    const descEl=document.getElementById('inp-desc');
-    if(descEl) S.desc=descEl.value.trim();
     S.slug=slugify(S.publicName);
     AudioUI.playSuccess();
-    goStep(4);
-  } else if(n===4){
-    if(!Object.values(S.svcs).some(s=>s.checked)){showErr('err-svcs');return;}
-    hideErr('err-svcs');AudioUI.playSuccess();goStep(5);
+    goStep(5);
   } else if(n===5){
-    // Aiguillage — toujours valide, pickOrientation auto-avance
-    AudioUI.playSuccess();goStep(6);
+    // Signature — optionnel, toujours valide
+    S.welcomePhrase=(document.getElementById('inp-welcome')||{}).value?.trim()||'Bienvenue !';
+    const descEl=document.getElementById('inp-desc');
+    if(descEl) S.desc=descEl.value.trim();
+    AudioUI.playSuccess();
+    goStep(6);
   } else if(n===6){
-    // Rythme — optionnel, toujours valide
-    AudioUI.playSuccess();goStep(7);
+    if(!Object.values(S.svcs).some(s=>s.checked)){showErr('err-svcs');return;}
+    hideErr('err-svcs');AudioUI.playSuccess();goStep(7);
   } else if(n===7){
+    // Rythme — optionnel, toujours valide
+    AudioUI.playSuccess();goStep(8);
+  } else if(n===8){
     // Apothéose — email + pwd requis
     const email=document.getElementById('inp-email').value.trim();
     const pwd=document.getElementById('inp-pwd').value;
