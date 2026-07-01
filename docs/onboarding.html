@@ -41,7 +41,7 @@ a{color:inherit;text-decoration:none;}
 .sh-cta{margin-top:24px;display:inline-block;background:var(--em);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;transition:opacity .15s;}
 .sh-cta:hover{opacity:.85;}
 
-.ob-layout{display:grid;grid-template-columns:45% 55%;height:calc(100vh - 60px);}
+.ob-layout{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px);}
 .ob-left{background:#060913;position:relative;overflow:hidden;}
 .ob-right{background:radial-gradient(ellipse at 50% 48%,#111a2e 0%,#060913 72%);display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;}
 .ob-right::before{content:'';position:absolute;width:560px;height:560px;background:radial-gradient(circle,rgba(0,245,160,.065) 0%,transparent 60%);pointer-events:none;}
@@ -356,7 +356,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .ob-globe-panel:not(.panel-hidden){pointer-events:auto;}
 .ob-phone-panel{transition:opacity .45s ease;z-index:2;}
 .ob-phone-panel.panel-hidden{opacity:0;pointer-events:none;}
-.globe-wrap{position:relative;width:450px;height:450px;}
+.globe-wrap{position:relative;width:540px;height:540px;}
 .globe-sphere{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 38%,rgba(0,245,160,.18) 0%,rgba(6,9,19,0) 60%),radial-gradient(circle at 65% 62%,rgba(61,38,69,.4) 0%,transparent 55%),radial-gradient(circle at 50% 50%,#0d1428 0%,#060913 100%);box-shadow:0 0 80px rgba(0,245,160,.1),inset 0 0 40px rgba(0,0,0,.5);}
 .globe-grid{position:absolute;inset:0;border-radius:50%;overflow:hidden;opacity:.15;}
 .globe-grid::before{content:'';position:absolute;inset:-10%;background:repeating-linear-gradient(0deg,transparent,transparent 18px,rgba(0,245,160,.4) 18px,rgba(0,245,160,.4) 19px),repeating-linear-gradient(90deg,transparent,transparent 18px,rgba(0,245,160,.4) 18px,rgba(0,245,160,.4) 19px);}
@@ -472,13 +472,11 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
     <!-- 0 BIENVENUE -->
     <div class="step-container" id="step-0">
       <div class="welcome-wrap">
-        <div class="w-logo"><div class="w-logo-dot"></div>seba</div>
         <h1 class="w-title">Bienvenue sur<br><em>Seba</em></h1>
         <p class="w-sub">Créons ensemble votre espace professionnel en quelques minutes.</p>
         <button class="btn btn-em" style="font-size:1rem;height:52px;padding:0 40px;" onclick="goStep(1)">
           Commencer →
         </button>
-        <p class="w-meta">8 étapes · environ 3 minutes · aucune carte requise</p>
       </div>
     </div>
 
@@ -790,7 +788,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   <!-- Globe panel — visible steps 0-1 plein format, mini steps 2+ -->
   <div class="ob-globe-panel" id="ob-globe-panel">
     <div class="globe-wrap" id="globe-wrap">
-      <svg id="globe-canvas" width="450" height="450" style="display:block;border-radius:50%;"></svg>
+      <svg id="globe-canvas" width="540" height="540" style="display:block;border-radius:50%;"></svg>
     </div>
   </div>
   <!-- Profil Public Premium — visible steps 2+ -->
@@ -949,7 +947,7 @@ const StateRecovery = {
 
 /* ─── D3 Globe ─── */
 (function(){
-  const W=450,H=450,R=210;
+  const W=540,H=540,R=252;
   const proj=d3.geoOrthographic().scale(R).translate([W/2,H/2]).clipAngle(90).rotate([0,-25,0]);
   const gpath=d3.geoPath().projection(proj);
   const graticuleDatum=d3.geoGraticule()();
