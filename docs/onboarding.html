@@ -6,7 +6,7 @@
 <title>Créer mon entreprise — Seba</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
@@ -14,7 +14,8 @@
 :root{--em:#00F5A0;--ink:#060913;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:auto;}
-body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;}
+html{height:100%;overflow:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;}
 a{color:inherit;text-decoration:none;}
 @view-transition{navigation:auto;}
 ::view-transition-old(root){animation:180ms ease vt-out;}
@@ -40,8 +41,8 @@ a{color:inherit;text-decoration:none;}
 .sh-cta{margin-top:24px;display:inline-block;background:var(--em);color:#08090B;padding:14px 36px;border-radius:8px;font-size:1rem;font-weight:700;transition:opacity .15s;}
 .sh-cta:hover{opacity:.85;}
 
-.ob-layout{display:grid;grid-template-columns:45% 55%;min-height:calc(100vh - 60px);}
-.ob-left{background:#060913;position:relative;overflow-x:hidden;}
+.ob-layout{display:grid;grid-template-columns:45% 55%;height:calc(100vh - 60px);}
+.ob-left{background:#060913;position:relative;overflow:hidden;}
 .ob-right{background:radial-gradient(ellipse at 50% 48%,#111a2e 0%,#060913 72%);display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;}
 .ob-right::before{content:'';position:absolute;width:560px;height:560px;background:radial-gradient(circle,rgba(0,245,160,.065) 0%,transparent 60%);pointer-events:none;}
 
@@ -53,8 +54,8 @@ a{color:inherit;text-decoration:none;}
 .prog-dot.active{background:var(--em);opacity:.55;width:32px;}
 .prog-label{font-size:.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;}
 
-.ob-steps-wrap{display:grid;}
-.step-container{grid-area:1/1;padding:96px 60px 60px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;min-height:calc(100vh - 60px);}
+.ob-steps-wrap{display:grid;height:100%;}
+.step-container{grid-area:1/1;padding:76px 60px 100px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;position:relative;}
 
 .step-eyebrow{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--em);margin-bottom:16px;display:flex;align-items:center;gap:9px;}
 .step-eyebrow::before{content:'';display:block;width:18px;height:2px;background:var(--em);flex-shrink:0;}
@@ -170,11 +171,11 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .btn:hover{transform:translateY(-1px);}
 .btn:active{transform:none;}
 .btn-em{background:var(--em);color:#060913;}
-.btn-em:hover{opacity:.9;}
+.btn-em:hover{opacity:1;transform:scale(1.02) translateY(-1px);box-shadow:0 0 22px rgba(0,245,160,.38);}
 .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.55);height:44px;padding:0 20px;font-size:.875rem;}
 .btn-ghost:hover{border-color:rgba(255,255,255,.4);color:#fff;opacity:1;}
 .btn-full{width:100%;}
-.nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:36px;gap:12px;}
+.nav-btns{position:absolute;bottom:40px;left:60px;right:60px;display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:10;}
 
 .phone-device{width:248px;background:linear-gradient(155deg,#141720 0%,#090d16 100%);border-radius:48px;padding:14px 11px 24px;box-shadow:0 0 0 1.5px rgba(255,255,255,.1),0 0 0 9px rgba(255,255,255,.018),0 52px 100px rgba(0,0,0,.65),0 16px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.07);position:relative;z-index:1;user-select:none;}
 .phone-device::before{content:'';position:absolute;right:-3px;top:108px;width:3px;height:38px;background:rgba(255,255,255,.09);border-radius:0 2px 2px 0;}
@@ -208,8 +209,63 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .ph-app-cta{height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.48rem;font-weight:700;color:#060913;background:var(--em);transition:background .3s;}
 .phone-home{width:38px;height:3px;background:rgba(255,255,255,.14);border-radius:2px;margin:10px auto 0;}
 
-@media(max-width:880px){.ob-layout{grid-template-columns:1fr;}.ob-right{display:none;}.step-container{padding:84px 32px 40px;min-height:calc(100vh - 60px);}.ob-progress{left:32px;right:32px;}}
-@media(max-width:480px){.step-container{padding:80px 22px 32px;}.ob-progress{left:22px;right:22px;}.sector-grid{grid-template-columns:repeat(2,1fr);}.svc-row{grid-template-columns:1fr 68px 78px 20px;}}
+/* ─── Contenu défilable dans étapes à liste longue ─── */
+#step-4 .svc-list{flex:1;overflow-y:auto;min-height:0;}
+#step-4 .subsector-list{flex:1;overflow-y:auto;min-height:0;}
+#step-9 .summary-ticket{flex:1;overflow-y:auto;min-height:0;}
+
+/* ─── Module de recherche "Autre activité" ─── */
+.sector-grid-wrap{transition:opacity .3s ease,height .3s ease;}
+.sector-grid-wrap.hidden{opacity:0;pointer-events:none;height:0;overflow:hidden;margin:0;}
+.search-module{display:none;flex-direction:column;gap:10px;flex:1;}
+.search-module.active{display:flex;}
+.search-back{background:none;border:none;color:rgba(255,255,255,.4);font-family:'Inter',sans-serif;font-size:.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:0;transition:color .2s;margin-bottom:4px;}
+.search-back:hover{color:rgba(255,255,255,.8);}
+.search-inp-wrap{position:relative;}
+.search-inp{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:var(--rs);padding:14px 20px;color:#fff;font-size:.95rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;box-sizing:border-box;}
+.search-inp:focus{border-color:rgba(0,245,160,.5);box-shadow:0 0 0 3px rgba(0,245,160,.1);}
+.search-results{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
+.search-item{padding:10px 16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:8px;cursor:pointer;font-size:.87rem;color:rgba(255,255,255,.75);transition:all .15s;text-align:left;}
+.search-item:hover,.search-item.focused{border-color:rgba(0,245,160,.4);background:rgba(0,245,160,.07);color:#fff;}
+.search-create{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.18);color:var(--em);font-size:.87rem;cursor:pointer;transition:background .2s;text-align:left;font-family:'Inter',sans-serif;width:100%;}
+.search-create:hover{background:rgba(0,245,160,.12);}
+.search-empty{font-size:.82rem;color:var(--t3);padding:8px 0;}
+
+/* ─── Bento Dashboard ─── */
+.ob-bento-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease;z-index:2;pointer-events:none;}
+.ob-bento-panel.panel-hidden{opacity:0;pointer-events:none;}
+.ob-bento-panel:not(.panel-hidden){pointer-events:auto;}
+.bento-wrap{width:100%;max-width:320px;animation:bento-in .6s cubic-bezier(.16,1,.3,1) both;}
+@keyframes bento-in{from{opacity:0;transform:translateY(18px) scale(.97);}to{opacity:1;transform:none;}}
+.bento-eyebrow{font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,245,160,.5);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.bento-eyebrow::before{content:'';display:block;width:10px;height:1.5px;background:rgba(0,245,160,.5);}
+.bento-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.bento-card{background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.05);backdrop-filter:blur(20px);border-radius:14px;padding:14px 16px;transition:border-color .35s,background .35s;}
+.bento-card.highlight{border-color:rgba(0,245,160,.22);background:rgba(0,245,160,.04);}
+.bento-lbl{font-size:.56rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:7px;}
+.bento-val{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.03em;}
+.bento-val.em{color:var(--em);}
+.bento-sub{font-size:.62rem;color:rgba(255,255,255,.3);margin-top:3px;}
+.bento-bar-wrap{margin-top:8px;height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.bento-bar{height:100%;background:var(--em);border-radius:2px;transition:width 1.4s cubic-bezier(.34,1,.64,1);width:0%;}
+.bento-terminal{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace,sans-serif;min-height:58px;}
+.term-row{font-size:.62rem;line-height:1.7;}
+.term-prefix{color:rgba(0,245,160,.45);}
+.term-body{color:rgba(255,255,255,.45);word-break:break-all;}
+.bento-card-wide{grid-column:span 2;}
+
+/* Squelettes de chargement */
+.sk-line{height:10px;border-radius:4px;background:rgba(255,255,255,.06);animation:sk-pulse 1.8s ease-in-out infinite;}
+.sk-line.sk-lg{height:18px;width:70%;}
+.sk-line.sk-sm{height:8px;width:45%;margin-top:5px;}
+@keyframes sk-pulse{0%,100%{opacity:.2;}50%{opacity:.55;}}
+
+/* ─── Globe mini (steps 2+) ─── */
+.globe-wrap{transition:transform .85s cubic-bezier(.16,1,.3,1),opacity .85s cubic-bezier(.16,1,.3,1);}
+.globe-wrap.globe-mini{transform:translate(50%,-45%) scale(0.35);opacity:0.4;pointer-events:none;}
+
+@media(max-width:880px){.ob-layout{grid-template-columns:1fr;}.ob-right{display:none;}.step-container{padding:84px 32px 88px;height:calc(100vh - 60px);}.ob-progress{left:32px;right:32px;}.nav-btns{left:32px;right:32px;}}
+@media(max-width:480px){.step-container{padding:80px 22px 88px;}.ob-progress{left:22px;right:22px;}.nav-btns{left:22px;right:22px;}.sector-grid{grid-template-columns:repeat(2,1fr);}.svc-row{grid-template-columns:1fr 68px 78px 20px;}}
 
 /* Globe panel */
 .ob-globe-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .45s ease;z-index:2;pointer-events:none;perspective:900px;}
@@ -364,7 +420,23 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
           <span id="reaction-text">Parfait !</span>
         </div>
       </div>
-      <div class="sector-grid" id="sector-grid"></div>
+
+      <!-- Grille des secteurs -->
+      <div class="sector-grid-wrap" id="sector-grid-wrap">
+        <div class="sector-grid" id="sector-grid"></div>
+      </div>
+
+      <!-- Module de recherche "Autre activité" -->
+      <div class="search-module" id="search-module">
+        <button class="search-back" onclick="closeSearch()">← Revenir aux choix</button>
+        <input type="text" class="search-inp" id="search-inp"
+          placeholder="Ex: électricien, photographe, coach sportif…"
+          oninput="filterSearch(this.value)"
+          onkeydown="searchKeyNav(event)"
+          autocomplete="off">
+        <div class="search-results" id="search-results"></div>
+      </div>
+
       <div class="err" id="err-sector">Veuillez choisir une activité.</div>
 
       <div class="nav-btns">
@@ -613,72 +685,47 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   </div><!-- /ob-steps-wrap -->
 </div><!-- /ob-left -->
 
-<!-- RIGHT — globe (steps 0-1) + phone (steps 2+) -->
+<!-- RIGHT — globe (toujours présent) + bento (steps 2+) -->
 <div class="ob-right">
-  <!-- Globe panel -->
+  <!-- Globe panel — visible steps 0-1 plein format, mini steps 2+ -->
   <div class="ob-globe-panel" id="ob-globe-panel">
     <div class="globe-wrap" id="globe-wrap">
       <svg id="globe-canvas" width="450" height="450" style="display:block;border-radius:50%;"></svg>
     </div>
   </div>
-  <!-- Phone panel -->
-  <div class="ob-phone-panel panel-hidden" id="ob-phone-panel">
-  <div class="phone-device">
-    <div class="phone-island"></div>
-    <div class="phone-screen">
-      <div class="ph-status">
-        <span id="ph-clock">10:42</span>
-        <div class="ph-status-icons">
-          <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
-            <rect x="0" y="4" width="2" height="4" rx=".5" fill="rgba(255,255,255,.55)"/>
-            <rect x="3" y="2.5" width="2" height="5.5" rx=".5" fill="rgba(255,255,255,.55)"/>
-            <rect x="6" y="1" width="2" height="7" rx=".5" fill="rgba(255,255,255,.55)"/>
-            <rect x="9" y="0" width="2" height="8" rx=".5" fill="rgba(255,255,255,.55)"/>
-          </svg>
-          <svg width="14" height="7" viewBox="0 0 14 7" fill="none">
-            <rect x=".5" y=".5" width="10.5" height="6" rx="1.5" stroke="rgba(255,255,255,.45)" stroke-width="1"/>
-            <rect x="1.5" y="1.5" width="7.5" height="4" rx=".8" fill="rgba(255,255,255,.55)"/>
-            <path d="M12 2.5v2a1 1 0 0 0 0-2z" fill="rgba(255,255,255,.35)"/>
-          </svg>
+  <!-- Bento Dashboard — visible steps 2+ -->
+  <div class="ob-bento-panel panel-hidden" id="ob-bento-panel">
+    <div class="bento-wrap">
+      <div class="bento-eyebrow" id="bento-eyebrow">Dashboard · Votre activité</div>
+      <div class="bento-grid">
+        <div class="bento-card" id="bc-ca">
+          <div class="bento-lbl">CA mensuel estimé</div>
+          <div class="bento-val em" id="bento-ca"><span class="sk-line sk-lg"></span></div>
+          <div class="bento-sub" id="bento-ca-sub"> </div>
+          <div class="bento-bar-wrap"><div class="bento-bar" id="bento-bar-ca"></div></div>
+        </div>
+        <div class="bento-card" id="bc-clients">
+          <div class="bento-lbl">Clients actifs</div>
+          <div class="bento-val" id="bento-clients"><span class="sk-line sk-lg"></span></div>
+          <div class="bento-sub" id="bento-clients-sub"> </div>
+        </div>
+        <div class="bento-card" id="bc-next">
+          <div class="bento-lbl">Prochaine intervention</div>
+          <div class="bento-val" id="bento-next"><span class="sk-line sk-lg"></span></div>
+          <div class="bento-sub" id="bento-next-sub"> </div>
+        </div>
+        <div class="bento-card" id="bc-sat">
+          <div class="bento-lbl">Satisfaction client</div>
+          <div class="bento-val em" id="bento-sat"><span class="sk-line sk-lg"></span></div>
+          <div class="bento-bar-wrap"><div class="bento-bar" id="bento-bar-sat"></div></div>
         </div>
       </div>
-      <div class="ph-content">
-        <div class="ph-pane active" id="ph-lock">
-          <div class="ph-lock-body">
-            <div class="ph-time" id="ph-time">10:42</div>
-            <div class="ph-date" id="ph-date">Lundi 30 juin</div>
-            <div class="ph-notif">
-              <div class="ph-notif-icon">S</div>
-              <div>
-                <div class="ph-notif-app">Seba</div>
-                <div class="ph-notif-msg" id="ph-notif-msg">Bienvenue ! Votre espace vous attend.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="ph-pane" id="ph-app">
-          <div class="ph-app-body">
-            <div class="ph-app-hdr">
-              <div class="ph-app-brand">
-                <span class="ph-app-hdr-color" id="ph-color-dot"></span>
-                <span id="ph-brand">Mon entreprise</span>
-              </div>
-              <div class="ph-app-welcome" id="ph-welcome">Bienvenue !</div>
-            </div>
-            <div class="ph-svc-section">
-              <div class="ph-svc-lbl">Prestations</div>
-              <div id="ph-svcs"><div class="ph-svc-empty">Aucun service sélectionné</div></div>
-            </div>
-            <div class="ph-app-footer">
-              <div class="ph-app-cta" id="ph-cta">Prendre rendez-vous</div>
-            </div>
-          </div>
-        </div>
+      <div class="bento-terminal">
+        <div class="term-row"><span class="term-prefix">seba@dashboard:~$</span> <span id="term-cmd" style="color:rgba(255,255,255,.2);font-size:.62rem;"></span></div>
+        <div class="term-row"><span class="term-body" id="term-body">En attente de configuration…</span></div>
       </div>
     </div>
-    <div class="phone-home"></div>
   </div>
-  </div><!-- /ob-phone-panel -->
 </div>
 </div><!-- /ob-layout -->
 
@@ -910,7 +957,7 @@ const StateRecovery = {
 })();
 
 /* ─── State ─── */
-const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:''};
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:''};
 let _isConciergerie=false;
 
 const COUNTRIES=[
@@ -946,6 +993,24 @@ const COLORS=['#00F5A0','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E
 const SC_REACT={menage:'Parfait pour le ménage !',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Super pour le jardinage !',maintenance:'Très bien pour la maintenance !',pressing:'Parfait pour le pressing !',beaute:'Idéal pour la beauté à domicile !',animaux:"Super pour les soins d'animaux !",demenagement:'Parfait pour le déménagement !',autre:'On adapte tout à votre activité !',conciergerie:'Idéal pour la location courte durée !',conciergerieCopro:'Parfait pour la copropriété !',conciergerieEntreprise:"Très bien pour la conciergerie d'entreprise !"};
 const SECTOR2=[{key:'menage',label:'Ménage & nettoyage'},{key:'__conciergerie__',label:'Conciergerie'},{key:'jardinage',label:'Jardinage'},{key:'maintenance',label:'Maintenance'},{key:'pressing',label:'Pressing'},{key:'beaute',label:'Beauté à domicile'},{key:'animaux',label:'Animaux de compagnie'},{key:'demenagement',label:'Déménagement'},{key:'autre',label:'Autre activité'}];
 const PROG_LABELS={1:'Votre situation',2:'Votre activité',3:'Votre activité',4:'Vos services',5:'Régime fiscal',6:'Votre identité',7:'Votre écosystème',8:'Déploiement',9:'Compte créé'};
+
+/* ─── Dictionnaire métiers (recherche "Autre activité") ─── */
+const JOBS=['Électricien','Plombier','Peintre en bâtiment','Maçon','Couvreur','Menuisier','Charpentier','Carreleur','Serrurier','Vitrier','Climaticien','Chauffagiste','Ramoneur','Pisciniste','Paysagiste','Arboriculteur','Agent d\'entretien','Laveur de vitres','Nettoyage industriel','Nettoyage de fin de chantier','Photographe','Vidéaste','Graphiste','Webdesigner','Développeur web','Consultant IT','Infographiste','Monteur vidéo','Streamer','Coach sportif','Professeur de yoga','Nutritionniste','Ostéopathe','Kinésithérapeute','Infirmier libéral','Aide-soignant','Assistant maternel','Garde d\'enfants','Aide à domicile','Auxiliaire de vie','Cuisinier à domicile','Traiteur','Chef à domicile','Organisateur d\'événements','Décorateur d\'intérieur','Architecte d\'intérieur','Home stager','Agent immobilier','Comptable indépendant','Expert-comptable','Traducteur','Interprète','Rédacteur freelance','Copywriter','Community manager','Formateur','Coach professionnel','Conseiller en bilan de compétences','Musicien','DJ','Artiste','Tatoueur','Esthéticienne','Coiffeur à domicile','Manucure','Maquilleur professionnel','Prothésiste ongulaire','Vétérinaire','Pet sitter','Dog sitter','Éducateur canin','Pension animaux','Livreur','Coursier','Chauffeur VTC','Déménageur','Réparateur électroménager','Réparateur informatique','Horloger','Bijoutier','Couturier','Retouche textile','Fleuriste','Apiculteur','Maraîcher','Artisan boulanger','Pâtissier à domicile','Massage bien-être','Réflexologue','Sophrologue','Hypnothérapeute','Coach de vie','Conseiller en image','Styliste','Personal shopper','Détective privé','Sécurité gardiennage','Garde du corps','Opticien','Podologue','Ergothérapeute','Orthophoniste','Psychologue','Coaching business','Gestionnaire de patrimoine'];
+
+/* ─── Bento data par secteur ─── */
+const BENTO_DATA={
+  menage:{ca:'3 200 €',caW:68,clients:'18',clientsSub:'Ce mois',sat:'97%',satW:97,next:'Demain',nextSub:'09h00 — Client récurrent',cmd:'init menage',body:'Ménage & nettoyage · Prêt à déployer'},
+  conciergerie:{ca:'5 800 €',caW:82,clients:'12',clientsSub:'Logements gérés',sat:'94%',satW:94,next:'Auj. 16h',nextSub:'Check-in · Apt. 4B',cmd:'init conciergerie',body:'Conciergerie LCD · Mode actif'},
+  conciergerieCopro:{ca:'4 200 €',caW:72,clients:'3',clientsSub:'Copropriétés',sat:'92%',satW:92,next:'Lundi',nextSub:'Entretien parties communes',cmd:'init copro',body:'Conciergerie copropriété · Prêt'},
+  conciergerieEntreprise:{ca:'6 500 €',caW:85,clients:'8',clientsSub:'Entreprises clientes',sat:'96%',satW:96,next:'Demain',nextSub:'Accueil société · 09h',cmd:'init b2b',body:'Conciergerie entreprise · Mode actif'},
+  jardinage:{ca:'2 400 €',caW:58,clients:'22',clientsSub:'Ce mois',sat:'98%',satW:98,next:'Samedi',nextSub:'Taille haie · 3h',cmd:'init jardinage',body:'Jardinage & espaces verts · Prêt'},
+  maintenance:{ca:'3 800 €',caW:74,clients:'15',clientsSub:'Contrats actifs',sat:'95%',satW:95,next:'Demain',nextSub:'Dépannage plomberie',cmd:'init maintenance',body:'Maintenance & dépannage · Mode actif'},
+  pressing:{ca:'2 900 €',caW:65,clients:'40',clientsSub:'Clients / mois',sat:'96%',satW:96,next:'Auj. 11h',nextSub:'Livraison · 8 articles',cmd:'init pressing',body:'Pressing & repassage · Prêt'},
+  beaute:{ca:'3 600 €',caW:71,clients:'28',clientsSub:'RDV / mois',sat:'99%',satW:99,next:'Demain',nextSub:'Soin domicile · 10h00',cmd:'init beaute',body:'Beauté à domicile · Mode actif'},
+  animaux:{ca:'2 100 €',caW:52,clients:'16',clientsSub:'Animaux suivis',sat:'100%',satW:100,next:'Auj. 14h',nextSub:'Garde chien · 3 jours',cmd:'init animaux',body:'Soins animaux de compagnie · Prêt'},
+  demenagement:{ca:'4 800 €',caW:78,clients:'6',clientsSub:'Déménagements / mois',sat:'94%',satW:94,next:'Vendredi',nextSub:'3 pièces · 45 m²',cmd:'init demenagement',body:'Déménagement · Mode actif'},
+  autre:{ca:'—',caW:0,clients:'—',clientsSub:'À configurer',sat:'—',satW:0,next:'—',nextSub:'Selon votre activité',cmd:'init custom',body:'Activité personnalisée · Configuration…'},
+};
 
 /* ─── Init ─── */
 function init(){
@@ -988,6 +1053,99 @@ function tickClock(){
   ['ph-clock','ph-time'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=t;});
 }
 
+/* ─── Bento ─── */
+function populateBento(sector, customLabel){
+  const d=BENTO_DATA[sector]||BENTO_DATA.autre;
+  const ey=document.getElementById('bento-eyebrow');
+  if(ey) ey.textContent='Dashboard · '+(customLabel||(sector&&sector!=='autre'?(sector.charAt(0).toUpperCase()+sector.slice(1).replace(/_/g,' ')):'Votre activité'));
+  const ca=document.getElementById('bento-ca'); if(ca) ca.textContent=d.ca;
+  const caSub=document.getElementById('bento-ca-sub'); if(caSub) caSub.textContent='CA estimé mois 1';
+  const barCa=document.getElementById('bento-bar-ca'); if(barCa) setTimeout(()=>{barCa.style.width=d.caW+'%';},120);
+  const cl=document.getElementById('bento-clients'); if(cl) cl.textContent=d.clients;
+  const clSub=document.getElementById('bento-clients-sub'); if(clSub) clSub.textContent=d.clientsSub;
+  const sat=document.getElementById('bento-sat'); if(sat) sat.textContent=d.sat;
+  const barSat=document.getElementById('bento-bar-sat'); if(barSat) setTimeout(()=>{barSat.style.width=d.satW+'%';},220);
+  const next=document.getElementById('bento-next'); if(next) next.textContent=d.next;
+  const nextSub=document.getElementById('bento-next-sub'); if(nextSub) nextSub.textContent=d.nextSub;
+  const termBody=document.getElementById('term-body'); if(termBody) termBody.textContent=d.body;
+  const termCmd=document.getElementById('term-cmd'); if(termCmd) termCmd.textContent=d.cmd;
+  document.querySelectorAll('.bento-card').forEach(c=>c.classList.remove('highlight'));
+  if(d.ca!=='—') setTimeout(()=>{const bc=document.getElementById('bc-ca');if(bc)bc.classList.add('highlight');},450);
+}
+
+/* ─── Recherche "Autre activité" ─── */
+let _searchFocusIdx=-1;
+
+function openSearch(){
+  const wrap=document.getElementById('sector-grid-wrap');
+  const mod=document.getElementById('search-module');
+  if(!wrap||!mod) return;
+  wrap.classList.add('hidden');
+  mod.classList.add('active');
+  setTimeout(()=>{const inp=document.getElementById('search-inp');if(inp)inp.focus();},120);
+  filterSearch('');
+}
+
+function closeSearch(){
+  const wrap=document.getElementById('sector-grid-wrap');
+  const mod=document.getElementById('search-module');
+  if(!wrap||!mod) return;
+  mod.classList.remove('active');
+  wrap.classList.remove('hidden');
+  const inp=document.getElementById('search-inp');if(inp)inp.value='';
+  S.secteur=null;S.secteurCustom=null;
+  document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('selected'));
+}
+
+function filterSearch(q){
+  _searchFocusIdx=-1;
+  const q2=q.toLowerCase().trim();
+  const res=document.getElementById('search-results');
+  if(!res) return;
+  const termCmd=document.getElementById('term-cmd');
+  const termBody=document.getElementById('term-body');
+  if(termCmd) termCmd.textContent=q?'search "'+q+'"':'';
+  if(termBody&&q) termBody.textContent='Recherche : "'+q+'"…';
+  const filtered=q2?JOBS.filter(j=>j.toLowerCase().includes(q2)):JOBS;
+  res.innerHTML='';
+  filtered.slice(0,8).forEach(job=>{
+    const btn=document.createElement('button');
+    btn.className='search-item';btn.textContent=job;
+    btn.onclick=()=>pickCustomSector(job);
+    res.appendChild(btn);
+  });
+  if(q2){
+    const cb=document.createElement('button');
+    cb.className='search-create';
+    cb.innerHTML='✨ &nbsp;Créer «&nbsp;'+q+'&nbsp;»';
+    cb.onclick=()=>pickCustomSector(q);
+    res.appendChild(cb);
+  }
+}
+
+function searchKeyNav(e){
+  const items=document.querySelectorAll('#search-results .search-item, #search-results .search-create');
+  if(e.key==='ArrowDown'){e.preventDefault();_searchFocusIdx=Math.min(_searchFocusIdx+1,items.length-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();_searchFocusIdx=Math.max(_searchFocusIdx-1,0);}
+  else if(e.key==='Enter'){
+    if(_searchFocusIdx>=0&&items[_searchFocusIdx]) items[_searchFocusIdx].click();
+    else{const v=document.getElementById('search-inp').value.trim();if(v)pickCustomSector(v);}
+    return;
+  } else return;
+  items.forEach((it,i)=>it.classList.toggle('focused',i===_searchFocusIdx));
+  if(items[_searchFocusIdx]) items[_searchFocusIdx].scrollIntoView({block:'nearest'});
+}
+
+function pickCustomSector(label){
+  S.secteur='autre';S.secteurCustom=label;
+  AudioUI.playSuccess();
+  const termBody=document.getElementById('term-body');
+  if(termBody) termBody.textContent='Activité : "'+label+'" — configuration prête.';
+  const r=document.getElementById('sector-reaction');
+  if(r){document.getElementById('reaction-text').textContent='✓ '+label;r.classList.add('show');setTimeout(()=>r.classList.remove('show'),2600);}
+  populateBento('autre',label);
+}
+
 function buildSectorGrid(){
   const bt=window.businessTypes||{};
   const grid=document.getElementById('sector-grid');
@@ -1015,6 +1173,9 @@ function selectSector(key,card){
   document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
   r.classList.add('show');
   setTimeout(()=>r.classList.remove('show'),2400);
+  if(key==='autre'){setTimeout(openSearch,300); return;}
+  const bentoKey=key==='__conciergerie__'?'conciergerie':key;
+  populateBento(bentoKey);
 }
 
 function pickSub(key){
@@ -1022,6 +1183,7 @@ function pickSub(key){
   document.querySelectorAll('.subsector-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('sub-'+key).classList.add('selected');
   S.secteur=key;
+  populateBento(key);
 }
 
 /* ─── Navigation ─── */
@@ -1205,16 +1367,17 @@ function updatePreview(){
 }
 
 function updatePhone(n){
-  const globePanel=document.getElementById('ob-globe-panel');
-  const phonePanel=document.getElementById('ob-phone-panel');
-  if(globePanel&&phonePanel){
-    if(n<=1){globePanel.classList.remove('panel-hidden');phonePanel.classList.add('panel-hidden');}
-    else{globePanel.classList.add('panel-hidden');phonePanel.classList.remove('panel-hidden');}
+  const globeWrap=document.getElementById('globe-wrap');
+  const bentoPanel=document.getElementById('ob-bento-panel');
+  if(n<=1){
+    if(globeWrap) globeWrap.classList.remove('globe-mini');
+    if(bentoPanel) bentoPanel.classList.add('panel-hidden');
+  } else {
+    if(globeWrap) globeWrap.classList.add('globe-mini');
+    if(bentoPanel) bentoPanel.classList.remove('panel-hidden');
+    const sector=S.secteur||'autre';
+    populateBento(sector,S.secteurCustom||null);
   }
-  const lock=document.getElementById('ph-lock');const app=document.getElementById('ph-app');
-  if(!lock||!app) return;
-  if(n<=3){lock.classList.add('active');app.classList.remove('active');}
-  else{lock.classList.remove('active');app.classList.add('active');updatePreview();}
 }
 
 /* ─── Loading ─── */
