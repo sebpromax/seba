@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tarifs — Seba</title>
+<title>Pricing — Seba</title>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -62,6 +62,8 @@ a{color:inherit;text-decoration:none;}
 .toggle-wrap{display:inline-flex;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:4px;gap:2px;}
 .toggle-btn{padding:7px 20px;border-radius:100px;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s,color .2s;color:rgba(255,255,255,.4);border:none;background:transparent;}
 .toggle-btn.active{background:#fff;color:#0a0a0c;}
+.trial-banner{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.18);border-radius:100px;padding:8px 20px;font-size:.83rem;font-weight:600;color:#fff;margin-bottom:32px;}
+.trial-banner span{color:#00ff88;}
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:rgba(0,255,136,.35);box-shadow:0 0 14px rgba(0,255,136,.5);will-change:transform;}
 @media(hover:none){#cursor-trail{display:none;}}
 </style>
@@ -69,6 +71,7 @@ a{color:inherit;text-decoration:none;}
 <script>Weglot.initialize({api_key:'YOUR_API_KEY_HERE'});</script>
 </head>
 <body>
+
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
@@ -82,6 +85,7 @@ a{color:inherit;text-decoration:none;}
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
+
 <div class="mobile-menu" id="mobile-menu">
   <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Product</a>
   <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Pricing</a>
@@ -95,15 +99,19 @@ a{color:inherit;text-decoration:none;}
 <section style="padding-top:140px;padding-bottom:60px;padding-left:max(24px,calc((100vw - 1140px)/2));padding-right:max(24px,calc((100vw - 1140px)/2));text-align:center;position:relative;overflow:hidden;">
   <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:min(600px,100vw);height:400px;background:radial-gradient(ellipse at 50% 0%,rgba(0,255,136,.09) 0%,transparent 70%);pointer-events:none;"></div>
   <div style="position:relative;z-index:1;">
-    <div class="badge-glow" style="margin-bottom:24px;">La Transparence</div>
-    <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:900;letter-spacing:-0.04em;line-height:1.06;margin-bottom:16px;"><span class="headline-gradient">Un prix fixe.<br>Zéro surprise.</span></h1>
-    <p style="font-size:1.05rem;color:#94A3B8;line-height:1.65;max-width:480px;margin:0 auto 36px;">Pas de frais cachés, pas de modules payants. Tout est inclus dès le premier euro.</p>
+    <div class="badge-glow" style="margin-bottom:24px;">Transparent Pricing</div>
+    <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:900;letter-spacing:-0.04em;line-height:1.06;margin-bottom:16px;"><span class="headline-gradient">Simple pricing.<br>No surprises.</span></h1>
+    <p style="font-size:1.05rem;color:#94A3B8;line-height:1.65;max-width:480px;margin:0 auto 28px;">No hidden fees, no paid add-ons. Everything included from day one.</p>
+    <div class="trial-banner">
+      <span>✦</span> 15-day free trial on all plans. <span>No credit card required.</span>
+    </div>
+    <br>
     <div class="toggle-wrap">
-      <button class="toggle-btn active" id="btn-monthly" onclick="setBilling('monthly')">Mensuel</button>
-      <button class="toggle-btn" id="btn-annual" onclick="setBilling('annual')">Annuel <span style="color:#00ff88;font-size:.7rem;font-weight:700;">−20%</span></button>
+      <button class="toggle-btn active" id="btn-monthly" onclick="setBilling('monthly')">Monthly</button>
+      <button class="toggle-btn" id="btn-annual" onclick="setBilling('annual')">Annual <span style="color:#00ff88;font-size:.7rem;font-weight:700;">−20%</span></button>
     </div>
     <div id="savings-banner" style="display:none;margin-top:14px;font-size:.8rem;color:#00ff88;font-weight:700;letter-spacing:.01em;">
-      🎁 Économisez 72€/an sur le plan Pro · 192€/an sur le plan Équipe — 2 mois offerts
+      Save 48€/year on Solo · 72€/year on Pro · 192€/year on Team — 2 months free
     </div>
   </div>
 </section>
@@ -112,170 +120,180 @@ a{color:inherit;text-decoration:none;}
 <section class="section" style="padding-top:40px;padding-bottom:80px;">
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:1240px;margin:0 auto;" id="pricing-grid">
 
-    <!-- Découverte -->
+    <!-- SOLO -->
     <div class="price-card">
       <div style="margin-bottom:24px;">
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Découverte</div>
-        <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;">0 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.78rem;color:rgba(255,255,255,.35);">Pour toujours · Sans carte</div>
+        <div style="font-size:.68rem;font-weight:700;color:rgba(0,255,136,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Start</div>
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Solo</div>
+        <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="solo-price">19 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="solo-period">/ month · No commitment</div>
+        <div style="margin-top:8px;font-size:.72rem;color:rgba(255,255,255,.4);font-weight:500;">Up to 10 active projects / month</div>
       </div>
       <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> 5 devis / mois</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> 15 clients</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Planning basique</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Vitrine publique</div>
-        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Facturation auto</span></div>
-        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Multi-utilisateurs</span></div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> 10 active projects / month</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Proposals & quotes</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Automated billing</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Electronic signature</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Basic scheduling</div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Financial reports</span></div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Auto follow-ups</span></div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Get Started</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Start free trial</a>
     </div>
 
-    <!-- Pro -->
+    <!-- PRO -->
     <div class="price-card recommended">
-      <div class="rec-badge">Recommandé</div>
+      <div class="rec-badge">Most Popular</div>
       <div style="margin-bottom:24px;">
+        <div style="font-size:.68rem;font-weight:700;color:rgba(0,255,136,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Growth</div>
         <div style="font-size:.75rem;font-weight:700;color:#00ff88;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Pro</div>
         <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="pro-price">29 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="pro-period">/ mois · Sans engagement</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="pro-period">/ month · No commitment</div>
+        <div style="margin-top:8px;font-size:.72rem;color:rgba(0,255,136,.6);font-weight:600;">Unlimited projects</div>
       </div>
       <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Devis illimités</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Clients illimités</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Planning intelligent</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Facturation automatique</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Signature électronique</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Relances automatiques</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rapports & analytics</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Everything in Solo</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Unlimited projects</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Financial reports</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Analytics dashboard</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Automated follow-ups</div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Team management</span></div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Accounting export</span></div>
       </div>
-      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Get Started</a>
+      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Start free trial</a>
     </div>
 
-    <!-- Équipe -->
+    <!-- TEAM -->
     <div class="price-card">
       <div style="margin-bottom:24px;">
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Équipe</div>
+        <div style="font-size:.68rem;font-weight:700;color:rgba(0,255,136,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Scale</div>
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Team</div>
         <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:4px;" id="team-price">79 <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span></div>
-        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="team-period">/ mois · Sans engagement</div>
-        <div style="margin-top:8px;font-size:.72rem;color:rgba(0,255,136,.6);font-weight:600;">10 utilisateurs inclus · +5 €/utilisateur suppl.</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);" id="team-period">/ month · No commitment</div>
+        <div style="margin-top:8px;font-size:.72rem;color:rgba(0,255,136,.6);font-weight:600;">10 users included · +5€/extra user</div>
       </div>
       <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Tout le plan Pro</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Jusqu'à 10 utilisateurs</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Gestion des équipes</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Rôles & permissions</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;font-weight:700;">✓</span> <span style="font-weight:600;color:#fff;">Export comptable 1 clic</span></div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Support prioritaire</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Everything in Pro</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Team management</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Roles & permissions</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;font-weight:700;">✓</span> <span style="font-weight:600;color:#fff;">1-click accounting export</span></div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Priority support</div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">API & integrations</span></div>
+        <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Dedicated manager</span></div>
       </div>
-      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Get Started</a>
+      <a href="onboarding.html" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Start free trial</a>
     </div>
 
-    <!-- Entreprise -->
+    <!-- ENTERPRISE -->
     <div class="price-card" style="border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.02);">
       <div style="margin-bottom:24px;">
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Entreprise</div>
-        <div style="font-size:2rem;font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:6px;color:#fff;">Sur<br>devis</div>
-        <div style="font-size:.78rem;color:rgba(255,255,255,.35);">Pour les structures +10 personnes</div>
+        <div style="font-size:.68rem;font-weight:700;color:rgba(0,255,136,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Enterprise</div>
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Custom</div>
+        <div style="font-size:2rem;font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:6px;color:#fff;">On<br>request</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.35);">For teams of 10+ people</div>
       </div>
       <div style="display:flex;flex-direction:column;flex:1;margin-bottom:24px;">
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Tout le plan Équipe</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Utilisateurs illimités</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> API & intégrations</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Manager dédié</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> SLA garanti</div>
-        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Formation incluse</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Everything in Team</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Unlimited users</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> API & integrations</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Dedicated manager</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> SLA guarantee</div>
+        <div class="price-feature"><span style="color:#00ff88;flex-shrink:0;">✓</span> Training included</div>
       </div>
-      <a href="mailto:bonjour@seba.app" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Nous contacter →</a>
+      <a href="mailto:hello@seba.app" class="btn-outline-price" style="width:100%;padding:11px;font-size:.88rem;">Contact us →</a>
     </div>
 
   </div>
 
-  <!-- Garanties -->
+  <!-- Guarantees -->
   <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:32px;margin-top:48px;">
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🔒 Données chiffrées AES-256</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">↩️ Annulable à tout moment</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🌍 Conforme RGPD</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">💬 Support humain inclus</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🔒 AES-256 encrypted data</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">↩️ Cancel anytime</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🌍 GDPR compliant</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">💬 Human support included</div>
   </div>
 </section>
 
 <div class="glow-sep" style="margin:0 max(24px,calc((100vw - 1140px)/2));"></div>
 
-<!-- TABLEAU COMPARATIF -->
+<!-- COMPARISON TABLE -->
 <section class="section" style="padding-top:72px;padding-bottom:80px;">
-  <h2 style="font-size:clamp(1.4rem,2.5vw,2rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:40px;text-align:center;">Tout en détail.</h2>
+  <h2 style="font-size:clamp(1.4rem,2.5vw,2rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:40px;text-align:center;">Everything in detail.</h2>
   <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
     <table class="comp-table">
       <thead><tr>
-        <th style="width:35%;">Fonctionnalité</th>
-        <th style="text-align:center;">Découverte</th>
+        <th style="width:32%;">Feature</th>
+        <th style="text-align:center;">Solo</th>
         <th style="text-align:center;color:#00ff88;">Pro</th>
-        <th style="text-align:center;">Équipe</th>
-        <th style="text-align:center;">Entreprise</th>
+        <th style="text-align:center;">Team</th>
+        <th style="text-align:center;">Enterprise</th>
       </tr></thead>
       <tbody>
-        <tr><td>Devis</td><td style="text-align:center;color:rgba(255,255,255,.4);">5/mois</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
-        <tr><td>Clients</td><td style="text-align:center;color:rgba(255,255,255,.4);">15</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
-        <tr><td>Facturation automatique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Signature électronique</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Relances automatiques</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td><strong>Export comptable 1 clic</strong></td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td></tr>
-        <tr><td>Utilisateurs</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:#00ff88;">10 inclus +5€/suppl.</td><td style="text-align:center;color:#00ff88;">Illimités</td></tr>
-        <tr><td>API & intégrations</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
-        <tr><td>Support</td><td style="text-align:center;color:rgba(255,255,255,.4);">Email</td><td style="text-align:center;color:rgba(255,255,255,.7);">Email + Chat</td><td style="text-align:center;color:#00ff88;">Prioritaire</td><td style="text-align:center;color:#00ff88;">Manager dédié</td></tr>
+        <tr><td>Active projects</td><td style="text-align:center;color:rgba(255,255,255,.4);">10 / month</td><td style="text-align:center;color:#00ff88;">Unlimited</td><td style="text-align:center;color:#00ff88;">Unlimited</td><td style="text-align:center;color:#00ff88;">Unlimited</td></tr>
+        <tr><td>Billing & invoicing</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Electronic signature</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Automated follow-ups</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Financial reports & analytics</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td><strong>1-click accounting export</strong></td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td><td style="text-align:center;color:#00ff88;font-weight:700;">✓</td></tr>
+        <tr><td>Users</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:rgba(255,255,255,.4);">1</td><td style="text-align:center;color:#00ff88;">10 included +5€/extra</td><td style="text-align:center;color:#00ff88;">Unlimited</td></tr>
+        <tr><td>API & integrations</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:rgba(255,255,255,.15);">✕</td><td style="text-align:center;color:#00ff88;">✓</td></tr>
+        <tr><td>Support</td><td style="text-align:center;color:rgba(255,255,255,.4);">Email</td><td style="text-align:center;color:rgba(255,255,255,.7);">Email + Chat</td><td style="text-align:center;color:#00ff88;">Priority</td><td style="text-align:center;color:#00ff88;">Dedicated manager</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<!-- FAQ TARIFS -->
+<!-- FAQ PRICING -->
 <section class="section" style="padding-top:20px;padding-bottom:120px;">
   <div style="max-width:640px;margin:0 auto;">
-    <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:32px;text-align:center;">Questions sur les tarifs</h2>
+    <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:32px;text-align:center;">Pricing questions</h2>
     <div style="border-top:1px solid rgba(255,255,255,.06);">
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.06);">
-          <span style="font-size:.95rem;font-weight:600;color:#fff;">Puis-je changer de plan à tout moment ?</span>
+          <span style="font-size:.95rem;font-weight:600;color:#fff;">Can I switch plans at any time?</span>
           <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
-        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Oui, à tout moment. Le changement est immédiat. En cas de passage au plan supérieur, seul le prorata du mois est facturé.</div>
+        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Yes, at any time. Changes take effect immediately. Upgrading only charges the prorated difference for the current month.</div>
       </div>
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.06);">
-          <span style="font-size:.95rem;font-weight:600;color:#fff;">Y a-t-il des frais cachés ou des commissions ?</span>
+          <span style="font-size:.95rem;font-weight:600;color:#fff;">Are there hidden fees or commissions?</span>
           <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
-        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Aucun frais caché. Aucune commission sur vos devis ou factures. Aucun module payant séparé. Le prix affiché est le prix total, point final.</div>
+        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">None. No commission on your quotes or invoices. No separate paid modules. The price shown is the total price, full stop.</div>
       </div>
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;">
-          <span style="font-size:.95rem;font-weight:600;color:#fff;">Comment fonctionne la réduction annuelle ?</span>
+          <span style="font-size:.95rem;font-weight:600;color:#fff;">How does the annual discount work?</span>
           <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
-        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;">En choisissant la facturation annuelle, vous économisez 20% (Pro : 23 €/mois, Équipe : 63 €/mois). Vous êtes facturé une fois par an et pouvez demander un remboursement au prorata dans les 30 premiers jours.</div>
+        <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:#94A3B8;line-height:1.7;">By choosing annual billing you save 20%: Solo at 15€/month, Pro at 23€/month, Team at 63€/month. You're billed once per year and can request a prorated refund within the first 30 days.</div>
       </div>
     </div>
-    <div style="text-align:center;margin-top:28px;"><a href="faq.html" style="font-size:.85rem;color:rgba(0,255,136,.7);font-weight:600;">Voir toutes les questions →</a></div>
+    <div style="text-align:center;margin-top:28px;"><a href="faq.html" style="font-size:.85rem;color:rgba(0,255,136,.7);font-weight:600;">View all questions →</a></div>
   </div>
 </section>
 
 <footer style="border-top:1px solid rgba(255,255,255,.05);padding:28px max(24px,calc((100vw - 1140px)/2));">
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
     <div style="display:flex;align-items:center;gap:8px;"><div class="nav-logo-dot"></div><span style="font-weight:700;letter-spacing:-0.02em;">Seba</span></div>
-    <p style="color:#4B5563;font-size:.78rem;flex:1;text-align:center;">© 2026 Seba — Propulsé pour la performance terrain.</p>
+    <p style="color:#4B5563;font-size:.78rem;flex:1;text-align:center;">© 2026 Seba — Built for business performance.</p>
     <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;"><a href="product.html">Product</a><a href="faq.html">Resources</a><a href="connexion.html">Log in</a></div>
   </div>
 </footer>
 
 <script>
-const prices={monthly:{pro:'29',team:'79'},annual:{pro:'23',team:'63'}};
+const prices={monthly:{solo:'19',pro:'29',team:'79'},annual:{solo:'15',pro:'23',team:'63'}};
 function setBilling(m){
   document.getElementById('btn-monthly').classList.toggle('active',m==='monthly');
   document.getElementById('btn-annual').classList.toggle('active',m==='annual');
   document.getElementById('savings-banner').style.display=m==='annual'?'block':'none';
   const p=prices[m];
-  document.getElementById('pro-price').innerHTML=p.pro+' <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span>';
-  document.getElementById('team-price').innerHTML=p.team+' <span style="font-size:1.5rem;color:rgba(255,255,255,.4);">€</span>';
-  const period=m==='annual'?'/ mois · Facturé annuellement':'/ mois · Sans engagement';
+  document.getElementById('solo-price').innerHTML=p.solo+' <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span>';
+  document.getElementById('pro-price').innerHTML=p.pro+' <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span>';
+  document.getElementById('team-price').innerHTML=p.team+' <span style="font-size:1.3rem;color:rgba(255,255,255,.4);">€</span>';
+  const period=m==='annual'?'/ month · Billed annually':'/ month · No commitment';
+  document.getElementById('solo-period').textContent=period;
   document.getElementById('pro-period').textContent=period;
   document.getElementById('team-period').textContent=period;
 }
