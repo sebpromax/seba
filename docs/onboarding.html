@@ -215,6 +215,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .btn:active{transform:none;}
 .btn-em{background:var(--em);color:#060913;}
 .btn-em:hover{opacity:1;transform:scale(1.02) translateY(-1px);box-shadow:0 0 22px rgba(0,245,160,.38);}
+.btn-em:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none;}
 .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.55);height:44px;padding:0 20px;font-size:.875rem;}
 .btn-ghost:hover{border-color:rgba(255,255,255,.4);color:#fff;opacity:1;}
 .btn-full{width:100%;}
@@ -541,7 +542,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
-        <button class="btn btn-ghost" onclick="goStep(4)" style="opacity:.7;">Passer →</button>
+        <button class="btn btn-em" id="or-continue-btn" onclick="goStep(4)" disabled>Continuer →</button>
       </div>
     </div>
 
@@ -1064,7 +1065,7 @@ const StateRecovery = {
 })();
 
 /* ─── State ─── */
-const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,selectedJobs:[],orientationKey:null,email:'',pwd:'',svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',horaires:null};
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,selectedJobs:[],orientationKey:null,orientationKeys:[],email:'',pwd:'',svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',horaires:null};
 
 /* ─── Smart Suggest ─── */
 const SMART_SUGGEST={
@@ -2205,7 +2206,7 @@ function renderOrientations(){
   const grid=document.getElementById('orientation-grid');
   if(!grid) return;
   grid.innerHTML=list.map(o=>`
-    <div class="orientation-card${S.orientationKey===o.key?' selected':''}" id="or-${o.key}" onclick="pickOrientation('${o.key}')">
+    <div class="orientation-card${S.orientationKeys.includes(o.key)?' selected':''}" id="or-${o.key}" onclick="pickOrientation('${o.key}')">
       <span class="or-icon">${o.icon}</span>
       <div class="or-label">${o.label}</div>
       <div class="or-desc">${o.desc}</div>
@@ -2213,28 +2214,43 @@ function renderOrientations(){
 }
 
 function pickOrientation(key){
-  S.orientationKey=key;
-  AudioUI.playSuccess();
-  document.querySelectorAll('.orientation-card').forEach(c=>c.classList.remove('selected'));
-  const card=document.getElementById('or-'+key);
-  if(card) card.classList.add('selected');
-  // Mise à jour de la spécialité dans le panneau preview
+  AudioUI.playClick();
+  // Toggle dans le tableau multi-select
+  const idx=S.orientationKeys.indexOf(key);
+  if(idx>=0){
+    S.orientationKeys.splice(idx,1);
+    const card=document.getElementById('or-'+key);
+    if(card) card.classList.remove('selected');
+  } else {
+    S.orientationKeys.push(key);
+    const card=document.getElementById('or-'+key);
+    if(card) card.classList.add('selected');
+    AudioUI.playSuccess();
+  }
+  // Sync orientationKey (premier sélectionné) pour compatibilité openSuggest
+  S.orientationKey=S.orientationKeys[0]||null;
+  // Agréger les services de toutes les orientations sélectionnées
   const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
   const orList=ORIENTATION_SERVICES[sector];
-  if(orList&&orList[key]){
-    const spec=orList[key];
-    // Label affiné : "Conciergerie Airbnb" visible dans la niche du preview
-    S.secteurCustom=spec.label;
+  if(orList&&S.orientationKeys.length){
+    const specs=S.orientationKeys.map(k=>orList[k]).filter(Boolean);
+    const allSvcs=[];const seen=new Set();
+    specs.forEach(sp=>sp.services.forEach(sv=>{if(!seen.has(sv)){seen.add(sv);allSvcs.push(sv);}}));
+    S._orientationServices=allSvcs.length?allSvcs:null;
+    S.secteurCustom=specs.map(sp=>sp.label).join(' · ');
     const nicheEl=document.getElementById('pv-niche');
-    if(nicheEl) nicheEl.textContent=spec.label;
-    // Pré-charger les services orientés en mémoire pour buildSvcList
-    S._orientationServices=spec.services;
+    if(nicheEl) nicheEl.textContent=S.secteurCustom;
+    const svcEl=document.getElementById('pv-services');
+    if(svcEl) svcEl.innerHTML=allSvcs.slice(0,6).map(s=>'<div class="pv-service-row">'+s+'</div>').join('');
   } else {
     S._orientationServices=null;
   }
-  // Forcer rebuild des services quand l'utilisateur arrivera à l'étape 6 (Révélation)
   builtForSector=null;
-  setTimeout(()=>goStep(4),420);
+  // Activer/désactiver le bouton Continuer
+  const btn=document.getElementById('or-continue-btn');
+  if(btn) btn.disabled=S.orientationKeys.length===0;
+  // Persister dans localStorage
+  try{const ent=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');ent.orientationKeys=S.orientationKeys;localStorage.setItem('sebaEntreprise',JSON.stringify(ent));}catch(e){}
 }
 
 /* ─── Apothéose — célébration ─── */
