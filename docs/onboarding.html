@@ -1959,6 +1959,42 @@ function updateSectorPreview(job){
   const tagsEl=document.getElementById('pv-tags');if(tagsEl)tagsEl.innerHTML=(job.competences||[]).slice(0,5).map(c=>'<span class="pv-tag">'+c+'</span>').join('');
 }
 
+function updateMultiSectorPreview(){
+  const previewPanel=document.getElementById('ob-preview-panel');
+  const globePanel=document.getElementById('ob-globe-panel');
+  if(!previewPanel) return;
+  if(S.selectedJobs.length===0){
+    previewPanel.classList.add('panel-hidden');
+    if(globePanel) globePanel.style.opacity='1';
+    return;
+  }
+  const jobs=S.selectedJobs.map(sj=>{
+    if(sj.jobId) return JOB_INDEX.find(j=>j.id===sj.jobId)||getDefaultJobForSector(sj.key);
+    return getDefaultJobForSector(sj.key);
+  }).filter(Boolean);
+  const primary=jobs[0];
+  if(!primary) return;
+  const allSvcs=[];const seenSvcs=new Set();
+  jobs.forEach(j=>(j.services||[]).forEach(s=>{if(!seenSvcs.has(s)){seenSvcs.add(s);allSvcs.push(s);}}));
+  const allComps=[];const seenComps=new Set();
+  jobs.forEach(j=>(j.competences||[]).forEach(c=>{if(!seenComps.has(c)){seenComps.add(c);allComps.push(c);}}));
+  const title=jobs.length>1?jobs.map(j=>j.label).join(' · '):primary.label;
+  previewPanel.classList.remove('panel-hidden');
+  if(globePanel) globePanel.style.opacity='0';
+  const skeleton=document.getElementById('pv-skeleton-state');
+  const data=document.getElementById('pv-data-state');
+  if(skeleton) skeleton.style.display='none';
+  if(data) data.style.display='block';
+  const letter=document.getElementById('pv-avatar-letter');if(letter)letter.textContent=primary.label.charAt(0).toUpperCase();
+  const titleEl=document.getElementById('pv-title');if(titleEl)titleEl.textContent=title;
+  const nicheEl=document.getElementById('pv-niche');if(nicheEl)nicheEl.textContent=jobs.length>1?'Profil polyvalent':primary.niche;
+  const ratingEl=document.getElementById('pv-rating');if(ratingEl)ratingEl.textContent='⭐ '+primary.rating+'/5 ('+primary.reviews+' avis)';
+  const descEl=document.getElementById('pv-desc');if(descEl)descEl.textContent=primary.desc;
+  const zoneEl=document.getElementById('pv-zone');if(zoneEl)zoneEl.textContent='📍 '+primary.zone;
+  const svcEl=document.getElementById('pv-services');if(svcEl)svcEl.innerHTML=allSvcs.slice(0,6).map(s=>'<div class="pv-service-row">'+s+'</div>').join('');
+  const tagsEl=document.getElementById('pv-tags');if(tagsEl)tagsEl.innerHTML=allComps.slice(0,8).map(c=>'<span class="pv-tag">'+c+'</span>').join('');
+}
+
 function pickJobFromSearch(job){
   // Add to selectedJobs if not already in (and max 3)
   if(!S.selectedJobs.find(j=>j.jobId===job.id)&&S.selectedJobs.length<3){
@@ -1968,8 +2004,8 @@ function pickJobFromSearch(job){
   S.secteurCustom=job.label;
   S.selectedJobId=job.id;
   AudioUI.playSuccess();
-  updateSectorPreview(job);
   updateJobTags();
+  updateMultiSectorPreview();
   const r=document.getElementById('sector-reaction');
   if(r){document.getElementById('reaction-text').textContent='✓ '+job.label;r.classList.add('show');setTimeout(()=>r.classList.remove('show'),2600);}
   const mod=document.getElementById('search-module');
@@ -2067,12 +2103,11 @@ function selectSector(key,card){
   S.secteur=S.selectedJobs[0]?.key||null;
   S.selectedJobId=S.selectedJobs[0]?.jobId||null;
   updateJobTags();
+  updateMultiSectorPreview();
   const r=document.getElementById('sector-reaction');
   document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
   r.classList.add('show');
   setTimeout(()=>r.classList.remove('show'),2400);
-  const job=getDefaultJobForSector(key);
-  if(job) updateSectorPreview(job);
 }
 
 function updateJobTags(){
@@ -2099,6 +2134,7 @@ function updateJobTags(){
       const card=document.getElementById('sc-'+j.key);
       if(card) card.classList.remove('selected');
       updateJobTags();
+      updateMultiSectorPreview();
     };
     tag.textContent=j.label+' ';tag.appendChild(rm);
     container.appendChild(tag);
