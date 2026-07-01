@@ -56,6 +56,9 @@ a{color:inherit;text-decoration:none;}
 
 .ob-steps-wrap{display:grid;height:100%;}
 .step-container{grid-area:1/1;padding:76px 60px 100px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;position:relative;}
+.step-container.step-dense{overflow-y:auto;padding-right:50px;}
+.step-container.step-dense::-webkit-scrollbar{width:3px;}
+.step-container.step-dense::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
 
 .step-eyebrow{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--em);margin-bottom:16px;display:flex;align-items:center;gap:9px;}
 .step-eyebrow::before{content:'';display:block;width:18px;height:2px;background:var(--em);flex-shrink:0;}
@@ -362,6 +365,32 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .fiscal-mention{margin-top:12px;padding:10px 14px;background:rgba(0,245,160,.05);border:1px solid rgba(0,245,160,.13);border-radius:var(--rs);font-size:.77rem;color:var(--t2);line-height:1.5;display:none;}
 .fiscal-mention.fmshow{display:block;}
 
+/* ── Orientation cards (Aiguillage) ── */
+.orientation-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+.orientation-card{padding:22px 12px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s,transform .15s;user-select:none;}
+.orientation-card:hover{border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.04);transform:translateY(-2px);}
+.orientation-card.selected{border-color:var(--em);background:rgba(0,245,160,.08);}
+.or-icon{font-size:1.6rem;margin-bottom:9px;display:block;}
+.or-label{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;}
+.or-desc{font-size:.7rem;color:var(--t2);line-height:1.4;}
+/* ── Job tags (multi-select Vocation) ── */
+.job-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;min-height:0;}
+.job-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 12px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.3);border-radius:100px;font-size:.78rem;font-weight:600;color:#00F5A0;}
+.job-tag-rm{background:none;border:none;color:rgba(0,245,160,.55);cursor:pointer;padding:0;font-size:.75rem;line-height:1;transition:color .15s;}
+.job-tag-rm:hover{color:#ff7070;}
+.polyvalent-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(0,195,255,.07);border:1px solid rgba(0,195,255,.2);color:rgba(100,220,255,.8);font-size:.76rem;font-weight:600;border-radius:100px;margin-bottom:10px;}
+/* ── Password input ── */
+.pwd-wrap{display:flex;gap:8px;align-items:center;}
+.pwd-wrap input{flex:1;}
+.pwd-toggle{flex-shrink:0;width:48px;height:48px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--rs);color:rgba(255,255,255,.4);cursor:pointer;font-size:.95rem;transition:color .15s,border-color .15s;}
+.pwd-toggle:hover{color:#fff;border-color:rgba(255,255,255,.25);}
+/* ── Célébration Apothéose ── */
+@keyframes celebrate-sweep{0%{box-shadow:0 0 0 0 rgba(0,245,160,0);}35%{box-shadow:0 0 70px 22px rgba(0,245,160,.38),inset 0 0 50px rgba(0,245,160,.1);}100%{box-shadow:0 40px 80px rgba(0,0,0,.45);}}
+.preview-card.celebrate{animation:celebrate-sweep .9s ease both;}
+/* ── Avatar bounce (Baptême) ── */
+@keyframes avatar-bounce{0%,100%{transform:scale(1);}40%{transform:scale(1.18);}70%{transform:scale(.94);}}
+.pv-avatar-inner.bounce{animation:avatar-bounce .45s cubic-bezier(.34,1.56,.64,1) both;}
+
 /* Recovery banner */
 .recovery-banner{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:400;background:#fff;border:1px solid rgba(0,245,160,.3);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 32px rgba(0,0,0,.25);font-family:'Inter',sans-serif;min-width:300px;max-width:440px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;transform:translateX(-50%) translateY(12px);}
 .recovery-banner.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
@@ -418,7 +447,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
         <button class="btn btn-em" style="font-size:1rem;height:52px;padding:0 40px;" onclick="goStep(1)">
           Commencer →
         </button>
-        <p class="w-meta">7 étapes · environ 3 minutes · aucune carte requise</p>
+        <p class="w-meta">8 étapes · environ 3 minutes · aucune carte requise</p>
       </div>
     </div>
 
@@ -450,8 +479,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
           <input type="tel" class="phone-input" id="inp-phone"
             placeholder="06 12 34 56 78" oninput="S.phone=this.value">
         </div>
-        <div class="field-hint">Utilisé pour vos notifications et votre profil client.</div>
-        <div class="err" id="err-phone">Veuillez entrer votre numéro de téléphone.</div>
+        <div class="field-hint">Optionnel — pour vos notifications et votre profil client.</div>
       </div>
 
       <div class="nav-btns">
@@ -466,6 +494,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <h2 class="step-title">Quel type d'activité exercez-vous ?</h2>
       <p class="step-sub">Seba adapte vos devis, relances et indicateurs à votre métier.</p>
 
+      <div class="job-tags" id="job-tags"></div>
       <div class="sr-wrap">
         <div class="sector-reaction" id="sector-reaction">
           <span id="reaction-text">Parfait !</span>
@@ -496,135 +525,15 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
     </div>
 
-    <!-- 3 SOUS-SECTEUR (conciergerie) -->
+    <!-- 3 BAPTÊME — Identité -->
     <div class="step-container" id="step-3">
-      <div class="step-eyebrow">Type de conciergerie</div>
-      <h2 class="step-title">Précisez votre activité</h2>
-      <p class="step-sub">Chaque type a ses propres modèles de services et indicateurs de performance.</p>
-
-      <div class="subsector-list">
-        <div class="subsector-card" id="sub-conciergerie" onclick="pickSub('conciergerie')">
-          <div class="sub-ico" id="sub-ico-conciergerie"></div>
-          <div>
-            <div class="sub-title">Location courte durée</div>
-            <div class="sub-desc">Airbnb, Booking, locations saisonnières. Check-in clients, ménage entre résidents, maintenance.</div>
-          </div>
-        </div>
-        <div class="subsector-card" id="sub-conciergerieCopro" onclick="pickSub('conciergerieCopro')">
-          <div class="sub-ico" id="sub-ico-conciergerieCopro"></div>
-          <div>
-            <div class="sub-title">Copropriété</div>
-            <div class="sub-desc">Entretien des parties communes, gardiennage, maintenance d'immeuble et espaces verts.</div>
-          </div>
-        </div>
-        <div class="subsector-card" id="sub-conciergerieEntreprise" onclick="pickSub('conciergerieEntreprise')">
-          <div class="sub-ico" id="sub-ico-conciergerieEntreprise"></div>
-          <div>
-            <div class="sub-title">Entreprise</div>
-            <div class="sub-desc">Services aux sociétés, bureaux et espaces de coworking. Accueil, courses, coordination.</div>
-          </div>
-        </div>
-      </div>
-      <div class="err" id="err-sub">Veuillez choisir un type de conciergerie.</div>
-
-      <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
-        <button class="btn btn-em"    onclick="validateStep(3)">Continuer →</button>
-      </div>
-    </div>
-
-    <!-- 4 SERVICES -->
-    <div class="step-container" id="step-4">
-      <div class="step-eyebrow">Vos services</div>
-      <h2 class="step-title">Vos prestations</h2>
-      <p class="step-sub">Cochez les services que vous proposez et renseignez vos tarifs. Tout est modifiable plus tard.</p>
-
-      <div class="svc-list" id="svc-list"></div>
-      <button class="btn-add-svc" onclick="addCustomSvc()">+ Ajouter une prestation personnalisée</button>
-      <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation.</div>
-
-      <div class="horaires-section">
-        <div class="horaires-label">Horaires de travail <span class="optional-tag">optionnel</span></div>
-        <div class="preset-btns">
-          <button class="preset-btn" id="preset-classique" onclick="pickHoraires('classique')">📅 Classique<small>Lun–Sam · 8h–18h</small></button>
-          <button class="preset-btn" id="preset-urgence"   onclick="pickHoraires('urgence')">🔔 Urgence<small>7j/7 · 24h/24</small></button>
-          <button class="preset-btn" id="preset-flexible"  onclick="pickHoraires('flexible')">🕐 Flexible<small>Sur RDV</small></button>
-        </div>
-        <div class="horaires-detail" id="horaires-detail" style="display:none;"></div>
-      </div>
-
-      <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="backFrom4()">← Retour</button>
-        <p class="reassurance-hint"><em>✨</em> Tarifs &amp; horaires modifiables à tout moment depuis votre tableau de bord.</p>
-        <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
-      </div>
-    </div>
-
-    <!-- 5 RÉGIME FISCAL -->
-    <div class="step-container" id="step-5">
-      <div class="step-eyebrow">Configuration fiscale</div>
-      <h2 class="step-title">Votre régime fiscal</h2>
-      <p class="step-sub">Seba adapte vos devis, mentions légales et TVA à votre statut juridique.</p>
-
-      <div class="fiscal-grid">
-        <div class="fiscal-card" id="fc-micro" onclick="pickFiscal('micro')">
-          <div class="fiscal-hdr">
-            <div class="fiscal-ico">📝</div>
-            <div>
-              <div class="fiscal-label">Micro-Entreprise</div>
-              <div class="fiscal-desc">Auto-entrepreneur, franchise en base de TVA. Mention légale automatique.</div>
-            </div>
-            <div class="fiscal-check"><span class="fiscal-check-inner">✓</span></div>
-          </div>
-          <div class="fiscal-mention fmshow" id="fm-micro">TVA non applicable, art. 293 B du CGI</div>
-        </div>
-        <div class="fiscal-card" id="fc-societe" onclick="pickFiscal('societe')">
-          <div class="fiscal-hdr">
-            <div class="fiscal-ico">🏢</div>
-            <div>
-              <div class="fiscal-label">Société (SARL, SAS, EURL…)</div>
-              <div class="fiscal-desc">Assujettie à la TVA. Choisissez votre taux applicable.</div>
-            </div>
-            <div class="fiscal-check"><span class="fiscal-check-inner">✓</span></div>
-          </div>
-          <div class="tva-panel" id="tva-panel">
-            <div class="tva-lbl">Taux de TVA applicable</div>
-            <div class="tva-btns">
-              <button class="tva-btn sel" id="tva-20" onclick="event.stopPropagation();pickTva(20,this)">20 %</button>
-              <button class="tva-btn" id="tva-10" onclick="event.stopPropagation();pickTva(10,this)">10 %</button>
-              <button class="tva-btn" id="tva-55" onclick="event.stopPropagation();pickTva(5.5,this)">5,5 %</button>
-            </div>
-          </div>
-        </div>
-        <div class="fiscal-card" id="fc-en-cours" onclick="pickFiscal('en-cours')">
-          <div class="fiscal-hdr">
-            <div class="fiscal-ico">⏳</div>
-            <div>
-              <div class="fiscal-label">En cours de création</div>
-              <div class="fiscal-desc">Pas encore de SIRET. Configurable plus tard dans vos réglages.</div>
-            </div>
-            <div class="fiscal-check"><span class="fiscal-check-inner">✓</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="err" id="err-fiscal">Veuillez choisir votre régime fiscal.</div>
-
-      <div class="nav-btns">
-        <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
-        <p class="reassurance-hint"><em>✨</em> Régime fiscal modifiable à tout moment dans vos réglages.</p>
-        <button class="btn btn-em"    onclick="validateStep(5)">Continuer →</button>
-      </div>
-    </div>
-
-    <!-- 6 IDENTITÉ (ex-5) -->
-    <div class="step-container" id="step-6">
       <div class="step-eyebrow">Votre identité</div>
-      <h2 class="step-title">Donnez un visage à votre entreprise</h2>
-      <p class="step-sub">Ces informations apparaîtront sur vos devis et votre portail client. Prévisualisation en temps réel.</p>
+      <h2 class="step-title">Donnez un nom à votre aventure</h2>
+      <p class="step-sub">Il apparaîtra sur vos devis et votre vitrine publique.</p>
 
       <div class="field">
         <label for="inp-nom">Nom de votre entreprise</label>
-        <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60" oninput="updatePreview()">
+        <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60" oninput="onNomInput(this.value)">
         <div class="err" id="err-nom">Le nom est obligatoire.</div>
       </div>
       <div class="field">
@@ -654,52 +563,93 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       </div>
 
       <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(2,false)">← Retour</button>
+        <button class="btn btn-em"    onclick="validateStep(3)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 4 RÉVÉLATION — Prestations -->
+    <div class="step-container step-dense" id="step-4">
+      <div class="step-eyebrow">Vos prestations</div>
+      <h2 class="step-title">Vos services phares</h2>
+      <p class="step-sub">Pré-remplis selon votre métier. Ajustez les tarifs librement — tout reste modifiable.</p>
+
+      <div class="svc-list" id="svc-list"></div>
+      <button class="btn-add-svc" onclick="addCustomSvc()">+ Ajouter une prestation personnalisée</button>
+      <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation.</div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(3,false)">← Retour</button>
+        <p class="reassurance-hint"><em>✨</em> Configuration rapide. Tarifs et statut juridique modifiables à tout moment depuis votre tableau de bord.</p>
+        <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- 5 AIGUILLAGE — Orientations -->
+    <div class="step-container" id="step-5">
+      <div class="step-eyebrow">Votre fil conducteur</div>
+      <h2 class="step-title">Quel est votre cœur d'activité ?</h2>
+      <p class="step-sub">Affinez votre profil pour des recommandations encore plus pertinentes.</p>
+
+      <div class="orientation-grid" id="orientation-grid"></div>
+      <p style="font-size:.72rem;color:rgba(197,208,230,.3);margin-top:-10px;margin-bottom:24px;text-align:center;">Vous pourrez ajuster cela depuis votre tableau de bord.</p>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
+        <button class="btn btn-ghost" onclick="goStep(6)" style="opacity:.7;">Passer →</button>
+      </div>
+    </div>
+
+    <!-- 6 RYTHME — Horaires -->
+    <div class="step-container step-dense" id="step-6">
+      <div class="step-eyebrow">Vos horaires</div>
+      <h2 class="step-title">Quand êtes-vous disponible ?</h2>
+      <p class="step-sub">Sélectionnez un ou plusieurs profils. Tout est modifiable depuis votre tableau de bord.</p>
+
+      <div class="horaires-section" style="border-top:none;padding-top:0;margin-top:0;">
+        <div class="preset-btns">
+          <button class="preset-btn" id="preset-classique" onclick="pickHoraires('classique')">📅 Classique<small>Lun–Sam · 8h–18h</small></button>
+          <button class="preset-btn" id="preset-urgence"   onclick="pickHoraires('urgence')">🔔 Urgence<small>7j/7 · 24h/24</small></button>
+          <button class="preset-btn" id="preset-flexible"  onclick="pickHoraires('flexible')">🕐 Flexible<small>Sur RDV</small></button>
+        </div>
+        <div class="horaires-detail" id="horaires-detail" style="display:none;"></div>
+      </div>
+
+      <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(5,false)">← Retour</button>
+        <p class="reassurance-hint"><em>✨</em> Configuration rapide. Horaires, tarifs et statut juridique configurables à tout moment dans votre tableau de bord.</p>
         <button class="btn btn-em"    onclick="validateStep(6)">Continuer →</button>
       </div>
     </div>
 
-    <!-- 7 ÉCOSYSTÈME (ex-6) -->
+    <!-- 7 APOTHÉOSE — Compte -->
     <div class="step-container" id="step-7">
-      <div class="step-eyebrow">Votre écosystème</div>
-      <h2 class="step-title">Votre espace est prêt</h2>
-      <p class="step-sub">Voici comment vos clients vous rejoindront et comment vous gérerez les réservations.</p>
+      <div class="step-eyebrow">Dernière étape ✨</div>
+      <h2 class="step-title">Votre espace est prêt à naître</h2>
+      <p class="step-sub">Créez votre accès sécurisé pour déployer votre vitrine professionnelle.</p>
 
-      <div class="eco-list">
-        <div class="eco-card">
-          <div class="eco-ico">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 0 0 5.657 0l2.829-2.828a4 4 0 0 0-5.657-5.657L9.172 5.172"/><path d="M12 8a4 4 0 0 0-5.657 0L3.515 10.828a4 4 0 0 0 5.657 5.657l1.657-1.657"/></svg>
-          </div>
-          <div>
-            <div class="eco-title">Lien privé de votre portail</div>
-            <div class="eco-desc">Un lien unique que vous partagez avec vos clients. Seules les personnes autorisées y accèdent.</div>
-            <div class="eco-badge" id="eco-slug">seba.app/p/votre-entreprise</div>
-          </div>
+      <div class="field">
+        <label for="inp-email">Adresse email professionnelle</label>
+        <input type="email" id="inp-email" placeholder="vous@exemple.fr" maxlength="120" oninput="S.email=this.value">
+        <div class="err" id="err-email">Adresse email invalide.</div>
+      </div>
+      <div class="field">
+        <label for="inp-pwd">Mot de passe</label>
+        <div class="pwd-wrap">
+          <input type="password" id="inp-pwd" placeholder="Minimum 8 caractères" maxlength="128" oninput="S.pwd=this.value">
+          <button class="pwd-toggle" type="button" onclick="togglePwd()" title="Afficher / masquer">👁</button>
         </div>
-        <div class="eco-card">
-          <div class="eco-ico">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg>
-          </div>
-          <div>
-            <div class="eco-title">Code d'activation client</div>
-            <div class="eco-desc">Donnez ce code à vos nouveaux clients pour qu'ils s'inscrivent sur votre portail.</div>
-            <div class="eco-badge" id="eco-code">SEBA-XXXX</div>
-          </div>
-        </div>
-        <div class="eco-card">
-          <div class="eco-ico">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00F5A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><line x1="9" y1="16" x2="11" y2="16"/></svg>
-          </div>
-          <div>
-            <div class="eco-title">Application client</div>
-            <div class="eco-desc">Vos clients réservent, reçoivent leurs devis et paient directement depuis leur téléphone.</div>
-          </div>
-        </div>
+        <div class="err" id="err-pwd">Le mot de passe doit contenir au moins 8 caractères.</div>
+      </div>
+      <p style="font-size:.72rem;color:rgba(197,208,230,.3);margin-top:-8px;margin-bottom:20px;">En créant votre compte, vous acceptez nos <a href="#" style="color:rgba(0,245,160,.45);">conditions d'utilisation</a>.</p>
+
+      <div style="padding:10px 14px;background:rgba(0,245,160,.04);border:1px solid rgba(0,245,160,.12);border-radius:10px;margin-bottom:24px;font-size:.74rem;color:rgba(197,208,230,.5);line-height:1.5;">
+        <em style="color:rgba(0,245,160,.55);font-style:normal;">✨</em> Votre statut juridique (Auto-entrepreneur, SARL…), votre SIRET et vos paramètres fiscaux sont configurables à tout moment depuis votre tableau de bord.
       </div>
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(6,false)">← Retour</button>
-        <button class="btn btn-em"    onclick="goStep(8)">Déployer mon espace →</button>
+        <button class="btn btn-em" onclick="validateStep(7)" style="font-size:1rem;height:52px;padding:0 32px;">🚀 Créer mon espace →</button>
       </div>
     </div>
 
@@ -1056,7 +1006,7 @@ const StateRecovery = {
 })();
 
 /* ─── State ─── */
-const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:'',horaires:null};
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,selectedJobs:[],orientationKey:null,email:'',pwd:'',svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',horaires:null};
 
 /* ─── Smart Suggest ─── */
 const SMART_SUGGEST={
@@ -1086,7 +1036,7 @@ const SMART_SUGGEST={
 
 function openSuggest(fieldId,type){
   closeSuggest();
-  const sector=S.secteur||'autre';
+  const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
   const list=(SMART_SUGGEST[type]||{})[sector]||(SMART_SUGGEST[type]||{})['autre']||[];
   const dd=document.getElementById('suggest-'+fieldId);
   if(!dd) return;
@@ -1186,8 +1136,6 @@ function updateHorairesPreviewBadge(){
   }
   badge.textContent=txt;
 }
-let _isConciergerie=false;
-
 const COUNTRIES=[
   {code:'FR',name:'🇫🇷 France',            devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Paris',          dial:'+33', lat:46.2, lng:2.2},
   {code:'BE',name:'🇧🇪 Belgique',           devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Brussels',       dial:'+32', lat:50.5, lng:4.5},
@@ -1220,7 +1168,23 @@ const COUNTRIES=[
 const COLORS=['#00F5A0','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E0B','#10B981'];
 const SC_REACT={menage:'Parfait pour le ménage !',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Super pour le jardinage !',maintenance:'Très bien pour la maintenance !',pressing:'Parfait pour le pressing !',beaute:'Idéal pour la beauté à domicile !',animaux:"Super pour les soins d'animaux !",demenagement:'Parfait pour le déménagement !',autre:'On adapte tout à votre activité !',conciergerie:'Idéal pour la location courte durée !',conciergerieCopro:'Parfait pour la copropriété !',conciergerieEntreprise:"Très bien pour la conciergerie d'entreprise !"};
 const SECTOR2=[{key:'menage',label:'Ménage & nettoyage'},{key:'__conciergerie__',label:'Conciergerie'},{key:'jardinage',label:'Jardinage'},{key:'maintenance',label:'Maintenance'},{key:'pressing',label:'Pressing'},{key:'beaute',label:'Beauté à domicile'},{key:'animaux',label:'Animaux de compagnie'},{key:'demenagement',label:'Déménagement'},{key:'autre',label:'Autre activité'}];
-const PROG_LABELS={1:'Votre situation',2:'Votre activité',3:'Votre activité',4:'Vos services',5:'Régime fiscal',6:'Votre identité',7:'Votre écosystème',8:'Déploiement',9:'Compte créé'};
+const PROG_LABELS={1:'Votre pays',2:'Votre vocation',3:'Votre identité',4:'Vos prestations',5:'Vos orientations',6:'Vos horaires',7:'Votre compte',8:'Déploiement',9:'Compte créé'};
+
+/* ─── Familles sectorielles (badge polyvalent) ─── */
+const SECTOR_FAMILY={menage:'domestic',jardinage:'domestic',pressing:'domestic',maintenance:'artisan',__conciergerie__:'artisan',conciergerie:'artisan',beaute:'personal',animaux:'personal',demenagement:'logistics',autre:'other'};
+
+/* ─── Orientations par secteur ─── */
+const ORIENTATIONS={
+  menage:[{key:'particuliers',icon:'🏠',label:'Particuliers',desc:'Domicile & appartements'},{key:'pro',icon:'🏢',label:'Pro & Locaux',desc:'Bureaux et commerces'},{key:'chantier',icon:'✨',label:'Fin de chantier',desc:'Nettoyage spécialisé'}],
+  jardinage:[{key:'entretien',icon:'🌿',label:'Entretien régulier',desc:'Tonte, taille, massifs'},{key:'creation',icon:'🎨',label:'Création paysagère',desc:'Jardin sur mesure'},{key:'arbo',icon:'🌳',label:'Arboriculture',desc:'Élagage & abattage'}],
+  maintenance:[{key:'depannage',icon:'🔧',label:'Dépannage urgent',desc:'Intervention rapide 24h'},{key:'installation',icon:'🏗️',label:'Installation neuve',desc:'Pose & mise en service'},{key:'entretien',icon:'🔄',label:'Maintenance contrat',desc:'Suivi régulier & préventif'}],
+  beaute:[{key:'soins',icon:'💆',label:'Soins visage & corps',desc:'Soins & épilation'},{key:'onglerie',icon:'💅',label:'Onglerie & nail art',desc:'Gel, résine, nail art'},{key:'maquillage',icon:'💄',label:'Maquillage & événement',desc:'Cérémonie, mariage'}],
+  animaux:[{key:'chiens',icon:'🐕',label:'Chiens',desc:'Garde & promenades'},{key:'chats',icon:'🐈',label:'Chats & NAC',desc:'Chats, lapins, rongeurs'},{key:'domicile',icon:'🏠',label:'Garde à domicile',desc:'Chez vous, 24h/24'}],
+  pressing:[{key:'costumes',icon:'👔',label:'Chemises & costumes',desc:'Nettoyage courant'},{key:'soiree',icon:'👗',label:'Robes & soirée',desc:'Vêtements délicats'},{key:'cuir',icon:'🧥',label:'Cuir & matières',desc:'Cuir, daim, fourrure'}],
+  __conciergerie__:[{key:'saisonnier',icon:'🏖️',label:'Location saisonnière',desc:'Airbnb, Booking…'},{key:'residentiel',icon:'🏢',label:'Résidentiel premium',desc:'Copropriété & résidences'},{key:'corporate',icon:'🤝',label:'Entreprise & bureau',desc:'Services aux sociétés'}],
+  demenagement:[{key:'residentiel',icon:'🏠',label:'Résidentiel',desc:'Appartements & maisons'},{key:'entreprise',icon:'🏢',label:'Entreprise',desc:'Bureaux & locaux pro'},{key:'fragile',icon:'🎻',label:'Objets fragiles & art',desc:'Piano, œuvres d\'art'}],
+  autre:[{key:'particuliers',icon:'👤',label:'Particuliers',desc:'Clients B2C'},{key:'entreprises',icon:'🏢',label:'Entreprises',desc:'Clients B2B'},{key:'mixte',icon:'🔄',label:'Mixte',desc:'Particuliers & pros'}],
+};
 
 /* ─── Base de données mondiale des métiers ─── */
 const JOB_INDEX=[
@@ -1683,11 +1647,6 @@ function init(){
   ds.addEventListener('change',()=>{S.dialCode=ds.value;});
   buildSearchIndex();
   buildSectorGrid();
-  const bt=window.businessTypes||{};
-  ['conciergerie','conciergerieCopro','conciergerieEntreprise'].forEach(k=>{
-    const el=document.getElementById('sub-ico-'+k);
-    if(el&&bt[k]) el.textContent=bt[k].icon||'·';
-  });
   const sw=document.getElementById('swatches');
   COLORS.forEach((hex,i)=>{
     const d=document.createElement('div');
@@ -1823,9 +1782,16 @@ function updateSectorPreview(job){
 }
 
 function pickJobFromSearch(job){
-  S.secteur='autre';S.secteurCustom=job.label;S.selectedJobId=job.id;
+  // Add to selectedJobs if not already in (and max 3)
+  if(!S.selectedJobs.find(j=>j.jobId===job.id)&&S.selectedJobs.length<3){
+    S.selectedJobs.push({key:'autre',label:job.label,jobId:job.id});
+  }
+  S.secteur=S.selectedJobs[0]?.key||'autre';
+  S.secteurCustom=job.label;
+  S.selectedJobId=job.id;
   AudioUI.playSuccess();
   updateSectorPreview(job);
+  updateJobTags();
   const r=document.getElementById('sector-reaction');
   if(r){document.getElementById('reaction-text').textContent='✓ '+job.label;r.classList.add('show');setTimeout(()=>r.classList.remove('show'),2600);}
   const mod=document.getElementById('search-module');
@@ -1852,8 +1818,10 @@ function closeSearch(){
   mod.classList.remove('active');
   wrap.classList.remove('hidden');
   const inp=document.getElementById('search-inp');if(inp)inp.value='';
-  S.secteur=null;S.secteurCustom=null;
+  // Restaurer l'état visuel des cartes selon selectedJobs
   document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('selected'));
+  S.selectedJobs.forEach(j=>{const c=document.getElementById('sc-'+j.key);if(c)c.classList.add('selected');});
+  if(S.selectedJobs.length===0){S.secteur=null;S.secteurCustom=null;}
 }
 
 function filterSearch(q){
@@ -1902,17 +1870,62 @@ function buildSectorGrid(){
 
 function selectSector(key,card){
   AudioUI.playClick();
-  document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('selected'));
-  card.classList.add('selected');
-  _isConciergerie=(key==='__conciergerie__');
-  if(!_isConciergerie){S.secteur=key;S.selectedJobId=null;}
+  if(key==='autre'){setTimeout(openSearch,300);return;}
+  // Multi-select toggle (max 3)
+  const existing=S.selectedJobs.findIndex(j=>j.key===key);
+  if(existing>=0){
+    S.selectedJobs.splice(existing,1);
+    card.classList.remove('selected');
+  } else {
+    if(S.selectedJobs.length>=3){
+      card.style.animation='none';requestAnimationFrame(()=>{card.style.animation='';});
+      return;
+    }
+    const defaultJob=getDefaultJobForSector(key);
+    S.selectedJobs.push({key,label:SECTOR2.find(s=>s.key===key)?.label||key,jobId:defaultJob?.id||null});
+    card.classList.add('selected');
+  }
+  // Sync S.secteur with first selected
+  S.secteur=S.selectedJobs[0]?.key||null;
+  S.selectedJobId=S.selectedJobs[0]?.jobId||null;
+  updateJobTags();
   const r=document.getElementById('sector-reaction');
   document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
   r.classList.add('show');
   setTimeout(()=>r.classList.remove('show'),2400);
-  if(key==='autre'){setTimeout(openSearch,300); return;}
   const job=getDefaultJobForSector(key);
   if(job) updateSectorPreview(job);
+}
+
+function updateJobTags(){
+  const container=document.getElementById('job-tags');
+  if(!container) return;
+  container.innerHTML='';
+  if(S.selectedJobs.length===0) return;
+  // Polyvalent badge
+  const families=new Set(S.selectedJobs.map(j=>SECTOR_FAMILY[j.key]||'other'));
+  if(families.size>1){
+    const badge=document.createElement('span');
+    badge.className='polyvalent-badge';
+    badge.textContent='💡 Profil polyvalent !';
+    container.appendChild(badge);
+  }
+  S.selectedJobs.forEach(j=>{
+    const tag=document.createElement('span');
+    tag.className='job-tag';
+    const rm=document.createElement('button');
+    rm.className='job-tag-rm';rm.textContent='✕';rm.title='Retirer';
+    rm.onclick=()=>{
+      S.selectedJobs=S.selectedJobs.filter(x=>x.key!==j.key);
+      S.secteur=S.selectedJobs[0]?.key||null;
+      S.selectedJobId=S.selectedJobs[0]?.jobId||null;
+      const card=document.getElementById('sc-'+j.key);
+      if(card) card.classList.remove('selected');
+      updateJobTags();
+    };
+    tag.textContent=j.label+' ';tag.appendChild(rm);
+    container.appendChild(tag);
+  });
 }
 
 function pickSub(key){
@@ -1953,32 +1966,79 @@ function goStep(toIdx,forward){
   updateProgress(toIdx);
   window.scrollTo({top:0,behavior:'instant'});
   if (toIdx > 0) StateRecovery.save(toIdx);
-  if(toIdx===4&&S.secteur&&builtForSector!==S.secteur) buildSvcList(S.secteur);
-  if(toIdx===6) updatePreview();
-  if(toIdx===7){
-    document.getElementById('eco-slug').textContent='seba.app/p/'+(S.slug||slugify(S.publicName||S.nom||'mon-entreprise'));
-    document.getElementById('eco-code').textContent='SEBA-'+Math.random().toString(36).substring(2,6).toUpperCase();
+  // Baptême → show preview panel with current data
+  if(toIdx===3) setTimeout(()=>{updatePreview();},100);
+  // Révélation → build services from selected job(s)
+  if(toIdx===4){
+    const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
+    if(builtForSector!==sector||Object.keys(S.svcs).length===0) buildSvcList(sector);
   }
+  // Aiguillage → render orientation cards
+  if(toIdx===5) renderOrientations();
   if(toIdx===8) setTimeout(startLoading,480);
   if(toIdx===9) fillSummary();
   updatePhone(toIdx);
 }
 
-function backFrom4(){if(_isConciergerie) goStep(3,false);else goStep(2,false);}
+/* ─── Aiguillage — orientations ─── */
+function renderOrientations(){
+  const sector=S.secteur||(S.selectedJobs[0]?.key)||'autre';
+  const list=ORIENTATIONS[sector]||ORIENTATIONS['autre'];
+  const grid=document.getElementById('orientation-grid');
+  if(!grid) return;
+  grid.innerHTML=list.map(o=>`
+    <div class="orientation-card${S.orientationKey===o.key?' selected':''}" id="or-${o.key}" onclick="pickOrientation('${o.key}')">
+      <span class="or-icon">${o.icon}</span>
+      <div class="or-label">${o.label}</div>
+      <div class="or-desc">${o.desc}</div>
+    </div>`).join('');
+}
+
+function pickOrientation(key){
+  S.orientationKey=key;
+  AudioUI.playSuccess();
+  document.querySelectorAll('.orientation-card').forEach(c=>c.classList.remove('selected'));
+  const card=document.getElementById('or-'+key);
+  if(card) card.classList.add('selected');
+  setTimeout(()=>goStep(6),420);
+}
+
+/* ─── Apothéose — célébration ─── */
+function celebratePreview(){
+  const card=document.querySelector('.preview-card');
+  if(card){card.classList.remove('celebrate');void card.offsetWidth;card.classList.add('celebrate');}
+  setTimeout(()=>goStep(8),900);
+}
+
+function togglePwd(){
+  const inp=document.getElementById('inp-pwd');
+  if(!inp) return;
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+/* ─── Baptême — animation avatar au premier keystroke ─── */
+function onNomInput(val){
+  updatePreview();
+  if(val.length===1){
+    const av=document.getElementById('pv-avatar-inner');
+    if(av){av.classList.remove('bounce');void av.offsetWidth;av.classList.add('bounce');setTimeout(()=>av.classList.remove('bounce'),500);}
+  }
+}
 
 function updateProgress(n){
   const prog=document.getElementById('ob-progress');
   const lbl=document.getElementById('prog-label');
   if(n===0){prog.classList.remove('show');return;}
   prog.classList.add('show');
-  const dot=n===1?1:n<=3?2:n===4?3:n===5?4:n===6?5:n===7?6:7;
+  // Steps 1-7 map to dots 1-7; step-8 (loading) → all done
+  const dot=n>=1&&n<=7?n:n>=8?7:1;
   document.querySelectorAll('.prog-dot').forEach((d,i)=>{
     d.classList.remove('done','active');
     if(i<dot-1) d.classList.add('done');
     else if(i===dot-1) d.classList.add('active');
   });
   if(n===9){document.querySelectorAll('.prog-dot').forEach(d=>{d.classList.remove('active');d.classList.add('done');});lbl.textContent='Compte configuré ✓';}
-  else lbl.textContent='Étape '+dot+'/7 — '+(PROG_LABELS[n]||'');
+  else lbl.textContent='Étape '+Math.min(dot,7)+'/7 — '+(PROG_LABELS[n]||'');
 }
 
 /* ─── Validation ─── */
@@ -1989,37 +2049,47 @@ function validateStep(n){
   if(n===1){
     if(!document.getElementById('sel-pays').value){showErr('err-pays');return;}
     hideErr('err-pays');
-    if(!document.getElementById('inp-phone').value.trim()){showErr('err-phone');return;}
-    hideErr('err-phone');
-    S.phone=document.getElementById('inp-phone').value.trim();
+    S.phone=document.getElementById('inp-phone').value.trim(); // optionnel
     AudioUI.playSuccess();
     goStep(2);
   } else if(n===2){
-    if(!S.secteur&&!_isConciergerie){showErr('err-sector');return;}
+    if(S.selectedJobs.length===0&&!S.secteur){showErr('err-sector');return;}
     hideErr('err-sector');
     AudioUI.playSuccess();
-    if(_isConciergerie) goStep(3);
-    else goStep(4);
+    goStep(3);
   } else if(n===3){
-    if(!S.secteur||!['conciergerie','conciergerieCopro','conciergerieEntreprise'].includes(S.secteur)){showErr('err-sub');return;}
-    hideErr('err-sub');AudioUI.playSuccess();goStep(4);
-  } else if(n===4){
-    if(!Object.values(S.svcs).some(s=>s.checked)){showErr('err-svcs');return;}
-    hideErr('err-svcs');AudioUI.playSuccess();goStep(5);
-  } else if(n===5){
-    if(!S.régimeFiscal){showErr('err-fiscal');return;}
-    hideErr('err-fiscal');AudioUI.playSuccess();
-    goStep(6);
-  } else if(n===6){
     const nom=document.getElementById('inp-nom').value.trim();
     if(!nom){showErr('err-nom');return;}
     hideErr('err-nom');
     S.nom=nom;
     S.publicName=document.getElementById('inp-pub').value.trim()||nom;
     S.welcomePhrase=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
+    const descEl=document.getElementById('inp-desc');
+    if(descEl) S.desc=descEl.value.trim();
     S.slug=slugify(S.publicName);
     AudioUI.playSuccess();
-    goStep(7);
+    goStep(4);
+  } else if(n===4){
+    if(!Object.values(S.svcs).some(s=>s.checked)){showErr('err-svcs');return;}
+    hideErr('err-svcs');AudioUI.playSuccess();goStep(5);
+  } else if(n===5){
+    // Aiguillage — toujours valide, pickOrientation auto-avance
+    AudioUI.playSuccess();goStep(6);
+  } else if(n===6){
+    // Rythme — optionnel, toujours valide
+    AudioUI.playSuccess();goStep(7);
+  } else if(n===7){
+    // Apothéose — email + pwd requis
+    const email=document.getElementById('inp-email').value.trim();
+    const pwd=document.getElementById('inp-pwd').value;
+    const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if(!emailOk){showErr('err-email');return;}
+    hideErr('err-email');
+    if(pwd.length<8){showErr('err-pwd');return;}
+    hideErr('err-pwd');
+    S.email=email;S.pwd=pwd;
+    AudioUI.playComplete();
+    celebratePreview();
   }
 }
 
@@ -2056,31 +2126,41 @@ function inferSvcPrice(name,sector){
 
 function buildSvcList(sector){
   const container=document.getElementById('svc-list');
+  if(!container) return;
   container.innerHTML='';S.svcs={};customCount=0;
-  // Résoudre le job prioritaire : job cherché > job par défaut du secteur > businessTypes
-  const searchedJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):null;
-  const defaultJob=getDefaultJobForSector(sector);
-  const job=searchedJob||defaultJob;
-  if(job&&job.services&&job.services.length){
-    // § Règle : 4 prestations phares, pré-cochées, avec prix inférés
-    job.services.slice(0,4).forEach((name,i)=>{
-      const id='svc'+i;
-      const {price,pt}=inferSvcPrice(name,sector);
-      S.svcs[id]={name,price,priceType:pt,checked:true};
-      container.appendChild(makeSvcRow(id,name,true,price,pt));
+  let svcEntries=[];
+  if(S.selectedJobs.length>=2){
+    // Multi-job : 2 prestations phares par job, max 4 au total
+    S.selectedJobs.slice(0,2).forEach(jRef=>{
+      const job=jRef.jobId?JOB_INDEX.find(j=>j.id===jRef.jobId):getDefaultJobForSector(jRef.key);
+      if(job&&job.services) svcEntries.push(...job.services.slice(0,2).map(n=>({name:n,sec:jRef.key})));
     });
+    svcEntries=svcEntries.slice(0,4);
   } else {
-    const sec=(window.businessTypes||{})[sector];
-    if(!sec){builtForSector=sector;updateLiveSvcPreview();return;}
-    sec.services.forEach((svc,i)=>{
-      const id='svc'+i;
-      const name=typeof svc==='string'?svc:svc.name||'';
-      const price=typeof svc==='object'?svc.suggestedPrice||'':'';
-      const pt=typeof svc==='object'?svc.priceType||'forfait':'forfait';
-      S.svcs[id]={name,price,priceType:pt,checked:false};
-      container.appendChild(makeSvcRow(id,name,false,price,pt));
-    });
+    // Single job : 4 prestations du job prioritaire
+    const searchedJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):null;
+    const defaultJob=getDefaultJobForSector(sector);
+    const job=searchedJob||defaultJob;
+    if(job&&job.services&&job.services.length){
+      svcEntries=job.services.slice(0,4).map(n=>({name:n,sec:sector}));
+    } else {
+      const sec=(window.businessTypes||{})[sector];
+      if(!sec){builtForSector=sector;updateLiveSvcPreview();return;}
+      sec.services.slice(0,4).forEach(svc=>{
+        const name=typeof svc==='string'?svc:svc.name||'';
+        const price=typeof svc==='object'?svc.suggestedPrice||'':'';
+        const pt=typeof svc==='object'?svc.priceType||'forfait':'forfait';
+        svcEntries.push({name,sec:sector,price,pt,checked:false});
+      });
+    }
   }
+  svcEntries.forEach((e,i)=>{
+    const id='svc'+i;
+    const {price,pt}=e.price!==undefined?{price:e.price,pt:e.pt||'forfait'}:inferSvcPrice(e.name,e.sec);
+    const checked=e.checked!==false;
+    S.svcs[id]={name:e.name,price,priceType:pt,checked};
+    container.appendChild(makeSvcRow(id,e.name,checked,price,pt));
+  });
   builtForSector=sector;
   updateLiveSvcPreview();
 }
@@ -2113,18 +2193,19 @@ function addCustomSvc(){
 
 function rmSvc(id){delete S.svcs[id];const r=document.getElementById('row-'+id);if(r)r.remove();}
 
-/* ─── Prévisualisation identité (step 6) ─── */
+/* ─── Prévisualisation identité (step 3 — Baptême) ─── */
 function updatePreview(){
-  const nom=document.getElementById('inp-nom').value.trim();
-  const pub=document.getElementById('inp-pub').value.trim()||nom;
-  const wlc=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
+  const nom=(document.getElementById('inp-nom')||{}).value?.trim()||S.nom;
+  const pub=(document.getElementById('inp-pub')||{}).value?.trim()||nom;
+  const wlc=(document.getElementById('inp-welcome')||{}).value?.trim()||'Bienvenue !';
   const descEl=document.getElementById('inp-desc');
-  const desc=descEl?descEl.value.trim():'';
+  const desc=descEl?descEl.value.trim():S.desc;
   S.nom=nom;S.publicName=pub;S.welcomePhrase=wlc;S.desc=desc;S.slug=slugify(pub||nom||'mon-entreprise');
-  const se=document.getElementById('eco-slug');if(se)se.textContent='seba.app/p/'+S.slug;
-  // Mise à jour panneau preview droit (step 6)
+  // Mise à jour panneau preview droit
   const titleEl=document.getElementById('pv-title');if(titleEl&&pub)titleEl.textContent=pub;
-  const nicheEl=document.getElementById('pv-niche');if(nicheEl&&S.secteurCustom)nicheEl.textContent=S.secteurCustom;
+  // Secteur pour la niche
+  const nicheJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):getDefaultJobForSector(S.secteur);
+  const nicheEl=document.getElementById('pv-niche');if(nicheEl){if(S.secteurCustom)nicheEl.textContent=S.secteurCustom;else if(nicheJob)nicheEl.textContent=nicheJob.niche;}
   const pvDesc=document.getElementById('pv-desc');if(pvDesc&&desc)pvDesc.textContent=desc;
   const letterEl=document.getElementById('pv-avatar-letter');if(letterEl&&pub)letterEl.textContent=pub.charAt(0).toUpperCase();
 }
@@ -2146,11 +2227,10 @@ function updatePhone(n){
     if(previewPanel) previewPanel.classList.add('panel-hidden');
   } else {
     if(globeWrap) globeWrap.classList.add('globe-mini');
-    if(S.secteur){
-      const job=getDefaultJobForSector(S.secteur);
-      if(job) updateSectorPreview(job);
-      else if(S.secteurCustom){const m=searchJobs(S.secteurCustom)[0];if(m)updateSectorPreview(m);}
-    }
+    // Afficher le profil du premier job sélectionné
+    const refJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):(S.secteur?getDefaultJobForSector(S.secteur):null);
+    if(refJob) updateSectorPreview(refJob);
+    else if(S.secteurCustom){const m=searchJobs(S.secteurCustom)[0];if(m)updateSectorPreview(m);}
   }
 }
 
@@ -2216,7 +2296,7 @@ function fillSummary(){
 /* ─── Save ─── */
 function saveLS(){
   const services=Object.values(S.svcs).filter(s=>s.checked).map(s=>({name:s.name,price:s.price,priceType:s.priceType}));
-  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,secteurCustom:S.secteurCustom,selectedJobId:S.selectedJobId,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,régimeFiscal:S.régimeFiscal,tvaRate:S.tvaRate,tvaTexte:S.tvaTexte,onboardingCompleted:true}));
+  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,secteurCustom:S.secteurCustom,selectedJobId:S.selectedJobId,selectedJobs:S.selectedJobs,orientationKey:S.orientationKey,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,email:S.email,onboardingCompleted:true}));
 }
 
 function slugify(str){return(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'mon-entreprise';}
