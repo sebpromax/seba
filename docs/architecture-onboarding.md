@@ -78,11 +78,63 @@ Les territoires ultramarins (RE, MQ, GP, GF, NC, PF) et Monaco peuvent ne pas ap
 
 | Step | Contenu gauche | Panneau droit |
 |------|---------------|---------------|
-| 0 | Bienvenue | Globe — État 1 (auto-spin lent) |
-| 1 | Pays + téléphone | Globe — État 2 (centrage pays + lueur verte) |
-| 2–9 | Secteur, services, fiscal, identité… | Phone preview |
+| 0 | Bienvenue | Globe plein format — État 1 (auto-spin lent) |
+| 1 | Pays + téléphone | Globe plein format — État 2 (centrage pays + lueur verte) |
+| 2–9 | Secteur, services, fiscal, identité… | Globe mini (coin sup. droit) + Bento dashboard |
 
-`goStep(n)` gère les transitions CSS (translateX + opacity), `updatePhone(n)` bascule globe ↔ téléphone.
+`goStep(n)` gère les transitions CSS (translateX + opacity), `updatePhone(n)` bascule globe plein ↔ globe mini + bento.
+
+### Globe mini (steps 2+)
+La classe `.globe-mini` est ajoutée sur `#globe-wrap` via CSS transition 850ms cubic-bezier :
+```css
+.globe-wrap.globe-mini { transform: translate(50%,-45%) scale(0.35); opacity: 0.4; pointer-events: none; }
+```
+Le globe D3 continue de tourner et de pointer le pays sélectionné — il ne s'éteint jamais.
+
+---
+
+## Dashboard Bento (`#ob-bento-panel`)
+
+Remplace l'ancien téléphone mockup (supprimé en 0.26). Visible steps 2–9.
+
+### Structure HTML
+```html
+<div class="ob-bento-panel panel-hidden" id="ob-bento-panel">
+  <div class="bento-wrap"> <!-- max-width:320px, animation bento-in -->
+    <div class="bento-eyebrow">Dashboard · [Activité]</div>
+    <div class="bento-grid"> <!-- 2 colonnes -->
+      <div class="bento-card" id="bc-ca">  CA mensuel + barre % </div>
+      <div class="bento-card" id="bc-clients">  Clients actifs </div>
+      <div class="bento-card" id="bc-next">  Prochaine intervention </div>
+      <div class="bento-card" id="bc-sat">  Satisfaction + barre % </div>
+    </div>
+    <div class="bento-terminal">  Terminal JetBrains Mono live </div>
+  </div>
+</div>
+```
+
+### `BENTO_DATA`
+10 entrées (menage / conciergerie / conciergerieCopro / conciergerieEntreprise / jardinage / maintenance / pressing / beaute / animaux / demenagement / autre). Chaque entrée contient `ca, caW, clients, clientsSub, sat, satW, next, nextSub, cmd, body`.
+
+### `populateBento(sector, customLabel?)`
+Met à jour toutes les cartes bento + terminal en temps réel. Appelé depuis :
+- `selectSector(key, card)` — quand l'utilisateur choisit un secteur
+- `pickSub(key)` — quand l'utilisateur précise un sous-type de conciergerie
+- `updatePhone(n≥2)` — à chaque changement d'étape
+
+---
+
+## Module de recherche "Autre activité"
+
+Déclenché quand `key === 'autre'` dans `selectSector`. Séquence :
+1. `selectSector` → `setTimeout(openSearch, 300)`
+2. `openSearch()` : grid fade (`.hidden`), module search (`.active`), focus input
+3. `filterSearch(q)` : filtre live sur `JOBS[]` (90+ métiers), affiche ≤8 résultats + bouton `✨ Créer «…»`
+4. `pickCustomSector(label)` : `S.secteur='autre'`, `S.secteurCustom=label`, `populateBento('autre', label)`
+5. `closeSearch()` : revenir à la grille, reset `S.secteur=null`
+
+### `JOBS[]`
+90+ métiers francophones : bâtiment, numérique, santé, enfance, cuisine, événementiel, beauté, animaux, transport, artisanat, coaching, etc.
 
 ---
 
@@ -94,9 +146,16 @@ Les territoires ultramarins (RE, MQ, GP, GF, NC, PF) et Monaco peuvent ne pas ap
 | `StateRecovery` | Checkpoint localStorage (`seba_onboarding_checkpoint`), TTL 2h, bannière non-bloquante |
 | `SebaStorage` | Wrapper localStorage `seba_*` |
 | `COUNTRIES[]` | 27 pays avec lat, lng, devise, tz, dial |
+| `JOBS[]` | 90+ métiers pour le module de recherche "Autre activité" |
+| `BENTO_DATA` | 10 secteurs × métriques dashboard (CA, clients, satisfaction…) |
 | `GlobeState2(code)` | Globe → État 2 (global, défini par l'IIFE D3) |
 | `GlobeState1()` | Globe → État 1 (global) |
 | `updateGlobe(code)` | Pont entre `onPaysChange()` et `GlobeState2` |
+| `updatePhone(n)` | Globe mini/plein + bento visible/caché selon étape |
+| `populateBento(sector, label?)` | Remplit le bento dashboard avec les données du secteur |
+| `openSearch() / closeSearch()` | Bascule entre la grille secteur et le module de recherche |
+| `filterSearch(q)` | Filtre live les JOBS + affiche "Créer" |
+| `pickCustomSector(label)` | Valide un métier personnalisé |
 | `buildSvcList(sector)` | Génère les lignes de prestations selon le secteur |
 | `startLoading()` | Animation GSAP ring + redirect vers `dashboard.html` |
 | `saveLS()` | Sérialise `S` dans `localStorage['sebaEntreprise']` |
@@ -106,9 +165,10 @@ Les territoires ultramarins (RE, MQ, GP, GF, NC, PF) et Monaco peuvent ne pas ap
 ## Dépendances CDN
 
 ```
-gsap@3.12.5          Animation ring de chargement
-d3@7                 Globe interactif
-topojson-client@3    Décodage données géographiques
-world-atlas@2        Frontières pays (110m, chargé à la volée)
-Inter (Google Fonts) Typographie
+gsap@3.12.5                Animation ring de chargement
+d3@7                       Globe interactif
+topojson-client@3          Décodage données géographiques
+world-atlas@2              Frontières pays (110m, chargé à la volée)
+Inter (Google Fonts)       Typographie principale
+JetBrains Mono (Google)    Police terminal bento dashboard
 ```
