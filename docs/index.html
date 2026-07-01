@@ -359,12 +359,6 @@ tailwind.config = {
             <div style="flex:1;height:20px;background:#fff7ed;border-radius:4px;border-left:3px solid #f97316;"></div>
           </div>
         </div>
-        <!-- Légende couleurs -->
-        <div style="display:flex;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid #E8EEF4;">
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#16a34a;"></div><span style="font-size:.48rem;color:#64748B;">Marc D.</span></div>
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#3b82f6;"></div><span style="font-size:.48rem;color:#64748B;">Sophie R.</span></div>
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#f97316;"></div><span style="font-size:.48rem;color:#64748B;">Julie B.</span></div>
-        </div>
       </div>
       <div class="bento-foot">
         <div class="bento-lbl">Planning &amp; Équipes</div>
@@ -389,23 +383,9 @@ tailwind.config = {
               <div style="font-size:.78rem;font-weight:800;color:#0a0a0c;letter-spacing:-0.02em;">320,00 €</div>
             </div>
           </div>
-          <div style="border-top:1px solid #F1F5F9;padding-top:6px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:.52rem;color:#64748B;">Main d'œuvre (2h)</span>
-              <span style="font-size:.52rem;font-weight:700;color:#0a0a0c;">180,00 €</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:.52rem;color:#64748B;">Fournitures</span>
-              <span style="font-size:.52rem;font-weight:700;color:#0a0a0c;">140,00 €</span>
-            </div>
-          </div>
-          <!-- Signature -->
-          <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:6px 10px;display:flex;align-items:center;gap:6px;">
-            <div style="width:16px;height:16px;border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:.55rem;color:#fff;font-weight:700;">✓</span></div>
-            <div>
-              <div style="font-size:.52rem;font-weight:700;color:#15803d;">Signé électroniquement</div>
-              <div style="font-size:.46rem;color:#86EFAC;">Aujourd'hui, 14:23</div>
-            </div>
+          <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <div style="width:18px;height:18px;border-radius:50%;background:#16a34a;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:700;">✓</div>
+            <span style="font-size:.62rem;font-weight:700;color:#15803d;">Signed</span>
           </div>
         </div>
       </div>
@@ -423,12 +403,10 @@ tailwind.config = {
           <div style="flex:1;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;">
             <div style="font-size:.46rem;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">CA ce mois</div>
             <div style="font-size:.88rem;font-weight:800;color:#0a0a0c;letter-spacing:-0.03em;">14 280€</div>
-            <div style="font-size:.48rem;color:#16a34a;font-weight:700;margin-top:2px;">▲ +12%</div>
           </div>
           <div style="flex:1;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;">
             <div style="font-size:.46rem;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Marge nette</div>
             <div style="font-size:.88rem;font-weight:800;color:#16a34a;letter-spacing:-0.03em;">+34%</div>
-            <div style="font-size:.48rem;color:#16a34a;font-weight:700;margin-top:2px;">Meilleur mois</div>
           </div>
         </div>
         <!-- Graphique barres -->
@@ -439,14 +417,6 @@ tailwind.config = {
           <div style="flex:1;background:#86EFAC;border-radius:3px 3px 0 0;height:68%;"></div>
           <div style="flex:1;background:#4ADE80;border-radius:3px 3px 0 0;height:55%;"></div>
           <div style="flex:1;background:#00ff88;border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 8px rgba(0,255,136,.4);"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:4px;padding-top:6px;border-top:1px solid #E8EEF4;">
-          <span style="font-size:.48rem;color:#CBD5E1;">Fév</span>
-          <span style="font-size:.48rem;color:#CBD5E1;">Mar</span>
-          <span style="font-size:.48rem;color:#CBD5E1;">Avr</span>
-          <span style="font-size:.48rem;color:#CBD5E1;">Mai</span>
-          <span style="font-size:.48rem;color:#CBD5E1;">Jun</span>
-          <span style="font-size:.48rem;color:#16a34a;font-weight:700;">Jul ↑</span>
         </div>
       </div>
       <div class="bento-foot">
@@ -459,50 +429,8 @@ tailwind.config = {
 </section>
 
 
-<!-- ══════════════════════════════════════════
-     TICKER STRIP
-═══════════════════════════════════════════ -->
-<div style="overflow:hidden;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.015);padding:14px 0;">
-  <div class="ticker-track" style="color:rgba(255,255,255,.3);font-size:.78rem;font-weight:500;letter-spacing:.02em;">
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">⚡ De l'intervention à l'encaissement en 60 secondes</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">🌍 Disponible dans 40+ pays</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">🔒 Données chiffrées & sécurisées</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">📄 Devis signés numériquement</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">📅 Planning automatisé</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">⚡ De l'intervention à l'encaissement en 60 secondes</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">🌍 Disponible dans 40+ pays</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">🔒 Données chiffrées & sécurisées</span>
-    <span style="padding:0 40px;border-right:1px solid rgba(255,255,255,.08);">📄 Devis signés numériquement</span>
-    <span style="padding:0 40px;">📅 Planning automatisé</span>
-  </div>
-</div>
 
 
-<!-- ══════════════════════════════════════════
-     STATS
-═══════════════════════════════════════════ -->
-<section class="section" style="padding-top:72px;padding-bottom:72px;">
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:40px;">
-    <div class="stat-item">
-      <div class="stat-val">60<span class="stat-unit">s</span></div>
-      <div class="stat-lbl">Devis envoyé à la fin du chantier</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">–<span class="stat-unit" style="font-size:1.8rem;">78</span><span class="stat-unit">%</span></div>
-      <div class="stat-lbl">De tâches administratives</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">2<span class="stat-unit">×</span></div>
-      <div class="stat-lbl">Plus de clients traités par semaine</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">24<span class="stat-unit">/7</span></div>
-      <div class="stat-lbl">Votre vitrine accessible à vos clients</div>
-    </div>
-  </div>
-</section>
-
-<div class="glow-sep" style="margin:0 max(24px,calc((100vw - 1140px)/2));"></div>
 
 
 <!-- ══════════════════════════════════════════
