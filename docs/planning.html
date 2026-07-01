@@ -113,18 +113,33 @@
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
   <aside class="sidebar">
-    <div class="logo"><span class="logo-dot"></span>Seba</div>
-    <nav class="nav-section">
-      <a href="dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
-      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
-      <div class="nav-item active"><span class="dot"></span>Planning</div>
-      <a href="devis.html"><div class="nav-item"><span class="dot"></span>Devis</div></a>
-      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
-      <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
-      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
+    <div class="logo"><span class="logo-dot" id="logo-dot"></span>Seba</div>
+    <nav>
+      <div class="nav-section" style="margin-bottom:4px;">
+        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Principal</div>
+        <a href="dashboard.html" class="nav-item"><span class="dot"></span>Tableau de bord</a>
+        <a href="clients.html" class="nav-item"><span class="dot"></span>Clients</a>
+        <a href="planning.html" class="nav-item active"><span class="dot"></span>Planning</a>
+        <a href="devis.html" class="nav-item"><span class="dot"></span>Devis</a>
+        <a href="factures.html" class="nav-item"><span class="dot"></span>Factures</a>
+      </div>
+      <div class="nav-section" style="margin-bottom:4px;">
+        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Équipe</div>
+        <a href="equipe.html" class="nav-item"><span class="dot"></span>Équipe</a>
+      </div>
+      <div class="nav-section">
+        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Compte</div>
+        <a href="reglages.html" class="nav-item"><span class="dot"></span>Réglages</a>
+      </div>
     </nav>
-    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
+    <div class="sidebar-footer">Mon entreprise<br>Compte de démonstration</div>
   </aside>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      if(c){document.documentElement.style.setProperty('--emerald',c);const dot=document.getElementById('logo-dot');if(dot)dot.style.background=c;}
+    })();
+  </script>
 
   <main class="main">
     <div class="topbar">
