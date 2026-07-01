@@ -144,6 +144,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .horaire-day input[type="checkbox"]:checked+label{background:rgba(0,245,160,.1);border-color:rgba(0,245,160,.38);color:#00F5A0;}
 .horaires-times{display:flex;align-items:center;gap:10px;font-size:.76rem;color:rgba(197,208,230,.6);}
 .horaires-times input[type="time"]{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:5px 10px;color:#fff;font-size:.8rem;height:36px;width:auto;cursor:pointer;font-family:'Inter',sans-serif;}
+/* ── Rassurance ── */
+.reassurance-hint{font-size:.68rem;color:rgba(197,208,230,.38);line-height:1.45;flex:1;text-align:center;padding:0 6px;}
+.reassurance-hint em{color:rgba(0,245,160,.5);font-style:normal;}
+/* ── Urgences flag ── */
+.urgences-flag{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:rgba(255,120,60,.06);border:1px solid rgba(255,120,60,.18);border-radius:8px;font-size:.74rem;color:rgba(255,180,120,.75);}
+.urgences-flag input[type="checkbox"]{accent-color:#ff7c3c;width:14px;height:14px;cursor:pointer;}
 
 .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
@@ -549,6 +555,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="backFrom4()">← Retour</button>
+        <p class="reassurance-hint"><em>✨</em> Tarifs &amp; horaires modifiables à tout moment depuis votre tableau de bord.</p>
         <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
       </div>
     </div>
@@ -604,6 +611,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(4,false)">← Retour</button>
+        <p class="reassurance-hint"><em>✨</em> Régime fiscal modifiable à tout moment dans vos réglages.</p>
         <button class="btn btn-em"    onclick="validateStep(5)">Continuer →</button>
       </div>
     </div>
@@ -796,7 +804,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
             <div class="pv-stars">
               <span class="pv-badge" id="pv-rating">⭐ 4.9/5</span>
               <span class="pv-badge">⚡ Réponse rapide</span>
-              <span class="pv-badge pv-green">🟢 Disponible</span>
+              <span class="pv-badge pv-green" id="pv-avail">🟢 Disponible</span>
             </div>
           </div>
         </div>
@@ -1048,7 +1056,7 @@ const StateRecovery = {
 })();
 
 /* ─── State ─── */
-const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:'',horaires:null};
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:'',horaires:null};
 
 /* ─── Smart Suggest ─── */
 const SMART_SUGGEST={
@@ -1114,31 +1122,69 @@ const HORAIRES_PRESETS={
 const JOURS_LABELS={lun:'Lun',mar:'Mar',mer:'Mer',jeu:'Jeu',ven:'Ven',sam:'Sam',dim:'Dim'};
 
 function pickHoraires(preset){
+  if(!S.horaires) S.horaires={modes:[],jours:[],debut:'09:00',fin:'18:00',urgences24h:false};
+  const idx=S.horaires.modes.indexOf(preset);
+  if(idx>=0) S.horaires.modes.splice(idx,1);
+  else S.horaires.modes.push(preset);
+  // Reconstruire jours + plage horaire depuis les modes actifs (hors urgence)
+  const joursSet=new Set();
+  let debut='23:59',fin='00:00';
+  S.horaires.urgences24h=S.horaires.modes.includes('urgence');
+  S.horaires.modes.forEach(m=>{
+    if(m==='urgence') return;
+    const p=HORAIRES_PRESETS[m];
+    if(p){p.jours.forEach(j=>joursSet.add(j));if(p.debut<debut)debut=p.debut;if(p.fin>fin)fin=p.fin;}
+  });
+  if(joursSet.size>0){S.horaires.jours=[...joursSet];S.horaires.debut=debut;S.horaires.fin=fin;}
+  else if(S.horaires.modes.every(m=>m==='urgence')){S.horaires.jours=[];S.horaires.debut='00:00';S.horaires.fin='23:59';}
+  // Boutons visuels
   document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
-  const btn=document.getElementById('preset-'+preset);
-  if(btn) btn.classList.add('active');
-  const p=HORAIRES_PRESETS[preset];
-  S.horaires={preset,jours:[...p.jours],debut:p.debut,fin:p.fin};
+  S.horaires.modes.forEach(m=>{const b=document.getElementById('preset-'+m);if(b)b.classList.add('active');});
   renderHorairesDetail();
+  updateHorairesPreviewBadge();
 }
 
 function renderHorairesDetail(){
   const det=document.getElementById('horaires-detail');
-  if(!det||!S.horaires) return;
+  if(!det||!S.horaires||S.horaires.modes.length===0){if(det)det.style.display='none';return;}
   const allDays=['lun','mar','mer','jeu','ven','sam','dim'];
-  const jourBoxes=allDays.map(d=>{
-    const chk=S.horaires.jours.includes(d)?'checked':'';
-    return '<div class="horaire-day"><input type="checkbox" id="hj-'+d+'" '+chk+' onchange="toggleHoraireDay(\''+d+'\')"><label for="hj-'+d+'">'+JOURS_LABELS[d]+'</label></div>';
-  }).join('');
-  det.innerHTML='<div class="horaire-day-grid">'+jourBoxes+'</div><div class="horaires-times"><span>De</span><input type="time" id="h-debut" value="'+S.horaires.debut+'" onchange="S.horaires.debut=this.value"><span>à</span><input type="time" id="h-fin" value="'+S.horaires.fin+'" onchange="S.horaires.fin=this.value"></div>';
-  det.style.display='block';
+  const showGrid=S.horaires.jours.length>0;
+  let html='';
+  if(showGrid){
+    const boxes=allDays.map(d=>{
+      const chk=S.horaires.jours.includes(d)?'checked':'';
+      return '<div class="horaire-day"><input type="checkbox" id="hj-'+d+'" '+chk+' onchange="toggleHoraireDay(\''+d+'\')"><label for="hj-'+d+'">'+JOURS_LABELS[d]+'</label></div>';
+    }).join('');
+    html+='<div class="horaire-day-grid">'+boxes+'</div><div class="horaires-times"><span>De</span><input type="time" id="h-debut" value="'+S.horaires.debut+'" onchange="S.horaires.debut=this.value;updateHorairesPreviewBadge()"><span>à</span><input type="time" id="h-fin" value="'+S.horaires.fin+'" onchange="S.horaires.fin=this.value;updateHorairesPreviewBadge()"></div>';
+  }
+  if(S.horaires.urgences24h){
+    html+='<div class="urgences-flag">🔔 <label style="cursor:default;flex:1;">Disponible pour urgences en dehors des horaires affichés</label><input type="checkbox" checked onchange="S.horaires.urgences24h=this.checked;updateHorairesPreviewBadge()"></div>';
+  }
+  det.innerHTML=html;det.style.display='block';
 }
 
 function toggleHoraireDay(day){
   if(!S.horaires) return;
   const idx=S.horaires.jours.indexOf(day);
-  if(idx>=0) S.horaires.jours.splice(idx,1);
-  else S.horaires.jours.push(day);
+  if(idx>=0) S.horaires.jours.splice(idx,1); else S.horaires.jours.push(day);
+  updateHorairesPreviewBadge();
+}
+
+function updateHorairesPreviewBadge(){
+  const badge=document.getElementById('pv-avail');
+  if(!badge||!S.horaires) return;
+  const h=S.horaires;
+  const hasSchedule=h.jours&&h.jours.length>0;
+  let txt='🟢 Disponible';
+  if(hasSchedule&&h.urgences24h){
+    txt='🟢 Lun–Ven ('+h.debut+'–'+h.fin+') & Urgences 24/7';
+  } else if(h.urgences24h&&!hasSchedule){
+    txt='🟢 Urgences 24h/24 · 7j/7';
+  } else if(hasSchedule){
+    const nbJours=h.jours.length;
+    txt='🟢 Disponible · '+h.debut+'–'+h.fin+(nbJours<7?' · '+nbJours+'j/7':'');
+  }
+  badge.textContent=txt;
 }
 let _isConciergerie=false;
 
@@ -1777,7 +1823,7 @@ function updateSectorPreview(job){
 }
 
 function pickJobFromSearch(job){
-  S.secteur='autre';S.secteurCustom=job.label;
+  S.secteur='autre';S.secteurCustom=job.label;S.selectedJobId=job.id;
   AudioUI.playSuccess();
   updateSectorPreview(job);
   const r=document.getElementById('sector-reaction');
@@ -1859,7 +1905,7 @@ function selectSector(key,card){
   document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('selected'));
   card.classList.add('selected');
   _isConciergerie=(key==='__conciergerie__');
-  if(!_isConciergerie) S.secteur=key;
+  if(!_isConciergerie){S.secteur=key;S.selectedJobId=null;}
   const r=document.getElementById('sector-reaction');
   document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
   r.classList.add('show');
@@ -1995,20 +2041,48 @@ function onPaysChange(){
 /* ─── Services ─── */
 let builtForSector=null,customCount=0;
 
+function inferSvcPrice(name,sector){
+  const s=name.toLowerCase();
+  if(s.includes('urgence')||s.includes('express')) return {price:'120',pt:'forfait'};
+  if(s.includes('installation')||s.includes('réfection')||s.includes('pose ')||s.includes('création')) return {price:'280',pt:'forfait'};
+  if(s.includes('maintenance')||s.includes('entretien ')||s.includes('nettoyage')) return {price:'80',pt:'forfait'};
+  if(s.includes('/ heure')||s.includes('/heure')||s.includes('coaching')||s.includes('formation')||s.includes('consultation')) return {price:'75',pt:'heure'};
+  if(s.includes('audit')||s.includes('bilan')||s.includes('diagnostic')) return {price:'150',pt:'forfait'};
+  if(s.includes('transport')||s.includes('transfert')||s.includes('livraison')) return {price:'40',pt:'forfait'};
+  if(s.includes('soin ')||s.includes('soins ')||s.includes('massage')||s.includes('séance')) return {price:'65',pt:'forfait'};
+  const defaults={menage:'25',jardinage:'40',maintenance:'85',beaute:'60',animaux:'20',demenagement:'120',pressing:'18',__conciergerie__:'90',conciergerie:'90'};
+  return {price:defaults[sector]||'60',pt:'forfait'};
+}
+
 function buildSvcList(sector){
   const container=document.getElementById('svc-list');
   container.innerHTML='';S.svcs={};customCount=0;
-  const sec=(window.businessTypes||{})[sector];
-  if(!sec) return;
-  sec.services.forEach((svc,i)=>{
-    const id='svc'+i;
-    const name=typeof svc==='string'?svc:svc.name||'';
-    const price=typeof svc==='object'?svc.suggestedPrice||'':'';
-    const pt=typeof svc==='object'?svc.priceType||'forfait':'forfait';
-    S.svcs[id]={name,price,priceType:pt,checked:false};
-    container.appendChild(makeSvcRow(id,name,false,price,pt));
-  });
+  // Résoudre le job prioritaire : job cherché > job par défaut du secteur > businessTypes
+  const searchedJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):null;
+  const defaultJob=getDefaultJobForSector(sector);
+  const job=searchedJob||defaultJob;
+  if(job&&job.services&&job.services.length){
+    // § Règle : 4 prestations phares, pré-cochées, avec prix inférés
+    job.services.slice(0,4).forEach((name,i)=>{
+      const id='svc'+i;
+      const {price,pt}=inferSvcPrice(name,sector);
+      S.svcs[id]={name,price,priceType:pt,checked:true};
+      container.appendChild(makeSvcRow(id,name,true,price,pt));
+    });
+  } else {
+    const sec=(window.businessTypes||{})[sector];
+    if(!sec){builtForSector=sector;updateLiveSvcPreview();return;}
+    sec.services.forEach((svc,i)=>{
+      const id='svc'+i;
+      const name=typeof svc==='string'?svc:svc.name||'';
+      const price=typeof svc==='object'?svc.suggestedPrice||'':'';
+      const pt=typeof svc==='object'?svc.priceType||'forfait':'forfait';
+      S.svcs[id]={name,price,priceType:pt,checked:false};
+      container.appendChild(makeSvcRow(id,name,false,price,pt));
+    });
+  }
   builtForSector=sector;
+  updateLiveSvcPreview();
 }
 
 function makeSvcRow(id,name,checked,price,priceType){
@@ -2142,7 +2216,7 @@ function fillSummary(){
 /* ─── Save ─── */
 function saveLS(){
   const services=Object.values(S.svcs).filter(s=>s.checked).map(s=>({name:s.name,price:s.price,priceType:s.priceType}));
-  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,régimeFiscal:S.régimeFiscal,tvaRate:S.tvaRate,tvaTexte:S.tvaTexte,secteurCustom:S.secteurCustom,onboardingCompleted:true}));
+  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,secteurCustom:S.secteurCustom,selectedJobId:S.selectedJobId,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,régimeFiscal:S.régimeFiscal,tvaRate:S.tvaRate,tvaTexte:S.tvaTexte,onboardingCompleted:true}));
 }
 
 function slugify(str){return(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'mon-entreprise';}
