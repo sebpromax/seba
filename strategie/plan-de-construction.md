@@ -145,3 +145,4 @@ qu'un professionnel pourrait vouloir ouvrir existent et sont reliées.
 | 4.2 | **PPSPS & Risques** — Plans de prévention (R4532-68), grille risques INRS F×G, attestations | `prevention-risques.html` | ✅ Fait |
 | 4.3 | **RH & Compagnonnage** — Registre personnel, pointeuse crypto-vérifiée (SHA-256 Web Crypto), paniers/zones DGFiP | `rh-compagnonnage.html` | ✅ Fait |
 | 4.4 | **Crypto Backup** — Journal audit SHA-256 chaîné (Web Crypto API réel), export/import AES-256-GCM PBKDF2 | `crypto-backup.html` | ✅ Fait |
+| G.1 | **Globe D3.js interactif** — Projection orthographique D3 v7 + TopoJSON world-atlas@2, drag libre toutes directions, auto-spin Y, État 2 transition 950ms vers pays sélectionné + lueur #05F29A SVG glow | `onboarding.html` | ✅ Fait |
