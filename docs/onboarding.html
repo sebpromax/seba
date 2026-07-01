@@ -116,6 +116,34 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .svc-rm:hover{color:#ff7070;}
 .btn-add-svc{display:flex;align-items:center;gap:7px;padding:9px 14px;background:transparent;border:1px dashed rgba(255,255,255,.14);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.845rem;color:var(--t2);cursor:pointer;width:100%;transition:border-color .2s,color .2s;}
 .btn-add-svc:hover{border-color:var(--em);color:#fff;}
+/* ── Smart Suggest ── */
+.suggest-field{position:relative;}
+.suggest-wrap{display:flex;align-items:center;gap:8px;}
+.suggest-wrap input,.suggest-wrap textarea{flex:1;}
+.smart-suggest-btn{flex-shrink:0;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.22);color:#00F5A0;border-radius:8px;padding:7px 11px;cursor:pointer;font-size:.82rem;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap;height:48px;}
+.smart-suggest-btn:hover{background:rgba(0,245,160,.18);box-shadow:0 0 14px rgba(0,245,160,.22);}
+.suggest-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#0d1627;border:1px solid rgba(0,245,160,.2);border-radius:12px;z-index:100;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.55);animation:suggest-in .18s ease both;}
+@keyframes suggest-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+.suggest-hdr{padding:8px 14px 5px;font-size:.62rem;font-weight:700;letter-spacing:.1em;color:rgba(0,245,160,.55);text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.05);}
+.suggest-item{display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#c5d0e6;font-size:.82rem;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);font-family:'Inter',sans-serif;}
+.suggest-item:last-child{border-bottom:none;}
+.suggest-item:hover{background:rgba(0,245,160,.08);color:#00F5A0;}
+/* ── Horaires ── */
+.horaires-section{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);}
+.horaires-label{font-size:.73rem;font-weight:600;color:rgba(197,208,230,.55);margin-bottom:10px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.07em;}
+.optional-tag{font-size:.6rem;background:rgba(255,255,255,.06);border-radius:100px;padding:2px 8px;color:rgba(197,208,230,.38);text-transform:none;letter-spacing:0;font-weight:400;}
+.preset-btns{display:flex;gap:8px;}
+.preset-btn{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 8px;color:#c5d0e6;font-size:.76rem;cursor:pointer;transition:all .2s;text-align:center;line-height:1.35;font-family:'Inter',sans-serif;}
+.preset-btn small{font-size:.63rem;opacity:.55;display:block;margin-top:2px;}
+.preset-btn:hover{background:rgba(0,245,160,.07);border-color:rgba(0,245,160,.2);}
+.preset-btn.active{background:rgba(0,245,160,.1);border-color:rgba(0,245,160,.38);color:#00F5A0;}
+.horaires-detail{margin-top:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;animation:suggest-in .2s ease both;}
+.horaire-day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px;}
+.horaire-day input[type="checkbox"]{display:none;}
+.horaire-day label{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 2px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;cursor:pointer;font-size:.62rem;color:rgba(197,208,230,.55);transition:all .18s;gap:1px;user-select:none;}
+.horaire-day input[type="checkbox"]:checked+label{background:rgba(0,245,160,.1);border-color:rgba(0,245,160,.38);color:#00F5A0;}
+.horaires-times{display:flex;align-items:center;gap:10px;font-size:.76rem;color:rgba(197,208,230,.6);}
+.horaires-times input[type="time"]{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:5px 10px;color:#fff;font-size:.8rem;height:36px;width:auto;cursor:pointer;font-family:'Inter',sans-serif;}
 
 .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
@@ -509,6 +537,16 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <button class="btn-add-svc" onclick="addCustomSvc()">+ Ajouter une prestation personnalisée</button>
       <div class="err" id="err-svcs" style="margin-top:10px;">Cochez au moins une prestation.</div>
 
+      <div class="horaires-section">
+        <div class="horaires-label">Horaires de travail <span class="optional-tag">optionnel</span></div>
+        <div class="preset-btns">
+          <button class="preset-btn" id="preset-classique" onclick="pickHoraires('classique')">📅 Classique<small>Lun–Sam · 8h–18h</small></button>
+          <button class="preset-btn" id="preset-urgence"   onclick="pickHoraires('urgence')">🔔 Urgence<small>7j/7 · 24h/24</small></button>
+          <button class="preset-btn" id="preset-flexible"  onclick="pickHoraires('flexible')">🕐 Flexible<small>Sur RDV</small></button>
+        </div>
+        <div class="horaires-detail" id="horaires-detail" style="display:none;"></div>
+      </div>
+
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="backFrom4()">← Retour</button>
         <button class="btn btn-em"    onclick="validateStep(4)">Continuer →</button>
@@ -586,9 +624,21 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
         <input type="text" id="inp-pub" placeholder="ex. Services Martin" maxlength="50" oninput="updatePreview()">
         <div class="field-hint">Par défaut, identique au nom d'entreprise.</div>
       </div>
-      <div class="field">
-        <label for="inp-welcome">Message de bienvenue</label>
-        <input type="text" id="inp-welcome" placeholder="ex. Bienvenue, prenez rendez-vous ici !" maxlength="80" oninput="updatePreview()">
+      <div class="field suggest-field">
+        <label for="inp-welcome">Slogan / Message d'accueil</label>
+        <div class="suggest-wrap">
+          <input type="text" id="inp-welcome" placeholder="ex. Votre maison, propre et sereine." maxlength="80" oninput="updatePreview()">
+          <button class="smart-suggest-btn" onclick="openSuggest('inp-welcome','slogan')" title="✨ Suggestions automatiques">✨</button>
+        </div>
+        <div class="suggest-dropdown" id="suggest-inp-welcome" style="display:none;"></div>
+      </div>
+      <div class="field suggest-field">
+        <label for="inp-desc">Description de votre activité</label>
+        <div class="suggest-wrap" style="align-items:flex-start;">
+          <textarea id="inp-desc" rows="3" placeholder="Décrivez votre activité en quelques phrases…" maxlength="220" oninput="S.desc=this.value;updatePreview()" style="flex:1;resize:none;height:72px;padding:10px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;font-family:'Inter',sans-serif;font-size:.88rem;color:#fff;outline:none;transition:border-color .2s;"></textarea>
+          <button class="smart-suggest-btn" onclick="openSuggest('inp-desc','description')" title="✨ Suggestions automatiques" style="align-self:flex-start;margin-top:0;">✨</button>
+        </div>
+        <div class="suggest-dropdown" id="suggest-inp-desc" style="display:none;"></div>
       </div>
       <div class="field">
         <label>Couleur principale</label>
@@ -998,7 +1048,98 @@ const StateRecovery = {
 })();
 
 /* ─── State ─── */
-const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:''};
+const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',régimeFiscal:null,tvaRate:20,tvaTexte:'',horaires:null};
+
+/* ─── Smart Suggest ─── */
+const SMART_SUGGEST={
+  slogan:{
+    menage:['Votre maison, propre et sereine.','L\'entretien parfait, garanti.','La propreté, à votre service.'],
+    jardinage:['Votre jardin en toutes saisons.','Des espaces verts qui vous ressemblent.','La nature, taillée à vos désirs.'],
+    maintenance:['Dépannage rapide, qualité garantie.','Votre artisan de confiance, toujours là.','L\'excellence technique à votre porte.'],
+    beaute:['La beauté, à domicile.','Votre bien-être, notre passion.','Sublimez-vous, chez vous.'],
+    animaux:['Vos animaux entre de bonnes mains.','Le bonheur de vos compagnons, notre priorité.','Câlins garantis, 7j/7.'],
+    demenagement:['Votre déménagement, sans stress.','Nous déplaçons vos souvenirs avec soin.','Rapide, fiable, assuré.'],
+    pressing:['Impeccable, livré chez vous.','Vos vêtements, toujours parfaits.','La qualité pressing à votre porte.'],
+    __conciergerie__:['Votre bien géré comme un hôtel 5 ⭐.','La tranquillité d\'esprit, tout compris.','Conciergerie premium, sans faille.'],
+    autre:['L\'excellence à votre service.','Votre spécialiste de confiance.','Qualité premium, résultats garantis.'],
+  },
+  description:{
+    menage:['Professionnel du ménage intervenant à domicile et en locaux professionnels. Produits éco-responsables, discrétion garantie.','Agent d\'entretien certifié proposant des prestations de nettoyage régulier et grand ménage sur mesure.','Service de ménage professionnel : régulier, grand ménage, après-chantier. Devis gratuit sous 24h.'],
+    jardinage:['Paysagiste qualifié créant et entretenant jardins et espaces verts. Taille, tonte, aménagement paysager sur mesure.','Jardinier professionnel : entretien régulier, création de jardin et arboriculture. Devis gratuit.','Expert jardinage : entretien, création, taille. Votre jardin impeccable toute l\'année.'],
+    maintenance:['Artisan qualifié pour tous travaux de maintenance, dépannage et petites réparations en bâtiment.','Technicien de maintenance intervenant rapidement pour tous dépannages. Disponible 7j/7 en urgence.','Expert maintenance tous corps d\'état : plomberie, électricité, menuiserie. Devis gratuit.'],
+    beaute:['Esthéticienne professionnelle proposant soins visage, épilation et maquillage à domicile.','Prestataire beauté à domicile : soins, esthétique, bien-être. Produits professionnels haut de gamme.','Spécialiste beauté & bien-être à domicile. Soins personnalisés, disponibilité 6j/7.'],
+    animaux:['Pet sitter professionnel proposant garde, promenades et soins d\'animaux à votre domicile.','Passionné des animaux, je prends soin de vos compagnons avec amour et professionnalisme.','Garde et promenades pour chiens, chats et NAC. Photos & vidéos quotidiennes.'],
+    demenagement:['Déménageur professionnel assurant transport résidentiel et d\'entreprise avec soin et ponctualité.','Équipe de déménageurs qualifiés : déménagement clé en main, emballage, garde-meuble.','Déménagement propre et efficace. Assurance tous risques incluse. Devis gratuit.'],
+    pressing:['Service pressing et repassage professionnel : collecte et livraison à domicile. Toutes matières.','Pressing traditionnel : nettoyage à sec, repassage au kilo et retouches textiles. Express possible.','Vos vêtements nettoyés, repassés et livrés chez vous. Qualité hôtelière garantie.'],
+    __conciergerie__:['Conciergerie premium gérant vos propriétés et locations avec un service hôtelier 5 étoiles.','Service de conciergerie complet : check-in, ménage, maintenance et gestion locative.','Agent de conciergerie discret et réactif pour particuliers et professionnels exigeants.'],
+    autre:['Professionnel qualifié proposant des prestations de qualité adaptées à vos besoins spécifiques.','Expert dans mon domaine, je m\'engage pour des résultats qui vous satisfont pleinement.','Service sur mesure, réactif et fiable. Devis gratuit sous 24h.'],
+  }
+};
+
+function openSuggest(fieldId,type){
+  closeSuggest();
+  const sector=S.secteur||'autre';
+  const list=(SMART_SUGGEST[type]||{})[sector]||(SMART_SUGGEST[type]||{})['autre']||[];
+  const dd=document.getElementById('suggest-'+fieldId);
+  if(!dd) return;
+  dd.innerHTML='<div class="suggest-hdr">✨ Suggestions pour votre activité</div>'+
+    list.map(t=>'<button class="suggest-item" onclick="applySuggest(\''+fieldId+'\',this.getAttribute(\'data-t\'))" data-t="'+t.replace(/'/g,'&#39;')+'">'+t+'</button>').join('');
+  dd.style.display='block';
+  setTimeout(()=>document.addEventListener('click',_suggestOutside,{once:true,capture:true}),10);
+}
+
+function _suggestOutside(e){
+  document.querySelectorAll('.suggest-dropdown').forEach(dd=>{if(!dd.contains(e.target))dd.style.display='none';});
+}
+
+function closeSuggest(){
+  document.querySelectorAll('.suggest-dropdown').forEach(dd=>dd.style.display='none');
+}
+
+function applySuggest(fieldId,text){
+  const el=document.getElementById(fieldId);
+  if(!el) return;
+  el.value=text;
+  el.dispatchEvent(new Event('input'));
+  closeSuggest();
+  el.focus();
+}
+
+/* ─── Horaires ─── */
+const HORAIRES_PRESETS={
+  classique:{label:'Classique',jours:['lun','mar','mer','jeu','ven','sam'],debut:'08:00',fin:'18:00'},
+  urgence:{label:'Urgence 24h',jours:['lun','mar','mer','jeu','ven','sam','dim'],debut:'00:00',fin:'23:59'},
+  flexible:{label:'Sur RDV',jours:['lun','mar','mer','jeu','ven'],debut:'09:00',fin:'17:00'},
+};
+const JOURS_LABELS={lun:'Lun',mar:'Mar',mer:'Mer',jeu:'Jeu',ven:'Ven',sam:'Sam',dim:'Dim'};
+
+function pickHoraires(preset){
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('preset-'+preset);
+  if(btn) btn.classList.add('active');
+  const p=HORAIRES_PRESETS[preset];
+  S.horaires={preset,jours:[...p.jours],debut:p.debut,fin:p.fin};
+  renderHorairesDetail();
+}
+
+function renderHorairesDetail(){
+  const det=document.getElementById('horaires-detail');
+  if(!det||!S.horaires) return;
+  const allDays=['lun','mar','mer','jeu','ven','sam','dim'];
+  const jourBoxes=allDays.map(d=>{
+    const chk=S.horaires.jours.includes(d)?'checked':'';
+    return '<div class="horaire-day"><input type="checkbox" id="hj-'+d+'" '+chk+' onchange="toggleHoraireDay(\''+d+'\')"><label for="hj-'+d+'">'+JOURS_LABELS[d]+'</label></div>';
+  }).join('');
+  det.innerHTML='<div class="horaire-day-grid">'+jourBoxes+'</div><div class="horaires-times"><span>De</span><input type="time" id="h-debut" value="'+S.horaires.debut+'" onchange="S.horaires.debut=this.value"><span>à</span><input type="time" id="h-fin" value="'+S.horaires.fin+'" onchange="S.horaires.fin=this.value"></div>';
+  det.style.display='block';
+}
+
+function toggleHoraireDay(day){
+  if(!S.horaires) return;
+  const idx=S.horaires.jours.indexOf(day);
+  if(idx>=0) S.horaires.jours.splice(idx,1);
+  else S.horaires.jours.push(day);
+}
 let _isConciergerie=false;
 
 const COUNTRIES=[
@@ -1875,7 +2016,7 @@ function makeSvcRow(id,name,checked,price,priceType){
   row.className='svc-row'+(checked?' checked':'');
   row.id='row-'+id;
   const pOpts=['forfait','heure','jour','m2'].map(v=>'<option value="'+v+'"'+(v===priceType?' selected':'')+'>'+(v==='forfait'?'Forfait':v==='heure'?'/ heure':v==='jour'?'/ jour':'/ m²')+'</option>').join('');
-  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+name+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updatePreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select>';
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+name+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select><button class="svc-rm" onclick="rmSvc(\''+id+'\')" title="Supprimer">✕</button>';
   return row;
 }
 
@@ -1883,7 +2024,7 @@ function toggleSvc(id){
   const chk=document.getElementById('chk-'+id);
   S.svcs[id].checked=chk.checked;
   document.getElementById('row-'+id).classList.toggle('checked',chk.checked);
-  updatePreview();
+  updateLiveSvcPreview();
 }
 
 function addCustomSvc(){
@@ -1892,29 +2033,35 @@ function addCustomSvc(){
   const container=document.getElementById('svc-list');
   const row=document.createElement('div');
   row.className='svc-row checked';row.id='row-'+id;
-  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" checked onchange="toggleSvc(\''+id+'\')"><input type="text" style="height:32px;font-size:.8rem;margin:0;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:0 8px;color:#fff;" placeholder="Nom de la prestation" oninput="S.svcs[\''+id+'\'].name=this.value;updatePreview()"></div><input type="number" class="svc-price" placeholder="Prix" min="0" step="0.01" oninput="S.svcs[\''+id+'\'].price=this.value"><select class="svc-type" onchange="S.svcs[\''+id+'\'].priceType=this.value"><option value="forfait">Forfait</option><option value="heure">/ heure</option><option value="jour">/ jour</option><option value="m2">/ m²</option></select><button class="svc-rm" onclick="rmSvc(\''+id+'\')">✕</button>';
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" checked onchange="toggleSvc(\''+id+'\')"><input type="text" style="height:32px;font-size:.8rem;margin:0;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:0 8px;color:#fff;" placeholder="Nom de la prestation" oninput="S.svcs[\''+id+'\'].name=this.value;updateLiveSvcPreview()"></div><input type="number" class="svc-price" placeholder="Prix" min="0" step="0.01" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" onchange="S.svcs[\''+id+'\'].priceType=this.value"><option value="forfait">Forfait</option><option value="heure">/ heure</option><option value="jour">/ jour</option><option value="m2">/ m²</option></select><button class="svc-rm" onclick="rmSvc(\''+id+'\')">✕</button>';
   container.appendChild(row);
 }
 
 function rmSvc(id){delete S.svcs[id];const r=document.getElementById('row-'+id);if(r)r.remove();}
 
-/* ─── Phone preview ─── */
+/* ─── Prévisualisation identité (step 6) ─── */
 function updatePreview(){
   const nom=document.getElementById('inp-nom').value.trim();
   const pub=document.getElementById('inp-pub').value.trim()||nom;
   const wlc=document.getElementById('inp-welcome').value.trim()||'Bienvenue !';
-  S.nom=nom;S.publicName=pub;S.welcomePhrase=wlc;S.slug=slugify(pub||nom||'mon-entreprise');
-  const b=document.getElementById('ph-brand');const w=document.getElementById('ph-welcome');
-  const ct=document.getElementById('ph-cta');const dt=document.getElementById('ph-color-dot');
-  if(b) b.textContent=pub||'Mon entreprise';
-  if(w) w.textContent=wlc;
-  if(ct) ct.style.background=S.couleur;
-  if(dt) dt.style.background=S.couleur;
+  const descEl=document.getElementById('inp-desc');
+  const desc=descEl?descEl.value.trim():'';
+  S.nom=nom;S.publicName=pub;S.welcomePhrase=wlc;S.desc=desc;S.slug=slugify(pub||nom||'mon-entreprise');
+  const se=document.getElementById('eco-slug');if(se)se.textContent='seba.app/p/'+S.slug;
+  // Mise à jour panneau preview droit (step 6)
+  const titleEl=document.getElementById('pv-title');if(titleEl&&pub)titleEl.textContent=pub;
+  const nicheEl=document.getElementById('pv-niche');if(nicheEl&&S.secteurCustom)nicheEl.textContent=S.secteurCustom;
+  const pvDesc=document.getElementById('pv-desc');if(pvDesc&&desc)pvDesc.textContent=desc;
+  const letterEl=document.getElementById('pv-avatar-letter');if(letterEl&&pub)letterEl.textContent=pub.charAt(0).toUpperCase();
+}
+
+/* ─── Mise à jour preview services en temps réel (step 4) ─── */
+function updateLiveSvcPreview(){
   const checked=Object.values(S.svcs).filter(s=>s.checked&&s.name);
-  const el=document.getElementById('ph-svcs');
-  if(el) el.innerHTML=checked.length===0?'<div class="ph-svc-empty">Aucun service sélectionné</div>':checked.slice(0,5).map(s=>'<div class="ph-svc-item"><span>'+s.name+'</span><span class="ph-svc-p">'+(s.price?(S.deviseSymbole||'€')+s.price:'—')+'</span></div>').join('');
-  const se=document.getElementById('eco-slug');
-  if(se) se.textContent='seba.app/p/'+S.slug;
+  const svcEl=document.getElementById('pv-services');
+  if(!svcEl) return;
+  if(checked.length===0){svcEl.innerHTML='<div style="font-size:.75rem;opacity:.35;padding:4px 0;">Cochez vos services…</div>';return;}
+  svcEl.innerHTML=checked.slice(0,4).map(s=>'<div class="pv-service-row">'+s.name+(s.price?' <span style="opacity:.5;font-size:.7rem;margin-left:auto;">'+(S.deviseSymbole||'€')+s.price+'</span>':'')+'</div>').join('');
 }
 
 function updatePhone(n){
@@ -1995,7 +2142,7 @@ function fillSummary(){
 /* ─── Save ─── */
 function saveLS(){
   const services=Object.values(S.svcs).filter(s=>s.checked).map(s=>({name:s.name,price:s.price,priceType:s.priceType}));
-  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,slug:S.slug,régimeFiscal:S.régimeFiscal,tvaRate:S.tvaRate,tvaTexte:S.tvaTexte,onboardingCompleted:true}));
+  localStorage.setItem('sebaEntreprise',JSON.stringify({nom:S.nom,secteur:S.secteur,couleur:S.couleur,services,pays:S.pays,paysCode:S.paysCode,devise:S.devise,deviseSymbole:S.deviseSymbole,langue:S.langue,zone:S.zone,timezone:S.timezone,phone:S.phone,dialCode:S.dialCode,publicName:S.publicName,welcomePhrase:S.welcomePhrase,desc:S.desc,horaires:S.horaires,slug:S.slug,régimeFiscal:S.régimeFiscal,tvaRate:S.tvaRate,tvaTexte:S.tvaTexte,secteurCustom:S.secteurCustom,onboardingCompleted:true}));
 }
 
 function slugify(str){return(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'mon-entreprise';}
