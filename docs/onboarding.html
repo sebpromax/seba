@@ -161,6 +161,10 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .w-title em{font-style:normal;color:var(--em);}
 .w-sub{font-size:1.05rem;color:var(--t2);max-width:340px;line-height:1.65;margin-bottom:44px;}
 .w-meta{font-size:.76rem;color:var(--t3);margin-top:18px;}
+/* Centrage absolu de l'écran d'accueil uniquement */
+#step-0{justify-content:center;padding-top:40px;padding-bottom:40px;}
+#step-0 .welcome-wrap{align-items:center;text-align:center;}
+#step-0 .w-sub{text-align:center;}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:50px;padding:0 28px;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:600;border-radius:var(--rs);cursor:pointer;border:none;transition:opacity .15s,transform .15s;}
 .btn:hover{transform:translateY(-1px);}
@@ -221,8 +225,6 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .globe-dot.ghide{opacity:0;}
 .globe-highlight{position:absolute;width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,rgba(0,245,160,.25) 0%,transparent 70%);transform:translate(-50%,-50%);transition:left .85s cubic-bezier(.34,1.56,.64,1),top .85s cubic-bezier(.34,1.56,.64,1),opacity .4s;z-index:3;pointer-events:none;}
 .globe-highlight.ghide{opacity:0;}
-.globe-label{font-size:.8rem;font-weight:600;color:var(--t2);letter-spacing:.04em;text-align:center;min-height:18px;transition:opacity .3s;}
-
 /* Mouse glow on sector cards */
 .sector-card{position:relative;overflow:hidden;}
 .sc-glow{position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(0,245,160,.14) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);opacity:0;transition:opacity .2s;z-index:0;}
@@ -618,7 +620,6 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
     <div class="globe-wrap" id="globe-wrap">
       <svg id="globe-canvas" width="450" height="450" style="display:block;border-radius:50%;"></svg>
     </div>
-    <div class="globe-label" id="globe-label">Sélectionnez votre pays</div>
   </div>
   <!-- Phone panel -->
   <div class="ob-phone-panel panel-hidden" id="ob-phone-panel">
@@ -1320,9 +1321,6 @@ function pickTva(rate,btn){
 
 /* ─── Globe ─── */
 function updateGlobe(code){
-  const lbl=document.getElementById('globe-label');
-  const c=COUNTRIES.find(x=>x.code===code);
-  if(lbl)lbl.textContent=c?c.name.replace(/^\S+\s/,''):'Sélectionnez votre pays';
   if(typeof GlobeState2==='function')GlobeState2(code);
 }
 

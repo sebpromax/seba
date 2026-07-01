@@ -25,9 +25,27 @@ Orthographique, scale=210, translate=[225,225], clipAngle=90. Rendu dans `<svg i
 6. `<circle fill="url(#spec)">` — reflet spéculaire haut-gauche (cx=34%, cy=27%), luminosité subtile
 7. `<defs><filter id="glow">` — lueur verte `#05F29A`, feGaussianBlur stdDeviation=8
 
+### Globe panel HTML
+```html
+<div class="ob-globe-panel" id="ob-globe-panel">
+  <div class="globe-wrap" id="globe-wrap">
+    <svg id="globe-canvas" width="450" height="450">…</svg>
+  </div>
+</div>
+```
+La légende textuelle `"Sélectionnez votre pays"` a été supprimée — le globe respire seul au centre de son dégradé radial.
+
 ### Fond du panneau droit `.ob-right`
 - `background: radial-gradient(ellipse at 50% 48%, #111a2e 0%, #060913 72%)` — studio dark, sans quadrillage
 - `::before` — halo ambiant 560×560 px, vert `rgba(0,245,160,0.065)`, centré sur le globe
+
+### Step-0 — Centrage absolu du contenu gauche
+Le bloc `.welcome-wrap` (titre, sous-texte, bouton) est centré verticalement **et** horizontalement dans la colonne gauche via des règles CSS ciblées sur `#step-0` uniquement :
+```css
+#step-0 { justify-content: center; padding-top: 40px; padding-bottom: 40px; }
+#step-0 .welcome-wrap { align-items: center; text-align: center; }
+```
+Les étapes suivantes (`#step-1` … `#step-9`) conservent leur alignement gauche natif et le `padding-top: 96px` d'origine.
 
 ### État 1 — Bienvenue (step-0)
 - `autoSpin=true`, rotation Y automatique (+0.08°/frame via RAF, vitesse premium lente)
