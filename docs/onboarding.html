@@ -153,6 +153,11 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 /* ── Urgences flag ── */
 .urgences-flag{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:rgba(255,120,60,.06);border:1px solid rgba(255,120,60,.18);border-radius:8px;font-size:.74rem;color:rgba(255,180,120,.75);}
 .urgences-flag input[type="checkbox"]{accent-color:#ff7c3c;width:14px;height:14px;cursor:pointer;}
+/* ── Double bloc horaires ── */
+@keyframes fade-in-smooth{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+.fade-in-smooth{animation:fade-in-smooth .25s ease both;}
+.horaires-bloc{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.horaires-bloc .horaires-label{margin-bottom:10px;}
 
 .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
@@ -478,18 +483,6 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
         Devise&nbsp;: <strong id="pi-devise">—</strong> &nbsp;·&nbsp; Langue&nbsp;: <strong id="pi-langue">—</strong>
       </div>
 
-      <div class="field">
-        <label>Numéro de téléphone professionnel</label>
-        <div class="phone-group">
-          <div class="dial-wrap">
-            <select class="dial-select" id="sel-dial"></select>
-          </div>
-          <input type="tel" class="phone-input" id="inp-phone"
-            placeholder="06 12 34 56 78" oninput="S.phone=this.value">
-        </div>
-        <div class="field-hint">Optionnel — pour vos notifications et votre profil client.</div>
-      </div>
-
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(0,false)">← Retour</button>
         <button class="btn btn-em"    onclick="validateStep(1)">Continuer →</button>
@@ -599,6 +592,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
       <div class="field">
         <label>Couleur principale</label>
         <div class="swatches" id="swatches"></div>
+        <div class="field-hint" style="margin-top:10px;">✨ Cette couleur sera l'identité visuelle de votre vitrine et de votre tableau de bord. Vous pourrez la modifier à tout moment.</div>
       </div>
 
       <div class="nav-btns">
@@ -628,20 +622,41 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
     <div class="step-container step-dense" id="step-7">
       <div class="step-eyebrow">Vos horaires</div>
       <h2 class="step-title">Quand êtes-vous disponible ?</h2>
-      <p class="step-sub">Sélectionnez un ou plusieurs profils. Tout est modifiable depuis votre tableau de bord.</p>
+      <p class="step-sub">Configurez vos plages classiques et, si besoin, une plage d'urgence distincte.</p>
 
-      <div class="horaires-section" style="border-top:none;padding-top:0;margin-top:0;">
-        <div class="preset-btns">
-          <button class="preset-btn" id="preset-classique" onclick="pickHoraires('classique')">📅 Classique<small>Lun–Sam · 8h–18h</small></button>
-          <button class="preset-btn" id="preset-urgence"   onclick="pickHoraires('urgence')">🔔 Urgence<small>7j/7 · 24h/24</small></button>
-          <button class="preset-btn" id="preset-flexible"  onclick="pickHoraires('flexible')">🕐 Flexible<small>Sur RDV</small></button>
+      <!-- Bloc 1 : Horaires standards -->
+      <div class="horaires-bloc">
+        <div class="horaires-label">🏢 Vos horaires d'ouverture classiques</div>
+        <div class="horaire-day-grid" id="h-days-std"></div>
+        <div class="horaires-times">
+          <span>De</span>
+          <input type="time" id="h-debut" value="08:00" onchange="S.horaires.debut=this.value;updateHorairesPreviewBadge()">
+          <span>à</span>
+          <input type="time" id="h-fin" value="18:00" onchange="S.horaires.fin=this.value;updateHorairesPreviewBadge()">
         </div>
-        <div class="horaires-detail" id="horaires-detail" style="display:none;"></div>
+      </div>
+
+      <!-- Bloc 2 : Urgences (conditionnel) -->
+      <div style="margin-bottom:14px;">
+        <input type="checkbox" id="chk-urgences" onchange="toggleUrgencesBloc(this.checked)" style="accent-color:var(--em);width:14px;height:14px;cursor:pointer;vertical-align:middle;">
+        <label for="chk-urgences" style="cursor:pointer;color:rgba(197,208,230,.65);font-size:.84rem;vertical-align:middle;margin-left:6px;">Activer une plage d'urgence ou de garde spécifique</label>
+      </div>
+      <div id="bloc-horaires-urgences" style="display:none;">
+        <div class="horaires-bloc fade-in-smooth">
+          <div class="horaires-label">🚨 Plage d'urgence indépendante</div>
+          <div class="horaire-day-grid" id="h-days-urg"></div>
+          <div class="horaires-times">
+            <span>De</span>
+            <input type="time" id="h-debut-urg" value="10:00" onchange="S.horaires.urgences.debut=this.value;updateHorairesPreviewBadge()">
+            <span>à</span>
+            <input type="time" id="h-fin-urg" value="19:00" onchange="S.horaires.urgences.fin=this.value;updateHorairesPreviewBadge()">
+          </div>
+        </div>
       </div>
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(6,false)">← Retour</button>
-        <p class="reassurance-hint"><em>✨</em> Configuration rapide. Horaires, tarifs et statut juridique configurables à tout moment dans votre tableau de bord.</p>
+        <p class="reassurance-hint"><em>✨</em> Horaires modifiables à tout moment depuis votre tableau de bord.</p>
         <button class="btn btn-em"    onclick="validateStep(7)">Continuer →</button>
       </div>
     </div>
@@ -658,12 +673,30 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
         <div class="err" id="err-email">Adresse email invalide.</div>
       </div>
       <div class="field">
+        <label>Numéro de téléphone professionnel</label>
+        <div class="phone-group">
+          <div class="dial-wrap">
+            <select class="dial-select" id="sel-dial-s8"></select>
+          </div>
+          <input type="tel" class="phone-input" id="inp-phone-s8" placeholder="06 12 34 56 78" oninput="S.phone=this.value">
+        </div>
+        <div class="field-hint">Pour vos notifications et votre profil client.</div>
+      </div>
+      <div class="field">
         <label for="inp-pwd">Mot de passe</label>
         <div class="pwd-wrap">
-          <input type="password" id="inp-pwd" placeholder="Minimum 8 caractères" maxlength="128" oninput="S.pwd=this.value">
-          <button class="pwd-toggle" type="button" onclick="togglePwd()" title="Afficher / masquer">👁</button>
+          <input type="password" id="inp-pwd" placeholder="Minimum 8 caractères" maxlength="128" oninput="S.pwd=this.value;checkPwdMatch()">
+          <button class="pwd-toggle" type="button" onclick="togglePwd('inp-pwd')" title="Afficher / masquer">👁</button>
         </div>
         <div class="err" id="err-pwd">Le mot de passe doit contenir au moins 8 caractères.</div>
+      </div>
+      <div class="field">
+        <label for="inp-pwd2">Confirmez votre mot de passe</label>
+        <div class="pwd-wrap">
+          <input type="password" id="inp-pwd2" placeholder="Ressaisissez votre mot de passe" maxlength="128" oninput="checkPwdMatch()">
+          <button class="pwd-toggle" type="button" onclick="togglePwd('inp-pwd2')" title="Afficher / masquer">👁</button>
+        </div>
+        <div class="err" id="err-pwd2">Les mots de passe ne correspondent pas.</div>
       </div>
       <p style="font-size:.72rem;color:rgba(197,208,230,.3);margin-top:-8px;margin-bottom:20px;">En créant votre compte, vous acceptez nos <a href="#" style="color:rgba(0,245,160,.45);">conditions d'utilisation</a>.</p>
 
@@ -1155,17 +1188,97 @@ function updateHorairesPreviewBadge(){
   const badge=document.getElementById('pv-avail');
   if(!badge||!S.horaires) return;
   const h=S.horaires;
-  const hasSchedule=h.jours&&h.jours.length>0;
-  let txt='🟢 Disponible';
-  if(hasSchedule&&h.urgences24h){
-    txt='🟢 Lun–Ven ('+h.debut+'–'+h.fin+') & Urgences 24/7';
-  } else if(h.urgences24h&&!hasSchedule){
-    txt='🟢 Urgences 24h/24 · 7j/7';
-  } else if(hasSchedule){
-    const nbJours=h.jours.length;
-    txt='🟢 Disponible · '+h.debut+'–'+h.fin+(nbJours<7?' · '+nbJours+'j/7':'');
+  const jours=h.jours||[];
+  const nb=jours.length;
+  const joursStr=nb===0?'':nb===7?'7j/7':nb<=2?jours.map(j=>JOURS_LABELS[j]||j).join('-'):(nb+'j/7');
+  const plage=(h.debut&&h.fin)?(h.debut+'–'+h.fin):'';
+  let txt='🟢 En ligne';
+  if(joursStr&&plage) txt+=' • '+joursStr+' '+plage;
+  const urg=h.urgences;
+  if(urg&&urg.active&&(urg.jours||[]).length){
+    const un=urg.jours.length;
+    const urgStr=un<=2?urg.jours.map(j=>JOURS_LABELS[j]||j).join('-'):(un+'j/7');
+    const urgPlage=(urg.debut&&urg.fin)?(urg.debut+'–'+urg.fin):'';
+    txt+=' | Urgences '+urgStr+(urgPlage?' '+urgPlage:'');
   }
   badge.textContent=txt;
+}
+
+const JOURS_ORDER=['lun','mar','mer','jeu','ven','sam','dim'];
+
+function initHorairesDoubleBloc(){
+  if(!S.horaires||!S.horaires.jours){
+    S.horaires={jours:['lun','mar','mer','jeu','ven'],debut:'08:00',fin:'18:00',urgences:{active:false,jours:['sam','dim'],debut:'10:00',fin:'19:00'}};
+  }
+  if(!S.horaires.urgences) S.horaires.urgences={active:false,jours:['sam','dim'],debut:'10:00',fin:'19:00'};
+  // Grille standard
+  const sg=document.getElementById('h-days-std');
+  if(sg) sg.innerHTML=JOURS_ORDER.map(d=>'<div class="horaire-day"><input type="checkbox" id="hstd-'+d+'"'+(S.horaires.jours.includes(d)?' checked':'')+' onchange="toggleHoraireDayStd(\''+d+'\')"><label for="hstd-'+d+'">'+JOURS_LABELS[d]+'</label></div>').join('');
+  // Grille urgences
+  const ug=document.getElementById('h-days-urg');
+  if(ug) ug.innerHTML=JOURS_ORDER.map(d=>'<div class="horaire-day"><input type="checkbox" id="hurg-'+d+'"'+((S.horaires.urgences.jours||[]).includes(d)?' checked':'')+' onchange="toggleHoraireDayUrg(\''+d+'\')"><label for="hurg-'+d+'">'+JOURS_LABELS[d]+'</label></div>').join('');
+  // Restore time inputs
+  const hd=document.getElementById('h-debut');if(hd) hd.value=S.horaires.debut||'08:00';
+  const hf=document.getElementById('h-fin');if(hf) hf.value=S.horaires.fin||'18:00';
+  const hdu=document.getElementById('h-debut-urg');if(hdu) hdu.value=S.horaires.urgences.debut||'10:00';
+  const hfu=document.getElementById('h-fin-urg');if(hfu) hfu.value=S.horaires.urgences.fin||'19:00';
+  // Restore urgences toggle
+  const chk=document.getElementById('chk-urgences');
+  const bloc=document.getElementById('bloc-horaires-urgences');
+  if(chk&&bloc){chk.checked=S.horaires.urgences.active;bloc.style.display=S.horaires.urgences.active?'block':'none';}
+  updateHorairesPreviewBadge();
+}
+
+function toggleUrgencesBloc(active){
+  if(!S.horaires) return;
+  if(!S.horaires.urgences) S.horaires.urgences={active:false,jours:['sam','dim'],debut:'10:00',fin:'19:00'};
+  S.horaires.urgences.active=active;
+  const bloc=document.getElementById('bloc-horaires-urgences');
+  if(bloc) bloc.style.display=active?'block':'none';
+  updateHorairesPreviewBadge();
+}
+
+function toggleHoraireDayStd(day){
+  if(!S.horaires) return;
+  const idx=S.horaires.jours.indexOf(day);
+  if(idx>=0) S.horaires.jours.splice(idx,1); else S.horaires.jours.push(day);
+  updateHorairesPreviewBadge();
+}
+
+function toggleHoraireDayUrg(day){
+  if(!S.horaires||!S.horaires.urgences) return;
+  const arr=S.horaires.urgences.jours||[];
+  const idx=arr.indexOf(day);
+  if(idx>=0) arr.splice(idx,1); else arr.push(day);
+  S.horaires.urgences.jours=arr;
+  updateHorairesPreviewBadge();
+}
+
+function checkPwdMatch(){
+  const pwd=(document.getElementById('inp-pwd')||{}).value||'';
+  const pwd2=(document.getElementById('inp-pwd2')||{}).value||'';
+  if(pwd2&&pwd&&pwd!==pwd2) showErr('err-pwd2');
+  else hideErr('err-pwd2');
+}
+
+function applyCouleur(hex){
+  document.documentElement.style.setProperty('--em',hex);
+  localStorage.setItem('user_theme_color',hex);
+  const ring=document.querySelector('.pv-avatar-ring');if(ring) ring.style.borderColor=hex+'73';
+  const cert=document.querySelector('.pv-certified');if(cert) cert.style.background=hex;
+  const cta=document.querySelector('.ph-app-cta');if(cta) cta.style.background=hex;
+  const clr=document.querySelector('.ph-app-hdr-color');if(clr) clr.style.background=hex;
+}
+
+function initStep8Dial(){
+  const ds8=document.getElementById('sel-dial-s8');
+  if(!ds8) return;
+  if(ds8.options.length===0){
+    const seen=new Set();
+    COUNTRIES.forEach(c=>{if(!seen.has(c.dial)){const o=document.createElement('option');o.value=c.dial;o.textContent=c.dial;ds8.appendChild(o);seen.add(c.dial);}});
+    ds8.addEventListener('change',()=>{S.dialCode=ds8.value;});
+  }
+  if(S.dialCode) ds8.value=S.dialCode;
 }
 const COUNTRIES=[
   {code:'FR',name:'🇫🇷 France',            devise:'Euro',            sym:'€',   lang:'fr',zone:'EU', tz:'Europe/Paris',          dial:'+33', lat:46.2, lng:2.2},
@@ -1690,10 +1803,12 @@ function init(){
   const sel=document.getElementById('sel-pays');
   COUNTRIES.forEach(c=>{const o=document.createElement('option');o.value=c.code;o.textContent=c.name;sel.appendChild(o);});
   const ds=document.getElementById('sel-dial');
-  const seen=new Set();
-  COUNTRIES.forEach(c=>{if(!seen.has(c.dial)){const o=document.createElement('option');o.value=c.dial;o.textContent=c.dial;ds.appendChild(o);seen.add(c.dial);}});
-  ds.value='+33';
-  ds.addEventListener('change',()=>{S.dialCode=ds.value;});
+  if(ds){
+    const seen=new Set();
+    COUNTRIES.forEach(c=>{if(!seen.has(c.dial)){const o=document.createElement('option');o.value=c.dial;o.textContent=c.dial;ds.appendChild(o);seen.add(c.dial);}});
+    ds.value='+33';
+    ds.addEventListener('change',()=>{S.dialCode=ds.value;});
+  }
   buildSearchIndex();
   buildSectorGrid();
   const sw=document.getElementById('swatches');
@@ -1701,7 +1816,7 @@ function init(){
     const d=document.createElement('div');
     d.className='swatch'+(i===0?' sel':'');
     d.style.background=hex;
-    d.addEventListener('click',()=>{document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));d.classList.add('sel');S.couleur=hex;updatePreview();});
+    d.addEventListener('click',()=>{document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));d.classList.add('sel');S.couleur=hex;applyCouleur(hex);updatePreview();});
     sw.appendChild(d);
   });
   tickClock(); setInterval(tickClock,30000);
@@ -2026,6 +2141,8 @@ function goStep(toIdx,forward){
     const hasOrSvcs=!!(S._orientationServices&&S._orientationServices.length);
     if(builtForSector!==sector||Object.keys(S.svcs).length===0||hasOrSvcs) buildSvcList(sector);
   }
+  if(toIdx===7) setTimeout(()=>initHorairesDoubleBloc(),120);
+  if(toIdx===8) setTimeout(()=>initStep8Dial(),80);
   if(toIdx===9) setTimeout(startLoading,480);
   if(toIdx===10) fillSummary();
   updatePhone(toIdx);
@@ -2084,8 +2201,8 @@ function backFromBapteme(){
   else goStep(2,false);
 }
 
-function togglePwd(){
-  const inp=document.getElementById('inp-pwd');
+function togglePwd(id){
+  const inp=document.getElementById(id||'inp-pwd');
   if(!inp) return;
   inp.type=inp.type==='password'?'text':'password';
 }
@@ -2124,7 +2241,6 @@ function validateStep(n){
   if(n===1){
     if(!document.getElementById('sel-pays').value){showErr('err-pays');return;}
     hideErr('err-pays');
-    S.phone=document.getElementById('inp-phone').value.trim();
     AudioUI.playSuccess();
     goStep(2);
   } else if(n===2){
@@ -2159,15 +2275,19 @@ function validateStep(n){
     // Rythme — optionnel, toujours valide
     AudioUI.playSuccess();goStep(8);
   } else if(n===8){
-    // Apothéose — email + pwd requis
+    // Apothéose — email + phone + pwd + confirm requis
     const email=document.getElementById('inp-email').value.trim();
     const pwd=document.getElementById('inp-pwd').value;
+    const pwd2=(document.getElementById('inp-pwd2')||{}).value||'';
     const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if(!emailOk){showErr('err-email');return;}
     hideErr('err-email');
     if(pwd.length<8){showErr('err-pwd');return;}
     hideErr('err-pwd');
+    if(pwd!==pwd2){showErr('err-pwd2');return;}
+    hideErr('err-pwd2');
     S.email=email;S.pwd=pwd;
+    S.phone=(document.getElementById('inp-phone-s8')||{}).value?.trim()||S.phone||'';
     AudioUI.playComplete();
     celebratePreview();
   }
@@ -2252,7 +2372,9 @@ function makeSvcRow(id,name,checked,price,priceType){
   const row=document.createElement('div');
   row.className='svc-row'+(checked?' checked':'');
   row.id='row-'+id;
-  const pOpts=['forfait','heure','jour','m2'].map(v=>'<option value="'+v+'"'+(v===priceType?' selected':'')+'>'+(v==='forfait'?'Forfait':v==='heure'?'/ heure':v==='jour'?'/ jour':'/ m²')+'</option>').join('');
+  const isConc=S.secteur==='conciergerie'||(S.selectedJobs[0]?.key==='conciergerie');
+  const concOpts=isConc?'<option value="percent">% des revenus</option><option value="sejour">par séjour</option>':'';
+  const pOpts=['forfait','heure','jour','m2'].map(v=>'<option value="'+v+'"'+(v===priceType?' selected':'')+'>'+(v==='forfait'?'Unique (Prix fixe)':v==='heure'?'/ heure':v==='jour'?'/ jour':'/ m²')+'</option>').join('')+concOpts;
   row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+name+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select><button class="svc-rm" onclick="rmSvc(\''+id+'\')" title="Supprimer">✕</button>';
   return row;
 }
@@ -2270,7 +2392,7 @@ function addCustomSvc(){
   const container=document.getElementById('svc-list');
   const row=document.createElement('div');
   row.className='svc-row checked';row.id='row-'+id;
-  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" checked onchange="toggleSvc(\''+id+'\')"><input type="text" style="height:32px;font-size:.8rem;margin:0;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:0 8px;color:#fff;" placeholder="Nom de la prestation" oninput="S.svcs[\''+id+'\'].name=this.value;updateLiveSvcPreview()"></div><input type="number" class="svc-price" placeholder="Prix" min="0" step="0.01" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" onchange="S.svcs[\''+id+'\'].priceType=this.value"><option value="forfait">Forfait</option><option value="heure">/ heure</option><option value="jour">/ jour</option><option value="m2">/ m²</option></select><button class="svc-rm" onclick="rmSvc(\''+id+'\')">✕</button>';
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" checked onchange="toggleSvc(\''+id+'\')"><input type="text" style="height:32px;font-size:.8rem;margin:0;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:0 8px;color:#fff;" placeholder="Nom de la prestation" oninput="S.svcs[\''+id+'\'].name=this.value;updateLiveSvcPreview()"></div><input type="number" class="svc-price" placeholder="Prix" min="0" step="0.01" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" onchange="S.svcs[\''+id+'\'].priceType=this.value"><option value="forfait">Unique (Prix fixe)</option><option value="heure">/ heure</option><option value="jour">/ jour</option><option value="m2">/ m²</option></select><button class="svc-rm" onclick="rmSvc(\''+id+'\')">✕</button>';
   container.appendChild(row);
 }
 
