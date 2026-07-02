@@ -225,10 +225,42 @@ body.h-full  { min-height: 100%; }
 .focus\:border-emerald-500:focus { border-color: var(--emerald-500); outline: none; }
 .focus\:border-rose-500:focus    { border-color: var(--rose-500); outline: none; }
 
-/* ── Fluid Layout ───────────────────────────────────────────────────────────── */
-.fluid-wrap    { width: 90%; max-width: 600px; margin-left: auto; margin-right: auto; }
-.container     { width: 90%; max-width: 600px; margin-left: auto; margin-right: auto; }
+/* ── Adaptive Wrapper ───────────────────────────────────────────────────────── */
+.fluid-wrap,
+.container {
+  width: 90%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
 
+/* Boutons bas de page — disposition côte à côte par défaut */
+.button-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Mobile < 600px ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .container,
+  .fluid-wrap {
+    width: 100%;
+    padding: 10px;
+  }
+
+  /* Force le bouton Continuer/Retour en bas sans chevaucher le contenu */
+  .button-container {
+    position: sticky;
+    bottom: 20px;
+    margin-top: auto;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .button-container > * { width: 100%; justify-content: center; }
+}
+
+/* ── Prototype pages — responsive ───────────────────────────────────────────── */
 @media (max-width: 768px) {
   .max-w-6xl { max-width: 100%; }
   main.max-w-6xl { padding-left: 16px; padding-right: 16px; }

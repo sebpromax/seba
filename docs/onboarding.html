@@ -332,8 +332,36 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .globe-wrap{transition:transform .85s cubic-bezier(.16,1,.3,1),opacity .85s cubic-bezier(.16,1,.3,1);}
 .globe-wrap.globe-mini{transform:translate(50%,-45%) scale(0.35);opacity:0.4;pointer-events:none;}
 
-@media(max-width:880px){.ob-layout{grid-template-columns:1fr;}.ob-right{display:none;}.step-container{padding:84px 32px calc(88px + env(safe-area-inset-bottom,0px));height:calc(100dvh - 60px);height:calc(100vh - 60px);}.ob-progress{left:32px;right:32px;}.nav-btns{left:32px;right:32px;}#step-8 .nav-btns{left:32px;right:32px;}}
-@media(max-width:480px){.step-container{padding:80px 22px calc(88px + env(safe-area-inset-bottom,0px));}.ob-progress{left:22px;right:22px;}.nav-btns{left:22px;right:22px;}#step-8 .nav-btns{left:22px;right:22px;}.sector-grid{grid-template-columns:repeat(2,1fr);}.svc-row{grid-template-columns:1fr 68px 78px 20px;}}
+@media(max-width:880px){
+  .ob-layout{grid-template-columns:1fr;}
+  .ob-right{display:none;}
+  .step-container{padding:84px 32px calc(88px + env(safe-area-inset-bottom,0px));height:calc(100dvh - 60px);height:calc(100vh - 60px);}
+  .ob-progress{left:32px;right:32px;}
+  .nav-btns{left:32px;right:32px;}
+  #step-8 .nav-btns{left:32px;right:32px;}
+}
+@media(max-width:600px){
+  /* Retour + Continuer → empilement vertical, pleine largeur */
+  .nav-btns{
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  .nav-btns .btn{width:100%;justify-content:center;}
+  /* Continuer en premier (action principale) */
+  .nav-btns .btn-em{order:-1;}
+  /* Le texte de rassurance sur 3 lignes passe entre les boutons */
+  .nav-btns .reassurance-hint{order:0;font-size:.65rem;text-align:center;padding:0;}
+}
+@media(max-width:480px){
+  .step-container{padding:80px 20px calc(88px + env(safe-area-inset-bottom,0px));}
+  .ob-progress{left:20px;right:20px;}
+  .nav-btns{left:20px;right:20px;}
+  #step-8 .nav-btns{left:20px;right:20px;}
+  .sector-grid{grid-template-columns:repeat(2,1fr);}
+  .svc-row{grid-template-columns:1fr 68px 78px 20px;}
+}
 
 /* ── Step-8 : layout compact, zéro scroll ── */
 #step-8{overflow:hidden;padding-bottom:120px;}
