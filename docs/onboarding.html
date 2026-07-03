@@ -360,8 +360,11 @@ body.phone-mode #step-0 .btn{
 .globe-wrap.globe-mini{transform:translate(50%,-45%) scale(0.35);opacity:0.4;pointer-events:none;}
 
 @media(max-width:880px){
-  body.phone-mode .ob-layout{grid-template-columns:1fr;}
-  body.phone-mode .ob-right{display:none !important;}
+  /* Force phone-like layout for narrow viewports regardless of UA detection
+     This ensures the onboarding layout works in emulators and small windows */
+  .ob-layout{grid-template-columns:1fr;}
+  .ob-right{display:none !important;}
+  .globe-wrap{display:none !important;}
   body.phone-mode .step-container{
     padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
     width:auto;
