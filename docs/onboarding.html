@@ -550,18 +550,11 @@ body.phone-mode #step-0 .btn{
 // Minimal module renderer: attach behaviors per mode
 function renderDesktopModule(){
   document.body.classList.add('desktop-ready');
-  window.GSAP_ENABLED = (typeof gsap!=='undefined');
-  // initialize globe only on desktop
-  if(typeof window.initGlobe==='function') window.initGlobe();
+  // restore or enable desktop-only interactions here (globe, hover effects...)
 }
 function renderPhoneModule(){
   document.body.classList.add('phone-ready');
-  window.GSAP_ENABLED = false;
-  // hide/destroy globe to save CPU & memory on phones
-  try{
-    const gp = document.getElementById('ob-globe-panel'); if(gp) gp.style.display='none';
-    const gc = document.getElementById('globe-canvas'); if(gc) gc.innerHTML='';
-  }catch(e){}
+  // simplify or disable heavy interactions to preserve performance on phones
 }
 function initModules(){
   if(document.body.classList.contains('phone-mode')){
@@ -1216,13 +1209,8 @@ const StateRecovery = {
     if(pathsG)pathsG.selectAll('path').attr('fill','#1e293b').attr('filter',null);
   };
 
-  // Globe data initialization moved to initGlobe() to avoid loading on phones
-  window.initGlobe = function(){
-    if(window._globeInit) return;
-    window._globeInit = true;
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-      .then(r=>r.json()).then(setup).catch(()=>{});
-  };
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r=>r.json()).then(setup).catch(()=>{});
 })();
 
 /* ─── State ─── */
@@ -2683,17 +2671,8 @@ function startLoading(){
   const ph=document.getElementById('loading-phase');const sl2=document.getElementById('loading-sub-lbl');
   const TOTAL=351.9;
   function getPhaseText(pct){for(const p of PHASES){if(pct<=p.max)return p.txt;}return PHASES[PHASES.length-1].txt;}
-  if(typeof gsap==='undefined' || !window.GSAP_ENABLED){
-    // Fallback: minimal progression without GSAP
-    setTimeout(()=>{
-      const rf=document.getElementById('ring-fill');const rp=document.getElementById('ring-pct');
-      const ph=document.getElementById('loading-phase');const sl2=document.getElementById('loading-sub-lbl');
-      if(rf) rf.setAttribute('stroke-dashoffset',0);
-      if(rp) rp.textContent='100%';
-      if(ph){ ph.classList.remove('pulsing'); ph.textContent = (window.businessTypes&&(window.businessTypes[biz.secteur]||{}).label)||nom+' est prête !'; }
-      if(sl2) sl2.textContent='Redirection vers votre tableau de bord…';
-      setTimeout(()=>{ document.body.style.transition='opacity .6s'; document.body.style.opacity='0'; setTimeout(()=>{ window.location.href='dashboard.html'; },700); },800);
-    },300);
+  if(typeof gsap==='undefined'){
+    setTimeout(()=>{document.body.style.transition='opacity .6s';document.body.style.opacity='0';setTimeout(()=>{window.location.href='dashboard.html';},700);},3000);
     return;
   }
   ph.classList.add('pulsing');
@@ -2712,8 +2691,7 @@ function startLoading(){
       AudioUI.playComplete();
       StateRecovery.clear();
       sl2.textContent='Redirection vers votre tableau de bord…';
-      if(window.GSAP_ENABLED) gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:.6,onComplete(){window.location.href='dashboard.html';}});
-      else { setTimeout(()=>{ document.body.style.transition='opacity .6s'; document.body.style.opacity='0'; setTimeout(()=>{ window.location.href='dashboard.html'; },750); },600); }
+      gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:.6,onComplete(){window.location.href='dashboard.html';}});
     }
   });
 }
