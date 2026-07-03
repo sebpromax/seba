@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>if(typeof extDomain==='undefined')window.extDomain='';</script>
 <title>Seba — L'écosystème des entreprises de terrain</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -337,10 +338,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   .ob-right{display:none;}
   .step-container{
     padding:84px 32px 20px;
-    height:calc(100dvh - 60px);
     height:calc(100vh - 60px);
+    height:calc(100dvh - 60px);
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    overscroll-behavior-y:contain;
   }
   .ob-progress{left:32px;right:32px;}
   /* Nav sticky en bas — visible pendant le scroll */
