@@ -10,18 +10,8 @@
   const ua = navigator.userAgent || '';
   const isPhone = navigator.userAgentData?.mobile || /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   const isDesktopBrowser = /Windows NT|Macintosh|Linux x86_64|X11;/i.test(ua);
-  function setMode(){
-    if(!document.body) return;
-    // phone-mode for real phones, desktop-mode otherwise
-    if(isPhone && !isDesktopBrowser){
-      document.body.classList.add('phone-mode');
-      document.body.classList.remove('desktop-mode');
-    } else {
-      document.body.classList.add('desktop-mode');
-      document.body.classList.remove('phone-mode');
-    }
-  }
-  if(document.body) setMode(); else document.addEventListener('DOMContentLoaded', setMode);
+  function setPhoneMode(){ if(isPhone && !isDesktopBrowser && document.body) document.body.classList.add('phone-mode'); }
+  if(document.body) setPhoneMode(); else document.addEventListener('DOMContentLoaded', setPhoneMode);
 })();
 </script>
 <title>Seba — L'écosystème des entreprises de terrain</title>
@@ -432,18 +422,6 @@ body.phone-mode #step-0 .btn{
   body.phone-mode .svc-row{grid-template-columns:1fr 68px 78px 20px;}
 }
 
-/* Desktop explicit module (keeps desktop behaviour isolated under desktop-mode) */
-@media(min-width:881px){
-  body.desktop-mode .ob-layout{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px);}
-  body.desktop-mode .ob-right{display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#111a2e 0%,#060913 72%);} 
-  body.desktop-mode .step-container{padding:76px 60px 140px;height:100%;overflow:auto;position:relative;}
-  body.desktop-mode .nav-btns{position:absolute;bottom:0;left:60px;right:60px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0 calc(40px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(6,9,19,.98) 50%,rgba(6,9,19,0) 100%);} 
-  body.desktop-mode .sector-grid{grid-template-columns:repeat(3,1fr);} 
-  body.desktop-mode .svc-row{grid-template-columns:1fr 78px 86px 24px;}
-}
-
-/* Initialization script for desktop / phone modules */
-
 /* ── Step-8 : layout compact, zéro scroll ── */
 #step-8{overflow:hidden;padding-bottom:120px;}
 #step-8 .nav-btns{position:absolute;bottom:0;left:60px;right:60px;padding:12px 0 calc(28px + env(safe-area-inset-bottom,0px));}
@@ -546,25 +524,6 @@ body.phone-mode #step-0 .btn{
 .rb-yes{height:34px;padding:0 16px;background:#00F5A0;color:#060913;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;}
 .rb-no{height:34px;padding:0 12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:'Inter',sans-serif;font-size:.82rem;cursor:pointer;}
 </style>
-<script>
-// Minimal module renderer: attach behaviors per mode
-function renderDesktopModule(){
-  document.body.classList.add('desktop-ready');
-  // restore or enable desktop-only interactions here (globe, hover effects...)
-}
-function renderPhoneModule(){
-  document.body.classList.add('phone-ready');
-  // simplify or disable heavy interactions to preserve performance on phones
-}
-function initModules(){
-  if(document.body.classList.contains('phone-mode')){
-    renderPhoneModule();
-  } else {
-    renderDesktopModule();
-  }
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded', initModules);else initModules();
-</script>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
 </head>
 <body>
