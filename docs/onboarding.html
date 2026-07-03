@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>if(typeof extDomain==='undefined')window.extDomain='';</script>
@@ -9,14 +10,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <style>
 :root{--em:#00F5A0;--ink:#060913;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:auto;}
-html{height:100%;overflow:hidden;}
-body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;}
+html{min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
 a{color:inherit;text-decoration:none;}
 @view-transition{navigation:auto;}
 ::view-transition-old(root){animation:180ms ease vt-out;}
@@ -34,7 +34,7 @@ a{color:inherit;text-decoration:none;}
 .sh-burger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
 .sh-burger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
 .sh-burger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
-.sh-overlay{position:fixed;inset:0;z-index:199;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
+.sh-overlay{position:fixed;inset:0;z-index:250;background:rgba(8,9,11,.97);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;}
 .sh-overlay.open{opacity:1;pointer-events:auto;}
 .sh-nav{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
 .sh-link{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;color:rgba(255,255,255,.5);letter-spacing:-.03em;padding:8px 0;transition:color .15s;}
@@ -56,8 +56,8 @@ a{color:inherit;text-decoration:none;}
 .prog-label{font-size:.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;}
 
 .ob-steps-wrap{display:grid;height:100%;}
-.step-container{grid-area:1/1;padding:76px 60px 140px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;position:relative;}
-.step-container.step-dense{overflow-y:auto;padding-right:50px;}
+.step-container{grid-area:1/1;padding:76px 60px 140px;opacity:0;transform:translateX(100px);pointer-events:none;z-index:1;display:flex;flex-direction:column;height:100%;overflow:auto;position:relative;}
+.step-container.step-dense{overflow-y:auto;padding-right:12px;}
 .step-container.step-dense::-webkit-scrollbar{width:3px;}
 .step-container.step-dense::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
 
@@ -337,23 +337,22 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   .ob-layout{grid-template-columns:1fr;}
   .ob-right{display:none;}
   .step-container{
-    padding:84px 32px 20px;
-    height:calc(100vh - 60px);
-    height:calc(100dvh - 60px);
+    padding:84px 20px 20px;
+    min-height:100vh;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-y;
     overscroll-behavior-y:contain;
   }
-  .ob-progress{left:32px;right:32px;}
+  .ob-progress{left:20px;right:20px;}
   /* Nav sticky en bas — visible pendant le scroll */
   .nav-btns{
     position:sticky;
     bottom:0;
-    left:auto;right:auto;
-    margin-top:auto;
-    margin-left:-32px;margin-right:-32px;
-    padding:16px 32px calc(24px + env(safe-area-inset-bottom,0px));
+    left:0;right:0;
+    margin:0;
+    padding:16px 20px calc(24px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(to top,rgba(6,9,19,.98) 50%,rgba(6,9,19,0) 100%);
   }
 }
 /* Centrage du contenu sur tablettes / grands écrans mobiles */
@@ -2694,12 +2693,15 @@ init();
 </script>
 <script>
 (function(){
-  const b=document.getElementById('sh-burger'),o=document.getElementById('sh-overlay');
-  function openM(){o.classList.add('open');b.classList.add('open');b.setAttribute('aria-expanded','true');o.setAttribute('aria-hidden','false');}
-  function closeM(){o.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');o.setAttribute('aria-hidden','true');}
-  b.addEventListener('click',function(e){e.stopPropagation();o.classList.contains('open')?closeM():openM();});
-  o.addEventListener('click',function(e){if(!e.target.closest('.sh-nav'))closeM();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM();});
+  const b=document.getElementById('sh-burger'), o=document.getElementById('sh-overlay');
+  if(!b) return;
+  function openM(){ if(!o) return; o.classList.add('open'); b.classList.add('open'); b.setAttribute('aria-expanded','true'); o.setAttribute('aria-hidden','false'); }
+  function closeM(){ if(!o) return; o.classList.remove('open'); b.classList.remove('open'); b.setAttribute('aria-expanded','false'); o.setAttribute('aria-hidden','true'); }
+  b.addEventListener('click', function(e){ e.stopPropagation(); if(!o) return; o.classList.contains('open')?closeM():openM(); });
+  if(o){
+    o.addEventListener('click', function(e){ if(!e.target.closest('.sh-nav')) closeM(); });
+  }
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && o && o.classList.contains('open')) closeM(); });
 })();
 </script>
 </body>
