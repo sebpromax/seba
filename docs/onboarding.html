@@ -1,7 +1,21 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<!-- D3/TopoJSON/GSAP are heavy — load on desktop only via dynamic loader -->
+<script>
+  (function(){
+    function loadScript(src, cb){ var s=document.createElement('script'); s.src=src; s.defer=true; s.onload=cb; s.onerror=cb; document.head.appendChild(s); }
+    function isDesktopReady(){ var isPhone = document.body && document.body.classList.contains('phone-mode'); return !isPhone && window.innerWidth >= 880; }
+    function maybeLoad(){ if (!isDesktopReady()) return; if (window.__seba_assets_loaded) return; window.__seba_assets_loaded = true;
+      loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js', function(){
+        loadScript('https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js', function(){ if (typeof window.initGlobe === 'function') try{ window.initGlobe(); }catch(e){console.error(e);} });
+      });
+      loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js');
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', maybeLoad); else maybeLoad();
+    window.addEventListener('resize', function(){ if (isDesktopReady()) maybeLoad(); }, {passive:true});
+  })();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>if(typeof extDomain==='undefined')window.extDomain='';</script>
@@ -18,8 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<!-- GSAP and TopoJSON loaded dynamically for desktop only -->
 <style>
 :root{--em:#00F5A0;--ink:#060913;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -343,8 +356,10 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .globe-wrap.globe-mini{transform:translate(50%,-45%) scale(0.35);opacity:0.4;pointer-events:none;}
 
 @media(max-width:880px){
-  body.phone-mode .ob-layout{grid-template-columns:1fr;}
-  body.phone-mode .ob-right{display:none !important;}
+  /* Small viewport fixes (apply regardless of UA) */
+  .ob-layout{grid-template-columns:1fr;}
+  .ob-right{display:none !important;}
+  .globe-wrap{display:none !important;}
   body.phone-mode .step-container{
     padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
     width:auto;
@@ -401,6 +416,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   body.phone-mode .nav-btns{margin-left:0;margin-right:0;padding-left:16px;padding-right:16px;}
   body.phone-mode .sector-grid{grid-template-columns:repeat(2,1fr);}
   body.phone-mode .svc-row{grid-template-columns:1fr 68px 78px 20px;}
+
+  /* Hero adjustments for very small screens */
+  .welcome-wrap{max-width:360px;margin:0 auto;padding-top:18px;padding-bottom:18px;text-align:center;align-items:center;}
+  .w-title{font-size:clamp(1.8rem,6.5vw,2.6rem);line-height:1.04;margin-bottom:12px;}
+  .w-sub{max-width:320px;margin:0 auto 16px;color:var(--t2);}
+  .btn-em, .btn{width:100%;max-width:320px;margin:12px auto 0;}
 }
 
 /* ── Step-8 : layout compact, zéro scroll ── */

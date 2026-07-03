@@ -7,8 +7,14 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+<!-- Load GSAP + ScrollTrigger dynamically to avoid mobile overfetch -->
+<script>
+  (function(){
+    function loadScript(src, cb){ var s=document.createElement('script'); s.src=src; s.defer=true; s.onload=cb; s.onerror=cb; document.head.appendChild(s); }
+    function maybeLoad(){ if (window.__gsap_loaded) return; window.__gsap_loaded = true; loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js', function(){ loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js'); }); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', maybeLoad); else maybeLoad();
+  })();
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}

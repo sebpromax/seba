@@ -7,7 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<!-- Load GSAP dynamically -->
+<script>
+  (function(){ function loadScript(src,cb){var s=document.createElement('script');s.src=src;s.defer=true;s.onload=cb;s.onerror=cb;document.head.appendChild(s);} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js');});else loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js'); })();
+</script>
 <style>
 :root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
