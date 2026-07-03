@@ -1042,7 +1042,10 @@ const StateRecovery = {
 };
 
 /* ─── D3 Globe ─── */
-(function(){
+window.initGlobe=function(){
+  if(typeof d3==='undefined'||typeof topojson==='undefined')return;
+  if(window.__seba_globe_init)return;
+  window.__seba_globe_init=true;
   const W=540,H=540,R=252;
   const proj=d3.geoOrthographic().scale(R).translate([W/2,H/2]).clipAngle(90).rotate([0,-25,0]);
   const gpath=d3.geoPath().projection(proj);
@@ -1172,7 +1175,8 @@ const StateRecovery = {
 
   fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
     .then(r=>r.json()).then(setup).catch(()=>{});
-})();
+};
+if(typeof d3!=='undefined'&&typeof topojson!=='undefined')window.initGlobe();
 
 /* ─── State ─── */
 const S={pays:null,paysCode:null,devise:null,deviseSymbole:null,langue:'fr',zone:null,timezone:null,phone:'',dialCode:'+33',secteur:null,secteurCustom:null,selectedJobId:null,selectedJobs:[],orientationKey:null,orientationKeys:[],email:'',pwd:'',svcs:{},nom:'',publicName:'',welcomePhrase:'',desc:'',couleur:'#00F5A0',slug:'',horaires:null};
