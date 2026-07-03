@@ -110,9 +110,13 @@
 
   /* ── Injection ───────────────────────────────────────────────────────────── */
   function init() {
-    var nav = document.querySelector('nav.sidebar');
-    if (!nav) return;
-    nav.innerHTML = build();
+    try {
+      var nav = document.querySelector('nav.sidebar');
+      if (!nav) return;
+      nav.innerHTML = build();
+    } catch (e) {
+      console.error('sidebar init failed', e);
+    }
   }
 
   if (document.readyState === 'loading') {

@@ -1,5 +1,5 @@
 /* animations-vitrine.js — index.html + pages séparées vitrine */
-(function () {
+function __av_init() {
   'use strict';
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -357,4 +357,10 @@
   }, { passive: true });
 
   loop();
-})();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', __av_init);
+} else {
+  try { __av_init(); } catch (e) { console.error('animations-vitrine init failed', e); }
+}
