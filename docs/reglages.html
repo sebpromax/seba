@@ -268,12 +268,14 @@
 </script>
 <script>
   function toggleSidebar() {
-    document.querySelector('.sidebar').classList.toggle('open');
+    const isOpen = document.querySelector('.sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('open');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
   }
   function closeSidebar() {
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
+    document.body.style.overflow = '';
   }
   let _reglToastT;
   function showReglToast(msg) {

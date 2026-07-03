@@ -99,6 +99,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   align-items: center;
   gap: 9px;
   padding: 9px 12px;
+  min-height: 44px;
   border-radius: var(--rs);
   font-size: .875rem;
   font-weight: 500;
@@ -341,7 +342,7 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
   background: var(--emerald);
 }
 .hamburger {
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 5px;
   cursor: pointer;

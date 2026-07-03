@@ -43,7 +43,7 @@
     .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
 
     /* ── Main ── */
-    .main { padding: 28px 32px 56px; overflow-x: hidden; min-width: 0; }
+    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; }
 
     /* ── Header ── */
     .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
@@ -1488,11 +1488,13 @@
     sb && sb.classList.toggle('open', !open);
     ov && ov.classList.toggle('open', !open);
     hb && hb.classList.toggle('open', !open);
+    document.body.style.overflow = open ? '' : 'hidden';
   }
   function closeSidebar() {
     document.querySelector('.sidebar')?.classList.remove('open');
     document.getElementById('sidebar-overlay')?.classList.remove('open');
     document.getElementById('hamburger')?.classList.remove('open');
+    document.body.style.overflow = '';
   }
 
   /* ═══════════════════════════════════════════════════════
