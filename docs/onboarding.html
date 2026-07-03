@@ -5,6 +5,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>if(typeof extDomain==='undefined')window.extDomain='';</script>
+<script>
+(function(){
+  const ua = navigator.userAgent || '';
+  const isPhone = navigator.userAgentData?.mobile || /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isDesktopBrowser = /Windows NT|Macintosh|Linux x86_64|X11;/i.test(ua);
+  function setPhoneMode(){ if(isPhone && !isDesktopBrowser && document.body) document.body.classList.add('phone-mode'); }
+  if(document.body) setPhoneMode(); else document.addEventListener('DOMContentLoaded', setPhoneMode);
+})();
+</script>
 <title>Seba — L'écosystème des entreprises de terrain</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -334,19 +343,22 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 .globe-wrap.globe-mini{transform:translate(50%,-45%) scale(0.35);opacity:0.4;pointer-events:none;}
 
 @media(max-width:880px){
-  .ob-layout{grid-template-columns:1fr;}
-  .ob-right{display:none;}
-  .step-container{
-    padding:84px 20px 20px;
-    min-height:100vh;
-    overflow-y:auto;
+  body.phone-mode .ob-layout{grid-template-columns:1fr;}
+  body.phone-mode .ob-right{display:none !important;}
+  body.phone-mode .step-container{
+    padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
+    width:auto;
+    max-width:100%;
+    height:auto;
+    min-height:auto;
+    overflow:visible;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-y;
     overscroll-behavior-y:contain;
   }
-  .ob-progress{left:20px;right:20px;}
+  body.phone-mode .ob-progress{left:20px;right:20px;}
   /* Nav sticky en bas — visible pendant le scroll */
-  .nav-btns{
+  body.phone-mode .nav-btns{
     position:sticky;
     bottom:0;
     left:0;right:0;
@@ -357,15 +369,15 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 }
 /* Centrage du contenu sur tablettes / grands écrans mobiles */
 @media(min-width:480px) and (max-width:880px){
-  .step-container{
+  body.phone-mode .step-container{
     padding-left:max(32px, calc((100% - 520px) / 2));
     padding-right:max(32px, calc((100% - 520px) / 2));
   }
-  .ob-progress{
+  body.phone-mode .ob-progress{
     left:max(32px, calc((100vw - 520px) / 2));
     right:max(32px, calc((100vw - 520px) / 2));
   }
-  .nav-btns{
+  body.phone-mode .nav-btns{
     margin-left:calc(0px - max(32px, (100vw - 520px) / 2));
     margin-right:calc(0px - max(32px, (100vw - 520px) / 2));
     padding-left:max(32px, calc((100vw - 520px) / 2));
@@ -373,22 +385,22 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
   }
 }
 @media(max-width:600px){
-  .nav-btns{
+  body.phone-mode .nav-btns{
     flex-direction:column;
     align-items:stretch;
     gap:10px;
     padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
   }
-  .nav-btns .btn{width:100%;justify-content:center;}
-  .nav-btns .btn-em{order:-1;}
-  .nav-btns .reassurance-hint{order:0;font-size:.65rem;text-align:center;padding:0;}
+  body.phone-mode .nav-btns .btn{width:100%;justify-content:center;}
+  body.phone-mode .nav-btns .btn-em{order:-1;}
+  body.phone-mode .nav-btns .reassurance-hint{order:0;font-size:.65rem;text-align:center;padding:0;}
 }
 @media(max-width:480px){
-  .step-container{padding:80px 20px 16px;}
-  .ob-progress{left:20px;right:20px;}
-  .nav-btns{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
-  .sector-grid{grid-template-columns:repeat(2,1fr);}
-  .svc-row{grid-template-columns:1fr 68px 78px 20px;}
+  body.phone-mode .step-container{padding:80px 16px 16px;}
+  body.phone-mode .ob-progress{left:16px;right:16px;}
+  body.phone-mode .nav-btns{margin-left:0;margin-right:0;padding-left:16px;padding-right:16px;}
+  body.phone-mode .sector-grid{grid-template-columns:repeat(2,1fr);}
+  body.phone-mode .svc-row{grid-template-columns:1fr 68px 78px 20px;}
 }
 
 /* ── Step-8 : layout compact, zéro scroll ── */
@@ -404,13 +416,13 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,245,
 #step-8 .s8-legal{margin-top:-4px;margin-bottom:10px;}
 #step-8 .s8-info{margin-bottom:16px;padding:8px 12px;font-size:.72rem;}
 @media(max-width:880px){
-  #step-8{overflow-y:auto;padding-bottom:0;}
-  #step-8 .nav-btns{position:sticky;left:auto;right:auto;margin-top:auto;margin-left:-32px;margin-right:-32px;padding:12px 32px calc(24px + env(safe-area-inset-bottom,0px));}
-  #step-4{padding-bottom:20px;}
+  body.phone-mode #step-8{overflow-y:auto;padding-bottom:0;}
+  body.phone-mode #step-8 .nav-btns{position:sticky;left:auto;right:auto;margin-top:auto;margin-left:-32px;margin-right:-32px;padding:12px 32px calc(24px + env(safe-area-inset-bottom,0px));}
+  body.phone-mode #step-4{padding-bottom:20px;}
 }
 @media(max-width:480px){
-  #step-8 .nav-btns{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
-  #step-4{padding-bottom:16px;}
+  body.phone-mode #step-8 .nav-btns{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
+  body.phone-mode #step-4{padding-bottom:16px;}
 }
 
 /* Globe panel */
