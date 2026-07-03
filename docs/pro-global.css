@@ -247,6 +247,27 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
   border-color: #D0CEC9;
 }
 
+/* ── 98. Mobile safety overrides (site-wide) ───────────────────────────── */
+/* Conservative overrides to prevent full-screen / sticky panels
+   from breaking layout on small viewports and emulators. */
+@media (max-width: 880px) {
+  html, body { height: auto !important; min-height: 100%; }
+  .sidebar { position: relative !important; height: auto !important; overflow: visible !important; }
+  .sidebar .sidebar-footer { position: static; }
+  /* Prevent panels using 100vh from covering content */
+  [style*="100vh"]{ min-height: auto !important; height: auto !important; }
+  /* Generic sticky safety: convert tall sticky elements to static flow */
+  .sticky, .ob-right, .phone-frame, .phone-device { position: static !important; height: auto !important; }
+  /* Reduce hero/title sizes on small screens */
+  .w-title, h1.w-title, .hero-title { font-size: clamp(1.6rem, 6.2vw, 2.4rem) !important; line-height: 1.05 !important; }
+  .w-sub, .hero-sub { max-width: 92% !important; margin: 0 auto 12px !important; }
+  /* CTA full width */
+  .btn-em, .btn { width: 100% !important; max-width: 420px !important; margin-left: auto !important; margin-right: auto !important; }
+  /* Hide decorative globes or heavy visuals if present */
+  .globe-wrap, .ob-globe-panel, .globe-panel, .phone-device, .phone-screen { display: none !important; }
+}
+
+
 /* ── 8. Focus visible global ─────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--emerald);
