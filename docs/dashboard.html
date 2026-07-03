@@ -29,7 +29,7 @@
     .app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
 
     /* ── Sidebar ── */
-    .sidebar { background: var(--ink); color: var(--white); display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    /* position/height/responsive behavior fournis par pro-global.css (base sticky + bascule mobile fixed) */
     .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
     .s-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
     .nav-group { padding: 0 10px; margin-bottom: 8px; }
@@ -66,8 +66,7 @@
     .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
     .menu-deconnect { color: var(--text-2) !important; }
 
-    /* ── Metrics strip ── */
-    .metrics-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    /* ── Metric card ── */
     .metric-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 18px; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: block; }
     .metric-card:hover { border-color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     .metric-label { font-size: .72rem; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
@@ -77,18 +76,28 @@
     .metric-delta.up { color: #16A34A; }
     .metric-delta.down { color: #DC2626; }
 
-    /* ── 2-col main grid ── */
-    .main-grid { display: grid; grid-template-columns: 1fr 308px; gap: 16px; margin-bottom: 16px; align-items: start; }
-    .col-left { display: flex; flex-direction: column; gap: 16px; }
-    .col-right { display: flex; flex-direction: column; gap: 16px; }
-
-    /* ── 3-col bottom grid ── */
-    .bottom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    /* ── Widget grid (Notion blocs × Apple widgets) ── */
+    .widget-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 96px; gap: 16px; grid-auto-flow: dense; margin-bottom: 20px; }
+    .customize-mode .widget-grid { grid-auto-rows: 122px; }
+    .widget-shell { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+    .widget-shell[data-size="S"] { grid-column: span 1; grid-row: span 1; }
+    .widget-shell[data-size="M"] { grid-column: span 2; grid-row: span 1; }
+    .widget-shell[data-size="L"] { grid-column: span 2; grid-row: span 2; }
+    .widget-shell[data-size="XL"] { grid-column: span 4; grid-row: span 2; }
+    .widget-shell[data-size="S"] .module-head, .widget-shell[data-size="M"] .module-head { display: none; }
+    .widget-shell[data-size="S"] .widget-body, .widget-shell[data-size="M"] .widget-body { display: flex; flex-direction: column; }
+    .widget-body { flex: 1; overflow: auto; min-height: 0; }
+    .widget-drag-handle { cursor: grab; color: var(--text-2); font-size: .9rem; margin-right: 6px; }
+    .widget-drag-handle:active { cursor: grabbing; }
+    .widget-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: .8rem; padding: 2px 4px; margin-left: 6px; }
+    .widget-remove-btn:hover { color: #DC2626; }
+    .customize-mode .widget-shell { border-style: dashed; border-color: rgba(0,200,150,.4); }
+    .customize-mode .widget-shell[data-size="S"] .module-head, .customize-mode .widget-shell[data-size="M"] .module-head { display: flex; }
 
     /* ── Module ── */
     .module { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
     .module-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border); }
-    .module-title { font-size: .83rem; font-weight: 600; }
+    .module-title { font-size: .83rem; font-weight: 600; flex: 1; }
     .module-link { font-size: .76rem; color: var(--emerald); white-space: nowrap; }
     .module-link:hover { text-decoration: underline; }
 
@@ -191,8 +200,7 @@
     .btn-em { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 24px; background: var(--emerald); color: var(--ink); font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; }
 
     /* ── Bento Cockpit + Flash ── */
-    .bento-row{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:stretch;}
-    .bento-chart{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px 22px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+    .bc-pad{padding:16px 18px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
     .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
     .bc-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
     .bc-amount{font-size:2.1rem;font-weight:800;letter-spacing:-.045em;line-height:1;}
@@ -284,14 +292,12 @@
     @keyframes dbFadeIn{from{opacity:0;}to{opacity:1;}}
     .dash-header{animation:dbFadeIn .35s ease .05s both;}
     .welcome-checklist{animation:dbFadeUp .45s cubic-bezier(0.22,1,.36,1) .04s both;}
-    .metrics-strip .metric-card{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) both;}
-    .metrics-strip .metric-card:nth-child(1){animation-delay:.08s;}
-    .metrics-strip .metric-card:nth-child(2){animation-delay:.15s;}
-    .metrics-strip .metric-card:nth-child(3){animation-delay:.22s;}
-    .metrics-strip .metric-card:nth-child(4){animation-delay:.29s;}
-    .bento-row{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) .26s both;}
-    .main-grid{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) .34s both;}
-    .bottom-grid{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) .42s both;}
+    .widget-shell{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) both;}
+    .widget-shell:nth-child(1){animation-delay:.06s;}
+    .widget-shell:nth-child(2){animation-delay:.11s;}
+    .widget-shell:nth-child(3){animation-delay:.16s;}
+    .widget-shell:nth-child(4){animation-delay:.21s;}
+    .widget-shell:nth-child(n+5){animation-delay:.26s;}
 
     /* ── Metric card radial hover glow ── */
     .metric-card{overflow:hidden;}
@@ -312,18 +318,51 @@
 
     /* ── Responsive ── */
     @media (max-width: 1120px) {
-      .metrics-strip { grid-template-columns: repeat(2, 1fr); }
-      .main-grid { grid-template-columns: 1fr; }
-      .bottom-grid { grid-template-columns: 1fr 1fr; }
-      .bento-row { grid-template-columns: 1fr; }
+      .widget-grid { grid-template-columns: repeat(2, 1fr); }
+      .widget-shell[data-size="L"], .widget-shell[data-size="XL"] { grid-column: span 2; }
     }
     @media (max-width: 760px) {
       .app { grid-template-columns: 1fr; }
       .sidebar {}
       .main { padding: 20px 16px 40px; }
-      .bottom-grid { grid-template-columns: 1fr; }
-      .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+      .widget-grid { grid-template-columns: 1fr; }
+      .widget-shell[data-size="S"], .widget-shell[data-size="M"], .widget-shell[data-size="L"], .widget-shell[data-size="XL"] { grid-column: span 1; }
+      .widget-shell[data-size="S"] .module-head, .widget-shell[data-size="M"] .module-head { display: flex; }
     }
+
+    /* ── Panneau Personnaliser (bibliothèque de widgets) ── */
+    .customize-panel-overlay{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,.3);display:none;}
+    .customize-panel-overlay.open{display:block;}
+    .customize-panel{position:fixed;top:0;right:0;bottom:0;width:340px;max-width:90vw;background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,.12);z-index:521;transform:translateX(100%);transition:transform .25s cubic-bezier(0.22,1,.36,1);display:flex;flex-direction:column;}
+    .customize-panel.open{transform:translateX(0);}
+    .cp-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);}
+    .cp-title{font-size:1rem;font-weight:700;}
+    .cp-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-2);}
+    .cp-body{flex:1;overflow-y:auto;padding:8px 0;}
+    .widget-lib-row{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;font-size:.86rem;cursor:pointer;}
+    .widget-lib-row:hover{background:var(--bg);}
+    .cp-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
+
+    /* ── Barre de commande IA (simulée) ── */
+    .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
+    .ai-bar-overlay.open{display:flex;}
+    .ai-bar-box{background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(0,0,0,.18),0 4px 16px rgba(0,0,0,.1);overflow:hidden;}
+    .ai-bar-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
+    .ai-bar-ico{color:var(--emerald);font-size:1.1rem;}
+    .ai-bar-inp{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.95rem;color:var(--ink);background:transparent;}
+    .ai-bar-inp::placeholder{color:#C0C4CD;}
+    .ai-bar-results{max-height:320px;overflow-y:auto;padding:10px 18px 18px;font-size:.85rem;color:var(--text-2);}
+    .ai-bar-match{display:flex;align-items:center;gap:8px;padding:8px 0;color:var(--ink);}
+    .ai-bar-match .ok{color:var(--emerald);}
+    .ai-bar-hint{padding:8px 18px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
+
+    /* ── Aide raccourcis clavier ── */
+    .shortcuts-overlay{position:fixed;inset:0;z-index:530;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;}
+    .shortcuts-overlay.open{display:flex;}
+    .shortcuts-box{background:#fff;border-radius:14px;padding:24px 28px;max-width:420px;width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.2);}
+    .shortcuts-box h3{font-size:1rem;font-weight:700;margin-bottom:14px;}
+    .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.85rem;border-bottom:1px solid var(--border);}
+    .shortcut-row:last-child{border-bottom:none;}
   </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
 </head>
@@ -376,6 +415,12 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="topbar-btn" title="Barre de commande IA (⌘⇧K)" onclick="openAiBar()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1l1.2 3.8L13 6l-3.8 1.2L8 11l-1.2-3.8L3 6l3.8-1.2L8 1z"/></svg>
+          </button>
+          <button class="topbar-btn" title="Personnaliser le dashboard" onclick="openCustomizePanel()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          </button>
           <div class="topbar-btn" title="Notifications">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
             <div class="notif-badge">2</div>
@@ -419,142 +464,15 @@
         </div>
       </div>
 
-      <!-- ── Zone 2 : Métriques ── -->
-      <div class="metrics-strip" id="metrics-strip"></div>
-
-      <!-- ── Zone Bento : Cockpit Financier + Actions Flash ── -->
-      <div class="bento-row">
-        <div class="bento-chart" id="bento-chart">
-          <div class="bc-lbl">Cockpit financier</div>
-          <div id="bc-body"><!-- filled by JS --></div>
-        </div>
-        <div class="bento-flash">
-          <a href="planning.html" class="flash-btn">
-            <div class="flash-ico">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14M8 4V2M12 4V2"/></svg>
-            </div>
-            <div><span class="flash-txt">Programmer une intervention</span><span class="flash-sub">Créer et assigner en 3 clics</span></div>
-          </a>
-          <button class="flash-btn" onclick="copyLink()">
-            <div class="flash-ico">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M9 3h8v8"/></svg>
-            </div>
-            <div><span class="flash-txt">Envoyer un lien de paiement</span><span class="flash-sub">Copier votre lien portail client</span></div>
-          </button>
-          <a href="devis-nouveau.html" class="flash-btn">
-            <div class="flash-ico">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h2"/></svg>
-            </div>
-            <div><span class="flash-txt">Créer un devis</span><span class="flash-sub">Devis signable en 2 minutes</span></div>
-          </a>
-        </div>
+      <!-- ── Bouton mode personnalisation ── -->
+      <div id="customize-bar" style="margin-bottom:14px;padding:10px 16px;background:rgba(0,200,150,.06);border:1.5px dashed rgba(0,200,150,.4);border-radius:var(--rs);font-size:.82rem;color:var(--text-2);justify-content:space-between;align-items:center;display:none;">
+        <span>Mode personnalisation — glissez ⠿ pour réordonner, ✕ pour retirer.</span>
+        <button class="portal-btn primary" style="padding:5px 14px;" onclick="toggleCustomizeMode()">Terminer</button>
       </div>
 
-      <!-- ── Zone 3 : Grille principale 2 colonnes ── -->
-      <div class="main-grid">
+      <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
+      <div class="widget-grid" id="widget-grid"></div>
 
-        <!-- Colonne gauche : Timeline + Activité -->
-        <div class="col-left">
-
-          <div class="module">
-            <div class="module-head">
-              <span class="module-title">Journée d'aujourd'hui</span>
-              <a href="planning.html" class="module-link">Voir le planning →</a>
-            </div>
-            <div id="timeline-list"></div>
-          </div>
-
-          <div class="module">
-            <div class="module-head">
-              <span class="module-title">Activité récente</span>
-              <a href="historique.html" class="module-link">Tout voir →</a>
-            </div>
-            <div id="activity-list"></div>
-          </div>
-
-        </div>
-
-        <!-- Colonne droite : Reco + Actions + Objectif -->
-        <div class="col-right">
-
-          <div class="module">
-            <div class="module-head">
-              <span class="module-title">Recommandations Seba</span>
-            </div>
-            <div id="reco-list"></div>
-          </div>
-
-          <div class="module">
-            <div class="module-head">
-              <span class="module-title">Actions rapides</span>
-            </div>
-            <div class="qa-grid">
-              <a href="clients.html" class="qa-btn">+ Client</a>
-              <a href="devis-nouveau.html" class="qa-btn">+ Devis</a>
-              <a href="planning.html" class="qa-btn">+ Intervention</a>
-              <a href="factures.html" class="qa-btn">+ Facture</a>
-            </div>
-          </div>
-
-          <div class="module">
-            <div class="module-head">
-              <span class="module-title">Objectif du mois</span>
-              <a href="factures.html" class="module-link">Factures →</a>
-            </div>
-            <div class="goal-block">
-              <div class="goal-head">
-                <span class="goal-current" id="goal-current">—</span>
-                <span class="goal-target-txt" id="goal-target">— objectif</span>
-              </div>
-              <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-bar"></div></div>
-              <div class="goal-sub" id="goal-sub"></div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ── Zone 4 : Bande basse 3 colonnes ── -->
-      <div class="bottom-grid">
-
-        <div class="module">
-          <div class="module-head">
-            <span class="module-title">Votre espace</span>
-            <a href="reglages.html" class="module-link">Réglages →</a>
-          </div>
-          <div id="workspace-rows"></div>
-        </div>
-
-        <div class="module">
-          <div class="module-head">
-            <span class="module-title">Portail client</span>
-          </div>
-          <div class="portal-block">
-            <div class="portal-name" id="portal-name">—</div>
-            <div class="portal-url-txt" id="portal-url">seba.app/p/—</div>
-            <div class="portal-code-row">
-              <span class="portal-code-lbl">Code d'accès</span>
-              <span class="code-chip" id="portal-code">SEBA-XXXX</span>
-            </div>
-            <div class="portal-actions">
-              <button class="portal-btn" id="copy-btn" onclick="copyLink()">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
-                Copier le lien
-              </button>
-              <a href="client.html" class="portal-btn primary" target="_blank">Voir l'aperçu</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="module">
-          <div class="module-head">
-            <span class="module-title">Équipe aujourd'hui</span>
-            <a href="equipe.html" class="module-link">Voir tout →</a>
-          </div>
-          <div id="team-list"></div>
-        </div>
-
-      </div>
     </div><!-- /dash-content -->
   </main>
 </div>
@@ -586,7 +504,44 @@
 <!-- Confetti canvas -->
 <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
+<!-- Panneau Personnaliser (bibliothèque de widgets) -->
+<div class="customize-panel-overlay" id="customize-panel-overlay" onclick="closeCustomizePanel()"></div>
+<div class="customize-panel" id="customize-panel">
+  <div class="cp-head">
+    <span class="cp-title">Personnaliser le dashboard</span>
+    <button class="cp-close" onclick="closeCustomizePanel()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="cp-body" id="cp-body"></div>
+  <div class="cp-foot">Cochez les widgets que vous voulez voir. Activez le mode réorganisation pour les glisser-déposer.</div>
+</div>
+
+<!-- Barre de commande IA (simulée, 100% côté client) -->
+<div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
+  <div class="ai-bar-box" onclick="event.stopPropagation()">
+    <div class="ai-bar-inp-wrap">
+      <span class="ai-bar-ico">✨</span>
+      <input type="text" class="ai-bar-inp" id="ai-bar-inp" placeholder="Ex : « Affiche mon CA du mois et mes factures en retard »" onkeydown="if(event.key==='Enter')submitAiBar()">
+    </div>
+    <div class="ai-bar-results" id="ai-bar-results">Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.</div>
+    <div class="ai-bar-hint">Analyse locale par mots-clés — aucune donnée envoyée à un serveur.</div>
+  </div>
+</div>
+
+<!-- Aide raccourcis clavier -->
+<div class="shortcuts-overlay" id="shortcuts-overlay" onclick="closeShortcuts(event)">
+  <div class="shortcuts-box" onclick="event.stopPropagation()">
+    <h3>Raccourcis clavier</h3>
+    <div class="shortcut-row"><span>Ouvrir la recherche</span><span class="pal-key">⌘K</span></div>
+    <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
+    <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
+    <div class="shortcut-row"><span>Afficher cette aide</span><span class="pal-key">?</span></div>
+    <div class="shortcut-row"><span>Fermer une fenêtre</span><span class="pal-key">Esc</span></div>
+  </div>
+</div>
+
 <script src="businessTypes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="widgets.js"></script>
 <script>
   /* ═══════════════════════════════════════════════════════
      DEMO DATA — par secteur
@@ -933,236 +888,6 @@
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'mon-entreprise';
   }
 
-  function fmtNum(n, unit) {
-    if (n === 0) return unit === '€' ? '0 €' : '0';
-    return n.toLocaleString('fr-FR') + (unit ? ' ' + unit : '');
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     INIT
-  ═══════════════════════════════════════════════════════ */
-  let biz = null;
-  try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
-
-  if (!biz || !biz.secteur) {
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('dash-content').style.display = 'none';
-  } else {
-    renderDashboard(biz);
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     RENDER
-  ═══════════════════════════════════════════════════════ */
-  function renderDashboard(biz) {
-    const nom      = biz.nom || 'Mon entreprise';
-    const secteur  = biz.secteur || 'autre';
-    const couleur  = biz.couleur || '#00C896';
-    const services = biz.services || [];
-    const slug     = biz.slug || slugify(biz.publicName || nom);
-    const demo     = DEMO[secteur] || DEMO['autre'];
-    const bt       = window.businessTypes || {};
-    const sectorLabel = (bt[secteur] || {}).label || secteur;
-
-    /* Header */
-    const h = new Date().getHours();
-    const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
-    document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
-    document.getElementById('sector-badge').textContent = sectorLabel;
-    document.getElementById('topbar-date').textContent =
-      new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    startClock(biz);
-
-    /* Avatar */
-    const av = document.getElementById('avatar');
-    av.style.background = couleur;
-    av.textContent = nom.charAt(0).toUpperCase();
-
-    /* Sidebar */
-    document.getElementById('sidebar-company').textContent = nom;
-
-    /* Metrics */
-    const ms = document.getElementById('metrics-strip');
-    demo.metrics.forEach(m => {
-      const a = document.createElement('a');
-      a.href = m.href;
-      a.className = 'metric-card';
-      a.innerHTML =
-        '<div class="metric-label">' + m.label + '</div>' +
-        '<div class="metric-value">' + m.value + '<span class="metric-unit">' + m.unit + '</span></div>' +
-        '<div class="metric-delta ' + (m.up ? 'up' : 'down') + '">' + (m.up ? '↑' : '↓') + ' ' + m.delta + '</div>';
-      ms.appendChild(a);
-    });
-    setTimeout(animateMetrics, 80);
-
-    /* Bento chart */
-    renderBentoChart(demo.goal, biz.deviseSymbole || '€');
-
-    /* Timeline */
-    const tlEl = document.getElementById('timeline-list');
-    const typePillLabel = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
-    if (!demo.timeline.length) {
-      tlEl.innerHTML = '<div class="tl-empty">Aucune tâche planifiée. <a href="planning.html" style="color:var(--emerald)">Planifier →</a></div>';
-    } else {
-      demo.timeline.forEach(t => {
-        const a = document.createElement('a');
-        a.href = t.href;
-        a.className = 'tl-item' + (t.done ? ' done' : '');
-        a.innerHTML =
-          '<div class="tl-time-col"><span class="tl-time">' + t.time + '</span><div class="tl-dot' + (t.done ? ' done' : '') + '"></div></div>' +
-          '<div><div class="tl-type-pill ' + t.type + '">' + (typePillLabel[t.type] || t.type) + '</div>' +
-          '<div class="tl-label">' + t.label + '</div>' +
-          '<div class="tl-sub">' + t.sub + '</div></div>';
-        tlEl.appendChild(a);
-      });
-    }
-
-    /* Recommendations */
-    const rl = document.getElementById('reco-list');
-    demo.recos.forEach(r => {
-      const a = document.createElement('a');
-      a.href = r.href;
-      a.className = 'reco-item';
-      a.innerHTML =
-        '<div class="reco-bar ' + r.cls + '"></div>' +
-        '<div class="reco-content">' +
-        '<div class="reco-title">' + r.title + '</div>' +
-        '<div class="reco-desc">' + r.desc + '</div>' +
-        '<div class="reco-cta">' + r.cta + ' →</div></div>';
-      rl.appendChild(a);
-    });
-
-    /* Activity */
-    const al = document.getElementById('activity-list');
-    demo.activity.forEach(item => {
-      const a = document.createElement('a');
-      a.href = item.href;
-      a.className = 'activity-item';
-      a.innerHTML =
-        '<div class="act-dot ' + item.type + '"></div>' +
-        '<div class="act-body"><div class="act-label">' + item.label + '</div>' +
-        '<div class="act-time">' + item.time + '</div></div>';
-      al.appendChild(a);
-    });
-
-    /* Monthly goal */
-    const g = demo.goal;
-    document.getElementById('goal-current').textContent = g.current > 0 ? fmtNum(g.current, g.unit) : '—';
-    document.getElementById('goal-target').textContent  = g.target  > 0 ? '/ ' + fmtNum(g.target, g.unit) + ' objectif' : 'Définir un objectif';
-    const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
-    setTimeout(() => { document.getElementById('goal-bar').style.width = pct + '%'; }, 400);
-    const remaining = g.target - g.current;
-    document.getElementById('goal-sub').textContent = g.target > 0
-      ? (pct >= 100 ? 'Objectif atteint ce mois !' : fmtNum(remaining, g.unit) + ' restants pour atteindre l\'objectif')
-      : 'Configurez votre objectif mensuel dans les réglages.';
-
-    /* Workspace */
-    const wr = document.getElementById('workspace-rows');
-    const sc = services.length;
-    wr.innerHTML =
-      '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + sectorLabel + '</span></div>' +
-      '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
-      '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#16A34A">Actif</span></div>' +
-      '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (biz.pays || '—') + ' · ' + (biz.deviseSymbole || '€') + '</span></div>';
-
-    /* Portal */
-    const publicName = biz.publicName || nom;
-    const portalUrl  = 'seba.app/p/' + slug;
-    const portalCode = 'SEBA-' + slug.substring(0, 4).toUpperCase();
-    document.getElementById('portal-name').textContent = publicName;
-    document.getElementById('portal-url').textContent  = portalUrl;
-    document.getElementById('portal-code').textContent = portalCode;
-
-    /* Team */
-    const tlTeam = document.getElementById('team-list');
-    if (!demo.team.length) {
-      tlTeam.innerHTML = '<div class="tl-empty">Aucun employé. <a href="equipe.html" style="color:var(--emerald)">Ajouter →</a></div>';
-    } else {
-      demo.team.forEach(t => {
-        const a = document.createElement('a');
-        a.href = t.href;
-        a.className = 'team-item';
-        const initials = t.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-        const avBg   = t.working ? couleur : 'var(--border)';
-        const avCol  = t.working ? 'var(--ink)' : 'var(--text-2)';
-        const stCls  = t.working ? 'on' : 'off';
-        const stLbl  = t.working ? 'En service' : 'En repos';
-        a.innerHTML =
-          '<div class="team-av-wrap">' +
-            '<div class="team-av" style="background:' + avBg + ';color:' + avCol + '">' + initials + '</div>' +
-            '<div class="team-av-status ' + stCls + '"></div>' +
-          '</div>' +
-          '<div class="team-info"><div class="team-name">' + t.name + '</div><div class="team-role">' + t.role + '</div></div>' +
-          '<span class="team-status ' + (t.working ? 'working' : 'off') + '">' + stLbl + '</span>';
-        tlTeam.appendChild(a);
-      });
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     BENTO FINANCIAL CHART
-  ═══════════════════════════════════════════════════════ */
-  function renderBentoChart(goal, sym) {
-    const el = document.getElementById('bc-body');
-    if (!el) return;
-    const cur = goal ? goal.current : 0;
-    const tgt = goal ? goal.target  : 0;
-    if (cur <= 0) {
-      el.innerHTML =
-        '<div class="bc-empty-body">' +
-        '<div class="bc-empty-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg></div>' +
-        '<div class="bc-empty-title">Prêt pour vos premiers encaissements</div>' +
-        '<div class="bc-empty-sub">Vos revenus apparaîtront ici dès la création de votre première facture.</div>' +
-        '<button class="bc-empty-btn" onclick="window.location.href=\'factures.html\'">+ Créer une demande de paiement</button>' +
-        '</div>';
-      return;
-    }
-    /* Build plausible 6-month sparkline from current value */
-    const months = ['Jan','Fév','Mar','Avr','Mai','Juin'];
-    const variance = [0.62, 0.71, 0.83, 0.90, 0.96, 1.0];
-    const pts = variance.map(v => Math.round(cur * v));
-    const delta = tgt > 0 ? Math.round((cur / tgt) * 100) : null;
-    const deltaLabel = delta !== null ? (delta >= 100 ? '✓ Objectif atteint' : delta + '% de l\'objectif') : '+12% vs mois précédent';
-    const isUp = true;
-
-    /* SVG polyline */
-    const W = 400, H = 72, PAD = 4;
-    const maxV = Math.max(...pts);
-    const coords = pts.map((v, i) => {
-      const x = PAD + (i / (pts.length - 1)) * (W - PAD * 2);
-      const y = H - PAD - ((v / maxV) * (H - PAD * 2));
-      return x.toFixed(1) + ',' + y.toFixed(1);
-    });
-    const linePoints = coords.join(' ');
-    const fillPoints = coords[0].split(',')[0] + ',' + H + ' ' + linePoints + ' ' + coords[coords.length-1].split(',')[0] + ',' + H;
-    const totalFmt = cur >= 1000 ? (cur/1000).toFixed(1).replace('.',',')+' k' : cur.toString();
-
-    el.innerHTML =
-      '<div class="bc-hdr">' +
-        '<div><div class="bc-amount">' + totalFmt + '<span class="bc-u">' + sym + '</span></div>' +
-        '<div class="bc-delta-row"><span class="bc-delta ' + (isUp ? 'up' : 'dn') + '">' + (isUp ? '↑' : '↓') + ' ' + deltaLabel + '</span></div></div>' +
-        '<span style="font-size:.73rem;color:var(--text-2);">Ce mois · ' + new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) + '</span>' +
-      '</div>' +
-      '<div class="bc-svg-wrap">' +
-        '<svg class="bc-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
-          '<defs>' +
-            '<linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">' +
-              '<stop offset="0%" stop-color="#00C896" stop-opacity="0.18"/>' +
-              '<stop offset="100%" stop-color="#00C896" stop-opacity="0"/>' +
-            '</linearGradient>' +
-          '</defs>' +
-          '<polygon points="' + fillPoints + '" fill="url(#chart-fill)"/>' +
-          '<polyline class="chart-line-anim" points="' + linePoints + '" fill="none" stroke="#00C896" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-          /* Dot on last point */
-          '<circle cx="' + coords[coords.length-1].split(',')[0] + '" cy="' + coords[coords.length-1].split(',')[1] + '" r="4" fill="#00C896"/>' +
-        '</svg>' +
-        '<div class="bc-months">' + months.map(m => '<span>'+m+'</span>').join('') + '</div>' +
-      '</div>';
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     COPY PORTAL LINK
-  ═══════════════════════════════════════════════════════ */
   /* ── Horloge temps réel ── */
   const TZ_MAP = {
     FR:'Europe/Paris',      BE:'Europe/Brussels',   CH:'Europe/Zurich',
@@ -1191,11 +916,156 @@
     _clockInterval = setInterval(tick, 1000);
   }
 
-  function copyLink() {
-    const url = 'https://' + document.getElementById('portal-url').textContent;
-    const btn = document.getElementById('copy-btn');
-    const restore = btn.innerHTML;
+  /* ═══════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════ */
+  let biz = null;
+  try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
+  let _ctx = null;
+  let _customizeMode = false;
+
+  if (!biz || !biz.secteur) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('dash-content').style.display = 'none';
+  } else {
+    renderDashboard(biz);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     RENDER — construit le contexte et délègue à la grille
+     de widgets (moteur dans widgets.js)
+  ═══════════════════════════════════════════════════════ */
+  function renderDashboard(biz) {
+    const nom      = biz.nom || 'Mon entreprise';
+    const secteur  = biz.secteur || 'autre';
+    const couleur  = biz.couleur || '#00C896';
+    const services = biz.services || [];
+    const slug     = biz.slug || slugify(biz.publicName || nom);
+    const demo     = DEMO[secteur] || DEMO['autre'];
+    const bt       = window.businessTypes || {};
+    const sectorLabel = (bt[secteur] || {}).label || secteur;
+    const sym = biz.deviseSymbole || '€';
+
+    /* Header */
+    const h = new Date().getHours();
+    const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+    document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
+    document.getElementById('sector-badge').textContent = sectorLabel;
+    document.getElementById('topbar-date').textContent =
+      new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    startClock(biz);
+
+    /* Avatar */
+    const av = document.getElementById('avatar');
+    av.style.background = couleur;
+    av.textContent = nom.charAt(0).toUpperCase();
+
+    /* Sidebar */
+    const sidebarCompanyEl = document.getElementById('sidebar-company');
+    if (sidebarCompanyEl) sidebarCompanyEl.textContent = nom;
+
+    /* Widgets */
+    _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
+    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
+    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    setTimeout(animateMetrics, 80);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     MODE PERSONNALISATION + BIBLIOTHÈQUE DE WIDGETS
+  ═══════════════════════════════════════════════════════ */
+  function toggleCustomizeMode() {
+    _customizeMode = !_customizeMode;
+    document.getElementById('customize-bar').style.display = _customizeMode ? 'flex' : 'none';
+    document.body.classList.toggle('customize-mode', _customizeMode);
+    const grid = document.getElementById('widget-grid');
+    renderGrid(grid, _ctx, _customizeMode);
+    if (_customizeMode) initSortable(grid);
+  }
+  function onWidgetRemove(id) {
+    removeWidgetFromLayout(id);
+    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
+    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    refreshLibraryPanel();
+  }
+  function onWidgetToggle(id, checked) {
+    if (checked) addWidgetToLayout(id); else removeWidgetFromLayout(id);
+    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
+    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+  }
+  function refreshLibraryPanel() {
+    const b = document.getElementById('cp-body');
+    if (b) b.innerHTML = buildLibraryPanelHTML();
+  }
+  function openCustomizePanel() {
+    refreshLibraryPanel();
+    document.getElementById('customize-panel-overlay').classList.add('open');
+    document.getElementById('customize-panel').classList.add('open');
+    if (!_customizeMode) toggleCustomizeMode();
+  }
+  function closeCustomizePanel() {
+    document.getElementById('customize-panel-overlay').classList.remove('open');
+    document.getElementById('customize-panel').classList.remove('open');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     BARRE DE COMMANDE IA (simulée)
+  ═══════════════════════════════════════════════════════ */
+  function openAiBar() {
+    document.getElementById('ai-bar-overlay').classList.add('open');
+    const inp = document.getElementById('ai-bar-inp');
+    document.getElementById('ai-bar-results').textContent = 'Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.';
+    if (inp) { inp.value = ''; inp.focus(); }
+  }
+  function closeAiBar(e) {
+    if (e && e.target !== document.getElementById('ai-bar-overlay')) return;
+    document.getElementById('ai-bar-overlay').classList.remove('open');
+  }
+  function submitAiBar() {
+    const inp = document.getElementById('ai-bar-inp');
+    const resEl = document.getElementById('ai-bar-results');
+    const text = inp ? inp.value.trim() : '';
+    if (!text) return;
+    const results = matchIntent(text);
+    let addedAny = false;
+    let html = '';
+    results.forEach(r => {
+      if (r.widget) {
+        addWidgetToLayout(r.widget.id);
+        addedAny = true;
+        html += '<div class="ai-bar-match"><span class="ok">✓</span> Widget ajouté : « ' + r.widget.title + ' »</div>';
+      } else if (r.suggestions && r.suggestions.length) {
+        html += '<div class="ai-bar-match">Vouliez-vous dire : ' + r.suggestions.map(w => '<a href="#" onclick="event.preventDefault();addWidgetToLayout(\'' + w.id + '\');document.getElementById(\'ai-bar-results\').innerHTML=\'✓ Ajouté.\';renderGrid(document.getElementById(\'widget-grid\'),_ctx,_customizeMode);" style="color:var(--emerald);">' + w.title + '</a>').join(' ou ') + ' ?</div>';
+      } else {
+        html += '<div class="ai-bar-match">Aucun widget ne correspond à « ' + r.query + ' ».</div>';
+      }
+    });
+    resEl.innerHTML = html;
+    if (addedAny) {
+      renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
+      if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+      setTimeout(closeAiBar, 1400);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     AIDE RACCOURCIS
+  ═══════════════════════════════════════════════════════ */
+  function openShortcuts() { document.getElementById('shortcuts-overlay').classList.add('open'); }
+  function closeShortcuts(e) {
+    if (e && e.target !== document.getElementById('shortcuts-overlay')) return;
+    document.getElementById('shortcuts-overlay').classList.remove('open');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     COPY PORTAL LINK
+  ═══════════════════════════════════════════════════════ */
+
+  function copyLink(btn) {
+    const url = 'https://seba.app/p/' + (_ctx ? _ctx.slug : '');
+    const restore = btn ? btn.innerHTML : null;
     const ok = () => {
+      if (!btn) return;
       btn.textContent = 'Copié !';
       btn.style.color = 'var(--emerald)';
       btn.style.borderColor = 'var(--emerald)';
@@ -1444,10 +1314,23 @@
   }
 
   document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openAiBar(); return; }
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openPalette(); return; }
+
+    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
+    if (!typing && (e.key === 'e' || e.key === 'E')) { toggleCustomizeMode(); return; }
+    if (!typing && e.key === '?') { openShortcuts(); return; }
+
+    if (e.key === 'Escape') {
+      closePaletteForce();
+      closeAiBar();
+      closeCustomizePanel();
+      closeShortcuts();
+      return;
+    }
+
     const ov = document.getElementById('palette-overlay');
     if (!ov || !ov.classList.contains('open')) return;
-    if (e.key === 'Escape') { closePaletteForce(); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); _palFocused = Math.min(_palFocused + 1, _palFiltered.length - 1); filterPalette(document.getElementById('palette-inp').value); }
     if (e.key === 'ArrowUp') { e.preventDefault(); _palFocused = Math.max(_palFocused - 1, 0); filterPalette(document.getElementById('palette-inp').value); }
     if (e.key === 'Enter') { palGo(_palFocused); }
@@ -1480,7 +1363,7 @@
   /* ═══════════════════════════════════════════════════════
      METRIC CARD — radial glow on mousemove
   ═══════════════════════════════════════════════════════ */
-  document.getElementById('metrics-strip').addEventListener('mousemove', e => {
+  document.getElementById('widget-grid').addEventListener('mousemove', e => {
     const card = e.target.closest('.metric-card');
     if (!card) return;
     const r = card.getBoundingClientRect();

@@ -1,0 +1,12 @@
+{
+  "name": "seba-site-audit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audit:mobile": "node scripts/mobile-audit.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^21.0.0"
+  }
+}
