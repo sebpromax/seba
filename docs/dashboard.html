@@ -26,7 +26,7 @@
     a { color: inherit; text-decoration: none; }
 
     /* ── App layout ── */
-    .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    .app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
 
     /* ── Sidebar ── */
     .sidebar { background: var(--ink); color: var(--white); display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
