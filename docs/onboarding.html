@@ -73,7 +73,7 @@ a{color:inherit;text-decoration:none;}
 .sh-cta:hover{opacity:.85;}
 @media(max-width:768px){
   .sh-center,.sh-right{display:none;}
-  .sh-burger{display:flex;}
+  .sh-burger{display:flex;grid-column:3;}
 }
 
 .ob-layout{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px);}
@@ -372,6 +372,10 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
   .ob-layout{grid-template-columns:1fr;}
   .ob-right{display:none !important;}
   .globe-wrap{display:none !important;}
+  /* .welcome-wrap remplit toute la hauteur disponible (flex:1) et centrait son
+     texte dans cette boîte quasi pleine hauteur, ce qui le faisait paraître
+     trop bas sur mobile (le globe qui justifiait ce centrage est masqué ci-dessus). */
+  #step-0 .welcome-wrap{justify-content:flex-start;padding-top:8vh;}
   .step-container{
     padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
     width:auto;
