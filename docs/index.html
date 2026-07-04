@@ -8,6 +8,22 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <meta name="description" content="Seba est le système d'exploitation tout-en-un pour la planification, les devis, la facturation et la performance financière des entreprises de services.">
 <style>
+  :root{
+    /* ── Design system : couleurs ── */
+    --em:#00ff88; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
+    /* ── Échelle d'espacement (base 4px) ── */
+    --spacing-1:4px; --spacing-2:8px; --spacing-3:12px; --spacing-4:16px; --spacing-5:20px;
+    --spacing-6:24px; --spacing-7:32px; --spacing-8:40px; --spacing-9:48px; --spacing-10:64px;
+    /* ── Typographie ── */
+    --font-size-xs:.72rem; --font-size-sm:.84rem; --font-size-base:.95rem;
+    --font-size-lg:1.15rem; --font-size-xl:1.5rem; --font-size-2xl:2.1rem;
+    --line-height-tight:1.12; --line-height-base:1.5;
+    /* ── Ombres et lueurs ── */
+    --shadow-sm:0 1px 4px rgba(0,0,0,.2);
+    --shadow-md:0 4px 16px rgba(0,0,0,.3);
+    --shadow-lg:0 16px 48px rgba(0,0,0,.45);
+    --shadow-glow:0 0 28px rgba(0,255,136,.45),0 0 60px rgba(0,255,136,.18);
+  }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0c;color:#fff;-webkit-font-smoothing:antialiased;}
@@ -776,8 +792,9 @@
     padding-right:max(20px,calc((100vw - 600px)/2)) !important;
   }
   .hero-section{padding-left:20px !important;padding-right:20px !important;}
-  /* Texte héro */
-  .hero-section h1{font-size:clamp(2rem,9vw,3.2rem) !important;}
+  /* Texte héro — line-height 1.05 inline trop serré sur 4 lignes mobiles,
+     le span gradient débordait de son h1 (superposition visuelle) */
+  .hero-section h1{font-size:clamp(2rem,9vw,3.2rem) !important;line-height:var(--line-height-tight) !important;}
   .hero-section p{font-size:1rem !important;max-width:100% !important;}
 }
 

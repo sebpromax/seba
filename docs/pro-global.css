@@ -37,6 +37,22 @@
   --t-fast: 0.15s;
   --t-std:  0.25s;
   --t-slow: 0.35s;
+
+  /* Échelle d'espacement (base 4px) */
+  --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px; --spacing-4: 16px;
+  --spacing-5: 20px; --spacing-6: 24px;  --spacing-7: 32px; --spacing-8: 40px;
+  --spacing-9: 48px; --spacing-10: 64px;
+
+  /* Typographie */
+  --font-size-xs: .72rem; --font-size-sm: .84rem; --font-size-base: .95rem;
+  --font-size-lg: 1.15rem; --font-size-xl: 1.5rem; --font-size-2xl: 2.1rem;
+  --line-height-tight: 1.12; --line-height-base: 1.5;
+
+  /* Ombres et lueurs */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.18);
+  --shadow-glow: 0 0 0 1px rgba(0,200,150,.28), 0 4px 24px rgba(0,200,150,.12);
 }
 
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */

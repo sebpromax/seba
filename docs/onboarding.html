@@ -34,7 +34,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- GSAP and TopoJSON loaded dynamically for desktop only -->
 <style>
-:root{--em:#00ff88;--ink:#0a0a0c;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;}
+:root{
+  --em:#00ff88;--ink:#0a0a0c;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;
+  /* ── Design system : espacement (base 4px) ── */
+  --spacing-1:4px;--spacing-2:8px;--spacing-3:12px;--spacing-4:16px;--spacing-5:20px;
+  --spacing-6:24px;--spacing-7:32px;--spacing-8:40px;--spacing-9:48px;--spacing-10:64px;
+  /* ── Typographie ── */
+  --font-size-xs:.72rem;--font-size-sm:.84rem;--font-size-base:.95rem;
+  --font-size-lg:1.15rem;--font-size-xl:1.5rem;--font-size-2xl:2.1rem;
+  --line-height-tight:1.12;--line-height-base:1.5;
+  /* ── Ombres ── */
+  --shadow-sm:0 1px 4px rgba(0,0,0,.2);--shadow-md:0 4px 16px rgba(0,0,0,.3);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.45);
+  --shadow-glow:0 0 24px rgba(0,255,136,.35),0 0 56px rgba(0,255,136,.14);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:auto;}
 html{min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
@@ -369,7 +382,9 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
 @media(max-width:880px){
   /* Small viewport fixes (apply regardless of UA) */
-  .ob-layout{grid-template-columns:1fr;}
+  /* 100vh dépasse le viewport visible sur mobile (barre du navigateur) : c'était
+     la source du vide fantôme sous le bouton. svh = hauteur réellement visible. */
+  .ob-layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 60px);min-height:calc(100svh - 60px);}
   .ob-right{display:none !important;}
   .globe-wrap{display:none !important;}
   /* .welcome-wrap remplit toute la hauteur disponible (flex:1) et centrait son
@@ -377,25 +392,31 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
      trop bas sur mobile (le globe qui justifiait ce centrage est masqué ci-dessus). */
   #step-0 .welcome-wrap{justify-content:flex-start;padding-top:8vh;}
   .step-container{
-    padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
+    padding:84px 20px calc(24px + env(safe-area-inset-bottom,0px));
     width:auto;
     max-width:100%;
     height:auto;
-    min-height:auto;
+    min-height:calc(100vh - 60px);
+    min-height:calc(100svh - 60px);
     overflow:visible;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-y;
     overscroll-behavior-y:contain;
   }
   .ob-progress{left:20px;right:20px;}
-  /* Nav sticky en bas — visible pendant le scroll */
+  /* Nav sticky en bas — fond translucide net (backdrop-filter) au lieu du
+     dégradé qui masquait à moitié la grille des métiers en dessous */
   .nav-btns{
     position:sticky;
     bottom:0;
     left:0;right:0;
     margin:0;
-    padding:16px 20px calc(24px + env(safe-area-inset-bottom,0px));
-    background:linear-gradient(to top,rgba(6,9,19,.98) 50%,rgba(6,9,19,0) 100%);
+    margin-top:auto; /* colle le bouton au bas du flux : plus de vide fantôme sur les étapes courtes */
+    padding:14px 20px calc(20px + env(safe-area-inset-bottom,0px));
+    background:rgba(6,9,19,.82);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid rgba(255,255,255,.06);
   }
 }
 /* Centrage du contenu sur tablettes / grands écrans mobiles */
