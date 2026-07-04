@@ -391,7 +391,11 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
      texte dans cette boîte quasi pleine hauteur, ce qui le faisait paraître
      trop bas sur mobile (le globe qui justifiait ce centrage est masqué ci-dessus). */
   #step-0 .welcome-wrap{justify-content:flex-start;padding-top:8vh;}
-  .step-container{
+  /* .step-container.step-dense inclus : sa règle de base (overflow-y:auto,
+     spécificité 2 classes) gagnait sinon sur celle-ci — combinée à
+     overscroll-behavior:contain, elle piégeait le scroll tactile dans une
+     boîte sans débordement : l'étape "Vos prestations" était bloquée. */
+  .step-container, .step-container.step-dense{
     padding:84px 20px calc(24px + env(safe-area-inset-bottom,0px));
     width:auto;
     max-width:100%;
@@ -401,7 +405,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
     overflow:visible;
     -webkit-overflow-scrolling:touch;
     touch-action:pan-y;
-    overscroll-behavior-y:contain;
+    overscroll-behavior-y:auto;
   }
   .ob-progress{left:20px;right:20px;}
   /* Nav sticky en bas — fond translucide net (backdrop-filter) au lieu du
@@ -474,7 +478,9 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 #step-8 .s8-legal{margin-top:-4px;margin-bottom:10px;}
 #step-8 .s8-info{margin-bottom:16px;padding:8px 12px;font-size:.72rem;}
 @media(max-width:880px){
-  #step-8{overflow-y:auto;padding-bottom:0;}
+  /* overflow:visible (et non auto) : cohérent avec les autres étapes — le
+     document scrolle, pas une boîte interne qui piégerait le geste tactile */
+  #step-8{overflow:visible;padding-bottom:0;}
   #step-8 .nav-btns{position:sticky;left:auto;right:auto;margin-top:auto;margin-left:-32px;margin-right:-32px;padding:12px 32px calc(24px + env(safe-area-inset-bottom,0px));}
   #step-4{padding-bottom:20px;}
 }
