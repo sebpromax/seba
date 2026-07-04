@@ -372,7 +372,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
   .ob-layout{grid-template-columns:1fr;}
   .ob-right{display:none !important;}
   .globe-wrap{display:none !important;}
-  body.phone-mode .step-container{
+  .step-container{
     padding:84px 20px calc(120px + env(safe-area-inset-bottom,0px));
     width:auto;
     max-width:100%;
@@ -383,9 +383,9 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
     touch-action:pan-y;
     overscroll-behavior-y:contain;
   }
-  body.phone-mode .ob-progress{left:20px;right:20px;}
+  .ob-progress{left:20px;right:20px;}
   /* Nav sticky en bas — visible pendant le scroll */
-  body.phone-mode .nav-btns{
+  .nav-btns{
     position:sticky;
     bottom:0;
     left:0;right:0;
@@ -396,15 +396,15 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 }
 /* Centrage du contenu sur tablettes / grands écrans mobiles */
 @media(min-width:480px) and (max-width:880px){
-  body.phone-mode .step-container{
+  .step-container{
     padding-left:max(32px, calc((100% - 520px) / 2));
     padding-right:max(32px, calc((100% - 520px) / 2));
   }
-  body.phone-mode .ob-progress{
+  .ob-progress{
     left:max(32px, calc((100vw - 520px) / 2));
     right:max(32px, calc((100vw - 520px) / 2));
   }
-  body.phone-mode .nav-btns{
+  .nav-btns{
     margin-left:calc(0px - max(32px, (100vw - 520px) / 2));
     margin-right:calc(0px - max(32px, (100vw - 520px) / 2));
     padding-left:max(32px, calc((100vw - 520px) / 2));
@@ -412,22 +412,22 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
   }
 }
 @media(max-width:600px){
-  body.phone-mode .nav-btns{
+  .nav-btns{
     flex-direction:column;
     align-items:stretch;
     gap:10px;
     padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
   }
-  body.phone-mode .nav-btns .btn{width:100%;justify-content:center;}
-  body.phone-mode .nav-btns .btn-em{order:-1;}
-  body.phone-mode .nav-btns .reassurance-hint{order:0;font-size:.65rem;text-align:center;padding:0;}
+  .nav-btns .btn{width:100%;justify-content:center;}
+  .nav-btns .btn-em{order:-1;}
+  .nav-btns .reassurance-hint{order:0;font-size:.65rem;text-align:center;padding:0;}
 }
 @media(max-width:480px){
-  body.phone-mode .step-container{padding:80px 16px 16px;}
-  body.phone-mode .ob-progress{left:16px;right:16px;}
-  body.phone-mode .nav-btns{margin-left:0;margin-right:0;padding-left:16px;padding-right:16px;}
-  body.phone-mode .sector-grid{grid-template-columns:repeat(2,1fr);}
-  body.phone-mode .svc-row{grid-template-columns:1fr 68px 78px 20px;}
+  .step-container{padding:80px 16px 16px;}
+  .ob-progress{left:16px;right:16px;}
+  .nav-btns{margin-left:0;margin-right:0;padding-left:16px;padding-right:16px;}
+  .sector-grid{grid-template-columns:repeat(2,1fr);}
+  .svc-row{grid-template-columns:1fr 68px 78px 20px;}
 
   /* Hero adjustments for very small screens */
   .welcome-wrap{max-width:360px;margin:0 auto;padding-top:18px;padding-bottom:18px;text-align:center;align-items:center;}
@@ -449,13 +449,13 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 #step-8 .s8-legal{margin-top:-4px;margin-bottom:10px;}
 #step-8 .s8-info{margin-bottom:16px;padding:8px 12px;font-size:.72rem;}
 @media(max-width:880px){
-  body.phone-mode #step-8{overflow-y:auto;padding-bottom:0;}
-  body.phone-mode #step-8 .nav-btns{position:sticky;left:auto;right:auto;margin-top:auto;margin-left:-32px;margin-right:-32px;padding:12px 32px calc(24px + env(safe-area-inset-bottom,0px));}
-  body.phone-mode #step-4{padding-bottom:20px;}
+  #step-8{overflow-y:auto;padding-bottom:0;}
+  #step-8 .nav-btns{position:sticky;left:auto;right:auto;margin-top:auto;margin-left:-32px;margin-right:-32px;padding:12px 32px calc(24px + env(safe-area-inset-bottom,0px));}
+  #step-4{padding-bottom:20px;}
 }
 @media(max-width:480px){
-  body.phone-mode #step-8 .nav-btns{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
-  body.phone-mode #step-4{padding-bottom:16px;}
+  #step-8 .nav-btns{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
+  #step-4{padding-bottom:16px;}
 }
 
 /* Globe panel */

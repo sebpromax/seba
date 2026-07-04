@@ -252,7 +252,8 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
    from breaking layout on small viewports and emulators. */
 @media (max-width: 880px) {
   html, body { height: auto !important; min-height: 100%; }
-  .sidebar { position: relative !important; height: auto !important; overflow: visible !important; }
+  /* .sidebar reste gérée par la section "Mobile nav" (position:fixed, tiroir coulissant) —
+     une règle position:relative!important ici l'empêchait de jamais passer hors-écran. */
   .sidebar .sidebar-footer { position: static; }
   /* Prevent panels using 100vh from covering content */
   [style*="100vh"]{ min-height: auto !important; height: auto !important; }
