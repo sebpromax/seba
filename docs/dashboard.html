@@ -79,7 +79,27 @@
     /* ── Widget grid (Notion blocs × Apple widgets) ── */
     .widget-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 96px; gap: 16px; grid-auto-flow: dense; margin-bottom: 20px; }
     .customize-mode .widget-grid { grid-auto-rows: 122px; }
-    .widget-shell { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+    /* Glassmorphism clair : cartes translucides sur fond ambiant, lueur émeraude au survol */
+    .widget-shell { background: rgba(255,255,255,.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; transition: border-color var(--t-std) var(--ease-std), box-shadow var(--t-std) var(--ease-std), transform var(--t-std) var(--ease-std); }
+    .widget-shell:hover { border-color: rgba(0,200,150,.45); box-shadow: var(--shadow-glow); transform: translateY(-2px); }
+    .main { background:
+      radial-gradient(900px 420px at 85% -10%, rgba(0,200,150,.055), transparent 60%),
+      radial-gradient(700px 380px at -10% 30%, rgba(61,38,69,.045), transparent 55%); }
+
+    /* ── Graphique D3 : conteneur + tooltip ── */
+    .bc-d3-wrap { flex: 1; margin-top: 12px; position: relative; min-height: 0; }
+    .d3-fin-tip { position: absolute; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: .72rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none; box-shadow: var(--shadow-md); z-index: 5; }
+    .d3-fin-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--ink); }
+
+    /* ── Mini-sparkline des metric cards (posée en fond bas-droit, ne pousse pas le layout) ── */
+    .metric-card { position: relative; }
+    .metric-spark { position: absolute; right: 12px; bottom: 10px; width: 84px; opacity: .7; pointer-events: none; }
+
+    /* Performance mobile : blur coûteux → désactivé sous 760px */
+    @media (max-width: 760px) {
+      .widget-shell { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--white); }
+      .widget-shell:hover { transform: none; }
+    }
     .widget-shell[data-size="S"] { grid-column: span 1; grid-row: span 1; }
     .widget-shell[data-size="M"] { grid-column: span 2; grid-row: span 1; }
     .widget-shell[data-size="L"] { grid-column: span 2; grid-row: span 2; }
@@ -541,6 +561,7 @@
 
 <script src="businessTypes.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="widgets.js"></script>
 <script>
   /* ═══════════════════════════════════════════════════════
