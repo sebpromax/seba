@@ -336,6 +336,28 @@
     .nav-item svg{flex-shrink:0;transition:opacity .15s,color .15s;opacity:.55;}
     .nav-item:hover svg,.nav-item.active svg{opacity:1;}
 
+    /* ── Micro-interactions ── */
+    .metric-card:active, .qa-btn:active, .flash-btn:active, .portal-btn:active { transform: scale(.985); }
+    .topbar-btn { transition: border-color var(--t-fast) var(--ease-std), box-shadow var(--t-std) var(--ease-std), transform var(--t-fast) var(--ease-std); }
+    .topbar-btn:hover { box-shadow: 0 0 0 3px rgba(0,200,150,.12); }
+    .topbar-btn:active { transform: scale(.94); }
+    a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; border-radius: 4px; }
+
+    /* Ouverture des overlays : zoom doux au lieu d'un pop sec */
+    @keyframes overlayBoxIn { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+    .palette-overlay.open .palette-box, .ai-bar-overlay.open .ai-bar-box, .shortcuts-overlay.open .shortcuts-box { animation: overlayBoxIn .22s var(--ease-out) both; }
+
+    /* Menu du FAB : apparition en cascade */
+    .fab-menu.open .fab-item { animation: dbFadeUp .28s var(--ease-out) both; }
+    .fab-menu.open .fab-item:nth-child(1) { animation-delay: .05s; }
+    .fab-menu.open .fab-item:nth-child(2) { animation-delay: .10s; }
+    .fab-menu.open .fab-item:nth-child(3) { animation-delay: .15s; }
+
+    /* Accessibilité : réduire les animations si demandé par le système */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 1120px) {
       .widget-grid { grid-template-columns: repeat(2, 1fr); }
@@ -435,13 +457,13 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="topbar-btn" title="Barre de commande IA (⌘⇧K)" onclick="openAiBar()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1l1.2 3.8L13 6l-3.8 1.2L8 11l-1.2-3.8L3 6l3.8-1.2L8 1z"/></svg>
+          <button class="topbar-btn" title="Barre de commande IA (⌘⇧K)" aria-label="Ouvrir la barre de commande IA" onclick="openAiBar()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1l1.2 3.8L13 6l-3.8 1.2L8 11l-1.2-3.8L3 6l3.8-1.2L8 1z"/></svg>
           </button>
-          <button class="topbar-btn" title="Personnaliser le dashboard" onclick="openCustomizePanel()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          <button class="topbar-btn" title="Personnaliser le dashboard" aria-label="Personnaliser le dashboard" onclick="openCustomizePanel()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
           </button>
-          <div class="topbar-btn" title="Notifications">
+          <div class="topbar-btn" title="Notifications" role="button" aria-label="Notifications (2 non lues)" tabindex="0">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
             <div class="notif-badge">2</div>
           </div>
