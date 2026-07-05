@@ -30,10 +30,23 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 3. Effet immédiat : l'inscription (onboarding étape 8) crée un vrai compte, la connexion vérifie les vrais identifiants, et **le dashboard devient inaccessible sans session** (`guard.js` redirige vers la connexion).
 
 ### 1b. Groq (assistant IA du dashboard) — GRATUIT
-1. Va sur https://console.groq.com → **API Keys** → **Create API Key**.
-2. Colle la clé (`gsk_…`) dans `groqApiKey`.
-3. Effet : le bouton 🤖 du dashboard passe de "analyste local" à une vraie IA qui analyse tes données (elle reçoit un résumé JSON de tes chiffres réels).
-   ⚠️ Cette clé est **secrète** : c'est pour cela que `config.js` n'est jamais commité. Pour un produit public, il faudra la déplacer derrière un petit proxy serveur (voir Section 3).
+
+**Deux niveaux, du plus simple au plus complet :**
+
+**Niveau 1 — test en local uniquement** (déjà fait si tu as suivi ce guide) :
+1. https://console.groq.com → **API Keys** → **Create API Key**.
+2. Colle la clé (`gsk_…`) dans `docs/config.js` → `groqApiKey`.
+3. Effet : sur TON ordinateur uniquement, le chat devient une vraie IA. Sur le site public (GitHub Pages), ça reste l'analyste local — un site 100% statique ne peut jamais cacher une clé secrète.
+
+**Niveau 2 — vraie IA pour TOUT LE MONDE sur le site en ligne** (relais Supabase Edge Function, clé cachée côté serveur) :
+1. Supabase → menu **Edge Functions** → **Deploy a new function** (ou **Create function**).
+2. Nom de la fonction : `groq-chat`.
+3. Colle le contenu de **`supabase-functions/groq-chat.ts`** (racine du projet) dans l'éditeur → **Deploy**.
+4. Toujours dans Edge Functions → onglet **Secrets** (ou Project Settings → Edge Functions → Secrets) → ajoute :
+   - Nom : `GROQ_API_KEY`
+   - Valeur : ta clé `gsk_…`
+5. C'est tout — `docs/ai-assistant.js` détecte automatiquement la fonction (elle utilise l'URL Supabase déjà publique) et l'utilise en priorité. Si la fonction n'est pas encore déployée, le site retombe tout seul sur l'analyste local (aucune erreur visible pour tes visiteurs).
+   ⚠️ La clé Groq ne quitte JAMAIS le serveur avec cette méthode — c'est la seule façon propre d'avoir une vraie IA sur un site public gratuit.
 
 ### 1c. Stripe (paiements) — GRATUIT jusqu'à la 1re vente
 1. Va sur https://dashboard.stripe.com → **Développeurs → Clés API** :

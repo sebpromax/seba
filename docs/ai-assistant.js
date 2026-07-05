@@ -1,13 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
    SEBA — Assistant IA conversationnel du dashboard.
 
-   Deux moteurs, bascule automatique :
-   - GROQ configuré (config.js → groqApiKey) : vraie IA (Llama via
-     l'API Groq), avec le contexte réel de l'entreprise (métriques
-     SebaDB résumées en JSON) injecté dans le prompt système.
-   - Sinon : ANALYSTE LOCAL — réponses générées depuis les vraies
-     données (jour le plus chargé, impayés, devis à relancer, CA),
-     zéro réseau, zéro clé. L'interface est identique.
+   Trois moteurs, bascule automatique dans cet ordre :
+   1. RELAIS SUPABASE (supabase-functions/groq-chat.ts) — vraie IA
+      Groq pour TOUT LE MONDE sur le site en ligne, sans qu'aucune clé
+      secrète ne transite côté navigateur (la clé reste server-side,
+      dans les secrets de la fonction Edge). C'est le chemin normal
+      une fois la fonction déployée (voir MANUEL-SEBA-ADMIN.md §1b).
+   2. GROQ DIRECT (config.js → groqApiKey, local uniquement) — utile
+      en développement avant d'avoir déployé le relais.
+   3. ANALYSTE LOCAL — réponses générées depuis les vraies données
+      (jour le plus chargé, impayés, devis à relancer, CA), zéro
+      réseau, zéro clé. Toujours le dernier repli, ne peut pas échouer.
 ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -15,6 +19,7 @@
   const cfg = window.SEBA_CONFIG || {};
   const groqKey = (cfg.groqApiKey && !/^VOTRE_/.test(cfg.groqApiKey)) ? cfg.groqApiKey : null;
   const GROQ_MODEL = cfg.groqModel || 'llama-3.1-8b-instant';
+  const relayUrl = cfg.supabaseUrl ? cfg.supabaseUrl + '/functions/v1/groq-chat' : null;
 
   /* ── Résumé JSON des données réelles (contexte pour l'IA) ── */
   function businessContext() {
@@ -89,12 +94,42 @@
     return (data.choices && data.choices[0] && data.choices[0].message.content) || 'Réponse vide.';
   }
 
+  /* Appel du relais Supabase (clé Groq cachée côté serveur) */
+  async function relayAnswer(question) {
+    const ctx = businessContext();
+    const res = await fetch(relayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey },
+      body: JSON.stringify({ question, context: ctx }),
+    });
+    if (!res.ok) throw new Error('Relais HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.answer;
+  }
+
+  let _relayDown = false; // évite de retenter à chaque message si la fonction n'est pas déployée
+
   window.askAI = async function (question) {
+    if (relayUrl && !_relayDown) {
+      try { return await relayAnswer(question); }
+      catch (e) { _relayDown = true; /* on retente au prochain rechargement de page */ }
+    }
     if (groqKey) {
       try { return await groqAnswer(question); }
       catch (e) { return localAnalyst(question) + '\n\n_(API Groq indisponible : ' + e.message + ' — repli local.)_'; }
     }
     return localAnalyst(question);
+  };
+
+  /* Diagnostic (utile pour vérifier quel moteur répond réellement) */
+  window.sebaAIStatus = async function () {
+    if (relayUrl) {
+      try { await relayAnswer('ping'); return 'relais Supabase (Groq caché côté serveur)'; }
+      catch (e) { /* continue */ }
+    }
+    if (groqKey) return 'Groq direct (clé locale, dev uniquement)';
+    return 'analyste local (aucune IA générative)';
   };
 
   /* ═══════════ Interface de chat ═══════════ */
@@ -126,13 +161,20 @@
   const panel = document.createElement('div');
   panel.className = 'ai-chat-panel';
   panel.innerHTML =
-    '<div class="ai-chat-head">🤖 Assistant Seba <span style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (groqKey ? 'IA Groq' : 'analyste local') + '</span></div>' +
+    '<div class="ai-chat-head">🤖 Assistant Seba <span id="ai-engine-badge" style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (relayUrl ? '…' : (groqKey ? 'IA Groq (locale)' : 'analyste local')) + '</span></div>' +
     '<div class="ai-chat-msgs" id="ai-chat-msgs">' +
     '<div class="ai-msg bot">Bonjour ! Posez-moi une question sur votre activité : « Comment va mon CA ? », « Quelles factures relancer ? », « Quel est mon jour le plus chargé ? »…</div>' +
     '</div>' +
     '<div class="ai-chat-input"><input id="ai-chat-inp" type="text" placeholder="Votre question…" aria-label="Question à l\'assistant"><button id="ai-chat-send">→</button></div>';
   document.body.appendChild(fab);
   document.body.appendChild(panel);
+
+  if (relayUrl) {
+    window.sebaAIStatus().then((label) => {
+      const badge = document.getElementById('ai-engine-badge');
+      if (badge) badge.textContent = /relais/.test(label) ? 'IA Groq' : (/direct/.test(label) ? 'IA Groq (locale)' : 'analyste local');
+    });
+  }
 
   fab.addEventListener('click', () => {
     panel.classList.toggle('open');
