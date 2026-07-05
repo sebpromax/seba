@@ -168,12 +168,7 @@
             <label for="client">Client</label>
             <select id="client" class="field-input">
               <option value="">— Sélectionnez un client —</option>
-              <option value="Sophie Lacroix">Sophie Lacroix</option>
-              <option value="Marc Roussel">Marc Roussel</option>
-              <option value="Julie Dumont">Julie Dumont</option>
-              <option value="Pierre Tessier">Pierre Tessier</option>
-              <option value="Camille Faure">Camille Faure</option>
-              <option value="Thomas Berger">Thomas Berger</option>
+              <!-- clients remplis depuis SebaDB -->
               <option value="new">+ Nouveau client</option>
             </select>
           </div>
@@ -267,6 +262,7 @@
   </main>
 </div>
 
+<script src="seba-data.js"></script>
 <script>
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {
@@ -278,6 +274,17 @@
   } catch(e) {}
 
   const clientSel = document.getElementById('client');
+
+  /* Clients réels depuis le moteur de données (insérés avant "+ Nouveau client") */
+  (function fillClients() {
+    const newOpt = clientSel.querySelector('option[value="new"]');
+    SebaDB.list('clients').forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.prenom + ' ' + c.nom;
+      clientSel.insertBefore(o, newOpt);
+    });
+  })();
   const serviceSel = document.getElementById('service');
   const hoursInp  = document.getElementById('hours');
   const totalEl   = document.getElementById('total');
@@ -300,7 +307,7 @@
     if (clientSel.value === 'new') {
       return document.getElementById('new-name').value.trim() || 'Nouveau client';
     }
-    return clientSel.value;
+    return clientSel.options[clientSel.selectedIndex].text;
   }
 
   function formatDate(val) {
@@ -324,9 +331,33 @@
 
     const rate   = parseFloat(serviceSel.options[serviceSel.selectedIndex].dataset.rate) || 0;
     const hours  = parseFloat(hoursInp.value) || 0;
-    const amount = (rate && hours) ? (rate * hours) + ' €' : '—';
+    const total  = rate * hours;
+    const amount = (rate && hours) ? total + ' €' : '—';
+    const name   = clientName();
 
-    document.getElementById('conf-client').textContent  = clientName();
+    /* ── Enregistrement réel dans le moteur de données ── */
+    let clientId = clientSel.value;
+    if (clientSel.value === 'new') {
+      const created = SebaDB.create('clients', {
+        prenom: name.split(' ')[0] || name, nom: name.split(' ').slice(1).join(' ') || '',
+        contact: (document.getElementById('new-email') || {}).value || '—',
+        service: serviceSel.value, ca: 0, statut: 'attente',
+      });
+      clientId = created.id;
+      SebaDB.log('client', 'Nouveau client — ' + name, 'clients.html');
+    }
+    const localDate = (function(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+    const devis = SebaDB.create('devis', {
+      num: SebaDB.nextNum('devis'), clientId, clientName: name,
+      service: serviceSel.value,
+      lines: [{ desc: serviceSel.value + (hours ? ' — ' + hours + 'h' : ''), qty: 1, u: total || 0 }],
+      amount: total || 0, status: 'attente', date: localDate,
+      history: [{ label: 'Devis envoyé', date: localDate, cls: 'o' }],
+    });
+    SebaDB.log('devis', 'Devis envoyé ' + devis.num + ' — ' + name + (total ? ' · ' + total + ' €' : ''), 'devis.html');
+
+    document.querySelector('#confirm-state .tnum').textContent = devis.num;
+    document.getElementById('conf-client').textContent  = name;
     document.getElementById('conf-service').textContent = serviceSel.value;
     document.getElementById('conf-amount').textContent  = amount;
     document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);

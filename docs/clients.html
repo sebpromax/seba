@@ -233,16 +233,11 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="seba-data.js"></script>
 <script>
-  // ── Données clients ──
-  const CLIENTS = [
-    { id:1, prenom:'Sophie', nom:'Lacroix', contact:'s.lacroix@email.fr', service:'Ménage standard — 12 juin', ca:570, statut:'actif' },
-    { id:2, prenom:'Marc',   nom:'Roussel', contact:'06 12 34 56 78',      service:'Devis envoyé — 20 juin',   ca:0,   statut:'attente' },
-    { id:3, prenom:'Julie',  nom:'Dumont',  contact:'j.dumont@email.fr',   service:'Repassage — 14 juin',      ca:160, statut:'relance' },
-    { id:4, prenom:'Pierre', nom:'Tessier', contact:'p.tessier@email.fr',  service:'Ménage standard — 12 juin',ca:475, statut:'actif' },
-    { id:5, prenom:'Camille',nom:'Faure',   contact:'c.faure@email.fr',    service:'Nettoyage de vitres — 8 juin',ca:60, statut:'actif' },
-    { id:6, prenom:'Thomas', nom:'Berger',  contact:'06 98 76 54 32',      service:'Devis envoyé — 24 juin',   ca:0,   statut:'attente' },
-  ];
+  // ── Données clients — lues depuis le moteur de données partagé ──
+  let CLIENTS = SebaDB.list('clients');
+  SebaDB.onChange(() => { CLIENTS = SebaDB.list('clients'); updateCounts(); render(); });
 
   const BADGE = { actif:'actif', attente:'attente', relance:'relance' };
   const BADGE_LBL = { actif:'Actif', attente:'Devis envoyé', relance:'Facture en retard' };
@@ -323,6 +318,7 @@
   }
 
   function relancer(c) {
+    SebaDB.log('client', 'Relance envoyée — ' + c.prenom + ' ' + c.nom, 'clients.html');
     showToast('Relance envoyée à ' + c.prenom + ' ' + c.nom + ' ✓');
   }
 
@@ -351,15 +347,17 @@
       return;
     }
 
-    const nouveau = {
-      id: Date.now(),
+    const nouveau = SebaDB.create('clients', {
       prenom, nom,
       contact: email || tel || '—',
+      adresse: document.getElementById('ss-adresse').value.trim(),
+      notes: document.getElementById('ss-notes').value.trim(),
       service: 'Aucun service encore',
       ca: 0,
       statut: 'attente'
-    };
-    CLIENTS.unshift(nouveau);
+    });
+    SebaDB.log('client', 'Nouveau client — ' + prenom + ' ' + nom, 'clients.html');
+    CLIENTS = SebaDB.list('clients');
     updateCounts();
     render();
     closeSheet();

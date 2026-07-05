@@ -141,18 +141,46 @@
     <div class="panel">
       <table>
         <thead><tr><th>N°</th><th>Client</th><th>Service</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
-        <tbody>
-          <tr><td class="num">#F-0098</td><td>Sophie Lacroix</td><td>Ménage standard — Juin</td><td class="amount">95 €</td><td><span class="badge signe">Payée</span></td><td class="row-action">Voir</td></tr>
-          <tr><td class="num">#F-0097</td><td>Pierre Tessier</td><td>Ménage standard — Juin</td><td class="amount">95 €</td><td><span class="badge signe">Payée</span></td><td class="row-action">Voir</td></tr>
-          <tr><td class="num">#F-0096</td><td>Julie Dumont</td><td>Repassage</td><td class="amount">40 €</td><td><span class="badge expire">En retard — 12 jours</span></td><td class="row-action">Relancer</td></tr>
-          <tr><td class="num">#F-0095</td><td>Marc Roussel</td><td>Nettoyage fin de bail (acompte)</td><td class="amount">90 €</td><td><span class="badge attente">En attente</span></td><td class="row-action">Relancer</td></tr>
-          <tr><td class="num">#F-0094</td><td>Camille Faure</td><td>Nettoyage de vitres</td><td class="amount">60 €</td><td><span class="badge signe">Payée</span></td><td class="row-action">Voir</td></tr>
-        </tbody>
+        <tbody id="factures-tbody"><!-- rendu depuis SebaDB --></tbody>
       </table>
     </div>
   </main>
 </div>
 
+<script src="seba-data.js"></script>
+<script>
+  /* ── Rendu des factures depuis le moteur de données partagé ── */
+  (function renderFactures() {
+    const sym = (function(){ try { return JSON.parse(localStorage.getItem('sebaEntreprise')||'{}').deviseSymbole || '€'; } catch(e){ return '€'; } })();
+    const STATUS = {
+      payee:   { cls: 'signe',   lbl: () => 'Payée',          act: 'Voir' },
+      attente: { cls: 'attente', lbl: () => 'En attente',     act: 'Relancer' },
+      retard:  { cls: 'expire',  lbl: f => { const days = Math.max(1, Math.floor((Date.now() - new Date(f.date)) / 864e5)); return 'En retard — ' + days + ' jours'; }, act: 'Relancer' },
+    };
+    const list = SebaDB.list('factures');
+    const tbody = document.getElementById('factures-tbody');
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucune facture.</td></tr>'; return; }
+    tbody.innerHTML = list.map(f => {
+      const s = STATUS[f.status] || STATUS.attente;
+      return '<tr><td class="num">' + f.num + '</td><td>' + f.clientName + '</td><td>' + f.service + '</td>' +
+        '<td class="amount">' + f.amount + ' ' + sym + '</td>' +
+        '<td><span class="badge ' + s.cls + '">' + s.lbl(f) + '</span></td>' +
+        '<td class="row-action"><span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span></td></tr>';
+    }).join('');
+    tbody.querySelectorAll('[data-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const f = SebaDB.get('factures', el.dataset.id);
+        if (!f) return;
+        if (el.dataset.act === 'Relancer') {
+          SebaDB.log('facture', 'Relance facture ' + f.num + ' — ' + f.clientName, 'factures.html');
+          if (window.showFactToast) showFactToast('Relance envoyée pour ' + f.num + ' ✓');
+        } else if (window.showFactToast) {
+          showFactToast(f.num + ' · ' + f.clientName + ' · payée le ' + (f.paidAt ? new Date(f.paidAt).toLocaleDateString('fr-FR') : '—'));
+        }
+      });
+    });
+  })();
+</script>
 <script>
   const tabs = document.querySelectorAll('.tab[data-filter]');
   const rows = document.querySelectorAll('tbody tr');

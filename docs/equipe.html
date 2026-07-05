@@ -198,13 +198,11 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="seba-data.js"></script>
 <script>
-  // ── Données équipe ──
-  const EMPLOYES = [
-    { prenom:'Léa',   nom:'Martin',  role:'Agent de ménage', missions:5, actif:true,  acces:'planning + clients' },
-    { prenom:'Karim', nom:'Benali',  role:'Agent polyvalent', missions:4, actif:true,  acces:'planning + clients' },
-    { prenom:'Nora',  nom:'Rahmani', role:'Agente de ménage', missions:3, actif:false, acces:'planning seulement' },
-  ];
+  // ── Données équipe — lues depuis le moteur de données partagé ──
+  let EMPLOYES = SebaDB.list('employes');
+  SebaDB.onChange(() => { EMPLOYES = SebaDB.list('employes'); render(); });
 
   function initials(e) {
     return (e.prenom[0] + e.nom[0]).toUpperCase();
@@ -264,7 +262,9 @@
       return;
     }
 
-    EMPLOYES.push({ prenom, nom, role, missions: 0, actif: false, acces });
+    SebaDB.create('employes', { prenom, nom, role, missions: 0, actif: false, acces });
+    SebaDB.log('client', 'Nouvel employé — ' + prenom + ' ' + nom, 'equipe.html');
+    EMPLOYES = SebaDB.list('employes');
     render();
     closeSheet();
     ['ss-prenom','ss-nom','ss-role','ss-email','ss-tel'].forEach(id => {

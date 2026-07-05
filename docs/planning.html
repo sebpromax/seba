@@ -199,33 +199,28 @@
   </main>
 </div>
 
+<script src="seba-data.js"></script>
 <script>
-  const BASE_MONDAY = new Date(2026, 5, 22); // lundi 22 juin 2026
+  // Semaine de référence = semaine courante (lundi réel, plus de date figée)
+  const BASE_MONDAY = (function () {
+    const n = new Date();
+    n.setDate(n.getDate() - ((n.getDay() + 6) % 7));
+    n.setHours(0, 0, 0, 0);
+    return n;
+  })();
   const DAY_NAMES = ['Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.','Dim.'];
   const MONTHS_FR = ['JAN.','FÉV.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
 
-  const DEMO = [
-    [
-      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard',       moss:false},
-      {time:'14:00', client:'Pierre Tessier',  service:'Ménage standard',       moss:true},
-    ],
-    [
-      {time:'10:30', client:'Julie Dumont',    service:'Repassage',             moss:true},
-    ],
-    [],
-    [
-      {time:'11:00', client:'Marc Roussel',    service:'Fin de bail',           moss:false},
-    ],
-    [
-      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard',       moss:true},
-    ],
-    [
-      {time:'09:00', client:'Sophie Lacroix',  service:'Ménage standard — 2h',  moss:false},
-      {time:'13:30', client:'Pierre Tessier',  service:'Ménage standard — 1h30',moss:false},
-      {time:'16:00', client:'Marc Roussel',    service:'Fin de bail — 3h',      moss:false},
-    ],
-    [],
-  ];
+  function localISO(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  // Interventions du jour donné, lues depuis le moteur de données
+  function jobsForDate(dateISO) {
+    return SebaDB.list('interventions')
+      .filter(i => i.date === dateISO)
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+      .map(i => ({ time: i.time, client: i.clientName, service: i.service, moss: !!i.done, date: i.date }));
+  }
 
   let weekOffset = 0;
 
@@ -269,7 +264,7 @@
 
       col.querySelectorAll('.job, .empty-day').forEach(el => el.remove());
 
-      const jobs = offset === 0 ? DEMO[i] : [];
+      const jobs = jobsForDate(localISO(date));
       if (jobs.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'empty-day';
@@ -337,12 +332,7 @@
       <label for="ss-client">Client</label>
       <select id="ss-client">
         <option value="">— Sélectionner un client —</option>
-        <option>Sophie Lacroix</option>
-        <option>Pierre Tessier</option>
-        <option>Julie Dumont</option>
-        <option>Marc Roussel</option>
-        <option>Camille Faure</option>
-        <option>Thomas Berger</option>
+        <!-- options remplies depuis SebaDB -->
       </select>
     </div>
     <div class="ss-field">
@@ -423,8 +413,7 @@
       if (prefill.service) { const s=document.getElementById('ss-service'); [...s.options].forEach(o=>{if(o.text===prefill.service)o.selected=true;}); }
       if (prefill.time)    document.getElementById('ss-time').value = prefill.time;
     }
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('ss-date').value = prefill?.date || today;
+    document.getElementById('ss-date').value = prefill?.date || localISO(new Date());
     setTimeout(() => document.getElementById('ss-client').focus(), 120);
   }
 
@@ -434,16 +423,36 @@
     document.body.style.overflow = '';
   }
 
+  /* Remplit la liste des clients depuis le moteur de données */
+  (function fillClients() {
+    const sel = document.getElementById('ss-client');
+    SebaDB.list('clients').forEach(c => {
+      const o = document.createElement('option');
+      o.textContent = c.prenom + ' ' + c.nom;
+      o.value = c.id;
+      sel.appendChild(o);
+    });
+  })();
+
   function submitIntervention() {
-    const client  = document.getElementById('ss-client').value;
+    const sel     = document.getElementById('ss-client');
     const service = document.getElementById('ss-service').value;
-    if (!client || !service) {
+    const date    = document.getElementById('ss-date').value;
+    const time    = document.getElementById('ss-time').value || '09:00';
+    if (!sel.value || !service) {
       showToast('Veuillez choisir un client et une prestation.');
       return;
     }
+    const clientName = sel.options[sel.selectedIndex].text;
+    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false });
+    SebaDB.log('intervention', 'Intervention planifiée — ' + clientName + ' · ' + service, 'planning.html');
     closeSheet();
+    renderWeek(weekOffset);
     showToast('Intervention créée avec succès !');
   }
+
+  /* Synchro inter-onglets */
+  SebaDB.onChange(() => renderWeek(weekOffset));
 
   function showToast(msg) {
     const ex = document.getElementById('_toast');

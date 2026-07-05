@@ -185,23 +185,16 @@
         </div>
       </div>
     </div>
-    <div class="tabs">
-      <div class="tab active" data-filter="all">Tous (6)</div>
-      <div class="tab" data-filter="attente">En attente (3)</div>
-      <div class="tab" data-filter="signe">Signés (2)</div>
-      <div class="tab" data-filter="expire">Expirés (1)</div>
+    <div class="tabs" id="devis-tabs">
+      <div class="tab active" data-filter="all">Tous</div>
+      <div class="tab" data-filter="attente">En attente</div>
+      <div class="tab" data-filter="signe">Signés</div>
+      <div class="tab" data-filter="expire">Expirés</div>
     </div>
     <div class="panel">
       <table>
         <thead><tr><th>N°</th><th>Client</th><th>Service</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
-        <tbody>
-          <tr><td class="num">#0124</td><td>Marc Roussel</td><td>Nettoyage fin de bail</td><td class="amount">180 €</td><td><span class="badge attente">En attente</span></td><td class="row-action">Relancer</td></tr>
-          <tr><td class="num">#0123</td><td>Sophie Lacroix</td><td>Ménage standard (mensuel)</td><td class="amount">95 €</td><td><span class="badge signe">Signé</span></td><td class="row-action">Voir</td></tr>
-          <tr><td class="num">#0122</td><td>Camille Faure</td><td>Nettoyage de vitres</td><td class="amount">60 €</td><td><span class="badge attente">En attente</span></td><td class="row-action">Relancer</td></tr>
-          <tr><td class="num">#0121</td><td>Pierre Tessier</td><td>Ménage standard (mensuel)</td><td class="amount">95 €</td><td><span class="badge signe">Signé</span></td><td class="row-action">Voir</td></tr>
-          <tr><td class="num">#0120</td><td>Julie Dumont</td><td>Repassage</td><td class="amount">40 €</td><td><span class="badge expire">Expiré</span></td><td class="row-action">Relancer</td></tr>
-          <tr><td class="num">#0119</td><td>Thomas Berger</td><td>Ménage standard</td><td class="amount">85 €</td><td><span class="badge attente">En attente</span></td><td class="row-action">Relancer</td></tr>
-        </tbody>
+        <tbody id="devis-tbody"><!-- rendu depuis SebaDB --></tbody>
       </table>
     </div>
   </main>
@@ -288,28 +281,10 @@
   <div class="ss-footer" id="ss-footer"><!-- filled by JS --></div>
 </aside>
 
+<script src="seba-data.js"></script>
 <script>
-  /* ── Devis data ── */
-  const DEVIS_DATA = [
-    {num:'#0124',client:'Marc Roussel',  service:'Nettoyage fin de bail',    amount:180,status:'attente',date:'2026-06-18',
-     lines:[{desc:'Nettoyage fin de bail 3h',qty:1,u:180}],
-     history:[{label:'Devis envoyé',date:'18 juin 2026',cls:'o'},{label:'Devis créé',date:'17 juin 2026',cls:'g'}]},
-    {num:'#0123',client:'Sophie Lacroix',service:'Ménage standard (mensuel)',  amount:95, status:'signe', date:'2026-06-14',
-     lines:[{desc:'Ménage standard 2h',qty:1,u:65},{desc:'Repassage 1h',qty:1,u:30}],
-     history:[{label:'Devis signé',date:'15 juin 2026',cls:'g'},{label:'Devis envoyé',date:'14 juin 2026',cls:'o'},{label:'Devis créé',date:'13 juin 2026',cls:'g'}]},
-    {num:'#0122',client:'Camille Faure', service:'Nettoyage de vitres',       amount:60, status:'attente',date:'2026-06-12',
-     lines:[{desc:'Nettoyage vitres 1h30',qty:1,u:60}],
-     history:[{label:'Devis envoyé',date:'12 juin 2026',cls:'o'},{label:'Devis créé',date:'11 juin 2026',cls:'g'}]},
-    {num:'#0121',client:'Pierre Tessier',service:'Ménage standard (mensuel)', amount:95, status:'signe', date:'2026-06-10',
-     lines:[{desc:'Ménage standard 2h',qty:1,u:65},{desc:'Repassage 1h',qty:1,u:30}],
-     history:[{label:'Devis signé',date:'12 juin 2026',cls:'g'},{label:'Devis envoyé',date:'10 juin 2026',cls:'o'},{label:'Devis créé',date:'9 juin 2026',cls:'g'}]},
-    {num:'#0120',client:'Julie Dumont',  service:'Repassage',                 amount:40, status:'expire',date:'2026-05-28',
-     lines:[{desc:'Repassage 1h',qty:1,u:40}],
-     history:[{label:'Expiré',date:'11 juin 2026',cls:'gr'},{label:'Devis envoyé',date:'28 mai 2026',cls:'o'},{label:'Devis créé',date:'27 mai 2026',cls:'g'}]},
-    {num:'#0119',client:'Thomas Berger', service:'Ménage standard',           amount:85, status:'attente',date:'2026-06-20',
-     lines:[{desc:'Ménage standard 2h',qty:1,u:55},{desc:'Nettoyage cuisine',qty:1,u:30}],
-     history:[{label:'Devis envoyé',date:'20 juin 2026',cls:'o'},{label:'Devis créé',date:'19 juin 2026',cls:'g'}]},
-  ];
+  /* ── Devis — lus depuis le moteur de données partagé ── */
+  let DEVIS_DATA = SebaDB.list('devis').map(d => Object.assign({}, d, { client: d.clientName }));
 
   const STATUS_LABEL = {signe:'Signé',attente:'En attente',expire:'Expiré'};
   let _biz = {};
@@ -373,7 +348,7 @@
     }
     if (d.status === 'attente') {
       return `<button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
-        <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+        <button class="btn-ss-em" onclick="marquerSigne('${d.num}')">Marquer signé ✓</button>`;
     }
     return `<button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
       <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
@@ -389,8 +364,86 @@
     navigator.clipboard?.writeText('https://seba.app/pay/'+num.replace('#','')).catch(()=>{});
     showToast('Lien de paiement copié !');
   }
-  function relancer(num) { showToast('Relance envoyée pour '+num); closeSheet(); }
-  function renouveler(num) { showToast('Devis renouvelé — nouveau brouillon créé.'); closeSheet(); }
+  function relancer(num) {
+    const d = DEVIS_DATA.find(x => x.num === num);
+    if (d) SebaDB.log('devis', 'Relance devis ' + num + ' — ' + d.client, 'devis.html');
+    showToast('Relance envoyée pour '+num); closeSheet();
+  }
+  function renouveler(num) {
+    const old = SebaDB.list('devis').find(x => x.num === num);
+    if (old) {
+      const copy = SebaDB.create('devis', {
+        num: SebaDB.nextNum('devis'), clientId: old.clientId, clientName: old.clientName,
+        service: old.service, lines: old.lines, amount: old.amount, status: 'attente',
+        date: new Date().toISOString().slice(0,10),
+        history: [{ label: 'Devis envoyé', date: new Date().toISOString().slice(0,10), cls: 'o' }],
+      });
+      SebaDB.log('devis', 'Devis renouvelé ' + copy.num + ' — ' + old.clientName, 'devis.html');
+      refreshFromDB();
+    }
+    showToast('Devis renouvelé — nouveau devis créé.'); closeSheet();
+  }
+
+  function marquerSigne(num) {
+    const d = SebaDB.list('devis').find(x => x.num === num);
+    if (!d) return;
+    const today = new Date().toISOString().slice(0,10);
+    SebaDB.update('devis', d.id, { status: 'signe', history: [{ label: 'Devis signé', date: today, cls: 'g' }].concat(d.history || []) });
+    SebaDB.log('devis', 'Devis signé — ' + d.clientName + ' · ' + d.amount + ' ' + _sym, 'devis.html');
+    refreshFromDB();
+    showToast('Devis ' + num + ' marqué comme signé ✓'); closeSheet();
+  }
+
+  /* ── Rendu du tableau depuis le store ── */
+  function refreshFromDB() {
+    DEVIS_DATA = SebaDB.list('devis').map(d => Object.assign({}, d, { client: d.clientName }));
+    renderTable();
+    renderTabs();
+  }
+
+  function renderTable(filter) {
+    const tbody = document.getElementById('devis-tbody');
+    const list = (filter && filter !== 'all') ? DEVIS_DATA.filter(d => d.status === filter) : DEVIS_DATA;
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucun devis.</td></tr>'; return; }
+    tbody.innerHTML = list.map(d => {
+      const action = d.status === 'signe' ? 'Voir' : (d.status === 'attente' ? 'Relancer' : 'Renouveler');
+      return '<tr><td class="num">' + d.num + '</td><td>' + d.client + '</td><td>' + d.service + '</td>' +
+        '<td class="amount">' + d.amount + ' ' + _sym + '</td>' +
+        '<td><span class="badge ' + d.status + '">' + STATUS_LABEL[d.status] + '</span></td>' +
+        '<td class="row-action"><span data-num="' + d.num + '" data-act="' + action.toLowerCase() + '">' + action + '</span></td></tr>';
+    }).join('');
+    tbody.querySelectorAll('[data-num]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        const num = el.dataset.num;
+        if (el.dataset.act === 'voir') openSheet(num);
+        else if (el.dataset.act === 'relancer') openSheet(num);
+        else renouveler(num);
+      });
+    });
+    // clic sur la ligne = ouvrir le détail
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const numEl = tr.querySelector('.num');
+      if (numEl) tr.addEventListener('click', e => { if (!e.target.dataset.num) openSheet(numEl.textContent.trim()); });
+    });
+  }
+
+  let _activeFilter = 'all';
+  function renderTabs() {
+    const counts = { all: DEVIS_DATA.length, attente: 0, signe: 0, expire: 0 };
+    DEVIS_DATA.forEach(d => { if (counts[d.status] !== undefined) counts[d.status]++; });
+    const LBL = { all: 'Tous', attente: 'En attente', signe: 'Signés', expire: 'Expirés' };
+    document.querySelectorAll('#devis-tabs .tab').forEach(tab => {
+      const f = tab.dataset.filter;
+      tab.textContent = LBL[f] + ' (' + counts[f] + ')';
+      tab.onclick = () => {
+        _activeFilter = f;
+        document.querySelectorAll('#devis-tabs .tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderTable(f);
+      };
+    });
+  }
 
   function showToast(msg) {
     const ex=document.getElementById('_toast'); if(ex)ex.remove();
@@ -400,19 +453,10 @@
     setTimeout(()=>t.style.opacity='0',2800); setTimeout(()=>t.remove(),3300);
   }
 
-  /* Wire "Voir" buttons */
-  document.querySelectorAll('.row-action').forEach(btn => {
-    if (btn.textContent.trim() === 'Voir') {
-      const row = btn.closest('tr');
-      const num = row.querySelector('.num').textContent.trim();
-      btn.addEventListener('click', () => openSheet(num));
-    }
-    if (btn.textContent.trim() === 'Relancer') {
-      const row = btn.closest('tr');
-      const num = row.querySelector('.num').textContent.trim();
-      btn.addEventListener('click', () => { showToast('Relance envoyée pour '+num); });
-    }
-  });
+  /* ── Init : rendu depuis le store + synchro inter-onglets ── */
+  renderTable();
+  renderTabs();
+  SebaDB.onChange(() => refreshFromDB());
 
   document.addEventListener('keydown', e => { if (e.key==='Escape') closeSheet(); });
 </script>
