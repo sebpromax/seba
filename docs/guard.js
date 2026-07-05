@@ -14,6 +14,15 @@
   'use strict';
   if (!window.sebaAuth || !window.sebaAuth.isConfigured) return; // mode démo : pas de verrou
 
+  /* Accès démo partageable : dashboard.html?demo ouvre la visite en
+     lecture du prototype (données locales de démonstration) — utile
+     pour montrer le produit à un prospect sans créer de compte.
+     Le flag ne dure que le temps de l'onglet (sessionStorage). */
+  try {
+    if (new URLSearchParams(location.search).has('demo')) sessionStorage.setItem('seba_demo_bypass', '1');
+    if (sessionStorage.getItem('seba_demo_bypass') === '1') return;
+  } catch (e) {}
+
   window.sebaAuth.getSession().then(function (session) {
     if (!session) {
       window.location.replace('connexion.html');

@@ -6,13 +6,21 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 
 ## Section 1 — Configuration des clés API
 
-**Le principe** : toutes les clés vont dans **un seul fichier**, `docs/config.js`, qui n'existe pas encore chez toi et qui est **ignoré par git** (jamais publié).
+**Le principe — deux couches** :
+
+| Fichier | Contenu | Publié ? |
+|---|---|---|
+| `docs/config.public.js` | Supabase URL + clé *publishable* (**publiques par design** — les données sont protégées par le RLS côté serveur) | ✅ committé, déployé — le site en ligne a les vrais comptes |
+| `docs/config.js` | Clés **SECRÈTES** : Groq (`gsk_…`), et surcharges locales | ❌ gitignoré, jamais publié |
 
 ```
-1. Copie docs/config.example.js  →  docs/config.js
-2. Remplace les valeurs VOTRE_… par tes vraies clés (ci-dessous)
-3. C'est tout — le site les détecte automatiquement au chargement
+1. Supabase : déjà branché dans config.public.js ✓
+2. Pour Groq/Stripe : copie docs/config.example.js → docs/config.js
+   et remplace les valeurs VOTRE_… (config.js écrase config.public.js)
+3. Le site fusionne les deux couches automatiquement au chargement
 ```
+
+**Accès démo commercial** : une fois Supabase actif, le dashboard exige une connexion. Pour montrer le prototype à un prospect sans compte : partage le lien **`dashboard.html?demo`** (accès démo le temps de l'onglet).
 
 ### 1a. Supabase (comptes utilisateurs + données cloud) — GRATUIT
 1. Va sur https://supabase.com → **Start your project** → crée un projet (région Europe).

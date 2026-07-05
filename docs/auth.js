@@ -15,23 +15,29 @@
 (function () {
   'use strict';
 
-  /* Bootstrap : charge config.js s'il existe (sans erreur console si absent).
-     XHR synchrone assumé : il garantit que isConfigured est correct dès le
-     parse, y compris pour guard.js chargé juste après dans le <head>. */
-  if (!window.SEBA_CONFIG && location.protocol !== 'file:') {
-    try {
-      const x = new XMLHttpRequest();
-      x.open('GET', 'config.js', false);
-      x.send();
-      if (x.status === 200 && x.responseText.indexOf('SEBA_CONFIG') !== -1) {
-        (0, eval)(x.responseText);
-        // valeurs placeholder = non configuré
-        const c = window.SEBA_CONFIG || {};
-        if (/^VOTRE_/.test(c.supabaseUrl || '') || /^VOTRE_/.test(c.supabaseAnonKey || '')) {
-          c.supabaseUrl = ''; c.supabaseAnonKey = '';
-        }
-      }
-    } catch (e) {}
+  /* Bootstrap de configuration en deux couches (XHR synchrone assumé :
+     garantit que isConfigured est correct dès le parse, y compris pour
+     guard.js chargé juste après dans le <head>) :
+     1. config.public.js — committée/déployée : Supabase publishable
+        (public par design, données protégées par RLS côté serveur).
+     2. config.js — locale, gitignorée : clés SECRÈTES (Groq…) et
+        surcharges. Fusionnée PAR-DESSUS la couche publique. */
+  if (location.protocol !== 'file:') {
+    const loadLayer = (file) => {
+      try {
+        const x = new XMLHttpRequest();
+        x.open('GET', file, false);
+        x.send();
+        if (x.status === 200 && x.responseText.indexOf('SEBA_CONFIG') !== -1) (0, eval)(x.responseText);
+      } catch (e) {}
+    };
+    if (!window.SEBA_CONFIG_PUBLIC) loadLayer('config.public.js');
+    const merged = Object.assign({}, window.SEBA_CONFIG_PUBLIC || {});
+    loadLayer('config.js'); // pose window.SEBA_CONFIG si le fichier local existe
+    window.SEBA_CONFIG = Object.assign(merged, window.SEBA_CONFIG || {});
+    // valeurs placeholder = non renseignées → on les vide champ par champ
+    const c = window.SEBA_CONFIG;
+    Object.keys(c).forEach((k) => { if (/^VOTRE_/.test(String(c[k] || ''))) c[k] = ''; });
   }
 
   const cfg = window.SEBA_CONFIG || {};

@@ -54,11 +54,32 @@
     name: 'supabase',
     _pending: null,
     load() { return LocalAdapter.load(); }, // cache local immédiat
+    /* Jeton de la session utilisateur (posé par supabase-js dans
+       localStorage 'sb-<ref>-auth-token') : indispensable pour passer
+       les policies RLS (auth.uid() = user_id). Sans session → la clé
+       publique seule, et RLS refusera l'écriture : c'est voulu. */
+    _bearer() {
+      const cfg = window.SEBA_CONFIG;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (/^sb-.*-auth-token$/.test(k)) {
+            const tok = JSON.parse(localStorage.getItem(k));
+            if (tok && tok.access_token) return tok.access_token;
+          }
+        }
+      } catch (e) {}
+      return cfg.supabaseAnonKey;
+    },
+    _headers(extra) {
+      const cfg = window.SEBA_CONFIG;
+      return Object.assign({ apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + this._bearer() }, extra || {});
+    },
     async pull() {
       const cfg = window.SEBA_CONFIG;
       try {
         const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?select=state&account=eq.' + encodeURIComponent(cfg.accountId || 'default'), {
-          headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey },
+          headers: this._headers(),
         });
         if (!res.ok) return null;
         const rows = await res.json();
@@ -73,12 +94,9 @@
     async _push(state) {
       const cfg = window.SEBA_CONFIG;
       try {
-        await fetch(cfg.supabaseUrl + '/rest/v1/seba_state', {
+        await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?on_conflict=account', {
           method: 'POST',
-          headers: {
-            apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey,
-            'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates',
-          },
+          headers: this._headers({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
           body: JSON.stringify({ account: cfg.accountId || 'default', state, updated_at: new Date().toISOString() }),
         });
       } catch (e) { /* offline : le cache local fait foi, re-push à la prochaine écriture */ }
