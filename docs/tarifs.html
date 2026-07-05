@@ -70,6 +70,8 @@ a{color:inherit;text-decoration:none;}
   <meta name="theme-color" content="#0a0a0c">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+  <script src="auth.js"></script>
+  <script src="stripe-service.js"></script>
 </head>
 <body>
 
@@ -161,7 +163,8 @@ a{color:inherit;text-decoration:none;}
         <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Gestion d'équipe</span></div>
         <div class="price-feature"><span style="color:rgba(255,255,255,.15);flex-shrink:0;">—</span> <span style="opacity:.35;">Export comptable</span></div>
       </div>
-      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;">Essai gratuit</a>
+      <a href="onboarding.html" class="btn-seba" style="width:100%;padding:12px;font-size:.88rem;"
+         onclick="if(window.sebaStripe&&sebaStripe.subscribe()){event.preventDefault();}">Essai gratuit</a>
     </div>
 
     <!-- TEAM -->
