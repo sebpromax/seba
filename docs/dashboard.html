@@ -582,6 +582,7 @@
 </div>
 
 <script src="businessTypes.js"></script>
+<script src="seba-data.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="widgets.js"></script>
@@ -972,6 +973,8 @@
     document.getElementById('dash-content').style.display = 'none';
   } else {
     renderDashboard(biz);
+    /* Re-rendu quand les données changent dans un autre onglet */
+    if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -984,10 +987,12 @@
     const couleur  = biz.couleur || '#00C896';
     const services = biz.services || [];
     const slug     = biz.slug || slugify(biz.publicName || nom);
-    const demo     = DEMO[secteur] || DEMO['autre'];
     const bt       = window.businessTypes || {};
     const sectorLabel = (bt[secteur] || {}).label || secteur;
     const sym = biz.deviseSymbole || '€';
+    /* Données réelles du compte si le moteur en a, sinon démo du secteur */
+    const demoFallback = DEMO[secteur] || DEMO['autre'];
+    const demo = (window.SebaDB && SebaDB.hasData()) ? buildLiveData(demoFallback, sym) : demoFallback;
 
     /* Header */
     const h = new Date().getHours();

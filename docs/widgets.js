@@ -474,6 +474,66 @@ function buildRealTeamStatus(employees, pointages) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   DONNÉES LIVE — quand SebaDB (seba-data.js) contient de vraies
+   données, le dashboard calcule ses chiffres depuis le store au lieu
+   de la démo statique. Même forme que DEMO[secteur] : zéro changement
+   dans les widgets consommateurs.
+═══════════════════════════════════════════════════════════════ */
+function relativeTime(ts) {
+  const diff = Date.now() - ts;
+  const h = Math.floor(diff / 3600e3);
+  if (h < 1) return 'Il y a ' + Math.max(1, Math.floor(diff / 60e3)) + ' min';
+  if (h < 24) return 'Il y a ' + h + 'h';
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'Hier';
+  return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function buildLiveData(demoFallback, sym) {
+  const DB = window.SebaDB;
+  const m = DB.metrics();
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+  const prevKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0');
+  const caPrev = DB.list('factures').filter(f => f.status === 'payee' && (f.paidAt || f.date || '').startsWith(prevKey))
+    .reduce((s, f) => s + (f.amount || 0), 0);
+  const caDelta = caPrev > 0 ? Math.round((m.caMois - caPrev) / caPrev * 100) : null;
+  const clientsNouveaux = DB.list('clients').filter(c => {
+    const d = new Date(c.createdAt || 0); return (now - d) < 30 * 864e5;
+  }).length;
+  const devisVieux = DB.list('devis').filter(d => d.status === 'attente' && (now - new Date(d.date)) > 7 * 864e5).length;
+
+  const fmtVal = n => n.toLocaleString('fr-FR');
+
+  return {
+    metrics: [
+      { label: 'CA ce mois', value: fmtVal(m.caMois), unit: sym,
+        delta: caDelta !== null ? (caDelta >= 0 ? '+' : '') + caDelta + '% vs mois der.' : 'encaissé ce mois', up: caDelta === null || caDelta >= 0, href: 'factures.html' },
+      { label: 'Interventions', value: String(m.interventionsMois), unit: '',
+        delta: m.interventionsJour.length + " aujourd'hui", up: true, href: 'planning.html' },
+      { label: 'Clients actifs', value: String(m.clientsActifs), unit: '',
+        delta: clientsNouveaux ? '+' + clientsNouveaux + ' ce mois' : 'sur ' + m.clientsTotal + ' clients', up: true, href: 'clients.html' },
+      { label: 'Devis en attente', value: String(m.devisAttente), unit: '',
+        delta: devisVieux ? devisVieux + ' à relancer' : 'à jour', up: devisVieux === 0, href: 'devis.html' },
+    ],
+    timeline: m.interventionsJour.map(i => ({
+      time: i.time, done: !!i.done, type: 'intervention',
+      label: i.service + ' — ' + i.clientName,
+      sub: i.done ? 'Terminé' : 'À venir', href: 'planning.html',
+    })),
+    activity: DB.journal(4).map(e => ({
+      type: e.type === 'facture' ? 'paiement' : e.type,
+      label: e.label, time: relativeTime(e.ts), href: e.href || 'historique.html',
+    })),
+    recos: demoFallback.recos,
+    team: DB.list('employes').map(e => ({
+      name: e.prenom + ' ' + e.nom, role: e.role, working: !!e.actif, href: 'equipe.html',
+    })),
+    goal: { label: 'CA mensuel', current: m.caMois, target: demoFallback.goal.target || 3500, unit: sym },
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MOTEUR DE RÈGLES "COMPAGNON" (Phase 6) — recommandations
    proactives triées par priorité, avec repli sur DEMO[secteur].recos
 ═══════════════════════════════════════════════════════════════ */

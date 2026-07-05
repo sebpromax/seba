@@ -154,118 +154,53 @@
     </div>
 
     <div class="panel" id="event-panel">
-
-      <div class="day-group">
-        <div class="day-label">Aujourd'hui</div>
-        <a href="client-fiche.html" class="event-row" data-type="client">
-          <div class="ev-dot client"></div>
-          <span class="ev-time">Il y a 2h</span>
-          <span class="ev-type-pill client">Client</span>
-          <span class="ev-label">Nouveau client — Mme Renaud</span>
-        </a>
-        <a href="factures.html" class="event-row" data-type="paiement">
-          <div class="ev-dot paiement"></div>
-          <span class="ev-time">11:42</span>
-          <span class="ev-type-pill paiement">Paiement</span>
-          <span class="ev-label">Paiement reçu — Sophie Lacroix</span>
-          <span class="ev-amount">+160 €</span>
-        </a>
-        <a href="planning.html" class="event-row" data-type="intervention">
-          <div class="ev-dot intervention"></div>
-          <span class="ev-time">09:30</span>
-          <span class="ev-type-pill intervention">Intervention</span>
-          <span class="ev-label">Intervention terminée — M. Durand · Ménage complet</span>
-        </a>
-      </div>
-
-      <div class="day-group">
-        <div class="day-label">Hier</div>
-        <a href="devis.html" class="event-row" data-type="devis">
-          <div class="ev-dot devis"></div>
-          <span class="ev-time">16:15</span>
-          <span class="ev-type-pill devis">Devis</span>
-          <span class="ev-label">Devis signé — Pierre Tessier · Grand ménage</span>
-          <span class="ev-amount">190 €</span>
-        </a>
-        <a href="planning.html" class="event-row" data-type="intervention">
-          <div class="ev-dot intervention"></div>
-          <span class="ev-time">14:00</span>
-          <span class="ev-type-pill intervention">Intervention</span>
-          <span class="ev-label">Intervention — Mme Bernard · Ménage hebdomadaire</span>
-        </a>
-        <a href="factures.html" class="event-row" data-type="paiement">
-          <div class="ev-dot paiement"></div>
-          <span class="ev-time">11:00</span>
-          <span class="ev-type-pill paiement">Paiement</span>
-          <span class="ev-label">Facture réglée — Camille Faure</span>
-          <span class="ev-amount">+95 €</span>
-        </a>
-        <a href="devis.html" class="event-row" data-type="devis">
-          <div class="ev-dot devis"></div>
-          <span class="ev-time">09:45</span>
-          <span class="ev-type-pill devis">Devis</span>
-          <span class="ev-label">Devis envoyé — Mme Petit · Grand ménage + vitrerie</span>
-          <span class="ev-amount">280 €</span>
-        </a>
-      </div>
-
-      <div class="day-group">
-        <div class="day-label">Il y a 2 jours</div>
-        <a href="client-fiche.html" class="event-row" data-type="client">
-          <div class="ev-dot client"></div>
-          <span class="ev-time">17:30</span>
-          <span class="ev-type-pill client">Client</span>
-          <span class="ev-label">Nouveau client — M. Fontaine (parrainage Sophie Lacroix)</span>
-        </a>
-        <a href="planning.html" class="event-row" data-type="intervention">
-          <div class="ev-dot intervention"></div>
-          <span class="ev-time">10:00</span>
-          <span class="ev-type-pill intervention">Intervention</span>
-          <span class="ev-label">Intervention — M. et Mme Roy · Nettoyage post-travaux</span>
-        </a>
-        <a href="factures.html" class="event-row" data-type="paiement">
-          <div class="ev-dot paiement"></div>
-          <span class="ev-time">09:15</span>
-          <span class="ev-type-pill paiement">Paiement</span>
-          <span class="ev-label">Paiement reçu — M. et Mme Roy</span>
-          <span class="ev-amount">+340 €</span>
-        </a>
-      </div>
-
-      <div class="day-group">
-        <div class="day-label">Cette semaine</div>
-        <a href="devis.html" class="event-row" data-type="devis">
-          <div class="ev-dot devis"></div>
-          <span class="ev-time">Mar</span>
-          <span class="ev-type-pill devis">Devis</span>
-          <span class="ev-label">Devis refusé — M. Legrand · Nettoyage de vitres</span>
-        </a>
-        <a href="planning.html" class="event-row" data-type="intervention">
-          <div class="ev-dot intervention"></div>
-          <span class="ev-time">Lun</span>
-          <span class="ev-type-pill intervention">Intervention</span>
-          <span class="ev-label">Intervention — Thomas K. · Ménage récurrent</span>
-        </a>
-        <a href="factures.html" class="event-row" data-type="paiement">
-          <div class="ev-dot paiement"></div>
-          <span class="ev-time">Lun</span>
-          <span class="ev-type-pill paiement">Paiement</span>
-          <span class="ev-label">Paiement reçu — Thomas K.</span>
-          <span class="ev-amount">+110 €</span>
-        </a>
-        <a href="client-fiche.html" class="event-row" data-type="client">
-          <div class="ev-dot client"></div>
-          <span class="ev-time">Lun</span>
-          <span class="ev-type-pill client">Client</span>
-          <span class="ev-label">Fiche client mise à jour — Sophie Lacroix</span>
-        </a>
-      </div>
-
+      <!-- journal rendu depuis SebaDB -->
     </div>
   </main>
 </div>
 
+<script src="seba-data.js"></script>
 <script>
+  /* ── Journal d'activité rendu depuis le moteur de données ── */
+  (function renderJournal() {
+    const panel = document.getElementById('event-panel');
+    const entries = SebaDB.journal(100);
+    if (!entries.length) {
+      panel.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-2);">Aucune activité pour le moment. Vos actions (clients, devis, factures, interventions) apparaîtront ici.</div>';
+      return;
+    }
+    const PILL = { client: 'Client', paiement: 'Paiement', devis: 'Devis', intervention: 'Intervention', facture: 'Paiement' };
+    const DOT = { facture: 'paiement' };
+    const dayKey = ts => new Date(ts).toDateString();
+    const dayLabel = ts => {
+      const d = new Date(ts), now = new Date();
+      const diff = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+      if (diff === 0) return "Aujourd'hui";
+      if (diff === 1) return 'Hier';
+      if (diff < 7) return 'Il y a ' + diff + ' jours';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    };
+    const timeLabel = ts => new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    let html = '', currentDay = null;
+    entries.forEach(e => {
+      const k = dayKey(e.ts);
+      if (k !== currentDay) {
+        if (currentDay !== null) html += '</div>';
+        html += '<div class="day-group"><div class="day-label">' + dayLabel(e.ts) + '</div>';
+        currentDay = k;
+      }
+      const dot = DOT[e.type] || e.type;
+      html += '<a href="' + (e.href || '#') + '" class="event-row" data-type="' + dot + '">' +
+        '<div class="ev-dot ' + dot + '"></div>' +
+        '<span class="ev-time">' + timeLabel(e.ts) + '</span>' +
+        '<span class="ev-type-pill ' + dot + '">' + (PILL[e.type] || e.type) + '</span>' +
+        '<span class="ev-label">' + e.label + '</span></a>';
+    });
+    if (currentDay !== null) html += '</div>';
+    panel.innerHTML = html;
+  })();
+
   /* Avatar */
   let biz = null;
   try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
