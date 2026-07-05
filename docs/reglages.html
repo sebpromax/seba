@@ -213,6 +213,14 @@
           <div class="field-group"><label>Email de connexion</label><input type="email" value="contact@menageexpress.fr"></div>
           <div class="field-group"><label>Mot de passe</label><input type="password" value="••••••••"></div>
           <button class="btn-em" onclick="showReglToast('Mot de passe mis à jour')">Mettre à jour</button>
+
+          <h3 style="margin-top:32px;">Données & sauvegarde</h3>
+          <p class="desc">Vos données (clients, devis, factures, planning, équipe) sont stockées sur cet appareil. Exportez-les régulièrement, ou pour les transférer sur un autre appareil.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn-em" onclick="exporterDonnees()">⬇ Exporter mes données</button>
+            <button class="btn-em" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);" onclick="document.getElementById('import-file').click()">⬆ Importer une sauvegarde</button>
+            <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importerDonnees(this)">
+          </div>
         </div>
 
         <div class="panel danger-zone">
@@ -226,7 +234,36 @@
   </main>
 </div>
 
+<script src="seba-data.js"></script>
 <script>
+  /* ── Export / import des données réelles (SebaDB) ── */
+  function exporterDonnees() {
+    const blob = new Blob([SebaDB.exportJSON()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const d = new Date();
+    a.download = 'seba-sauvegarde-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showReglToast('Sauvegarde téléchargée ✓');
+  }
+  function importerDonnees(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        SebaDB.importJSON(reader.result);
+        showReglToast('Données restaurées ✓ — rechargement…');
+        setTimeout(() => location.reload(), 900);
+      } catch (e) {
+        showReglToast('Fichier invalide — import annulé');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  }
+
   function showTab(name){
     document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
     document.getElementById('tab-'+name).style.display='block';
@@ -294,6 +331,11 @@
   }
   function confirmDelete() {
     if (confirm('Êtes-vous sûr(e) de vouloir supprimer votre entreprise ? Cette action est irréversible.')) {
+      try {
+        localStorage.removeItem('seba_db');
+        localStorage.removeItem('sebaEntreprise');
+        localStorage.removeItem('seba_dashboard_layout');
+      } catch(e) {}
       showReglToast('Compte supprimé — redirection...');
       setTimeout(() => location.href = 'connexion.html', 2000);
     }
