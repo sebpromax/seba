@@ -411,6 +411,9 @@
   <meta name="theme-color" content="#FAF9F7">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+  <!-- Verrou d'accès : redirection immédiate si Supabase configuré et session absente -->
+  <script src="auth.js"></script>
+  <script src="guard.js"></script>
 </head>
 <body>
 <script>
@@ -476,7 +479,7 @@
             <div class="user-menu" id="user-menu">
               <a href="reglages.html">Mon compte</a>
               <div class="menu-sep"></div>
-              <a href="connexion.html" class="menu-deconnect">Se déconnecter</a>
+              <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
             </div>
           </div>
         </div>

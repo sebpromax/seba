@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════
+   SEBA AUTH — authentification Supabase (email / mot de passe).
+
+   Deux modes, bascule automatique :
+   - CONFIGURÉ  : window.SEBA_CONFIG.supabaseUrl + .supabaseAnonKey
+     présents (via config.js, jamais commité) → vraie auth Supabase,
+     SDK v2 chargé à la volée depuis le CDN.
+   - DÉMO       : pas de config → connexion locale simulée (le
+     prototype reste 100% fonctionnel sans compte Supabase).
+
+   API : window.sebaAuth = { isConfigured, signUp, signIn, signOut,
+   getSession } — toutes les fonctions sont async et renvoient
+   { ok, error, session? }.
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  /* Bootstrap : charge config.js s'il existe (sans erreur console si absent).
+     XHR synchrone assumé : il garantit que isConfigured est correct dès le
+     parse, y compris pour guard.js chargé juste après dans le <head>. */
+  if (!window.SEBA_CONFIG && location.protocol !== 'file:') {
+    try {
+      const x = new XMLHttpRequest();
+      x.open('GET', 'config.js', false);
+      x.send();
+      if (x.status === 200 && x.responseText.indexOf('SEBA_CONFIG') !== -1) {
+        (0, eval)(x.responseText);
+        // valeurs placeholder = non configuré
+        const c = window.SEBA_CONFIG || {};
+        if (/^VOTRE_/.test(c.supabaseUrl || '') || /^VOTRE_/.test(c.supabaseAnonKey || '')) {
+          c.supabaseUrl = ''; c.supabaseAnonKey = '';
+        }
+      }
+    } catch (e) {}
+  }
+
+  const cfg = window.SEBA_CONFIG || {};
+  const configured = !!(cfg.supabaseUrl && cfg.supabaseAnonKey);
+  let _client = null;
+  let _loading = null;
+
+  function loadSDK() {
+    if (_client) return Promise.resolve(_client);
+    if (_loading) return _loading;
+    _loading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      s.onload = () => {
+        _client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+        resolve(_client);
+      };
+      s.onerror = () => reject(new Error('CDN Supabase inaccessible'));
+      document.head.appendChild(s);
+    });
+    return _loading;
+  }
+
+  const DEMO_KEY = 'seba_session_demo';
+
+  window.sebaAuth = {
+    isConfigured: configured,
+
+    async signUp(email, password) {
+      if (!configured) {
+        try { localStorage.setItem(DEMO_KEY, JSON.stringify({ email, ts: Date.now() })); } catch (e) {}
+        return { ok: true, demo: true };
+      }
+      try {
+        const sb = await loadSDK();
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, session: data.session, needsConfirm: !data.session };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    async signIn(email, password) {
+      if (!configured) {
+        try { localStorage.setItem(DEMO_KEY, JSON.stringify({ email, ts: Date.now() })); } catch (e) {}
+        return { ok: true, demo: true };
+      }
+      try {
+        const sb = await loadSDK();
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, session: data.session };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    async signOut() {
+      try { localStorage.removeItem(DEMO_KEY); } catch (e) {}
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        await sb.auth.signOut();
+        return { ok: true };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    async getSession() {
+      if (!configured) {
+        try {
+          const demo = localStorage.getItem(DEMO_KEY);
+          return demo ? { demo: true, user: JSON.parse(demo) } : null;
+        } catch (e) { return null; }
+      }
+      try {
+        const sb = await loadSDK();
+        const { data } = await sb.auth.getSession();
+        return data.session || null;
+      } catch (e) { return null; }
+    },
+  };
+})();

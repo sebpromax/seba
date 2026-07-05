@@ -192,8 +192,9 @@ input,button{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<script src="auth.js"></script>
 <script>
-function handleLogin(){
+async function handleLogin(){
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
   const err=document.getElementById('error-msg');
@@ -206,7 +207,15 @@ function handleLogin(){
   const btn=document.getElementById('btn-connect');
   btn.textContent='Connexion…';
   btn.disabled=true;
-  setTimeout(()=>{window.location.href='dashboard.html';},600);
+  const res=await sebaAuth.signIn(email,password);
+  if(res.ok){
+    window.location.href='dashboard.html';
+  }else{
+    err.textContent=res.error==='Invalid login credentials'?'Identifiants incorrects.':(res.error||'Connexion impossible — réessayez.');
+    err.classList.add('visible');
+    btn.textContent='Se connecter';
+    btn.disabled=false;
+  }
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleLogin();});
 function toggleMobileMenu(){const m=document.getElementById('mobile-menu'),b=document.getElementById('nav-hamburger');m.classList.toggle('open');b.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
