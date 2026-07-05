@@ -66,6 +66,10 @@ a{color:inherit;text-decoration:none;}
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:rgba(0,255,136,.35);box-shadow:0 0 14px rgba(0,255,136,.5);will-change:transform;}
 @media(hover:none){#cursor-trail{display:none;}}
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a0c">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
 
