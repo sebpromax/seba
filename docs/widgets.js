@@ -224,6 +224,25 @@ function renderMetricSparkline(el, secteur, seed) {
     .attr('stroke', 'rgba(0,200,150,.55)').attr('stroke-width', 1.6).attr('stroke-linecap', 'round');
 }
 
+/* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ── */
+let _leafletPromise = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (_leafletPromise) return _leafletPromise;
+  _leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.onload = resolve;
+    js.onerror = reject;
+    document.head.appendChild(js);
+  });
+  return _leafletPromise;
+}
+
 const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
 
 function buildTimelineHTML(timeline) {
@@ -442,6 +461,91 @@ window.WIDGET_CATALOG = {
       if (!pts.length) { el.innerHTML = '<div class="tl-empty">Aucun point de tournée. <a href="haversine-engine.html" style="color:var(--emerald)">Ajouter des points →</a></div>'; return; }
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
         pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + p.nom + '</span></div>').join('');
+    } },
+
+  'chart-donut': { id: 'chart-donut', title: 'Répartition des interventions', size: 'L', category: 'core', source: 'live',
+    keywords: ['répartition', 'donut', 'camembert', 'statuts interventions', 'anneau'],
+    defaultVisible: false, defaultOrder: 14,
+    render(ctx, el) {
+      el.innerHTML = '<div class="donut-wrap" style="display:flex;align-items:center;gap:18px;height:100%;padding:12px 16px;"></div>';
+      const wrap = el.querySelector('.donut-wrap');
+      if (typeof d3 === 'undefined') { wrap.innerHTML = '<div class="tl-empty">Graphique indisponible.</div>'; return; }
+      // Répartition réelle si données, sinon démo plausible
+      let data;
+      if (window.SebaDB && SebaDB.hasData()) {
+        const list = SebaDB.list('interventions');
+        const today = new Date(); today.setHours(0,0,0,0);
+        const done = list.filter(i => i.done).length;
+        const enCours = list.filter(i => !i.done && new Date(i.date) <= today).length;
+        const aVenir = list.length - done - enCours;
+        data = [
+          { label: 'Terminées', value: done, color: '#00C896' },
+          { label: 'En cours', value: Math.max(enCours, 0), color: '#F59E0B' },
+          { label: 'À venir', value: Math.max(aVenir, 0), color: '#3D6EF2' },
+        ];
+      } else {
+        data = [
+          { label: 'Terminées', value: 14, color: '#00C896' },
+          { label: 'En cours', value: 3, color: '#F59E0B' },
+          { label: 'À venir', value: 6, color: '#3D6EF2' },
+        ];
+      }
+      const total = data.reduce((s, d) => s + d.value, 0) || 1;
+      const size = 140, R = size / 2;
+      const svg = d3.select(wrap).append('svg')
+        .attr('viewBox', `0 0 ${size} ${size}`).style('width', size + 'px').style('flex-shrink', 0);
+      const g = svg.append('g').attr('transform', `translate(${R},${R})`);
+      const pie = d3.pie().value(d => d.value).sort(null).padAngle(0.03);
+      const arc = d3.arc().innerRadius(R - 22).outerRadius(R - 4).cornerRadius(3);
+      g.selectAll('path').data(pie(data)).enter().append('path')
+        .attr('fill', d => d.data.color)
+        .transition().duration(900).ease(d3.easeCubicOut)
+        .attrTween('d', function (d) {
+          const i = d3.interpolate({ startAngle: d.startAngle, endAngle: d.startAngle }, d);
+          return t => arc(i(t));
+        });
+      g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
+        .style('font-size', '26px').style('font-weight', '800').style('fill', 'var(--ink)').text(total);
+      g.append('text').attr('text-anchor', 'middle').attr('dy', '1.4em')
+        .style('font-size', '10px').style('fill', 'var(--text-2)').text('interventions');
+      const legend = document.createElement('div');
+      legend.innerHTML = data.map(d =>
+        '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.82rem;">' +
+        '<span style="width:10px;height:10px;border-radius:3px;background:' + d.color + ';flex-shrink:0;"></span>' +
+        '<span style="color:var(--text-2);">' + d.label + '</span>' +
+        '<b style="margin-left:auto;">' + d.value + '</b></div>'
+      ).join('');
+      legend.style.cssText = 'flex:1;min-width:0;';
+      wrap.appendChild(legend);
+    } },
+
+  'lot-carte': { id: 'lot-carte', title: 'Carte des interventions', size: 'L', category: 'companion', source: 'live',
+    keywords: ['carte', 'map', 'tournée sur carte', 'localisation', 'itinéraire carte', 'géolocalisation'],
+    defaultVisible: false, defaultOrder: 24, link: { href: 'planning.html', label: 'Planning →' },
+    render(ctx, el) {
+      el.innerHTML = '<div class="widget-map" style="height:100%;min-height:150px;border-radius:0 0 var(--r) var(--r);overflow:hidden;"></div>';
+      const box = el.querySelector('.widget-map');
+      loadLeaflet().then(() => {
+        const jour = (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsJour : [];
+        const map = L.map(box, { zoomControl: false, attributionControl: false }).setView([48.8566, 2.3522], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+        const pts = jour.length ? jour : [{ clientName: 'Aucune intervention aujourd\'hui', time: '', service: '' }];
+        const markers = [];
+        pts.forEach((i, idx) => {
+          // position pseudo-aléatoire mais STABLE par client (hash du nom) autour du centre
+          let h = 0; const s = i.clientName || String(idx);
+          for (let c = 0; c < s.length; c++) h = ((h << 5) - h + s.charCodeAt(c)) | 0;
+          const lat = 48.8566 + ((h % 1000) / 1000 - 0.5) * 0.12;
+          const lng = 2.3522 + (((h >> 10) % 1000) / 1000 - 0.5) * 0.18;
+          const m = L.circleMarker([lat, lng], { radius: 9, color: '#00C896', weight: 2.5, fillColor: '#00C896', fillOpacity: 0.35 }).addTo(map);
+          if (i.time) m.bindPopup('<b>' + i.time + '</b> — ' + i.clientName + '<br>' + i.service);
+          markers.push(m);
+        });
+        if (markers.length > 1) map.fitBounds(L.featureGroup(markers).getBounds().pad(0.25));
+        setTimeout(() => map.invalidateSize(), 250);
+      }).catch(() => {
+        box.innerHTML = '<div class="tl-empty">Carte indisponible hors ligne.</div>';
+      });
     } },
 
   'lot-treso': { id: 'lot-treso', title: 'Position de trésorerie', size: 'M', category: 'companion', source: 'lot:treso',

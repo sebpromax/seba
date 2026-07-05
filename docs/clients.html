@@ -164,6 +164,15 @@
       <h1>Clients</h1>
       <div class="topbar-right">
         <button class="btn-em" onclick="openSheet()">+ Ajouter un client</button>
+        <button class="btn-em" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);gap:6px;" onclick="document.getElementById('csvFileInput').click()" title="Importer des clients depuis un fichier Excel/CSV">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 11V2M4.5 6.5L8 3l3.5 3.5M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2"/></svg>
+          Importer CSV
+        </button>
+        <button class="btn-em" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);gap:6px;" onclick="exporterClientsCSV()" title="Télécharger tous vos clients au format CSV">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4.5 7.5L8 11l3.5-3.5M2 12v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
+          Exporter
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="importerClientsCSV(this)">
         <div class="avatar-wrap">
           <div class="avatar" id="avatar-btn">ML</div>
           <div class="user-menu" id="user-menu">
@@ -238,6 +247,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="seba-data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+<script src="import-export.js" defer></script>
 <script>
   // ── Données clients — lues depuis le moteur de données partagé ──
   let CLIENTS = SebaDB.list('clients');
