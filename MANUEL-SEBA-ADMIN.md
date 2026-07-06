@@ -96,6 +96,30 @@ Utilise désormais le même relais `ai-relay` que la section 1b ci-dessus (plus 
 ### 1i. Stockage de fichiers (Cloudflare R2) — pas encore branché
 Pas de fonction dédiée pour l'instant : le stockage Supabase (1 Go gratuit) suffit tant que tu ne stockes pas de photos de chantier ou de PDF en masse. Si ça devient limitant, Cloudflare R2 (10 Go gratuits, zéro frais de sortie) est le candidat naturel — à activer seulement quand le besoin réel apparaît, pour ne pas ajouter de complexité inutile.
 
+### 1j. Automatisation quotidienne (relances automatiques) — GRATUIT, sans serveur
+Une fois par jour, `daily-digest.ts` regarde chaque compte : s'il y a des factures en retard ou des devis en attente, il demande une recommandation à l'IA (Mistral/Groq) et prévient le patron par email + push. Ne fait rien (aucun coût, aucun envoi) pour les comptes qui n'ont rien d'actionnable ce jour-là.
+
+1. Supabase → **Edge Functions** → **Deploy a new function**, nom `daily-digest`.
+2. Colle le contenu de **`supabase-functions/daily-digest.ts`** → **Deploy**. (Réutilise les secrets déjà configurés en 1b/1e/1f : `MISTRAL_API_KEY`/`GROQ_API_KEY`, `RESEND_API_KEY`, `ONESIGNAL_APP_ID`/`ONESIGNAL_API_KEY` — rien de nouveau à ajouter si tu as déjà fait ces étapes.)
+3. Supabase → **Database → Extensions** → active `pg_cron` et `pg_net` (deux clics, gratuit, inclus dans Postgres).
+4. Supabase → **SQL Editor** → **New query**, colle ceci en remplaçant `TA_CLE_SERVICE_ROLE` par ta clé **service_role** (Settings → API → `service_role` — ⚠️ jamais dans le repo, seulement ici, une fois, dans l'éditeur SQL) :
+   ```sql
+   select cron.schedule(
+     'seba-daily-digest',
+     '0 7 * * *', -- tous les jours à 7h UTC (8h/9h en France selon la saison)
+     $$
+     select net.http_post(
+       url := 'https://ptmudezhxnhhyctowlqp.supabase.co/functions/v1/daily-digest',
+       headers := jsonb_build_object('Authorization', 'Bearer TA_CLE_SERVICE_ROLE', 'Content-Type', 'application/json'),
+       body := '{}'::jsonb
+     );
+     $$
+   );
+   ```
+   → **Run**. C'est tout : la tâche planifiée est créée, aucun serveur à maintenir (Supabase l'exécute lui-même).
+5. Pour vérifier que ça tourne : Supabase → **Database → Cron Jobs** affiche l'historique des exécutions.
+6. Pour arrêter : `select cron.unschedule('seba-daily-digest');` dans le SQL Editor.
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)
