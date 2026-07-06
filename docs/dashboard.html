@@ -260,6 +260,12 @@
     #horizon-line { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
     .horizon-tip { position: absolute; z-index: 5; pointer-events: none; background: #000; border: 1px solid var(--border); color: #fff; font-size: .74rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; opacity: 0; transition: opacity .15s; transform: translate(-50%, -135%); }
     .horizon-tip.visible { opacity: 1; }
+
+    /* ── Timeline de Vie (Bible II.6) — pouls d'activité, ligne verticale ── */
+    .timeline-life-section { position: relative; height: 220px; margin-bottom: 20px; }
+    #timeline-life { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+    .tl-life-tip { position: absolute; z-index: 5; pointer-events: none; background: #000; border: 1px solid var(--border); color: #fff; font-size: .76rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; max-width: 220px; white-space: nowrap; transform: translateY(-50%); }
+    .tl-life-tip.visible { opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .serenity-canvas { opacity: .92; } }
     /* La bordure au survol reflète l'état de santé plutôt que rester émeraude par défaut */
     .widget-shell[data-serenity-state="attention"]:hover { border-color: rgba(255,184,0,.45) !important; box-shadow: 0 0 0 1px rgba(255,184,0,.28), 0 4px 24px rgba(255,184,0,.14); }
@@ -573,6 +579,9 @@
 
       <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
       <section class="horizon-section"><canvas id="horizon-line"></canvas></section>
+
+      <!-- ── Timeline de Vie (Bible II.6) — pouls d'activité, ligne verticale ── -->
+      <section class="timeline-life-section"><canvas id="timeline-life"></canvas></section>
 
     </div><!-- /dash-content -->
   </main>
@@ -1079,6 +1088,7 @@
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);
     if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
+    if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
     setTimeout(animateMetrics, 80);
   }
 

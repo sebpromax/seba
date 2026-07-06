@@ -669,6 +669,175 @@ function startHorizonAnimation(canvas, wrap, series, sym) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   TIMELINE DE VIE (Bible II.6) — pouls de l'activité. Ligne verticale
+   fine, un point par événement récent, chaque point émet une onde
+   de choc périodique (taille/luminosité ∝ importance). Les points
+   glissent doucement en place à l'entrée plutôt que d'apparaître
+   d'un coup ; au survol, description en fondu.
+═══════════════════════════════════════════════════════════════ */
+
+const TL_LIFE_TYPE_LABEL = { client: 'Client', paiement: 'Paiement', devis: 'Devis', intervention: 'Intervention' };
+
+/* Reconstruit une "importance" (0..1) à partir du montant embarqué dans le
+   libellé quand il y en a un (ex: "· 160 €"), sinon un poids par défaut
+   selon le type d'événement — même hiérarchie que les points de couleur
+   déjà utilisés ailleurs (paiement/intervention = émeraude, devis = ambre,
+   client = plum). */
+function buildTimelinePulses(wctx) {
+  const activity = (wctx.demo && wctx.demo.activity) || [];
+  const DEFAULT_IMPORTANCE = { paiement: 0.6, devis: 0.5, client: 0.4, intervention: 0.3 };
+  return activity.map((a, i) => {
+    const m = /([\d\s]+)\s*€/.exec(a.label || '');
+    const amount = m ? parseInt(m[1].replace(/\s/g, ''), 10) : null;
+    const raw = amount != null ? amount / 500 : (DEFAULT_IMPORTANCE[a.type] || 0.35);
+    return {
+      id: i, type: a.type, label: a.label, time: a.time, href: a.href,
+      importance: Math.max(0.25, Math.min(1, raw)),
+    };
+  });
+}
+
+function timelineColorFor(type) {
+  if (type === 'devis') return readThemeVar('--amber', '#FFB800');
+  if (type === 'client') return readThemeVar('--plum', '#C9A9DA');
+  return readThemeVar('--emerald', '#00FF9D'); // paiement, intervention, défaut
+}
+
+let _timelineLifeCleanup = null;
+
+function renderTimelineLife(wctx) {
+  const canvas = document.getElementById('timeline-life');
+  if (!canvas) return;
+  if (_timelineLifeCleanup) { _timelineLifeCleanup(); _timelineLifeCleanup = null; }
+  _timelineLifeCleanup = startTimelineLifeAnimation(canvas, canvas.parentElement, buildTimelinePulses(wctx));
+}
+
+function startTimelineLifeAnimation(canvas, wrap, events) {
+  const ctx2d = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0, cx = 0, points = [];
+
+  function layout() {
+    const padY = H * 0.12;
+    const n = events.length;
+    points = events.map((ev, i) => ({
+      ev,
+      x: cx,
+      restY: n <= 1 ? H / 2 : padY + (i / (n - 1)) * (H - padY * 2),
+      phase: (i * 613) % 2600, // décalage du pouls, déterministe mais désynchronisé
+      entryDelay: i * 90,
+    }));
+  }
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    W = canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    H = canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    cx = W / 2;
+    layout();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const tip = document.createElement('div');
+  tip.className = 'tl-life-tip';
+  wrap.appendChild(tip);
+  let hover = null;
+
+  function onMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const my = (e.clientY - rect.top) * dpr;
+    let best = null, bd = 22 * dpr;
+    points.forEach(p => { const d = Math.abs(p.restY - my); if (d < bd) { bd = d; best = p; } });
+    hover = best;
+    if (best) {
+      const lbl = (TL_LIFE_TYPE_LABEL[best.ev.type] || '') + ' — ' + best.ev.label + ' · ' + best.ev.time;
+      tip.textContent = lbl;
+      tip.style.left = (best.x / dpr + 16) + 'px';
+      tip.style.top = (best.restY / dpr) + 'px';
+      tip.classList.add('visible');
+    } else {
+      tip.classList.remove('visible');
+    }
+  }
+  function onLeave() { hover = null; tip.classList.remove('visible'); }
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('mouseleave', onLeave);
+
+  const start = performance.now();
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PULSE_PERIOD = 2600; // ms, un battement toutes les ~2.6s
+  let raf = null;
+
+  function frame() {
+    const now = performance.now();
+    const elapsed = now - start;
+    ctx2d.clearRect(0, 0, W, H);
+
+    /* Fil de lumière — le "vaisseau" que traversent les ondes */
+    const lineColor = readThemeVar('--border', 'rgba(255,255,255,.1)');
+    ctx2d.strokeStyle = lineColor;
+    ctx2d.lineWidth = 1.5 * dpr;
+    ctx2d.beginPath();
+    ctx2d.moveTo(cx, H * 0.08);
+    ctx2d.lineTo(cx, H * 0.92);
+    ctx2d.stroke();
+
+    points.forEach(p => {
+      const entryT = Math.max(0, Math.min(1, (elapsed - p.entryDelay) / 450));
+      if (entryT <= 0) return; // pas encore entré dans le flux
+      const eased = 1 - Math.pow(1 - entryT, 3); // easeOutCubic
+      const y = p.restY - (1 - eased) * (24 * dpr);
+      const alpha = eased;
+      const color = timelineColorFor(p.ev.type);
+      const isHover = hover === p;
+
+      /* Onde de choc périodique — taille/opacité ∝ importance */
+      if (!reduceMotion) {
+        const cyclePos = ((elapsed + p.phase) % PULSE_PERIOD) / PULSE_PERIOD;
+        const waveR = (3 + p.ev.importance * 20) * cyclePos * dpr;
+        const waveA = (1 - cyclePos) * 0.55 * p.ev.importance * alpha;
+        ctx2d.beginPath();
+        ctx2d.arc(p.x, y, waveR, 0, Math.PI * 2);
+        ctx2d.strokeStyle = color;
+        ctx2d.globalAlpha = waveA;
+        ctx2d.lineWidth = 1.6 * dpr;
+        ctx2d.stroke();
+      }
+
+      /* Point fixe de l'événement */
+      const dotR = (isHover ? 5 : 3 + p.ev.importance * 2.5) * dpr;
+      ctx2d.beginPath();
+      ctx2d.arc(p.x, y, dotR, 0, Math.PI * 2);
+      ctx2d.fillStyle = color;
+      ctx2d.globalAlpha = alpha * (isHover ? 1 : 0.85);
+      ctx2d.shadowColor = color;
+      ctx2d.shadowBlur = (isHover ? 14 : 6) * dpr;
+      ctx2d.fill();
+      ctx2d.shadowBlur = 0;
+      ctx2d.globalAlpha = 1;
+    });
+
+    /* Sous prefers-reduced-motion, les entrées se stabilisent puis la boucle
+       s'arrête (pas d'onde en continu) — sinon elle tourne tant qu'un point
+       est encore en train de glisser en place. */
+    const stillEntering = points.some(p => elapsed - p.entryDelay < 450);
+    if (!reduceMotion || stillEntering) raf = requestAnimationFrame(frame);
+  }
+  frame();
+
+  return function destroy() {
+    if (raf) cancelAnimationFrame(raf);
+    window.removeEventListener('resize', resize);
+    canvas.removeEventListener('mousemove', onMove);
+    canvas.removeEventListener('mouseleave', onLeave);
+    tip.remove();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
    WIDGET_CATALOG — cœur (Phase 1/2) + compagnon issus des
    pages-outils (Phase 5). size: S|M|L|XL, category: core|companion.
 ═══════════════════════════════════════════════════════════════ */
