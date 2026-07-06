@@ -83,6 +83,15 @@ input,button{font-family:'Inter',sans-serif;}
 .field input::placeholder{color:rgba(255,255,255,.2);}
 .field input:focus{border-color:rgba(0,255,136,.5);background:rgba(0,255,136,.04);outline:none;}
 
+.field-pw-wrap{position:relative;}
+.field-pw-wrap input{width:100%;padding-right:42px;}
+.toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);transition:color .2s;}
+.toggle-pw:hover{color:#00ff88;}
+.toggle-pw svg{width:18px;height:18px;}
+.toggle-pw .eye-off{display:none;}
+.toggle-pw.showing .eye{display:none;}
+.toggle-pw.showing .eye-off{display:block;}
+
 .forgot{display:flex;justify-content:flex-end;margin-top:-6px;margin-bottom:18px;}
 .forgot a{font-size:.76rem;color:rgba(255,255,255,.3);transition:color .2s;}
 .forgot a:hover{color:#00ff88;}
@@ -176,7 +185,13 @@ input,button{font-family:'Inter',sans-serif;}
 
     <div class="field">
       <label for="password">Mot de passe</label>
-      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="field-pw-wrap">
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePasswordVisibility()" aria-label="Afficher le mot de passe" title="Afficher/masquer le mot de passe">
+          <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+        </button>
+      </div>
     </div>
 
     <div class="forgot"><a href="#">Mot de passe oublié ?</a></div>
@@ -218,6 +233,14 @@ async function handleLogin(){
   }
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleLogin();});
+function togglePasswordVisibility(){
+  const inp=document.getElementById('password');
+  const btn=document.getElementById('toggle-pw');
+  const showing=inp.type==='password';
+  inp.type=showing?'text':'password';
+  btn.classList.toggle('showing',showing);
+  btn.setAttribute('aria-label',showing?'Masquer le mot de passe':'Afficher le mot de passe');
+}
 function toggleMobileMenu(){const m=document.getElementById('mobile-menu'),b=document.getElementById('nav-hamburger');m.classList.toggle('open');b.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
 function closeMobileMenu(){document.getElementById('mobile-menu').classList.remove('open');document.getElementById('nav-hamburger').classList.remove('open');document.body.style.overflow='';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
