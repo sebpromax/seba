@@ -336,7 +336,11 @@ function renderSerenityScore(wctx, el) {
   const score = computeSerenityScore(wctx);
   const state = serenityStateFor(score);
   const goal = wctx.demo.goal;
-  const pctObjectif = (goal && goal.target > 0) ? Math.round(goal.current / goal.target * 100) : null;
+  /* Trésorerie = estimation simplifiée (CA du mois moins les factures en retard
+     encore non encaissées) — même logique que le companion "Position de
+     trésorerie", pas un vrai calcul de cash-flow. */
+  const lateTotal = (wctx.creances || []).reduce((s, c) => s + (c.montant || 0), 0);
+  const tresorerie = Math.max(0, goal.current - lateTotal);
 
   el.innerHTML =
     '<div class="serenity-wrap">' +
@@ -346,8 +350,8 @@ function renderSerenityScore(wctx, el) {
         '<div class="serenity-score-lbl">' + state.label + '</div>' +
       '</div>' +
       '<div class="serenity-orbit">' +
-        '<div class="serenity-orbit-item o1"><span class="oi-lbl">CA du mois</span><span class="oi-val">' + fmtNum(goal.current, wctx.sym) + '</span></div>' +
-        '<div class="serenity-orbit-item o2"><span class="oi-lbl">Objectif</span><span class="oi-val">' + (pctObjectif !== null ? pctObjectif + ' %' : '—') + '</span></div>' +
+        '<span class="serenity-orbit-item o10h"><span class="oi-lbl">Trésorerie</span><span class="oi-val">' + fmtNum(tresorerie, wctx.sym) + '</span></span>' +
+        '<span class="serenity-orbit-item o2h"><span class="oi-lbl">CA</span><span class="oi-val">' + fmtNum(goal.current, wctx.sym) + '</span></span>' +
       '</div>' +
     '</div>';
 

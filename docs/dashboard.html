@@ -222,10 +222,16 @@
     .serenity-score-num { font-size: 2.7rem; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
     .serenity-score-lbl { font-size: .76rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .09em; margin-top: 2px; }
     .serenity-orbit { position: absolute; inset: 0; pointer-events: none; }
-    .serenity-orbit-item { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--rs); opacity: 0; transform: scale(.9); transition: opacity .3s var(--ease-std), transform .3s var(--ease-std); }
-    .serenity-wrap:hover .serenity-orbit-item { opacity: 1; transform: scale(1); }
-    .serenity-orbit-item.o1 { top: 14%; left: 6%; }
-    .serenity-orbit-item.o2 { bottom: 14%; right: 6%; }
+    /* Repos : invisibles, légèrement affaissés (translateY positif) — l'apparition
+       au survol "remonte" les libellés dans leur position, comme happés par une
+       légère gravité inversée. Easing à léger dépassement (même courbe que le FAB)
+       pour une sensation d'assemblage physique, pas un simple fondu plat. */
+    .serenity-orbit-item { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--rs); opacity: 0; transform: translateY(10px) scale(.9); transition: opacity .35s var(--ease-out), transform .4s cubic-bezier(.34,1.56,.64,1); }
+    .serenity-wrap:hover .serenity-orbit-item { opacity: 1; transform: translateY(0) scale(1); }
+    /* 10h et 2h : deux points au-dessus de la sphère, symétriques de part et d'autre */
+    .serenity-orbit-item.o10h { top: 10%; left: 16%; }
+    .serenity-orbit-item.o2h { top: 10%; right: 16%; }
+    .serenity-wrap:hover .serenity-orbit-item.o2h { transition-delay: .05s; }
     .oi-lbl { font-size: .63rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
     .oi-val { font-size: .88rem; font-weight: 700; color: var(--ink); }
     @media (prefers-reduced-motion: reduce) { .serenity-canvas { opacity: .92; } }
