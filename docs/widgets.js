@@ -838,6 +838,68 @@ function startTimelineLifeAnimation(canvas, wrap, events) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   CONSCIENCE SEBA (Bible II.7) — notifications prédictives en
+   "aura" : n'interrompent jamais (pas de modale, flottent dans un
+   coin), deux choix seulement (Valider/Ignorer). Valider = la carte
+   se dissout et se "morphe" en Vecteur d'Action (II.4) plutôt que de
+   simplement disparaître — la prédiction devient une tâche concrète.
+═══════════════════════════════════════════════════════════════ */
+
+/* Structure de données simple pour tester le système — deux scénarios
+   d'anticipation, avant tout branchement sur une vraie heuristique. */
+const AURA_TEST_SCENARIOS = [
+  { message: 'Paiement client X incertain (80% de retard)', probability: 80 },
+  { message: 'Planning semaine prochaine à 90% de capacité', probability: 90 },
+];
+
+function showAuraNotification(message, probability) {
+  const stack = document.getElementById('aura-stack');
+  if (!stack) return null;
+
+  const card = document.createElement('div');
+  card.className = 'aura-card';
+  card.innerHTML =
+    '<div class="aura-badge">' + probability + ' %</div>' +
+    '<div class="aura-msg">' + message + '</div>' +
+    '<div class="aura-actions">' +
+      '<button class="aura-btn ignore" type="button">Ignorer</button>' +
+      '<button class="aura-btn validate" type="button">Valider</button>' +
+    '</div>';
+  stack.appendChild(card);
+  requestAnimationFrame(() => card.classList.add('visible'));
+
+  card.querySelector('.ignore').addEventListener('click', () => dismissAuraNotification(card, false, message));
+  card.querySelector('.validate').addEventListener('click', () => dismissAuraNotification(card, true, message));
+  return card;
+}
+
+function dismissAuraNotification(card, validated, message) {
+  card.classList.add('leaving');
+  card.addEventListener('transitionend', () => {
+    card.remove();
+    if (!validated) return;
+    /* Morphing : la prédiction devient un Vecteur d'Action réel (II.4).
+       On réutilise createActionCard tel quel — seule la matérialisation
+       (opacité/scale) est pilotée ici pour vendre l'idée de transformation
+       plutôt qu'une simple apparition. */
+    const newCard = createActionCard('Passer à l\'action', message);
+    if (newCard) {
+      newCard.classList.add('materializing');
+      requestAnimationFrame(() => requestAnimationFrame(() => newCard.classList.remove('materializing')));
+      newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, { once: true });
+}
+
+/* Déclenche les scénarios de démonstration, décalés pour rester non
+   intrusif (elles n'arrivent pas toutes en même temps à l'ouverture). */
+function triggerAuraDemo() {
+  AURA_TEST_SCENARIOS.forEach((s, i) => {
+    setTimeout(() => showAuraNotification(s.message, s.probability), 2500 + i * 3500);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
    WIDGET_CATALOG — cœur (Phase 1/2) + compagnon issus des
    pages-outils (Phase 5). size: S|M|L|XL, category: core|companion.
 ═══════════════════════════════════════════════════════════════ */
