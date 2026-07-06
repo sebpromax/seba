@@ -1372,6 +1372,12 @@ function renderGrid(gridEl, ctx, customizeMode) {
    DRAG-AND-DROP (Phase 4) — SortableJS, actif uniquement en
    mode personnalisation. Boutons clavier monter/descendre en repli.
 ═══════════════════════════════════════════════════════════════ */
+/* ── Drag & Drop Haptique (Bible IV.8) ──────────────────────────────────────
+   SortableJS gère uniquement les enfants de #widget-grid (les .widget-shell).
+   Le rail de la Timeline de Vie (.timeline-life-rail) est un élément
+   position:fixed rendu en dehors de .app, jamais un enfant de la grille —
+   il est donc structurellement impossible à saisir par ce Sortable, sans
+   exclusion explicite à ajouter. ── */
 let _sortableInstance = null;
 function initSortable(gridEl) {
   if (typeof Sortable === 'undefined') return;
@@ -1379,9 +1385,20 @@ function initSortable(gridEl) {
   _sortableInstance = Sortable.create(gridEl, {
     handle: '.widget-drag-handle',
     animation: 150,
-    onEnd() {
+    easing: 'cubic-bezier(.34,1.56,.64,1)', // léger dépassement = sensation d'aimantation/accélération au snap
+    onStart(evt) {
+      evt.item.classList.add('is-dragging');
+    },
+    onEnd(evt) {
+      evt.item.classList.remove('is-dragging');
       const ids = Array.from(gridEl.children).map(el => el.dataset.widgetId);
       persistOrder(ids);
+      /* Verrouillage : onde lumineuse émeraude sur les bords, puis nettoyage */
+      const el = evt.item;
+      el.classList.remove('lock-wave'); // relance l'animation même si elle tournait déjà
+      void el.offsetWidth; // force le reflow pour redémarrer le keyframe
+      el.classList.add('lock-wave');
+      el.addEventListener('animationend', () => el.classList.remove('lock-wave'), { once: true });
     },
   });
 }
