@@ -72,7 +72,7 @@ Puis ajouter **avant** `seba-data.js` dans chaque page pro :
 `SebaDB` détecte `window.SEBA_CONFIG` au chargement : lecture instantanée depuis le cache local, rapatriement du cloud en arrière-plan, sauvegarde débouncée (800 ms) vers Supabase à chaque écriture, tolérance hors-ligne (le cache local fait foi, re-push à la prochaine écriture).
 
 ## Étapes suivantes recommandées (dans l'ordre)
-1. **Auth Supabase** (email/mot de passe — le formulaire de l'étape 8 de l'onboarding et connexion.html existent déjà) → un `accountId` par utilisateur réel + policies RLS `auth.uid()`.
+1. ~~**Auth Supabase** → un `accountId` par utilisateur réel + policies RLS `auth.uid()`.~~ **Fait (2026-07-07)** : `SupabaseAdapter._accountId()` dans `docs/seba-data.js` dérive l'`account` directement du `sub` du JWT de session (auth.uid() réel), au lieu de l'ancien `accountId` unique et partagé de `config.public.js` — chaque utilisateur a désormais sa propre ligne `seba_state`.
 2. **Normalisation** : passer du blob JSON à de vraies tables (`clients`, `devis`, `factures`…) quand le produit est validé — l'API de `SebaDB` ne change pas, seul l'adaptateur évolue.
 3. **Stripe** (liens de paiement sur les factures) puis **PDF conformes France** — voir `strategie/plan-marche-produit-2026.md`.
 

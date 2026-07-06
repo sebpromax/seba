@@ -71,6 +71,31 @@
       } catch (e) {}
       return cfg.supabaseAnonKey;
     },
+    /* Identifiant de compte réel = auth.uid() de l'utilisateur connecté,
+       extrait directement du JWT déjà stocké par supabase-js (même jeton
+       que _bearer() ci-dessus) — synchrone, pas d'attente sur une session
+       async. Avant ce correctif, TOUS les comptes utilisaient le même
+       accountId figé (config.public.js), donc la même ligne primary-key
+       dans seba_state : le 1er inscrit la possédait, et les policies RLS
+       (auth.uid() = user_id) bloquaient silencieusement l'upsert de tous
+       les suivants (ni écriture, ni lecture de leurs propres données). */
+    _accountId() {
+      const cfg = window.SEBA_CONFIG;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (/^sb-.*-auth-token$/.test(k)) {
+            const tok = JSON.parse(localStorage.getItem(k));
+            const jwt = tok && tok.access_token;
+            if (jwt) {
+              const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+              if (payload && payload.sub) return payload.sub;
+            }
+          }
+        }
+      } catch (e) {}
+      return cfg.accountId || 'default';
+    },
     _headers(extra) {
       const cfg = window.SEBA_CONFIG;
       return Object.assign({ apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + this._bearer() }, extra || {});
@@ -78,7 +103,7 @@
     async pull() {
       const cfg = window.SEBA_CONFIG;
       try {
-        const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?select=state&account=eq.' + encodeURIComponent(cfg.accountId || 'default'), {
+        const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?select=state&account=eq.' + encodeURIComponent(this._accountId()), {
           headers: this._headers(),
         });
         if (!res.ok) return null;
@@ -97,7 +122,7 @@
         await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?on_conflict=account', {
           method: 'POST',
           headers: this._headers({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
-          body: JSON.stringify({ account: cfg.accountId || 'default', state, updated_at: new Date().toISOString() }),
+          body: JSON.stringify({ account: this._accountId(), state, updated_at: new Date().toISOString() }),
         });
       } catch (e) { /* offline : le cache local fait foi, re-push à la prochaine écriture */ }
     },
