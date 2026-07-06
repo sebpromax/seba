@@ -925,13 +925,29 @@ function triggerAuraDemo() {
 
 /* ═══════════════════════════════════════════════════════════════
    INJECTION DE L'INTELLIGENCE (Bible V.1) — Conscience Seba branchée
-   sur Mistral. La clé API ne touche JAMAIS le navigateur : callSebaAI
-   n'appelle pas api.mistral.ai directement, elle appelle un relais
-   Supabase Edge Function (supabase-functions/seba-ai-mistral.ts) qui
-   lit MISTRAL_API_KEY côté serveur — même schéma déjà en place pour
-   Groq (ai-assistant.js). Un site 100% statique ne peut PAS cacher
-   une clé secrète autrement ; c'est une contrainte, pas un choix.
+   sur le relais IA unifié. La clé API ne touche JAMAIS le navigateur :
+   callSebaAI n'appelle pas les fournisseurs directement, elle appelle
+   le relais Supabase Edge Function (supabase-functions/ai-relay.ts)
+   qui essaie Mistral → Groq → OpenRouter → Gemini côté serveur — même
+   relais que l'assistant conversationnel (ai-assistant.js). Un site
+   100% statique ne peut PAS cacher une clé secrète autrement ; c'est
+   une contrainte, pas un choix.
 ═══════════════════════════════════════════════════════════════ */
+
+/* Jeton de session réel — le relais exige un vrai auth.uid() (voir
+   ai-relay.ts) pour compter le quota par compte. */
+function _sebaAIBearer() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (/^sb-.*-auth-token$/.test(k)) {
+        const tok = JSON.parse(localStorage.getItem(k));
+        if (tok && tok.access_token) return tok.access_token;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
 
 /* Envoie le contexte du dashboard au relais et renvoie la recommandation
    structurée { action, priority, reasoning }, ou null si le relais n'est
@@ -939,12 +955,13 @@ function triggerAuraDemo() {
    l'IA est un bonus, jamais un point de blocage du dashboard). */
 async function callSebaAI(context) {
   const cfg = window.SEBA_CONFIG || {};
-  if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return null;
+  const bearer = _sebaAIBearer();
+  if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !bearer) return null;
   try {
-    const res = await fetch(cfg.supabaseUrl + '/functions/v1/seba-ai-mistral', {
+    const res = await fetch(cfg.supabaseUrl + '/functions/v1/ai-relay', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey },
-      body: JSON.stringify({ context }),
+      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + bearer },
+      body: JSON.stringify({ mode: 'json', context }),
     });
     if (!res.ok) throw new Error('Relais IA HTTP ' + res.status);
     const data = await res.json();

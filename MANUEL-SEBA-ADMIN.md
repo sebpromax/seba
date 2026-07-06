@@ -29,24 +29,27 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
    - **anon public** (longue clé `eyJ…`) → colle dans `supabaseAnonKey`
 3. Effet immédiat : l'inscription (onboarding étape 8) crée un vrai compte, la connexion vérifie les vrais identifiants, et **le dashboard devient inaccessible sans session** (`guard.js` redirige vers la connexion).
 
-### 1b. Groq (assistant IA du dashboard) — GRATUIT
+### 1b. Assistant IA + Conscience Seba (relais unifié `ai-relay`) — GRATUIT
 
-**Deux niveaux, du plus simple au plus complet :**
+Depuis le 2026-07-07, une seule fonction `ai-relay.ts` alimente à la fois le chat du dashboard (`ai-assistant.js`) et la Conscience Seba (`widgets.js`). Elle essaie les fournisseurs **dans l'ordre, gratuitement, jusqu'à ce que l'un réponde** : Mistral → Groq → OpenRouter → Gemini. Tu n'es obligé d'en configurer aucun (le site retombe sur l'analyste local sans erreur visible), mais plus tu en ajoutes, plus la cascade est robuste.
 
 **Niveau 1 — test en local uniquement** (déjà fait si tu as suivi ce guide) :
 1. https://console.groq.com → **API Keys** → **Create API Key**.
 2. Colle la clé (`gsk_…`) dans `docs/config.js` → `groqApiKey`.
-3. Effet : sur TON ordinateur uniquement, le chat devient une vraie IA. Sur le site public (GitHub Pages), ça reste l'analyste local — un site 100% statique ne peut jamais cacher une clé secrète.
+3. Effet : sur TON ordinateur uniquement, le chat devient une vraie IA. Sur le site public (GitHub Pages), ça reste l'analyste local tant que le relais n'est pas déployé.
 
-**Niveau 2 — vraie IA pour TOUT LE MONDE sur le site en ligne** (relais Supabase Edge Function, clé cachée côté serveur) :
+**Niveau 2 — vraie IA pour TOUT LE MONDE sur le site en ligne** (relais Supabase Edge Function, clés cachées côté serveur) :
 1. Supabase → menu **Edge Functions** → **Deploy a new function** (ou **Create function**).
-2. Nom de la fonction : `groq-chat`.
-3. Colle le contenu de **`supabase-functions/groq-chat.ts`** (racine du projet) dans l'éditeur → **Deploy**.
-4. Toujours dans Edge Functions → onglet **Secrets** (ou Project Settings → Edge Functions → Secrets) → ajoute :
-   - Nom : `GROQ_API_KEY`
-   - Valeur : ta clé `gsk_…`
-5. C'est tout — `docs/ai-assistant.js` détecte automatiquement la fonction (elle utilise l'URL Supabase déjà publique) et l'utilise en priorité. Si la fonction n'est pas encore déployée, le site retombe tout seul sur l'analyste local (aucune erreur visible pour tes visiteurs).
-   ⚠️ La clé Groq ne quitte JAMAIS le serveur avec cette méthode — c'est la seule façon propre d'avoir une vraie IA sur un site public gratuit.
+2. Nom de la fonction : `ai-relay`.
+3. Colle le contenu de **`supabase-functions/ai-relay.ts`** (racine du projet) dans l'éditeur → **Deploy**.
+4. Toujours dans Edge Functions → onglet **Secrets** → ajoute celles que tu as (une seule suffit pour que la cascade fonctionne, les autres sont sautées silencieusement) :
+   - `MISTRAL_API_KEY` — https://console.mistral.ai → API Keys
+   - `GROQ_API_KEY` — https://console.groq.com → API Keys
+   - `OPENROUTER_API_KEY` — https://openrouter.ai → Keys (compte gratuit)
+   - `GEMINI_API_KEY` — https://aistudio.google.com/apikey (compte gratuit, **ne jamais activer la facturation** sur ce projet Google Cloud sinon le free tier disparaît définitivement)
+5. C'est tout — `ai-assistant.js` et `widgets.js` détectent automatiquement la fonction et l'utilisent en priorité (à condition qu'une session réelle existe : le mode démo sans compte retombe sur l'analyste local, exprès, pour ne pas consommer le quota partagé). Si la fonction n'est pas encore déployée, ou si aucune clé n'est configurée, le site retombe tout seul sur l'analyste local (aucune erreur visible pour tes visiteurs).
+   ⚠️ Si tu avais déjà déployé `groq-chat` et `seba-ai-mistral` (anciennes fonctions) : tu peux les supprimer dans Supabase → Edge Functions, elles sont remplacées par `ai-relay`.
+   ℹ️ Le relais limite chaque compte à 50 requêtes/jour (table `api_usage`, voir Section 2) pour éviter qu'un usage abusif ne consomme tout le quota gratuit partagé.
 
 ### 1c. Stripe (paiements) — GRATUIT jusqu'à la 1re vente
 1. Va sur https://dashboard.stripe.com → **Développeurs → Clés API** :
@@ -55,15 +58,8 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 3. Effet : le bouton du plan Pro sur la page Tarifs ouvre ton paiement réel ; le bouton "💳 Lien" des factures copie un lien Stripe avec la référence de la facture (`client_reference_id`) pour le rapprochement.
    ⚠️ Ne mets JAMAIS une clé `sk_…` (secrète) dans le site.
 
-### 1d. Mistral (Conscience Seba — recommandations IA du Dashboard) — nécessite un relais serveur
-Comme pour Groq, un site 100% statique ne peut jamais cacher une clé secrète — la clé Mistral ne doit **jamais** être copiée dans `docs/config.js` ni ailleurs dans `docs/`. Elle vit uniquement côté serveur Supabase.
-1. https://console.mistral.ai → **API Keys** → crée une clé.
-2. Supabase → **Edge Functions** → **Deploy a new function**, nom `seba-ai-mistral`.
-3. Colle le contenu de **`supabase-functions/seba-ai-mistral.ts`** (racine du projet) → **Deploy**.
-4. Edge Functions → **Secrets** → ajoute :
-   - Nom : `MISTRAL_API_KEY`
-   - Valeur : ta clé Mistral (colle uniquement le texte de la clé, sans guillemets ni espace superflu)
-5. Effet : `callSebaAI()` dans `widgets.js` peut désormais joindre le relais. Le Dashboard déclenche automatiquement une analyse IA (affichée comme une notification "aura", cf. Conscience Seba) quand le Serenity Score entre en alerte, ou quand un mouvement financier important apparaît dans les Lignes d'Horizon. Sans ce secret configuré, ces déclenchements échouent silencieusement (aucune notification, aucune erreur visible) — le dashboard reste utilisable normalement.
+### 1d. Conscience Seba (recommandations IA du Dashboard)
+Utilise désormais le même relais `ai-relay` que la section 1b ci-dessus (plus besoin d'une fonction séparée). Une fois `ai-relay` déployé avec au moins une clé configurée, `callSebaAI()` dans `widgets.js` peut joindre le relais. Le Dashboard déclenche automatiquement une analyse IA (affichée comme une notification "aura", cf. Conscience Seba) quand le Serenity Score entre en alerte, ou quand un mouvement financier important apparaît dans les Lignes d'Horizon. Sans secret configuré, ces déclenchements échouent silencieusement (aucune notification, aucune erreur visible) — le dashboard reste utilisable normalement.
 
 ---
 
@@ -73,7 +69,7 @@ Le fichier **`supabase-schema.sql`** (racine du projet) contient tout le schéma
 
 1. Supabase → **SQL Editor** → **New query**.
 2. Ouvre `supabase-schema.sql`, copie TOUT le contenu, colle, **Run**.
-3. Résultat : les tables `seba_state`, `clients`, `interventions`, `devis`, `factures`, `employes` sont créées **avec Row Level Security activée** — chaque utilisateur ne peut lire/écrire QUE ses propres lignes (`auth.uid() = user_id`). Le Patron A ne verra jamais les données du Patron B.
+3. Résultat : les tables `seba_state`, `clients`, `interventions`, `devis`, `factures`, `employes` sont créées **avec Row Level Security activée** — chaque utilisateur ne peut lire/écrire QUE ses propres lignes (`auth.uid() = user_id`). Le Patron A ne verra jamais les données du Patron B. La table `api_usage` (compteur de quota IA du relais `ai-relay`) est aussi créée — elle n'est accessible qu'via la clé `service_role`, jamais depuis le navigateur.
 
 Note : le site utilise aujourd'hui la table `seba_state` (sauvegarde JSON du moteur `seba-data.js`). Les tables normalisées sont prêtes pour l'étape suivante sans rien changer aux pages.
 

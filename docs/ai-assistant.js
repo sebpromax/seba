@@ -2,11 +2,12 @@
    SEBA — Assistant IA conversationnel du dashboard.
 
    Trois moteurs, bascule automatique dans cet ordre :
-   1. RELAIS SUPABASE (supabase-functions/groq-chat.ts) — vraie IA
-      Groq pour TOUT LE MONDE sur le site en ligne, sans qu'aucune clé
-      secrète ne transite côté navigateur (la clé reste server-side,
-      dans les secrets de la fonction Edge). C'est le chemin normal
-      une fois la fonction déployée (voir MANUEL-SEBA-ADMIN.md §1b).
+   1. RELAIS SUPABASE (supabase-functions/ai-relay.ts) — vraie IA pour
+      TOUT LE MONDE connecté sur le site en ligne, sans qu'aucune clé
+      secrète ne transite côté navigateur. Le relais essaie lui-même
+      Mistral → Groq → OpenRouter → Gemini en cascade côté serveur.
+      C'est le chemin normal une fois la fonction déployée (voir
+      MANUEL-SEBA-ADMIN.md §1b).
    2. GROQ DIRECT (config.js → groqApiKey, local uniquement) — utile
       en développement avant d'avoir déployé le relais.
    3. ANALYSTE LOCAL — réponses générées depuis les vraies données
@@ -19,7 +20,24 @@
   const cfg = window.SEBA_CONFIG || {};
   const groqKey = (cfg.groqApiKey && !/^VOTRE_/.test(cfg.groqApiKey)) ? cfg.groqApiKey : null;
   const GROQ_MODEL = cfg.groqModel || 'llama-3.1-8b-instant';
-  const relayUrl = cfg.supabaseUrl ? cfg.supabaseUrl + '/functions/v1/groq-chat' : null;
+  const relayUrl = cfg.supabaseUrl ? cfg.supabaseUrl + '/functions/v1/ai-relay' : null;
+
+  /* Jeton de session réel (posé par supabase-js) — le relais exige un
+     vrai auth.uid() pour compter le quota par compte ; sans session
+     (mode démo), il n'y a pas de jeton et l'appel échoue proprement
+     (401), ce qui fait retomber la cascade sur l'analyste local. */
+  function sessionBearer() {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (/^sb-.*-auth-token$/.test(k)) {
+          const tok = JSON.parse(localStorage.getItem(k));
+          if (tok && tok.access_token) return tok.access_token;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
 
   /* ── Résumé JSON des données réelles (contexte pour l'IA) ── */
   function businessContext() {
@@ -94,13 +112,16 @@
     return (data.choices && data.choices[0] && data.choices[0].message.content) || 'Réponse vide.';
   }
 
-  /* Appel du relais Supabase (clé Groq cachée côté serveur) */
+  /* Appel du relais Supabase (cascade Mistral/Groq/OpenRouter/Gemini,
+     clés cachées côté serveur — voir supabase-functions/ai-relay.ts) */
   async function relayAnswer(question) {
+    const bearer = sessionBearer();
+    if (!bearer) throw new Error('Aucune session active');
     const ctx = businessContext();
     const res = await fetch(relayUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey },
-      body: JSON.stringify({ question, context: ctx }),
+      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + bearer },
+      body: JSON.stringify({ mode: 'chat', question, context: ctx }),
     });
     if (!res.ok) throw new Error('Relais HTTP ' + res.status);
     const data = await res.json();
@@ -125,7 +146,7 @@
   /* Diagnostic (utile pour vérifier quel moteur répond réellement) */
   window.sebaAIStatus = async function () {
     if (relayUrl) {
-      try { await relayAnswer('ping'); return 'relais Supabase (Groq caché côté serveur)'; }
+      try { await relayAnswer('ping'); return 'relais Supabase (cascade Mistral/Groq/OpenRouter/Gemini)'; }
       catch (e) { /* continue */ }
     }
     if (groqKey) return 'Groq direct (clé locale, dev uniquement)';
