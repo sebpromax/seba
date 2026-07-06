@@ -539,6 +539,31 @@
     .shortcuts-box h3{font-size:1rem;font-weight:700;margin-bottom:14px;}
     .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.85rem;border-bottom:1px solid var(--border);}
     .shortcut-row:last-child{border-bottom:none;}
+
+    /* ── Mode Focus (Bible I.3) — mise sous vide ── */
+    .focus-overlay{position:fixed;inset:0;z-index:400;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:28px;opacity:0;transition:opacity .35s var(--ease-std);}
+    .focus-overlay.open{display:flex;}
+    .focus-overlay.visible{opacity:1;}
+    .focus-serenity-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(60vw,520px);height:min(60vw,520px);}
+    #focus-serenity-canvas{position:absolute;inset:0;width:100%;height:100%;}
+    .focus-readout{position:relative;z-index:2;text-align:center;pointer-events:none;}
+    .focus-score-num{font-size:5.5rem;font-weight:800;letter-spacing:-.03em;color:#fff;}
+    .focus-score-lbl{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-top:4px;}
+    .focus-action-line{position:relative;z-index:2;text-align:center;max-width:560px;padding:0 24px;}
+    .focus-action-line .fa-label{display:block;font-size:.72rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
+    .focus-action-line .fa-text{display:block;font-size:1.1rem;font-weight:500;color:#fff;line-height:1.5;margin-bottom:18px;}
+    .focus-action-line .fa-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;background:var(--emerald);color:#031A12;border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none;animation:focusBlink 2.2s ease-in-out infinite;}
+    @keyframes focusBlink{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.5);}50%{box-shadow:0 0 0 10px rgba(0,255,157,0);}}
+    .focus-exit{position:fixed;top:24px;right:28px;z-index:2;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:8px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
+    .focus-exit:hover{border-color:rgba(255,255,255,.5);color:#fff;}
+    /* Le superflu se dissout plutôt que de disparaître d'un coup */
+    body.focus-active .sidebar, body.focus-active .mobile-header, body.focus-active .welcome-checklist,
+    body.focus-active .action-stream, body.focus-active .horizon-section,
+    body.focus-active .timeline-life-rail, body.focus-active .aura-stack,
+    body.focus-active .fab, body.focus-active .fab-menu,
+    body.focus-active .widget-grid > .widget-shell:not([data-widget-id="serenity-score"]) {
+      opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
+    }
   </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
@@ -598,6 +623,9 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="topbar-btn" title="Mode Focus (F)" aria-label="Activer le Mode Focus" onclick="toggleFocusMode()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>
+          </button>
           <button class="topbar-btn" title="Barre de commande IA (⌘⇧K)" aria-label="Ouvrir la barre de commande IA" onclick="openAiBar()">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1l1.2 3.8L13 6l-3.8 1.2L8 11l-1.2-3.8L3 6l3.8-1.2L8 1z"/></svg>
           </button>
@@ -743,9 +771,21 @@
     <div class="shortcut-row"><span>Ouvrir la recherche</span><span class="pal-key">⌘K</span></div>
     <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
     <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
+    <div class="shortcut-row"><span>Mode Focus</span><span class="pal-key">F</span></div>
     <div class="shortcut-row"><span>Afficher cette aide</span><span class="pal-key">?</span></div>
     <div class="shortcut-row"><span>Fermer une fenêtre</span><span class="pal-key">Esc</span></div>
   </div>
+</div>
+
+<!-- Mode Focus (Bible I.3) — mise sous vide : ne laisse que le Serenity Score + l'action prioritaire -->
+<div class="focus-overlay" id="focus-overlay">
+  <div class="focus-serenity-wrap"><canvas id="focus-serenity-canvas"></canvas></div>
+  <div class="focus-readout">
+    <div class="focus-score-num" id="focus-score-num">—</div>
+    <div class="focus-score-lbl" id="focus-score-lbl"></div>
+  </div>
+  <div class="focus-action-line" id="focus-action-line"></div>
+  <button class="focus-exit" onclick="toggleFocusMode()" aria-label="Quitter le Mode Focus" title="Quitter (Esc)">Quitter le Mode Focus</button>
 </div>
 
 <script src="businessTypes.js"></script>
@@ -1349,6 +1389,49 @@
   }
 
   /* ═══════════════════════════════════════════════════════
+     MODE FOCUS (Bible I.3) — mise sous vide. Réutilise le moteur du
+     Serenity Score (widgets.js) sur un second canvas dédié à
+     l'overlay, et le moteur de règles (evaluateRules) pour extraire
+     la seule action qui compte vraiment à l'instant T.
+  ═══════════════════════════════════════════════════════ */
+  let _focusCleanup = null;
+  let _focusActive = false;
+  function toggleFocusMode() {
+    _focusActive = !_focusActive;
+    const overlay = document.getElementById('focus-overlay');
+    if (_focusActive) {
+      if (!_ctx) return; // pas encore de compte/donnees — rien a mettre sous vide
+      document.body.classList.add('focus-active');
+      overlay.classList.add('open');
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+
+      const score = computeSerenityScore(_ctx);
+      const state = serenityStateFor(score);
+      document.getElementById('focus-score-num').textContent = score;
+      document.getElementById('focus-score-lbl').textContent = state.label;
+      if (_focusCleanup) { _focusCleanup(); _focusCleanup = null; }
+      const canvas = document.getElementById('focus-serenity-canvas');
+      _focusCleanup = startSerenityAnimation(canvas, canvas.parentElement, state);
+
+      const top = evaluateRules(_ctx)[0];
+      const line = document.getElementById('focus-action-line');
+      if (top) {
+        line.innerHTML = '<span class="fa-label">Action prioritaire</span>' +
+          '<span class="fa-text">' + top.title + ' — ' + top.desc + '</span>' +
+          '<a class="fa-btn" href="' + top.href + '">' + top.cta + ' →</a>';
+      } else {
+        line.innerHTML = '<span class="fa-label">Action prioritaire</span>' +
+          '<span class="fa-text">Rien d\'urgent — profitez-en pour avancer sur le fond.</span>';
+      }
+    } else {
+      document.body.classList.remove('focus-active');
+      overlay.classList.remove('visible');
+      if (_focusCleanup) { _focusCleanup(); _focusCleanup = null; }
+      setTimeout(() => overlay.classList.remove('open'), 350); // laisse le fondu de sortie se terminer
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
      COPY PORTAL LINK
   ═══════════════════════════════════════════════════════ */
 
@@ -1610,9 +1693,11 @@
 
     const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
     if (!typing && (e.key === 'e' || e.key === 'E')) { toggleCustomizeMode(); return; }
+    if (!typing && (e.key === 'f' || e.key === 'F')) { toggleFocusMode(); return; }
     if (!typing && e.key === '?') { openShortcuts(); return; }
 
     if (e.key === 'Escape') {
+      if (_focusActive) toggleFocusMode();
       closePaletteForce();
       closeAiBar();
       closeCustomizePanel();
