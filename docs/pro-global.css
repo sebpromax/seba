@@ -8,7 +8,28 @@
 
 /* ── 1. Design Tokens ────────────────────────────────────────────────────── */
 :root {
-  /* Palette pro (fond carbone — identique dans chaque page) */
+  /* Échelle, easing, typo — indépendants du thème */
+  --r:       12px;
+  --rs:      8px;
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1,   1);
+  --t-fast: 0.15s;
+  --t-std:  0.25s;
+  --t-slow: 0.35s;
+  --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px; --spacing-4: 16px;
+  --spacing-5: 20px; --spacing-6: 24px;  --spacing-7: 32px; --spacing-8: 40px;
+  --spacing-9: 48px; --spacing-10: 64px;
+  --font-size-xs: .72rem; --font-size-sm: .84rem; --font-size-base: .95rem;
+  --font-size-lg: 1.15rem; --font-size-xl: 1.5rem; --font-size-2xl: 2.1rem;
+  --line-height-tight: 1.12; --line-height-base: 1.5;
+}
+
+/* ── 1b. Thème — Tactical Dark (defaut) / Audit Light ───────────────────── */
+/* data-theme est pose sur <html> par theme.js. Sans attribut (chargement du
+   script pas encore joue) le mode Dark reste le defaut, jamais de flash blanc. */
+:root,
+[data-theme="dark"] {
   --ink:     rgba(255,255,255,.92);
   --emerald: #00FF9D;
   --plum:    #C9A9DA;
@@ -16,13 +37,10 @@
   --white:   #101114;
   --text-2:  rgba(255,255,255,.55);
   --border:  rgba(255,255,255,.1);
-  --r:       12px;
-  --rs:      8px;
   --amber:   #FFB800;
   --glass-bg: rgba(255,255,255,.03);
   --glass-blur: blur(20px);
 
-  /* Sémantique badges — succès/actif = émeraude, attention/erreur = ambre (pas de rouge pur) */
   --badge-success-bg:  rgba(0,255,157,.12);
   --badge-success-txt: #00FF9D;
   --badge-warning-bg:  rgba(255,184,0,.12);
@@ -32,29 +50,40 @@
   --badge-info-bg:     rgba(255,255,255,.06);
   --badge-info-txt:    rgba(255,255,255,.55);
 
-  /* Easing */
-  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
-  --ease-in:  cubic-bezier(0.4, 0, 1,   1);
-  --t-fast: 0.15s;
-  --t-std:  0.25s;
-  --t-slow: 0.35s;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
+  --shadow-glow: 0 0 0 1px rgba(0,255,157,.28), 0 4px 24px rgba(0,255,157,.14);
+  --grain-opacity: .035;
+}
 
-  /* Échelle d'espacement (base 4px) */
-  --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px; --spacing-4: 16px;
-  --spacing-5: 20px; --spacing-6: 24px;  --spacing-7: 32px; --spacing-8: 40px;
-  --spacing-9: 48px; --spacing-10: 64px;
+[data-theme="light"] {
+  /* Épuré, clair — glassmorphism inversé (givre sombre sur fond clair) pour rester lisible */
+  --ink:     #14161A;
+  --emerald: #00996B;
+  --plum:    #5B3868;
+  --bg:      #F6F5F2;
+  --white:   #FFFFFF;
+  --text-2:  #6B6A6F;
+  --border:  #E5E3DE;
+  --amber:   #B45309;
+  --glass-bg: rgba(20,22,26,.035);
+  --glass-blur: blur(20px);
 
-  /* Typographie */
-  --font-size-xs: .72rem; --font-size-sm: .84rem; --font-size-base: .95rem;
-  --font-size-lg: 1.15rem; --font-size-xl: 1.5rem; --font-size-2xl: 2.1rem;
-  --line-height-tight: 1.12; --line-height-base: 1.5;
+  --badge-success-bg:  rgba(0,153,107,.10);
+  --badge-success-txt: #00875A;
+  --badge-warning-bg:  rgba(180,83,9,.10);
+  --badge-warning-txt: #B45309;
+  --badge-error-bg:    rgba(180,83,9,.14);
+  --badge-error-txt:   #B45309;
+  --badge-info-bg:     rgba(20,22,26,.05);
+  --badge-info-txt:    #6B6A6F;
 
-  /* Ombres et lueurs */
   --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,.10);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,.18);
-  --shadow-glow: 0 0 0 1px rgba(0,255,157,.28), 0 4px 24px rgba(0,255,157,.14);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.16);
+  --shadow-glow: 0 0 0 1px rgba(0,153,107,.25), 0 4px 24px rgba(0,153,107,.12);
+  --grain-opacity: 0;
 }
 
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */
@@ -76,8 +105,10 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 
 /* ── 3. Sidebar — hauteur, nav-items, footer (unifié sur toutes les pages) ─ */
 .sidebar {
-  background: var(--white);
-  color: var(--ink);
+  /* Rail de navigation toujours sombre, quel que soit le theme du canvas
+     (les etats hover/active des nav-item sont codes en blanc, pas en var()). */
+  background: #0B0C0E;
+  color: rgba(255,255,255,.92);
   display: flex;
   flex-direction: column;
   padding: 24px 0;

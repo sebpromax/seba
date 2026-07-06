@@ -3,32 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <title>Seba — L'écosystème des entreprises de terrain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
   <style>
-    :root {
-      /* ── Tactical Dark — charte cockpit (2026-07-06) ── */
-      --ink: rgba(255,255,255,.92);       /* texte primaire (ex: near-black) */
-      --emerald: #00FF9D;                  /* succès / actif / stable (ex: #00C896) */
-      --plum: #C9A9DA;                     /* accent secondaire clair, lisible sur fond noir (ex: #3D2645) */
-      --bg: #050505;                       /* canvas carbone (ex: #FAF9F7) */
-      --white: #101114;                    /* surface solide opaque (popovers/menus) (ex: #FFFFFF) */
-      --text-2: rgba(255,255,255,.55);     /* texte secondaire (ex: #6B6A6F) */
-      --border: rgba(255,255,255,.1);      /* bordure fine (ex: #E8E6E1) */
-      --r: 12px;
-      --rs: 8px;
-      --amber: #FFB800;                    /* alerte / attention (ex: #F59E0B), pas de rouge pur */
-      --glass-bg: rgba(255,255,255,.03);
-      --glass-blur: blur(20px);
-    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
     /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
     body::before {
-      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .035; mix-blend-mode: overlay;
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: var(--grain-opacity); mix-blend-mode: overlay;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
     .app { position: relative; z-index: 2; }
