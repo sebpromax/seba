@@ -503,6 +503,172 @@ function populateActionStream(wctx) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   LIGNES D'HORIZON (Bible II.5) — courbes de lumière pure (Canvas,
+   pas de dépendance D3), sans axes ni cadre. Émeraude = encaissé,
+   ambre = en attente/retard (l'app ne modélise pas de vraies
+   "dépenses" ; on réutilise donc les factures non payées, cohérent
+   avec le sens "ambre = vigilance" déjà établi ailleurs).
+═══════════════════════════════════════════════════════════════ */
+
+function buildHorizonSeries(wctx) {
+  const DB = window.SebaDB;
+  if (DB && DB.hasData()) {
+    const factures = DB.list('factures');
+    const toPoint = f => ({ date: f.paidAt || f.date, amount: f.amount });
+    const gains = factures.filter(f => f.status === 'payee').map(toPoint)
+      .filter(p => p.date).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-12);
+    const pending = factures.filter(f => f.status !== 'payee').map(toPoint)
+      .filter(p => p.date).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-12);
+    if (gains.length || pending.length) return { gains, pending };
+  }
+  /* Démo : pas de vraies transactions datées disponibles — trajectoire
+     plausible sur les 12 derniers jours, mise à l'échelle du CA affiché. */
+  const today = new Date();
+  const base = (wctx.demo.goal && wctx.demo.goal.current) ? wctx.demo.goal.current / 9 : 150;
+  const mk = (n, amp, variance) => Array.from({ length: n }, (_, i) => {
+    const d = new Date(today); d.setDate(d.getDate() - (n - 1 - i));
+    return { date: localHorizonISO(d), amount: Math.max(10, Math.round(amp * variance[i % variance.length])) };
+  });
+  return {
+    gains: mk(12, base, [0.7, 0.9, 1.1, 0.8, 1.3, 1.0, 0.6, 1.2, 0.9, 1.4, 1.0, 1.1]),
+    pending: mk(6, base * 0.35, [1, 0.5, 1.2, 0.8, 1, 0.6]),
+  };
+}
+
+function localHorizonISO(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* Le canvas #horizon-line est un élément fixe de dashboard.html (pas
+   recréé via innerHTML comme les widgets de la grille) : renderDashboard()
+   peut être rappelé plusieurs fois (changement de données). Sans ce
+   handle, chaque appel empilerait une nouvelle boucle rAF fantôme. */
+let _horizonCleanup = null;
+
+function renderHorizonLine(wctx) {
+  const canvas = document.getElementById('horizon-line');
+  if (!canvas) return;
+  if (_horizonCleanup) { _horizonCleanup(); _horizonCleanup = null; }
+  _horizonCleanup = startHorizonAnimation(canvas, canvas.parentElement, buildHorizonSeries(wctx), wctx.sym);
+}
+
+function startHorizonAnimation(canvas, wrap, series, sym) {
+  const ctx2d = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0, gainsPts = [], pendingPts = [];
+
+  function layout(points) {
+    if (!points.length) return [];
+    const max = Math.max.apply(null, points.map(p => p.amount).concat([1]));
+    const padX = W * 0.03, padY = H * 0.24;
+    return points.map((p, i) => ({
+      date: p.date, amount: p.amount,
+      x: padX + (points.length === 1 ? (W - padX * 2) / 2 : (i / (points.length - 1)) * (W - padX * 2)),
+      y: H - padY - (p.amount / max) * (H - padY * 2),
+    }));
+  }
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    W = canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    H = canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    gainsPts = layout(series.gains);
+    pendingPts = layout(series.pending);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* Courbe lissée Catmull-Rom → bézier, sans dépendance externe */
+  function smoothPath(pts) {
+    const path = new Path2D();
+    if (!pts.length) return path;
+    path.moveTo(pts[0].x, pts[0].y);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      path.bezierCurveTo(
+        p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+        p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+        p2.x, p2.y
+      );
+    }
+    return path;
+  }
+
+  function drawGlowLine(color, pts, wobble) {
+    if (pts.length < 2) return;
+    const wobbled = pts.map(p => ({ x: p.x, y: p.y + wobble }));
+    const path = smoothPath(wobbled);
+    ctx2d.save();
+    ctx2d.filter = 'blur(' + Math.round(3 * dpr) + 'px)';
+    ctx2d.strokeStyle = color; ctx2d.lineWidth = 3.5 * dpr; ctx2d.globalAlpha = 0.5;
+    ctx2d.stroke(path);
+    ctx2d.restore();
+    ctx2d.strokeStyle = color; ctx2d.lineWidth = 1.8 * dpr; ctx2d.globalAlpha = 1;
+    ctx2d.lineCap = 'round'; ctx2d.lineJoin = 'round';
+    ctx2d.stroke(path);
+  }
+
+  /* ── Ligne Temporelle : point le plus proche du curseur (X), tous points confondus ── */
+  const tip = document.createElement('div');
+  tip.className = 'horizon-tip';
+  wrap.appendChild(tip);
+  let hover = null;
+
+  function onMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * dpr;
+    const all = gainsPts.map(p => ({ p, kind: 'gain' })).concat(pendingPts.map(p => ({ p, kind: 'pending' })));
+    if (!all.length) { hover = null; tip.classList.remove('visible'); return; }
+    let best = all[0], bd = Infinity;
+    all.forEach(o => { const d = Math.abs(o.p.x - mx); if (d < bd) { bd = d; best = o; } });
+    hover = best;
+    const dateLbl = new Date(best.p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    tip.textContent = dateLbl + ' · ' + best.p.amount.toLocaleString('fr-FR') + ' ' + sym;
+    tip.style.left = (best.p.x / dpr) + 'px';
+    tip.style.top = (best.p.y / dpr) + 'px';
+    tip.classList.add('visible');
+  }
+  function onLeave() { hover = null; tip.classList.remove('visible'); }
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('mouseleave', onLeave);
+
+  const emerald = () => readThemeVar('--emerald', '#00FF9D');
+  const amber = () => readThemeVar('--amber', '#FFB800');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = null, t = 0;
+
+  function frame() {
+    t += 1;
+    ctx2d.clearRect(0, 0, W, H);
+    const wobble = Math.sin(t * 0.018) * (H * 0.012);
+    drawGlowLine(emerald(), gainsPts, wobble);
+    drawGlowLine(amber(), pendingPts, -wobble);
+
+    if (hover) {
+      const c = hover.kind === 'gain' ? emerald() : amber();
+      ctx2d.beginPath();
+      ctx2d.arc(hover.p.x, hover.p.y, 5 * dpr, 0, Math.PI * 2);
+      ctx2d.fillStyle = c;
+      ctx2d.shadowColor = c; ctx2d.shadowBlur = 12 * dpr;
+      ctx2d.fill();
+      ctx2d.shadowBlur = 0;
+    }
+    if (!reduceMotion) raf = requestAnimationFrame(frame);
+  }
+  frame();
+
+  return function destroy() {
+    if (raf) cancelAnimationFrame(raf);
+    window.removeEventListener('resize', resize);
+    canvas.removeEventListener('mousemove', onMove);
+    canvas.removeEventListener('mouseleave', onLeave);
+    tip.remove();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
    WIDGET_CATALOG — cœur (Phase 1/2) + compagnon issus des
    pages-outils (Phase 5). size: S|M|L|XL, category: core|companion.
 ═══════════════════════════════════════════════════════════════ */
