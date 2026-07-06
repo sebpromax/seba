@@ -291,10 +291,175 @@ function buildTeamItemEl(t, couleur) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SERENITY SCORE (Bible I.1) — sphère-nébuleuse à particules,
+   cœur réacteur du dashboard. Canvas 2D + requestAnimationFrame.
+   Couleur et vitesse de pulsation pilotées par l'état de santé
+   (sain/attention/alerte), lu depuis pro-global.css → s'adapte
+   automatiquement au thème Dark/Light sans code supplémentaire.
+═══════════════════════════════════════════════════════════════ */
+
+/* Score composite 0-100 : objectif du mois (poids fort), factures
+   en retard sérieux (poids fort), devis qui traînent (poids léger).
+   Pondérations choisies pour qu'un seul red flag grave (facture en
+   contentieux, CA très en retard) fasse déjà basculer en "attention". */
+function computeSerenityScore(wctx) {
+  let score = 100;
+  const goal = wctx.demo && wctx.demo.goal;
+  if (goal && goal.target > 0) {
+    const pct = goal.current / goal.target;
+    if (pct < 0.4) score -= 30;
+    else if (pct < 0.7) score -= 15;
+    else if (pct < 0.9) score -= 5;
+  }
+  const lateInvoices = (wctx.creances || []).filter(c => c.relanceStep >= 2).length;
+  score -= Math.min(30, lateInvoices * 10);
+  const devisMetric = wctx.demo && wctx.demo.metrics && wctx.demo.metrics[3];
+  if (devisMetric && devisMetric.up === false) {
+    const n = parseInt(devisMetric.delta, 10);
+    if (!isNaN(n)) score -= Math.min(20, n * 5);
+  }
+  return Math.max(5, Math.min(100, Math.round(score)));
+}
+
+function readThemeVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function serenityStateFor(score) {
+  if (score >= 70) return { key: 'sain', label: 'Stable', varName: '--emerald', fallback: '#00FF9D', speed: 0.010, jitter: 0.15 };
+  if (score >= 40) return { key: 'attention', label: 'Vigilance', varName: '--amber', fallback: '#FFB800', speed: 0.020, jitter: 0.35 };
+  return { key: 'alerte', label: 'Alerte', varName: '--critical', fallback: '#8B1E1E', speed: 0.032, jitter: 0.6 };
+}
+
+function renderSerenityScore(wctx, el) {
+  const score = computeSerenityScore(wctx);
+  const state = serenityStateFor(score);
+  const goal = wctx.demo.goal;
+  const pctObjectif = (goal && goal.target > 0) ? Math.round(goal.current / goal.target * 100) : null;
+
+  el.innerHTML =
+    '<div class="serenity-wrap">' +
+      '<canvas class="serenity-canvas"></canvas>' +
+      '<div class="serenity-readout">' +
+        '<div class="serenity-score-num">' + score + '</div>' +
+        '<div class="serenity-score-lbl">' + state.label + '</div>' +
+      '</div>' +
+      '<div class="serenity-orbit">' +
+        '<div class="serenity-orbit-item o1"><span class="oi-lbl">CA du mois</span><span class="oi-val">' + fmtNum(goal.current, wctx.sym) + '</span></div>' +
+        '<div class="serenity-orbit-item o2"><span class="oi-lbl">Objectif</span><span class="oi-val">' + (pctObjectif !== null ? pctObjectif + ' %' : '—') + '</span></div>' +
+      '</div>' +
+    '</div>';
+
+  const wrap = el.querySelector('.serenity-wrap');
+  const canvas = el.querySelector('.serenity-canvas');
+  const shell = el.closest('.widget-shell');
+  if (shell) shell.dataset.serenityState = state.key;
+  startSerenityAnimation(canvas, wrap, state);
+}
+
+function startSerenityAnimation(canvas, wrap, state) {
+  state.color = readThemeVar(state.varName, state.fallback);
+  const ctx2d = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let W, H, cx, cy, R;
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    W = canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    H = canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    cx = W / 2; cy = H / 2; R = Math.min(W, H) * 0.34;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const onThemeChange = () => { state.color = readThemeVar(state.varName, state.fallback); };
+  document.addEventListener('seba-theme-change', onThemeChange);
+
+  const N = 90;
+  const particles = Array.from({ length: N }, () => ({
+    baseAngle: Math.random() * Math.PI * 2,
+    baseRadius: Math.sqrt(Math.random()) * R,
+    z: Math.random(),
+    speed: (Math.random() * 0.4 + 0.6) * (Math.random() < 0.5 ? 1 : -1),
+    wobble: Math.random() * Math.PI * 2,
+  }));
+
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = null;
+  let t = 0;
+
+  function frame() {
+    t += 1;
+    ctx2d.clearRect(0, 0, W, H);
+    const pulse = 1 + Math.sin(t * state.speed) * 0.06;
+    const coreR = R * 0.22 * pulse;
+
+    /* Halo nébuleuse — flou gaussien natif du canvas */
+    ctx2d.save();
+    ctx2d.filter = 'blur(' + Math.round(14 * dpr) + 'px)';
+    ctx2d.globalAlpha = 0.35;
+    ctx2d.fillStyle = state.color;
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, coreR * 1.6, 0, Math.PI * 2);
+    ctx2d.fill();
+    ctx2d.restore();
+
+    /* Champ de particules — densité/luminosité liées à la profondeur simulee (z) */
+    particles.forEach((p) => {
+      const jitterA = Math.sin(t * 0.01 * p.speed + p.wobble) * state.jitter;
+      const ang = p.baseAngle + t * 0.0006 * p.speed + jitterA * 0.15;
+      const rad = p.baseRadius * pulse + Math.sin(t * 0.02 + p.wobble) * (4 * dpr) * state.jitter;
+      const x = cx + Math.cos(ang) * rad;
+      const y = cy + Math.sin(ang) * rad * 0.86;
+      const size = (1.2 + p.z * 2.2) * dpr;
+      ctx2d.globalAlpha = 0.25 + p.z * 0.55;
+      ctx2d.fillStyle = state.color;
+      ctx2d.beginPath();
+      ctx2d.arc(x, y, size, 0, Math.PI * 2);
+      ctx2d.fill();
+    });
+
+    /* Noyau brillant */
+    const grad = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+    grad.addColorStop(0, state.color);
+    grad.addColorStop(1, 'transparent');
+    ctx2d.globalAlpha = 0.9;
+    ctx2d.fillStyle = grad;
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, coreR, 0, Math.PI * 2);
+    ctx2d.fill();
+    ctx2d.globalAlpha = 1;
+
+    if (!reduceMotion) raf = requestAnimationFrame(frame);
+  }
+  frame();
+
+  /* Le widget est reconstruit à chaque rendu de grille (innerHTML) — sans
+     ce nettoyage, chaque re-rendu laisserait tourner une boucle rAF fantôme. */
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(canvas)) {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+      document.removeEventListener('seba-theme-change', onThemeChange);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+/* ═══════════════════════════════════════════════════════════════
    WIDGET_CATALOG — cœur (Phase 1/2) + compagnon issus des
    pages-outils (Phase 5). size: S|M|L|XL, category: core|companion.
 ═══════════════════════════════════════════════════════════════ */
 window.WIDGET_CATALOG = {
+
+  'serenity-score': { id: 'serenity-score', title: 'Serenity Score', size: 'L', category: 'core', source: 'live',
+    keywords: ['serenity score', 'score de sante', 'sante entreprise', 'coeur reacteur', 'barometre'],
+    defaultVisible: true, defaultOrder: -1,
+    render(ctx, el) { renderSerenityScore(ctx, el); } },
 
   'metric-0': { id: 'metric-0', title: 'Métrique principale', size: 'S', category: 'core', source: 'demo',
     keywords: ['ca', "chiffre d'affaires", 'revenu', 'argent gagné', 'encaissé', 'combien j\'ai gagné'],

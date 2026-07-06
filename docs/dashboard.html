@@ -215,6 +215,24 @@
     .empty-state p { font-size: .95rem; color: var(--text-2); margin-bottom: 28px; max-width: 380px; margin-left: auto; margin-right: auto; }
     .btn-em { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 24px; background: var(--emerald); color: #031A12; font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; }
 
+    /* ── Serenity Score (Bible I.1) — sphère-nébuleuse, cœur réacteur ── */
+    .serenity-wrap { position: relative; height: 100%; min-height: 190px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .serenity-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .serenity-readout { position: relative; z-index: 2; text-align: center; pointer-events: none; }
+    .serenity-score-num { font-size: 2.7rem; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+    .serenity-score-lbl { font-size: .76rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .09em; margin-top: 2px; }
+    .serenity-orbit { position: absolute; inset: 0; pointer-events: none; }
+    .serenity-orbit-item { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--rs); opacity: 0; transform: scale(.9); transition: opacity .3s var(--ease-std), transform .3s var(--ease-std); }
+    .serenity-wrap:hover .serenity-orbit-item { opacity: 1; transform: scale(1); }
+    .serenity-orbit-item.o1 { top: 14%; left: 6%; }
+    .serenity-orbit-item.o2 { bottom: 14%; right: 6%; }
+    .oi-lbl { font-size: .63rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+    .oi-val { font-size: .88rem; font-weight: 700; color: var(--ink); }
+    @media (prefers-reduced-motion: reduce) { .serenity-canvas { opacity: .92; } }
+    /* La bordure au survol reflète l'état de santé plutôt que rester émeraude par défaut */
+    .widget-shell[data-serenity-state="attention"]:hover { border-color: rgba(255,184,0,.45) !important; box-shadow: 0 0 0 1px rgba(255,184,0,.28), 0 4px 24px rgba(255,184,0,.14); }
+    .widget-shell[data-serenity-state="alerte"]:hover { border-color: rgba(139,30,30,.55) !important; box-shadow: 0 0 0 1px rgba(139,30,30,.32), 0 4px 24px rgba(139,30,30,.18); }
+
     /* ── Bento Cockpit + Flash ── */
     .bc-pad{padding:16px 18px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
     .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}

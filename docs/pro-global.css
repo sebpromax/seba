@@ -38,6 +38,7 @@
   --text-2:  rgba(255,255,255,.55);
   --border:  rgba(255,255,255,.1);
   --amber:   #FFB800;
+  --critical: #8B1E1E;
   --glass-bg: rgba(255,255,255,.03);
   --glass-blur: blur(20px);
 
@@ -67,6 +68,7 @@
   --text-2:  #6B6A6F;
   --border:  #E5E3DE;
   --amber:   #B45309;
+  --critical: #B91C1C;
   --glass-bg: rgba(20,22,26,.035);
   --glass-blur: blur(20px);
 
