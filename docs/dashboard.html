@@ -234,6 +234,26 @@
     .serenity-wrap:hover .serenity-orbit-item.o2h { transition-delay: .05s; }
     .oi-lbl { font-size: .63rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
     .oi-val { font-size: .88rem; font-weight: 700; color: var(--ink); }
+
+    /* ── Vecteurs d'Action (Bible II.4) — cartes de gain, verre depoli + liseré émeraude ── */
+    .action-stream { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .action-vector {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 14px 18px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--emerald); /* liseré vert fluo = gain */
+      border-radius: var(--r);
+      transition: opacity .3s var(--ease-std), transform .3s var(--ease-std), border-color .2s, box-shadow .2s;
+    }
+    .action-vector:hover { border-color: var(--border); border-left-color: var(--emerald); box-shadow: var(--shadow-glow); }
+    .action-vector.leaving { opacity: 0; transform: scale(.8); pointer-events: none; }
+    .av-title { font-size: .88rem; font-weight: 600; color: var(--ink); }
+    .av-amount { font-size: .79rem; color: var(--emerald); font-weight: 700; margin-top: 3px; }
+    .av-validate { flex-shrink: 0; background: var(--emerald); color: #031A12; border: none; padding: 9px 18px; border-radius: var(--rs); font-family: 'Inter', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .15s; }
+    .av-validate:hover { opacity: .88; }
+    .av-validate:active { transform: scale(.94); }
     @media (prefers-reduced-motion: reduce) { .serenity-canvas { opacity: .92; } }
     /* La bordure au survol reflète l'état de santé plutôt que rester émeraude par défaut */
     .widget-shell[data-serenity-state="attention"]:hover { border-color: rgba(255,184,0,.45) !important; box-shadow: 0 0 0 1px rgba(255,184,0,.28), 0 4px 24px rgba(255,184,0,.14); }
@@ -541,6 +561,9 @@
 
       <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
       <div class="widget-grid" id="widget-grid"></div>
+
+      <!-- ── Vecteurs d'action (Bible II.4) — gains a valider, pas des taches ── -->
+      <section id="action-stream" class="action-stream"></section>
 
     </div><!-- /dash-content -->
   </main>
@@ -1045,6 +1068,7 @@
     _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
     renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    if (typeof populateActionStream === 'function') populateActionStream(_ctx);
     setTimeout(animateMetrics, 80);
   }
 

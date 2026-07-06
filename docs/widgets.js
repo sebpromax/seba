@@ -455,6 +455,54 @@ function startSerenityAnimation(canvas, wrap, state) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   VECTEURS D'ACTION (Bible II.4) — cartes de gain, pas de tâches.
+   On n'écrit pas "Relancer facture", on écrit "Récupérer 200 €" :
+   la vignette annonce un gain, la validation l'efface fluidement.
+═══════════════════════════════════════════════════════════════ */
+
+/* Génère une carte .action-vector dans #action-stream et branche sa
+   validation (fade + scale, puis retrait du DOM). Ne fait aucune
+   hypothèse sur le contenu : title/amount sont du texte déjà formaté. */
+function createActionCard(title, amount) {
+  const stream = document.getElementById('action-stream');
+  if (!stream) return null;
+
+  const card = document.createElement('div');
+  card.className = 'action-vector';
+  card.innerHTML =
+    '<div>' +
+      '<div class="av-title">' + title + '</div>' +
+      '<div class="av-amount">' + amount + '</div>' +
+    '</div>' +
+    '<button class="av-validate" type="button">Valider</button>';
+
+  card.querySelector('.av-validate').addEventListener('click', () => {
+    card.classList.add('leaving');
+    card.addEventListener('transitionend', () => card.remove(), { once: true });
+  });
+
+  stream.appendChild(card);
+  return card;
+}
+
+/* Peuple le flux avec de vrais vecteurs (factures en retard, s'il y en a)
+   plutôt que des tâches génériques ; repli sur un exemple si tout est propre. */
+function populateActionStream(wctx) {
+  const stream = document.getElementById('action-stream');
+  if (!stream) return;
+  stream.innerHTML = '';
+  const late = (wctx.creances || []).slice(0, 3);
+  if (late.length) {
+    late.forEach(c => createActionCard(
+      'Relancer ' + c.client,
+      'Récupération immédiate : ' + c.montant.toLocaleString('fr-FR') + ' ' + wctx.sym
+    ));
+  } else {
+    createActionCard('Envoyer un lien de paiement', 'Encaissement possible aujourd\'hui');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    WIDGET_CATALOG — cœur (Phase 1/2) + compagnon issus des
    pages-outils (Phase 5). size: S|M|L|XL, category: core|companion.
 ═══════════════════════════════════════════════════════════════ */
