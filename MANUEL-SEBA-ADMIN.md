@@ -82,6 +82,20 @@ Utilise désormais le même relais `ai-relay` que la section 1b ci-dessus (plus 
    - `ONESIGNAL_API_KEY` — la REST API Key de l'étape 3
 7. Effet : le bouton 🔔 dans la barre du dashboard permet à chaque utilisateur d'activer ses notifications (rien n'est envoyé sans ce geste explicite). `docs/OneSignalSDKWorker.js` est le petit fichier requis par OneSignal pour le service worker — déjà présent, rien à faire dessus.
 
+### 1g. Capture d'erreurs (Sentry) — GRATUIT
+1. https://sentry.io → crée un compte gratuit → **Create Project** → plateforme **Browser JavaScript**.
+2. Copie le **DSN** affiché (ressemble à `https://xxxx@xxxx.ingest.sentry.io/xxxx`) → colle-le dans `docs/config.public.js` → `sentryDsn`.
+3. Effet : les erreurs JS des pages Dashboard, Connexion et Inscription remontent automatiquement dans ton projet Sentry. Le DSN est public par design (comme la clé Supabase anon) — Sentry est fait pour ça.
+
+### 1h. Analytics respectueux du RGPD (Umami) — GRATUIT
+1. https://cloud.umami.is → crée un compte gratuit (100 000 événements/mois) → **Add website**.
+2. Copie le **Website ID** → colle-le dans `docs/config.public.js` → `umamiWebsiteId`.
+3. (Optionnel, si tu t'auto-héberges Umami plutôt que le cloud) : renseigne aussi `umamiScriptUrl` avec l'URL de ton instance.
+4. Effet : Umami compte les visites des pages Dashboard, Connexion et Inscription sans cookies et sans données personnelles.
+
+### 1i. Stockage de fichiers (Cloudflare R2) — pas encore branché
+Pas de fonction dédiée pour l'instant : le stockage Supabase (1 Go gratuit) suffit tant que tu ne stockes pas de photos de chantier ou de PDF en masse. Si ça devient limitant, Cloudflare R2 (10 Go gratuits, zéro frais de sortie) est le candidat naturel — à activer seulement quand le besoin réel apparaît, pour ne pas ajouter de complexité inutile.
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)

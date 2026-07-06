@@ -224,7 +224,7 @@
     </div>
     <div class="ss-field">
       <label for="ss-adresse">Adresse (optionnel)</label>
-      <input type="text" id="ss-adresse" placeholder="12 rue des Lilas, Lyon">
+      <input type="text" id="ss-adresse" placeholder="12 rue des Lilas, Lyon" data-address-autocomplete autocomplete="off">
     </div>
     <div class="ss-field">
       <label for="ss-notes">Notes</label>
@@ -240,6 +240,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="seba-data.js"></script>
+<script src="address-autocomplete.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
 <script src="import-export.js" defer></script>
 <script>
