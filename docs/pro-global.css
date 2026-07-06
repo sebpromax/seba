@@ -20,9 +20,28 @@
   --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px; --spacing-4: 16px;
   --spacing-5: 20px; --spacing-6: 24px;  --spacing-7: 32px; --spacing-8: 40px;
   --spacing-9: 48px; --spacing-10: 64px;
+
+  /* Typographie industrielle — hiérarchie stricte, tracking/leading nommés
+     plutôt que des valeurs ad hoc répétées à chaque règle. */
   --font-size-xs: .72rem; --font-size-sm: .84rem; --font-size-base: .95rem;
   --font-size-lg: 1.15rem; --font-size-xl: 1.5rem; --font-size-2xl: 2.1rem;
   --line-height-tight: 1.12; --line-height-base: 1.5;
+  --leading-data: 1.15;        /* chiffres/valeurs : compact, "lu d'un coup d'œil" */
+  --leading-text: 1.5;         /* phrases/descriptions : confort de lecture */
+  --tracking-tight: -0.02em;   /* titres/valeurs numériques */
+  --tracking-normal: 0;
+  --tracking-label: .06em;     /* petits libellés MAJUSCULES type "CA CE MOIS" */
+  --weight-data: 700;          /* les chiffres pèsent plus que le texte autour */
+  --weight-label: 600;
+
+  /* Couleurs "toujours sombres" — tooltips, tiroir d'extensions, Mode Focus :
+     ces surfaces restent volontairement noires quel que soit le thème
+     Dark/Light (lisibilité + effet "mise sous vide" du Focus), donc identiques
+     dans les deux blocs de thème ci-dessous plutôt que dupliquées. */
+  --surface-inverse: #000;     /* fond des tooltips, du canvas Mode Focus */
+  --ink-inverse: #fff;         /* texte sur ces surfaces toujours sombres */
+  --on-emerald: #031A12;       /* texte/icônes sur un fond émeraude vif (boutons, FAB, avatar) */
+  --accent-glow: #8B5CF6;      /* violet d'accent — dégradés décoratifs (ex: liseré de la checklist) */
 }
 
 /* ── 1b. Thème — Tactical Dark (defaut) / Audit Light ───────────────────── */
@@ -144,40 +163,58 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   flex-shrink: 0;
 }
 
-/* Nav items — règle unifiée, specificity > inline .nav-item */
-.sidebar .nav-item {
+/* ── Reset d'état du menu (Design System, IV) ────────────────────────────────
+   Une seule source de vérité pour le box model du menu : repos, survol,
+   pression, sélection et focus clavier partagent EXACTEMENT les mêmes
+   dimensions, padding, marge et bordure. Rien ne doit jamais "sauter" —
+   seule une transition fluide (background/couleur/opacité) signale le
+   changement d'état, jamais un changement de forme. */
+.sidebar .nav-item,
+.sidebar .nav-item:hover,
+.sidebar .nav-item:active,
+.sidebar .nav-item.active,
+.sidebar .nav-item:focus-visible {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 9px 12px;
   min-height: 44px;
+  margin-bottom: 2px;
+  border: 1px solid transparent; /* toujours présente : le focus ne pousse jamais le contenu */
   border-radius: var(--rs);
   font-size: .875rem;
   font-weight: 500;
+  text-decoration: none;
+  transform: none;
+}
+.sidebar .nav-item {
   color: rgba(255,255,255,.55);
   cursor: pointer;
-  margin-bottom: 2px;
   transition:
-    background var(--t-fast) var(--ease-std),
-    color      var(--t-fast) var(--ease-std);
-  text-decoration: none;
+    background-color var(--t-fast) var(--ease-std),
+    color             var(--t-fast) var(--ease-std),
+    opacity           var(--t-fast) var(--ease-std),
+    border-color      var(--t-fast) var(--ease-std);
 }
 .sidebar .nav-item:hover {
-  background: rgba(255,255,255,.06);
+  background-color: rgba(255,255,255,.06);
   color: rgba(255,255,255,.9);
 }
+.sidebar .nav-item:active { opacity: .75; } /* pression : fondu, jamais un changement de forme */
 .sidebar .nav-item.active {
-  background: rgba(0,255,157,.12);
+  background-color: rgba(0,255,157,.12);
   color: var(--emerald);
 }
+.sidebar .nav-item:focus-visible { border-color: var(--emerald); }
 
 /* Labels de groupe */
 .sidebar .nav-label {
   font-size: .65rem;
-  font-weight: 600;
+  font-weight: var(--weight-label);
   color: rgba(255,255,255,.3);
   text-transform: uppercase;
-  letter-spacing: .07em;
+  letter-spacing: var(--tracking-label);
   padding: 8px 12px 5px;
   display: block;
 }
