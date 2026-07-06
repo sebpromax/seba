@@ -261,11 +261,13 @@
     .horizon-tip { position: absolute; z-index: 5; pointer-events: none; background: #000; border: 1px solid var(--border); color: #fff; font-size: .74rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; opacity: 0; transition: opacity .15s; transform: translate(-50%, -135%); }
     .horizon-tip.visible { opacity: 1; }
 
-    /* ── Timeline de Vie (Bible II.6) — pouls d'activité, ligne verticale ── */
-    .timeline-life-section { position: relative; height: 220px; margin-bottom: 20px; }
-    #timeline-life { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
-    .tl-life-tip { position: absolute; z-index: 5; pointer-events: none; background: #000; border: 1px solid var(--border); color: #fff; font-size: .76rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; max-width: 220px; white-space: nowrap; transform: translateY(-50%); }
+    /* ── Timeline de Vie (Bible III.6) — pouls d'activité, rail vertical fixe ── */
+    .timeline-life-rail { position: fixed; top: 88px; right: 0; bottom: 88px; width: 52px; z-index: 150; pointer-events: none; }
+    #timeline-life { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; pointer-events: auto; }
+    .tl-life-tip { position: absolute; z-index: 5; pointer-events: none; background: #000; border: 1px solid var(--border); color: #fff; font-size: .76rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; max-width: 220px; white-space: nowrap; transform: translate(-100%, -50%); }
     .tl-life-tip.visible { opacity: 1; }
+    /* Sous 1180px, le rail empièterait sur un contenu déjà resserré (grille passe à 2 colonnes) — masqué plutôt que gênant */
+    @media (max-width: 1180px) { .timeline-life-rail { display: none; } }
 
     /* ── Conscience Seba (Bible II.7) — notifications prédictives en "aura" ── */
     .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
@@ -608,15 +610,15 @@
       <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
       <section class="horizon-section"><canvas id="horizon-line"></canvas></section>
 
-      <!-- ── Timeline de Vie (Bible II.6) — pouls d'activité, ligne verticale ── -->
-      <section class="timeline-life-section"><canvas id="timeline-life"></canvas></section>
-
     </div><!-- /dash-content -->
   </main>
 </div>
 
 <!-- Conscience Seba (Bible II.7) — notifications predictives, coin oppose au FAB -->
 <div class="aura-stack" id="aura-stack"></div>
+
+<!-- Timeline de Vie (Bible III.6) — rail vertical fixe, pouls d'activite en continu -->
+<div class="timeline-life-rail"><canvas id="timeline-life"></canvas></div>
 
 <!-- FAB + menu -->
 <button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>

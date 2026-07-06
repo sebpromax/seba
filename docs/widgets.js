@@ -669,11 +669,11 @@ function startHorizonAnimation(canvas, wrap, series, sym) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TIMELINE DE VIE (Bible II.6) — pouls de l'activité. Ligne verticale
-   fine, un point par événement récent, chaque point émet une onde
-   de choc périodique (taille/luminosité ∝ importance). Les points
-   glissent doucement en place à l'entrée plutôt que d'apparaître
-   d'un coup ; au survol, description en fondu.
+   TIMELINE DE VIE (Bible III.6) — pouls de l'activité. Rail vertical
+   fixe (hors grille), un point par événement récent, en flux continu
+   (les points dérivent le long de la ligne façon courant, pas figés
+   après leur entrée). Chaque point émet une onde de choc périodique
+   (taille/luminosité ∝ importance). Au survol, description en fondu.
 ═══════════════════════════════════════════════════════════════ */
 
 const TL_LIFE_TYPE_LABEL = { client: 'Client', paiement: 'Paiement', devis: 'Devis', intervention: 'Intervention' };
@@ -715,17 +715,16 @@ function renderTimelineLife(wctx) {
 function startTimelineLifeAnimation(canvas, wrap, events) {
   const ctx2d = canvas.getContext('2d');
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let W = 0, H = 0, cx = 0, points = [];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W = 0, H = 0, cx = 0, loopLen = 0, points = [];
 
   function layout() {
-    const padY = H * 0.12;
     const n = events.length;
+    loopLen = H + 40 * dpr; // marge de rebouclage, invisible au-dessus/en dessous du rail
     points = events.map((ev, i) => ({
       ev,
-      x: cx,
-      restY: n <= 1 ? H / 2 : padY + (i / (n - 1)) * (H - padY * 2),
+      offset: n > 0 ? (i / n) * loopLen : 0,
       phase: (i * 613) % 2600, // décalage du pouls, déterministe mais désynchronisé
-      entryDelay: i * 90,
     }));
   }
 
@@ -741,22 +740,52 @@ function startTimelineLifeAnimation(canvas, wrap, events) {
   resize();
   window.addEventListener('resize', resize);
 
+  const SPEED = 12 * dpr; // px/s — vitesse du courant
+
+  /* Position courante d'un point : soit il dérive le long du rail (flux
+     continu, du haut vers le bas, rebouclage transparent), soit — sous
+     prefers-reduced-motion — il reste à une position fixe et répartie. */
+  function currentY(p, elapsedSec) {
+    if (reduceMotion) {
+      const n = events.length;
+      const idx = events.indexOf(p.ev);
+      return n <= 1 ? H / 2 : H * 0.08 + (idx / (n - 1)) * H * 0.84;
+    }
+    return ((p.offset + elapsedSec * SPEED) % loopLen) - 20 * dpr;
+  }
+
+  /* Fondu près des bords du rail : les points naissent et s'estompent
+     plutôt que d'apparaître/disparaître brutalement au rebouclage. */
+  function edgeFade(y) {
+    if (y < 0 || y > H) return 0;
+    const margin = 26 * dpr;
+    return Math.min(1, Math.min(y / margin, (H - y) / margin));
+  }
+
   const tip = document.createElement('div');
   tip.className = 'tl-life-tip';
   wrap.appendChild(tip);
   let hover = null;
+  const start = performance.now();
 
   function onMove(e) {
     const rect = canvas.getBoundingClientRect();
     const my = (e.clientY - rect.top) * dpr;
-    let best = null, bd = 22 * dpr;
-    points.forEach(p => { const d = Math.abs(p.restY - my); if (d < bd) { bd = d; best = p; } });
+    const elapsedSec = (performance.now() - start) / 1000;
+    /* Seuil généreux : les points dérivent en continu, un utilisateur ne peut
+       pas viser un pixel précis — on capte le plus proche dans une zone large. */
+    let best = null, bestY = 0, bd = 55 * dpr;
+    points.forEach(p => {
+      const y = currentY(p, elapsedSec);
+      const d = Math.abs(y - my);
+      if (d < bd) { bd = d; best = p; bestY = y; }
+    });
     hover = best;
     if (best) {
       const lbl = (TL_LIFE_TYPE_LABEL[best.ev.type] || '') + ' — ' + best.ev.label + ' · ' + best.ev.time;
       tip.textContent = lbl;
-      tip.style.left = (best.x / dpr + 16) + 'px';
-      tip.style.top = (best.restY / dpr) + 'px';
+      tip.style.left = (cx / dpr - 14) + 'px';
+      tip.style.top = (bestY / dpr) + 'px';
       tip.classList.add('visible');
     } else {
       tip.classList.remove('visible');
@@ -766,51 +795,47 @@ function startTimelineLifeAnimation(canvas, wrap, events) {
   canvas.addEventListener('mousemove', onMove);
   canvas.addEventListener('mouseleave', onLeave);
 
-  const start = performance.now();
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const PULSE_PERIOD = 2600; // ms, un battement toutes les ~2.6s
   let raf = null;
 
   function frame() {
-    const now = performance.now();
-    const elapsed = now - start;
+    const elapsedMs = performance.now() - start;
+    const elapsedSec = elapsedMs / 1000;
     ctx2d.clearRect(0, 0, W, H);
 
-    /* Fil de lumière — le "vaisseau" que traversent les ondes */
+    /* Fil de lumière — le "courant" que traversent les ondes */
     const lineColor = readThemeVar('--border', 'rgba(255,255,255,.1)');
     ctx2d.strokeStyle = lineColor;
     ctx2d.lineWidth = 1.5 * dpr;
     ctx2d.beginPath();
-    ctx2d.moveTo(cx, H * 0.08);
-    ctx2d.lineTo(cx, H * 0.92);
+    ctx2d.moveTo(cx, 0);
+    ctx2d.lineTo(cx, H);
     ctx2d.stroke();
 
     points.forEach(p => {
-      const entryT = Math.max(0, Math.min(1, (elapsed - p.entryDelay) / 450));
-      if (entryT <= 0) return; // pas encore entré dans le flux
-      const eased = 1 - Math.pow(1 - entryT, 3); // easeOutCubic
-      const y = p.restY - (1 - eased) * (24 * dpr);
-      const alpha = eased;
+      const y = currentY(p, elapsedSec);
+      const alpha = edgeFade(y);
+      if (alpha <= 0) return;
       const color = timelineColorFor(p.ev.type);
       const isHover = hover === p;
 
       /* Onde de choc périodique — taille/opacité ∝ importance */
       if (!reduceMotion) {
-        const cyclePos = ((elapsed + p.phase) % PULSE_PERIOD) / PULSE_PERIOD;
-        const waveR = (3 + p.ev.importance * 20) * cyclePos * dpr;
+        const cyclePos = ((elapsedMs + p.phase) % PULSE_PERIOD) / PULSE_PERIOD;
+        const waveR = (3 + p.ev.importance * 18) * cyclePos * dpr;
         const waveA = (1 - cyclePos) * 0.55 * p.ev.importance * alpha;
         ctx2d.beginPath();
-        ctx2d.arc(p.x, y, waveR, 0, Math.PI * 2);
+        ctx2d.arc(cx, y, waveR, 0, Math.PI * 2);
         ctx2d.strokeStyle = color;
         ctx2d.globalAlpha = waveA;
         ctx2d.lineWidth = 1.6 * dpr;
         ctx2d.stroke();
       }
 
-      /* Point fixe de l'événement */
-      const dotR = (isHover ? 5 : 3 + p.ev.importance * 2.5) * dpr;
+      /* Point de l'événement, porté par le courant */
+      const dotR = (isHover ? 5 : 3 + p.ev.importance * 2.2) * dpr;
       ctx2d.beginPath();
-      ctx2d.arc(p.x, y, dotR, 0, Math.PI * 2);
+      ctx2d.arc(cx, y, dotR, 0, Math.PI * 2);
       ctx2d.fillStyle = color;
       ctx2d.globalAlpha = alpha * (isHover ? 1 : 0.85);
       ctx2d.shadowColor = color;
@@ -820,11 +845,7 @@ function startTimelineLifeAnimation(canvas, wrap, events) {
       ctx2d.globalAlpha = 1;
     });
 
-    /* Sous prefers-reduced-motion, les entrées se stabilisent puis la boucle
-       s'arrête (pas d'onde en continu) — sinon elle tourne tant qu'un point
-       est encore en train de glisser en place. */
-    const stillEntering = points.some(p => elapsed - p.entryDelay < 450);
-    if (!reduceMotion || stillEntering) raf = requestAnimationFrame(frame);
+    if (!reduceMotion) raf = requestAnimationFrame(frame);
   }
   frame();
 
