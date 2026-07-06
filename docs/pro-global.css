@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════════
  * pro-global.css — Design System Seba · Espace Professionnel
- * Fond clair / accents encre + émeraude
+ * Tactical Dark — cockpit de pilotage (charte 2026-07-06)
  * Lié dans : dashboard, clients, client-fiche, planning, devis,
  *            devis-nouveau, factures, equipe, employe-fiche,
  *            reglages, historique
@@ -8,27 +8,29 @@
 
 /* ── 1. Design Tokens ────────────────────────────────────────────────────── */
 :root {
-  /* Palette pro (fond clair — identique dans chaque page) */
-  --ink:     #14161A;
-  --emerald: #00C896;
-  --plum:    #3D2645;
-  --bg:      #FAF9F7;
-  --white:   #FFFFFF;
-  --text-2:  #6B6A6F;
-  --border:  #E8E6E1;
+  /* Palette pro (fond carbone — identique dans chaque page) */
+  --ink:     rgba(255,255,255,.92);
+  --emerald: #00FF9D;
+  --plum:    #C9A9DA;
+  --bg:      #050505;
+  --white:   #101114;
+  --text-2:  rgba(255,255,255,.55);
+  --border:  rgba(255,255,255,.1);
   --r:       12px;
   --rs:      8px;
-  --amber:   #F59E0B;
+  --amber:   #FFB800;
+  --glass-bg: rgba(255,255,255,.03);
+  --glass-blur: blur(20px);
 
-  /* Sémantique badges */
-  --badge-success-bg:  #E8F5F0;
-  --badge-success-txt: #1A7A5A;
-  --badge-warning-bg:  #FEF3C7;
-  --badge-warning-txt: #92400E;
-  --badge-error-bg:    #FBE3E0;
-  --badge-error-txt:   #B5482F;
-  --badge-info-bg:     #F1F0EE;
-  --badge-info-txt:    #6B6A6F;
+  /* Sémantique badges — succès/actif = émeraude, attention/erreur = ambre (pas de rouge pur) */
+  --badge-success-bg:  rgba(0,255,157,.12);
+  --badge-success-txt: #00FF9D;
+  --badge-warning-bg:  rgba(255,184,0,.12);
+  --badge-warning-txt: #FFB800;
+  --badge-error-bg:    rgba(255,184,0,.18);
+  --badge-error-txt:   #FFB800;
+  --badge-info-bg:     rgba(255,255,255,.06);
+  --badge-info-txt:    rgba(255,255,255,.55);
 
   /* Easing */
   --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
@@ -52,7 +54,7 @@
   --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,.10);
   --shadow-lg: 0 16px 48px rgba(0,0,0,.18);
-  --shadow-glow: 0 0 0 1px rgba(0,200,150,.28), 0 4px 24px rgba(0,200,150,.12);
+  --shadow-glow: 0 0 0 1px rgba(0,255,157,.28), 0 4px 24px rgba(0,255,157,.14);
 }
 
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */
@@ -74,8 +76,8 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 
 /* ── 3. Sidebar — hauteur, nav-items, footer (unifié sur toutes les pages) ─ */
 .sidebar {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--white);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   padding: 24px 0;
@@ -132,7 +134,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   color: rgba(255,255,255,.9);
 }
 .sidebar .nav-item.active {
-  background: rgba(0,200,150,.12);
+  background: rgba(0,255,157,.12);
   color: var(--emerald);
 }
 
@@ -215,15 +217,21 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 input,
 select,
 textarea {
+  color: var(--ink);
   transition:
     border-color var(--t-fast) var(--ease-std),
     box-shadow   var(--t-fast) var(--ease-std);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-2);
+  opacity: 1;
 }
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--emerald) !important;
-  box-shadow: 0 0 0 3px rgba(0,200,150,.1) !important;
+  box-shadow: 0 0 0 3px rgba(0,255,157,.1) !important;
   outline: none;
 }
 
@@ -243,10 +251,10 @@ textarea:focus {
 .employe-card:hover,
 .fiche-card:hover,
 .event-row:hover,
-.table-row:hover { background-color: rgba(0,200,150,.04) !important; }
+.table-row:hover { background-color: rgba(0,255,157,.04) !important; }
 
 tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
-tbody tr:hover { background-color: rgba(0,200,150,.03); }
+tbody tr:hover { background-color: rgba(0,255,157,.03); }
 
 /* ── 7. Modules / Cards — hover cohérent ────────────────────────────────── */
 .module,
@@ -259,8 +267,8 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
 }
 .module:hover,
 .metric-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,.06);
-  border-color: #D0CEC9;
+  box-shadow: var(--shadow-glow);
+  border-color: rgba(0,255,157,.4);
 }
 
 /* ── 98. Mobile safety overrides (site-wide) ───────────────────────────── */
@@ -305,7 +313,7 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #C8C5BE; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
 
 /* ── 11. Skeleton Loading ────────────────────────────────────────────────── */
 @keyframes shimmer {
@@ -315,11 +323,11 @@ tbody tr:hover { background-color: rgba(0,200,150,.03); }
 .skeleton {
   background:
     linear-gradient(90deg,
-      rgba(250,249,247,0)     0%,
-      rgba(0,200,150,.06)    40%,
-      rgba(61,38,69,.04)     60%,
-      rgba(250,249,247,0)   100%
-    ) #E8E6E1;
+      rgba(5,5,5,0)          0%,
+      rgba(0,255,157,.08)   40%,
+      rgba(201,169,218,.06) 60%,
+      rgba(5,5,5,0)        100%
+    ) rgba(255,255,255,.05);
   background-size: 600px 100%;
   animation: shimmer 1.5s infinite linear;
   border-radius: 6px;

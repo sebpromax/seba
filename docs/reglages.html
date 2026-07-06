@@ -9,30 +9,35 @@
 <link rel="stylesheet" href="pro-global.css">
 <style>
   :root {
-    --ink: #14161A;
-    --emerald: #00C896;
-    --plum: #3D2645;
-    --bg: #FAF9F7;
-    --white: #FFFFFF;
-    --text-2: #6B6A6F;
-    --border: #E8E6E1;
+    --ink: rgba(255,255,255,.92);
+    --emerald: #00FF9D;
+    --plum: #C9A9DA;
+    --bg: #050505;
+    --white: #101114;
+    --text-2: rgba(255,255,255,.55);
+    --border: rgba(255,255,255,.1);
     --r: 12px;
     --rs: 8px;
+    --amber: #FFB800;
+    --glass-bg: rgba(255,255,255,.03);
+    --glass-blur: blur(20px);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .layout,.app{position:relative;z-index:2;}
   a{color:inherit;text-decoration:none;}
   button,input{font-family:'Inter',sans-serif;}
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
   .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
-  .sidebar{background:var(--ink);color:var(--white);padding:24px 0;display:flex;flex-direction:column;}
+  .sidebar{background:var(--white);color:var(--ink);padding:24px 0;display:flex;flex-direction:column;}
   .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
   .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
   .nav-section{padding:0 14px;}
   .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
   .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
-  .nav-item.active{background:rgba(0,200,150,.12);color:var(--emerald);}
+  .nav-item.active{background:rgba(0,255,157,.12);color:var(--emerald);}
   .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
   .nav-item.active .dot{opacity:1;}
   .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
@@ -41,9 +46,9 @@
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
   .topbar h1{font-size:1.5rem;}
   .topbar-right{display:flex;align-items:center;gap:14px;}
-  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:#031A12;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
   .avatar-wrap{position:relative;}
-  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:none;}
   .user-menu.open{display:block;}
   .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
   .user-menu a:hover{background:var(--bg);}
@@ -53,10 +58,10 @@
   .settings-layout{display:grid;grid-template-columns:190px 1fr;gap:32px;}
   .settings-nav{display:flex;flex-direction:column;gap:2px;}
   .settings-nav-item{padding:10px 14px;border-radius:6px;font-size:0.86rem;color:var(--text-2);cursor:pointer;}
-  .settings-nav-item:hover{background:#fff;}
-  .settings-nav-item.active{background:#fff;color:var(--ink);font-weight:500;border:1px solid var(--border);}
+  .settings-nav-item:hover{background:var(--white);}
+  .settings-nav-item.active{background:var(--white);color:var(--ink);font-weight:500;border:1px solid var(--border);}
 
-  .panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .panel{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .panel h3{font-size:1.05rem;margin-bottom:6px;}
   .panel .desc{font-size:0.84rem;color:var(--text-2);margin-bottom:22px;}
 
@@ -74,17 +79,17 @@
   .service-row:last-child{border-bottom:none;}
   .service-check{width:20px;height:20px;border:1.5px solid var(--border);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .service-check.checked{background:var(--emerald);border-color:var(--emerald);}
-  .service-check.checked::after{content:"✓";color:#fff;font-size:0.75rem;}
+  .service-check.checked::after{content:"✓";color:#031A12;font-size:0.75rem;font-weight:700;}
   .service-name{flex:1;font-size:0.92rem;}
   .service-price input{width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.85rem;text-align:right;}
   .price-suffix{font-size:0.78rem;color:var(--text-2);width:50px;}
   .add-service{font-size:0.84rem;color:var(--emerald);cursor:pointer;margin-top:14px;display:inline-block;}
 
-  .btn-em{background:var(--emerald);color:var(--ink);border:none;padding:11px 22px;border-radius:var(--rs);font-weight:600;font-size:0.88rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em{background:var(--emerald);color:#031A12;border:none;padding:11px 22px;border-radius:var(--rs);font-weight:600;font-size:0.88rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
   .btn-em:hover{opacity:.88;transform:translateY(-1px);}
-  .btn-danger{background:none;border:1px solid #E0B5AC;color:#B5482F;padding:11px 22px;border-radius:var(--rs);font-weight:500;font-size:0.88rem;cursor:pointer;}
+  .btn-danger{background:none;border:1px solid var(--amber);color:var(--amber);padding:11px 22px;border-radius:var(--rs);font-weight:500;font-size:0.88rem;cursor:pointer;}
 
-  .danger-zone{border-color:#E0B5AC;}
+  .danger-zone{border-color:rgba(255,184,0,.35);}
   .danger-row{display:flex;justify-content:space-between;align-items:center;}
   .danger-row .label{font-size:0.9rem;font-weight:500;}
   .danger-row .sub{font-size:0.8rem;color:var(--text-2);}
@@ -100,7 +105,7 @@
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#FAF9F7">
+  <meta name="theme-color" content="#050505">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
@@ -324,7 +329,7 @@
     if (!t) {
       t = document.createElement('div');
       t.id = 'regl-toast';
-      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#14161A;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#1C1D21;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
       document.body.appendChild(t);
     }
     t.textContent = msg + ' ✓';

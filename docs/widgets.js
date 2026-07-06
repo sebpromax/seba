@@ -70,7 +70,7 @@ function buildBentoChartHTML(goal, sym) {
   const tgt = goal ? goal.target : 0;
   if (cur <= 0) {
     return '<div class="bc-empty-body">' +
-      '<div class="bc-empty-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg></div>' +
+      '<div class="bc-empty-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg></div>' +
       '<div class="bc-empty-title">Prêt pour vos premiers encaissements</div>' +
       '<div class="bc-empty-sub">Vos revenus apparaîtront ici dès la création de votre première facture.</div>' +
       '<button class="bc-empty-btn" onclick="window.location.href=\'factures.html\'">+ Créer une demande de paiement</button>' +
@@ -101,11 +101,11 @@ function buildBentoChartHTML(goal, sym) {
     '<div class="bc-svg-wrap">' +
     '<svg class="bc-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
     '<defs><linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0%" stop-color="#00C896" stop-opacity="0.18"/><stop offset="100%" stop-color="#00C896" stop-opacity="0"/>' +
+    '<stop offset="0%" stop-color="#00FF9D" stop-opacity="0.18"/><stop offset="100%" stop-color="#00FF9D" stop-opacity="0"/>' +
     '</linearGradient></defs>' +
     '<polygon points="' + fillPoints + '" fill="url(#chart-fill)"/>' +
-    '<polyline class="chart-line-anim" points="' + linePoints + '" fill="none" stroke="#00C896" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<circle cx="' + lastPt[0] + '" cy="' + lastPt[1] + '" r="4" fill="#00C896" class="bc-dot"><title>' + totalFmt + ' ' + sym + '</title></circle>' +
+    '<polyline class="chart-line-anim" points="' + linePoints + '" fill="none" stroke="#00FF9D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="' + lastPt[0] + '" cy="' + lastPt[1] + '" r="4" fill="#00FF9D" class="bc-dot"><title>' + totalFmt + ' ' + sym + '</title></circle>' +
     '</svg>' +
     '<div class="bc-months">' + months.map(m => '<span>' + m + '</span>').join('') + '</div>' +
     '</div>';
@@ -150,8 +150,8 @@ function renderFinanceChartD3(wrapEl, series, sym) {
 
   const defs = svg.append('defs');
   const grad = defs.append('linearGradient').attr('id', 'd3-fin-fill').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
-  grad.append('stop').attr('offset', '0%').attr('stop-color', '#00C896').attr('stop-opacity', 0.22);
-  grad.append('stop').attr('offset', '100%').attr('stop-color', '#00C896').attr('stop-opacity', 0);
+  grad.append('stop').attr('offset', '0%').attr('stop-color', '#00FF9D').attr('stop-opacity', 0.22);
+  grad.append('stop').attr('offset', '100%').attr('stop-color', '#00FF9D').attr('stop-opacity', 0);
 
   const area = d3.area().x(d => x(d.month)).y0(H - PAD.bottom).y1(d => y(d.value)).curve(d3.curveCatmullRom.alpha(0.6));
   const line = d3.line().x(d => x(d.month)).y(d => y(d.value)).curve(d3.curveCatmullRom.alpha(0.6));
@@ -160,7 +160,7 @@ function renderFinanceChartD3(wrapEl, series, sym) {
     .transition().duration(900).delay(350).attr('opacity', 1);
 
   const path = svg.append('path').datum(series).attr('d', line)
-    .attr('fill', 'none').attr('stroke', '#00C896').attr('stroke-width', 2.5)
+    .attr('fill', 'none').attr('stroke', '#00FF9D').attr('stroke-width', 2.5)
     .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
   const len = path.node().getTotalLength();
   path.attr('stroke-dasharray', len).attr('stroke-dashoffset', len)
@@ -168,13 +168,13 @@ function renderFinanceChartD3(wrapEl, series, sym) {
 
   const last = series[series.length - 1];
   svg.append('circle').attr('cx', x(last.month)).attr('cy', y(last.value)).attr('r', 4)
-    .attr('fill', '#00C896').attr('opacity', 0)
+    .attr('fill', '#00FF9D').attr('opacity', 0)
     .transition().delay(1100).duration(300).attr('opacity', 1);
 
   /* Tooltip + crosshair interactifs */
   const focusDot = svg.append('circle').attr('r', 4.5).attr('fill', '#fff')
-    .attr('stroke', '#00C896').attr('stroke-width', 2.5).style('display', 'none');
-  const focusLine = svg.append('line').attr('stroke', 'rgba(0,200,150,.35)')
+    .attr('stroke', '#00FF9D').attr('stroke-width', 2.5).style('display', 'none');
+  const focusLine = svg.append('line').attr('stroke', 'rgba(0,255,157,.35)')
     .attr('stroke-dasharray', '3 3').attr('y1', PAD.top).attr('y2', H - PAD.bottom).style('display', 'none');
 
   const tip = document.createElement('div');
@@ -221,7 +221,7 @@ function renderMetricSparkline(el, secteur, seed) {
   const y = d3.scaleLinear().domain([d3.min(series) * 0.96, d3.max(series) * 1.04]).range([H - 2, 2]);
   const line = d3.line().x((d, i) => x(i)).y(d => y(d)).curve(d3.curveCatmullRom.alpha(0.6));
   svg.append('path').datum(series).attr('d', line).attr('fill', 'none')
-    .attr('stroke', 'rgba(0,200,150,.55)').attr('stroke-width', 1.6).attr('stroke-linecap', 'round');
+    .attr('stroke', 'rgba(0,255,157,.55)').attr('stroke-width', 1.6).attr('stroke-linecap', 'round');
 }
 
 /* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ── */
@@ -340,9 +340,9 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 5,
     render(ctx, el) {
       el.innerHTML = '<div class="bento-flash" style="padding:14px;">' +
-        '<a href="planning.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14M8 4V2M12 4V2"/></svg></div><div><span class="flash-txt">Programmer une intervention</span><span class="flash-sub">Créer et assigner en 3 clics</span></div></a>' +
-        '<button class="flash-btn" onclick="copyLink(this)"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M9 3h8v8"/></svg></div><div><span class="flash-txt">Envoyer un lien de paiement</span><span class="flash-sub">Copier votre lien portail client</span></div></button>' +
-        '<a href="devis-nouveau.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00C896" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h2"/></svg></div><div><span class="flash-txt">Créer un devis</span><span class="flash-sub">Devis signable en 2 minutes</span></div></a></div>';
+        '<a href="planning.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14M8 4V2M12 4V2"/></svg></div><div><span class="flash-txt">Programmer une intervention</span><span class="flash-sub">Créer et assigner en 3 clics</span></div></a>' +
+        '<button class="flash-btn" onclick="copyLink(this)"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M9 3h8v8"/></svg></div><div><span class="flash-txt">Envoyer un lien de paiement</span><span class="flash-sub">Copier votre lien portail client</span></div></button>' +
+        '<a href="devis-nouveau.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h2"/></svg></div><div><span class="flash-txt">Créer un devis</span><span class="flash-sub">Devis signable en 2 minutes</span></div></a></div>';
     } },
 
   'timeline': { id: 'timeline', title: "Journée d'aujourd'hui", size: 'L', category: 'core', source: 'demo',
@@ -393,7 +393,7 @@ window.WIDGET_CATALOG = {
       el.innerHTML =
         '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + ctx.sectorLabel + '</span></div>' +
         '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
-        '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#16A34A">Actif</span></div>' +
+        '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#00FF9D">Actif</span></div>' +
         '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (ctx.biz.pays || '—') + ' · ' + ctx.sym + '</span></div>';
     } },
 
@@ -435,7 +435,7 @@ window.WIDGET_CATALOG = {
       const total = list.reduce((s, c) => s + c.montant, 0);
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
         list.slice(0, 3).map(c =>
-          '<div class="ws-row"><span class="ws-label">' + c.client + '</span><span class="ws-val" style="color:' + (c.relanceStep >= 2 ? '#DC2626' : '#F59E0B') + '">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
+          '<div class="ws-row"><span class="ws-label">' + c.client + '</span><span class="ws-val" style="color:' + (c.relanceStep >= 2 ? '#FFB800' : '#FFB800') + '">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
         ).join('');
     } },
 
@@ -479,15 +479,15 @@ window.WIDGET_CATALOG = {
         const enCours = list.filter(i => !i.done && new Date(i.date) <= today).length;
         const aVenir = list.length - done - enCours;
         data = [
-          { label: 'Terminées', value: done, color: '#00C896' },
-          { label: 'En cours', value: Math.max(enCours, 0), color: '#F59E0B' },
-          { label: 'À venir', value: Math.max(aVenir, 0), color: '#3D6EF2' },
+          { label: 'Terminées', value: done, color: '#00FF9D' },
+          { label: 'En cours', value: Math.max(enCours, 0), color: '#FFB800' },
+          { label: 'À venir', value: Math.max(aVenir, 0), color: 'rgba(255,255,255,.35)' },
         ];
       } else {
         data = [
-          { label: 'Terminées', value: 14, color: '#00C896' },
-          { label: 'En cours', value: 3, color: '#F59E0B' },
-          { label: 'À venir', value: 6, color: '#3D6EF2' },
+          { label: 'Terminées', value: 14, color: '#00FF9D' },
+          { label: 'En cours', value: 3, color: '#FFB800' },
+          { label: 'À venir', value: 6, color: 'rgba(255,255,255,.35)' },
         ];
       }
       const total = data.reduce((s, d) => s + d.value, 0) || 1;
@@ -537,7 +537,7 @@ window.WIDGET_CATALOG = {
           for (let c = 0; c < s.length; c++) h = ((h << 5) - h + s.charCodeAt(c)) | 0;
           const lat = 48.8566 + ((h % 1000) / 1000 - 0.5) * 0.12;
           const lng = 2.3522 + (((h >> 10) % 1000) / 1000 - 0.5) * 0.18;
-          const m = L.circleMarker([lat, lng], { radius: 9, color: '#00C896', weight: 2.5, fillColor: '#00C896', fillOpacity: 0.35 }).addTo(map);
+          const m = L.circleMarker([lat, lng], { radius: 9, color: '#00FF9D', weight: 2.5, fillColor: '#00FF9D', fillOpacity: 0.35 }).addTo(map);
           if (i.time) m.bindPopup('<b>' + i.time + '</b> — ' + i.clientName + '<br>' + i.service);
           markers.push(m);
         });
