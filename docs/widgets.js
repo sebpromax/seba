@@ -1194,6 +1194,51 @@ window.WIDGET_CATALOG = {
         '<div class="ws-row"><span class="ws-label">% de l\'objectif mensuel</span><span class="ws-val">' + pct + '%</span></div>' +
         '<div class="ws-row"><span class="ws-label">Estimation précise</span><span class="ws-val link">Ouvrir le simulateur →</span></div>';
     } },
+
+  /* ── Bibliothèque d'Extensions (Bible IV.9) — mini-modules ajoutables par
+     glisser-déposer depuis le tiroir. defaultVisible:false : n'apparaissent
+     que si l'utilisateur les fait glisser dans la grille (ou les coche
+     depuis le panneau Personnaliser existant, qui liste aussi cette
+     catégorie). ── */
+  'ext-chart': { id: 'ext-chart', title: 'Nouveau Graphique', size: 'M', category: 'extension', source: 'extension',
+    keywords: ['nouveau graphique', 'graphique personnalisé'],
+    defaultVisible: false, defaultOrder: 30,
+    render(ctx, el) {
+      el.innerHTML = '<div class="ext-placeholder"><div class="ext-ph-ico">📈</div>' +
+        '<div class="ext-ph-title">Graphique personnalisé</div>' +
+        '<div class="ext-ph-sub">Choisissez une métrique à suivre — configuration à venir.</div></div>';
+    } },
+
+  'ext-notes': { id: 'ext-notes', title: 'Bloc-notes', size: 'M', category: 'extension', source: 'extension',
+    keywords: ['bloc-notes', 'notes', 'mémo'],
+    defaultVisible: false, defaultOrder: 31,
+    render(ctx, el) {
+      const KEY = 'widget_notes';
+      el.innerHTML = '<textarea class="ext-notes-area" placeholder="Notez une idée, un rappel...">' +
+        (readSeba(KEY, '') || '') + '</textarea>';
+      const area = el.querySelector('.ext-notes-area');
+      let t;
+      area.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => writeSeba(KEY, area.value), 300);
+      });
+    } },
+
+  'ext-rss': { id: 'ext-rss', title: 'Flux RSS Finance', size: 'M', category: 'extension', source: 'extension',
+    keywords: ['flux rss', 'actualités finance', 'rss finance'],
+    defaultVisible: false, defaultOrder: 32,
+    render(ctx, el) {
+      /* Un site 100% statique ne peut pas interroger un flux RSS externe
+         sans proxy serveur (CORS) — aperçu honnête plutôt qu'un faux flux. */
+      const items = [
+        'Taux BCE inchangés ce trimestre',
+        'Inflation : légère baisse en zone euro',
+        'PME : nouvelles aides à la trésorerie annoncées',
+      ];
+      el.innerHTML = '<div class="ext-rss-list">' +
+        items.map(t => '<div class="ext-rss-item">' + t + '</div>').join('') +
+        '</div><div class="ext-rss-note">Aperçu de démonstration — connexion à un vrai flux RSS nécessite un relais serveur.</div>';
+    } },
 };
 
 function fmtNum(n, unit) {
@@ -1415,11 +1460,11 @@ function moveWidget(id, dir) {
 /* ═══════════════════════════════════════════════════════════════
    BIBLIOTHÈQUE DE WIDGETS (Phase 3) — panneau "Personnaliser"
 ═══════════════════════════════════════════════════════════════ */
-const CATEGORY_LABEL = { core: 'Cœur', companion: 'Compagnon' };
+const CATEGORY_LABEL = { core: 'Cœur', companion: 'Compagnon', extension: 'Extensions' };
 function buildLibraryPanelHTML() {
   const layout = getEffectiveLayout();
   const byId = {}; layout.forEach(w => byId[w.id] = w);
-  const groups = { core: [], companion: [] };
+  const groups = { core: [], companion: [], extension: [] };
   Object.values(window.WIDGET_CATALOG).forEach(w => groups[w.category].push(w));
   return Object.keys(groups).map(cat => {
     if (!groups[cat].length) return '';

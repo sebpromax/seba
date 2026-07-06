@@ -485,6 +485,40 @@
     .widget-lib-row:hover{background:var(--bg);}
     .cp-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
 
+    /* ── Bibliothèque d'Extensions (Bible IV.9) — tiroir gauche ── */
+    .ext-drawer-trigger{position:fixed;top:24px;left:236px;z-index:250;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,transform .15s;}
+    .ext-drawer-trigger:hover{border-color:var(--emerald);transform:scale(1.06);}
+    @media (max-width:840px){ .ext-drawer-trigger{left:16px;top:74px;} }
+    .ext-drawer-overlay{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,.4);display:none;}
+    .ext-drawer-overlay.open{display:block;}
+    .ext-drawer{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:88vw;background:rgba(5,5,5,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-right:1px solid var(--border);box-shadow:8px 0 32px rgba(0,0,0,.5);z-index:521;transform:translateX(-100%);transition:transform .28s cubic-bezier(0.22,1,.36,1);display:flex;flex-direction:column;}
+    .ext-drawer.open{transform:translateX(0);}
+    .ext-drawer-head{padding:20px 20px 6px;}
+    .ext-drawer-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:4px;}
+    .ext-drawer-sub{font-size:.78rem;color:rgba(255,255,255,.55);line-height:1.4;}
+    .ext-drawer-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+    .ext-tile{padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);cursor:grab;transition:border-color .15s,background .15s;}
+    .ext-tile:hover{border-color:var(--emerald);background:rgba(0,255,157,.06);}
+    .ext-tile:active{cursor:grabbing;}
+    .ext-tile.ext-tile-added{opacity:.4;cursor:default;pointer-events:none;}
+    .ext-tile-ico{font-size:1.2rem;margin-bottom:6px;display:block;}
+    .ext-tile-name{font-size:.86rem;font-weight:600;color:#fff;}
+    .ext-tile-desc{font-size:.74rem;color:rgba(255,255,255,.5);margin-top:2px;}
+    .ext-drawer-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.72rem;color:rgba(255,255,255,.45);}
+    /* Zone de dépose : léger halo émeraude sur la grille pendant qu'on glisse une vignette au-dessus */
+    .widget-grid.ext-drop-target{box-shadow:inset 0 0 0 2px rgba(0,255,157,.35);border-radius:var(--r);}
+
+    /* Rendu des 3 widgets d'extension */
+    .ext-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:16px;}
+    .ext-ph-ico{font-size:1.6rem;margin-bottom:8px;}
+    .ext-ph-title{font-size:.9rem;font-weight:600;margin-bottom:4px;}
+    .ext-ph-sub{font-size:.78rem;color:var(--text-2);max-width:220px;}
+    .ext-notes-area{width:100%;height:100%;border:none;background:transparent;color:var(--ink);font-family:'Inter',sans-serif;font-size:.85rem;padding:14px 16px;resize:none;outline:none;}
+    .ext-rss-list{padding:10px 16px 0;}
+    .ext-rss-item{font-size:.82rem;padding:8px 0;border-bottom:1px solid var(--border);}
+    .ext-rss-item:last-child{border-bottom:none;}
+    .ext-rss-note{font-size:.7rem;color:var(--text-2);padding:8px 16px 12px;font-style:italic;}
+
     /* ── Barre de commande IA (simulée) ── */
     .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
     .ai-bar-overlay.open{display:flex;}
@@ -675,6 +709,20 @@
   <div class="cp-body" id="cp-body"></div>
   <div class="cp-foot">Cochez les widgets que vous voulez voir. Activez le mode réorganisation pour les glisser-déposer.</div>
 </div>
+
+<!-- Bibliothèque d'Extensions (Bible IV.9) — tiroir gauche, glisser une vignette dans la grille -->
+<button class="ext-drawer-trigger" id="ext-drawer-trigger" onclick="openExtDrawer()" aria-label="Bibliothèque d'extensions" title="Bibliothèque d'extensions">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+</button>
+<div class="ext-drawer-overlay" id="ext-drawer-overlay" onclick="closeExtDrawer()"></div>
+<aside class="ext-drawer" id="ext-drawer">
+  <div class="ext-drawer-head">
+    <div class="ext-drawer-title">Bibliothèque d'extensions</div>
+    <div class="ext-drawer-sub">Glissez une vignette dans le dashboard pour l'installer.</div>
+  </div>
+  <div class="ext-drawer-body" id="ext-drawer-body"></div>
+  <div class="ext-drawer-foot">Chaque extension s'installe comme un widget normal — déplaçable, retirable.</div>
+</aside>
 
 <!-- Barre de commande IA (simulée, 100% côté client) -->
 <div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
@@ -1182,6 +1230,74 @@
     document.getElementById('customize-panel-overlay').classList.remove('open');
     document.getElementById('customize-panel').classList.remove('open');
   }
+
+  /* ═══════════════════════════════════════════════════════
+     BIBLIOTHÈQUE D'EXTENSIONS (Bible IV.9) — tiroir gauche,
+     glisser une vignette vers #widget-grid pour l'installer.
+     Drag natif HTML5 (pas SortableJS) : le tiroir n'est pas une
+     liste réordonnable, juste une source de "vignettes à cloner".
+  ═══════════════════════════════════════════════════════ */
+  function buildExtDrawerHTML() {
+    const layout = getEffectiveLayout();
+    const installed = {}; layout.forEach(w => { if (w.visible) installed[w.id] = true; });
+    return Object.values(window.WIDGET_CATALOG)
+      .filter(w => w.category === 'extension')
+      .map(w => {
+        const added = !!installed[w.id];
+        const icons = { 'ext-chart': '📈', 'ext-notes': '📝', 'ext-rss': '📰' };
+        return '<div class="ext-tile' + (added ? ' ext-tile-added' : '') + '" draggable="' + (!added) + '" data-widget-id="' + w.id + '">' +
+          '<span class="ext-tile-ico">' + (icons[w.id] || '🧩') + '</span>' +
+          '<div class="ext-tile-name">' + w.title + (added ? ' — installé' : '') + '</div>' +
+          '<div class="ext-tile-desc">' + (w.keywords[0] || '') + '</div>' +
+          '</div>';
+      }).join('');
+  }
+  function refreshExtDrawer() {
+    document.getElementById('ext-drawer-body').innerHTML = buildExtDrawerHTML();
+    document.querySelectorAll('.ext-tile[draggable="true"]').forEach(tile => {
+      tile.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', tile.dataset.widgetId);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+    });
+  }
+  function openExtDrawer() {
+    refreshExtDrawer();
+    document.getElementById('ext-drawer-overlay').classList.add('open');
+    document.getElementById('ext-drawer').classList.add('open');
+    if (!_customizeMode) toggleCustomizeMode(); // la nouvelle vignette doit tout de suite montrer sa poignée (IV.8)
+  }
+  function closeExtDrawer() {
+    document.getElementById('ext-drawer-overlay').classList.remove('open');
+    document.getElementById('ext-drawer').classList.remove('open');
+  }
+  (function initExtDropZone() {
+    const grid = document.getElementById('widget-grid');
+    grid.addEventListener('dragover', (e) => {
+      if (!e.dataTransfer.types.includes('text/plain')) return;
+      e.preventDefault();
+      grid.classList.add('ext-drop-target');
+    });
+    grid.addEventListener('dragleave', () => grid.classList.remove('ext-drop-target'));
+    grid.addEventListener('drop', (e) => {
+      e.preventDefault();
+      grid.classList.remove('ext-drop-target');
+      const id = e.dataTransfer.getData('text/plain');
+      if (!id || !window.WIDGET_CATALOG[id]) return;
+      addWidgetToLayout(id);
+      renderGrid(grid, _ctx, _customizeMode);
+      if (_customizeMode) initSortable(grid);
+      refreshExtDrawer();
+      /* Le nouveau widget hérite du feedback de verrouillage IV.8 pour
+         "vendre" l'instantiation, comme une pièce qui vient de s'enclencher. */
+      const newShell = grid.querySelector('.widget-shell[data-widget-id="' + id + '"]');
+      if (newShell) {
+        newShell.classList.add('lock-wave');
+        newShell.addEventListener('animationend', () => newShell.classList.remove('lock-wave'), { once: true });
+        newShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  })();
 
   /* ═══════════════════════════════════════════════════════
      BARRE DE COMMANDE IA (simulée)
