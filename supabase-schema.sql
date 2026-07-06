@@ -20,15 +20,18 @@ create policy "state_insert" on seba_state for insert with check (auth.uid() = u
 create policy "state_update" on seba_state for update using (auth.uid() = user_id);
 create policy "state_delete" on seba_state for delete using (auth.uid() = user_id);
 
--- ── 0b. Compteur d'usage IA (relais ai-relay.ts) ──
--- Accessible uniquement via la clé service_role (les Edge Functions
--- l'ont automatiquement) : RLS activé sans policy = accès bloqué à
--- tout le monde sauf service_role, qui contourne RLS par nature.
+-- ── 0b. Compteur d'usage par fonction (ai-relay.ts, send-email.ts, send-push.ts) ──
+-- "kind" sépare les quotas ('ai' / 'email' / 'push') pour qu'un usage
+-- intensif d'un service n'épuise pas le quota des autres. Accessible
+-- uniquement via la clé service_role (les Edge Functions l'ont
+-- automatiquement) : RLS activé sans policy = accès bloqué à tout le
+-- monde sauf service_role, qui contourne RLS par nature.
 create table if not exists api_usage (
   account text not null,
+  kind text not null,
   day date not null,
   count int not null default 0,
-  primary key (account, day)
+  primary key (account, kind, day)
 );
 alter table api_usage enable row level security;
 

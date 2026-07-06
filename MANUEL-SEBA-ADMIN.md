@@ -61,6 +61,27 @@ Depuis le 2026-07-07, une seule fonction `ai-relay.ts` alimente à la fois le ch
 ### 1d. Conscience Seba (recommandations IA du Dashboard)
 Utilise désormais le même relais `ai-relay` que la section 1b ci-dessus (plus besoin d'une fonction séparée). Une fois `ai-relay` déployé avec au moins une clé configurée, `callSebaAI()` dans `widgets.js` peut joindre le relais. Le Dashboard déclenche automatiquement une analyse IA (affichée comme une notification "aura", cf. Conscience Seba) quand le Serenity Score entre en alerte, ou quand un mouvement financier important apparaît dans les Lignes d'Horizon. Sans secret configuré, ces déclenchements échouent silencieusement (aucune notification, aucune erreur visible) — le dashboard reste utilisable normalement.
 
+### 1e. Email (devis/factures envoyés au client) — Resend, GRATUIT
+1. https://resend.com → crée un compte gratuit (3 000 emails/mois, 100/jour).
+2. **API Keys** → **Create API Key**.
+3. Supabase → **Edge Functions** → **Deploy a new function**, nom `send-email`.
+4. Colle le contenu de **`supabase-functions/send-email.ts`** → **Deploy**.
+5. Edge Functions → **Secrets** → ajoute :
+   - `RESEND_API_KEY` — ta clé Resend
+   - `RESEND_FROM` (optionnel) — une adresse `Nom <email@tondomaine.fr>` si tu as vérifié un domaine sur Resend ; sinon le relais utilise `onboarding@resend.dev` (fonctionne tout de suite, sans domaine à vérifier, mais moins pro pour les vrais clients).
+6. Effet : le bouton "✉️ Email" sur les pages Devis et Factures envoie un vrai email au client. Sans ce secret configuré, le bouton affiche une erreur claire à l'utilisateur (pas d'échec silencieux ici, contrairement à l'IA — l'utilisateur doit savoir que l'envoi n'a pas eu lieu).
+
+### 1f. Notifications push (rappels) — OneSignal, GRATUIT
+1. https://onesignal.com → crée un compte gratuit → **New App** → plateforme **Web Push**, renseigne l'URL du site (`https://sebpromax.github.io/seba`).
+2. Récupère l'**App ID** (Settings → Keys & IDs) → colle-le dans `docs/config.public.js` → `onesignalAppId` (public par design, comme la clé Supabase anon).
+3. Toujours dans Keys & IDs, récupère la **REST API Key**.
+4. Supabase → **Edge Functions** → **Deploy a new function**, nom `send-push`.
+5. Colle le contenu de **`supabase-functions/send-push.ts`** → **Deploy**.
+6. Edge Functions → **Secrets** → ajoute :
+   - `ONESIGNAL_APP_ID` — le même App ID qu'à l'étape 2
+   - `ONESIGNAL_API_KEY` — la REST API Key de l'étape 3
+7. Effet : le bouton 🔔 dans la barre du dashboard permet à chaque utilisateur d'activer ses notifications (rien n'est envoyé sans ce geste explicite). `docs/OneSignalSDKWorker.js` est le petit fichier requis par OneSignal pour le service worker — déjà présent, rien à faire dessus.
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)

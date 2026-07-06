@@ -14,9 +14,14 @@
    utilise l'auth.uid() réel de l'utilisateur comme identifiant de compte
    (docs/seba-data.js → SupabaseAdapter._accountId()) — cette valeur ne
    sert jamais à un vrai compte inscrit.
+
+   onesignalAppId : identifiant d'app OneSignal (public par design, comme
+   une clé publishable) — voir MANUEL-SEBA-ADMIN.md §1f. Vide = la
+   fonctionnalité de notifications push reste invisible, aucune erreur.
 ═══════════════════════════════════════════════════════════════ */
 window.SEBA_CONFIG_PUBLIC = {
   supabaseUrl: 'https://ptmudezhxnhhyctowlqp.supabase.co',
   supabaseAnonKey: 'sb_publishable_u8RsEy8djwN8_66hSHck7A_wwNgOZWx',
   accountId: 'demo',
+  onesignalAppId: '',
 };

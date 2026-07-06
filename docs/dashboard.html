@@ -645,6 +645,9 @@
           <button class="topbar-btn" title="Personnaliser le dashboard" aria-label="Personnaliser le dashboard" onclick="openCustomizePanel()">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
           </button>
+          <button class="topbar-btn" title="Activer les notifications push" aria-label="Activer les notifications push" onclick="enablePushNotifications()">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/><circle cx="12.5" cy="3.5" r="2.5" fill="var(--emerald)" stroke="none"/></svg>
+          </button>
           <div class="topbar-btn" title="Notifications" role="button" aria-label="Notifications (2 non lues)" tabindex="0">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
             <div class="notif-badge">2</div>
@@ -804,6 +807,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="widgets.js"></script>
 <script src="ai-assistant.js" defer></script>
+<script src="push-init.js" defer></script>
 <script src="logger.js" defer></script>
 <script>
   /* ═══════════════════════════════════════════════════════
@@ -1406,6 +1410,15 @@
   ═══════════════════════════════════════════════════════ */
   let _focusCleanup = null;
   let _focusActive = false;
+  async function enablePushNotifications() {
+    if (!window.sebaPush || !sebaPush.isConfigured) {
+      alert('Notifications push non configurées côté administrateur pour le moment.');
+      return;
+    }
+    const res = await sebaPush.subscribe();
+    alert(res.ok ? 'Notifications activées ✓ Vous recevrez vos rappels ici.' : 'Activation impossible : ' + (res.error || 'permission refusée'));
+  }
+
   function toggleFocusMode() {
     _focusActive = !_focusActive;
     const overlay = document.getElementById('focus-overlay');

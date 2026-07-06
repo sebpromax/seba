@@ -278,7 +278,9 @@
   <div class="ss-footer" id="ss-footer"><!-- filled by JS --></div>
 </aside>
 
+<script src="auth.js"></script>
 <script src="seba-data.js"></script>
+<script src="email-service.js"></script>
 <script>
   /* ── Devis — lus depuis le moteur de données partagé ── */
   let DEVIS_DATA = SebaDB.list('devis').map(d => Object.assign({}, d, { client: d.clientName }));
@@ -336,19 +338,28 @@
   }
 
   function buildFooter(d) {
+    const emailBtn = `<button class="btn-copy" onclick="sendDevisEmail('${d.num}')" title="Envoyer par email">✉️ Email</button>`;
     if (d.status === 'signe') {
       return `<button class="btn-copy" onclick="copyLink('${d.num}')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
         Copier le lien de paiement
       </button>
+      ${emailBtn}
       <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
     }
     if (d.status === 'attente') {
       return `<button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
+        ${emailBtn}
         <button class="btn-ss-em" onclick="marquerSigne('${d.num}')">Marquer signé ✓</button>`;
     }
     return `<button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
+      ${emailBtn}
       <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+  }
+
+  function sendDevisEmail(num) {
+    const d = DEVIS_DATA.find(x => x.num === num);
+    if (d && window.sebaEmail) sebaEmail.sendDocument(d, 'devis');
   }
 
   function closeSheet() {

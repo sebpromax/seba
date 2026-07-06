@@ -144,11 +144,12 @@
   </main>
 </div>
 
+<script src="auth.js"></script>
 <script src="seba-data.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="pdf-generator.js" defer></script>
-<script src="auth.js"></script>
 <script src="stripe-service.js"></script>
+<script src="email-service.js"></script>
 <script>
   /* ── Rendu des factures depuis le moteur de données partagé ── */
   (function renderFactures() {
@@ -169,6 +170,7 @@
         '<td class="row-action"><span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span>' +
         ' · <span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
         (f.status !== 'payee' ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
+        ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>' +
         '</td></tr>';
     }).join('');
     tbody.querySelectorAll('[data-id]').forEach(el => {
@@ -184,6 +186,11 @@
       });
     });
   })();
+
+  function sendFactureEmail(id) {
+    const f = SebaDB.get('factures', id);
+    if (f && window.sebaEmail) sebaEmail.sendDocument(f, 'facture');
+  }
 </script>
 <script>
   const tabs = document.querySelectorAll('.tab[data-filter]');

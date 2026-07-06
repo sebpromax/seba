@@ -61,9 +61,10 @@ function verifyUser(req: Request): string | null {
   }
 }
 
-/* Plafond quotidien par compte (table api_usage). En cas d'erreur réseau/
-   config, on n'empêche jamais la requête de passer (fail-open) — mieux
-   vaut un usage non limité temporairement qu'un assistant qui plante. */
+/* Plafond quotidien par compte (table api_usage, kind='ai'). En cas
+   d'erreur réseau/config, on n'empêche jamais la requête de passer
+   (fail-open) — mieux vaut un usage non limité temporairement qu'un
+   assistant qui plante. */
 async function checkRateLimit(userId: string): Promise<boolean> {
   const supaUrl = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -72,16 +73,16 @@ async function checkRateLimit(userId: string): Promise<boolean> {
   const headers = { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'Content-Type': 'application/json' };
   try {
     const res = await fetch(
-      supaUrl + '/rest/v1/api_usage?select=count&account=eq.' + encodeURIComponent(userId) + '&day=eq.' + today,
+      supaUrl + '/rest/v1/api_usage?select=count&account=eq.' + encodeURIComponent(userId) + "&kind=eq.ai&day=eq." + today,
       { headers },
     );
     const rows = res.ok ? await res.json() : [];
     const count = rows.length ? rows[0].count : 0;
     if (count >= DAILY_LIMIT) return false;
-    await fetch(supaUrl + '/rest/v1/api_usage?on_conflict=account,day', {
+    await fetch(supaUrl + '/rest/v1/api_usage?on_conflict=account,kind,day', {
       method: 'POST',
       headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-      body: JSON.stringify({ account: userId, day: today, count: count + 1 }),
+      body: JSON.stringify({ account: userId, kind: 'ai', day: today, count: count + 1 }),
     });
     return true;
   } catch {
