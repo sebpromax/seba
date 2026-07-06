@@ -117,6 +117,8 @@ input,button{font-family:'Inter',sans-serif;}
 /* ── Erreur ── */
 .error-msg{font-size:.82rem;color:#ff8080;background:rgba(255,100,100,.07);border:1px solid rgba(255,100,100,.18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .error-msg.visible{display:block;}
+.success-msg{font-size:.82rem;color:#00ff88;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.success-msg.visible{display:block;}
 
 /* ── Cursor trail ── */
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:rgba(0,255,136,.35);box-shadow:0 0 14px rgba(0,255,136,.5);will-change:transform;}
@@ -176,6 +178,7 @@ input,button{font-family:'Inter',sans-serif;}
       <p>Accédez à votre espace Seba.</p>
     </div>
 
+    <div class="success-msg" id="success-msg">Compte créé — vérifiez vos e-mails et cliquez sur le lien de confirmation avant de vous connecter.</div>
     <div class="error-msg" id="error-msg">Adresse e-mail ou mot de passe incorrect.</div>
 
     <div class="field">
@@ -233,6 +236,7 @@ async function handleLogin(){
   }
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleLogin();});
+if(new URLSearchParams(location.search).get('confirm')==='1'){document.getElementById('success-msg').classList.add('visible');}
 function togglePasswordVisibility(){
   const inp=document.getElementById('password');
   const btn=document.getElementById('toggle-pw');

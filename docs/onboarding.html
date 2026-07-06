@@ -53,11 +53,6 @@ html{scroll-behavior:auto;}
 html{min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
 body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
 a{color:inherit;text-decoration:none;}
-@view-transition{navigation:auto;}
-::view-transition-old(root){animation:180ms ease vt-out;}
-::view-transition-new(root){animation:220ms ease vt-in;}
-@keyframes vt-out{to{opacity:0;}}
-@keyframes vt-in{from{opacity:0;}}
 
 .sh{position:sticky;top:0;z-index:200;background:rgba(10,10,12,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.05);}
 .sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:60px;}
@@ -384,7 +379,17 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
   /* Small viewport fixes (apply regardless of UA) */
   /* 100vh dépasse le viewport visible sur mobile (barre du navigateur) : c'était
      la source du vide fantôme sous le bouton. svh = hauteur réellement visible. */
-  .ob-layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 60px);min-height:calc(100svh - 60px);}
+  .ob-layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 60px);min-height:calc(100svh - 60px);position:relative;}
+  /* Sur desktop, grid-area:1/1 empile les 11 étapes dans la même cellule de
+     grille : la piste de la grille (et donc la hauteur de .ob-layout) se
+     calcule sur la PLUS HAUTE des 11, même celles invisibles — sur mobile où
+     .ob-layout n'a plus de hauteur fixe, ça poussait le bouton "Continuer"
+     des étapes courtes hors écran. En passant les étapes en position:absolute
+     ici (uniquement sous 880px), elles gardent leur emplacement (grid-area
+     sert alors de simple ancrage de position, pas de calcul de taille) sans
+     jamais contribuer à la hauteur du parent — chaque étape ne dépend plus
+     que de son propre contenu. */
+  .step-container{position:absolute;inset:0;}
   .ob-right{display:none !important;}
   .globe-wrap{display:none !important;}
   /* .welcome-wrap remplit toute la hauteur disponible (flex:1) et centrait son
@@ -865,6 +870,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
         </div>
         <div class="err" id="err-pwd2">Les mots de passe ne correspondent pas.</div>
       </div>
+      <div class="err" id="err-signup"></div>
       <p class="s8-legal" style="font-size:.72rem;color:rgba(197,208,230,.3);">En créant votre compte, vous acceptez nos <a href="#" style="color:rgba(0,255,136,.45);">conditions d'utilisation</a>.</p>
 
       <div class="s8-info" style="background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.12);border-radius:10px;color:rgba(197,208,230,.5);line-height:1.5;">
@@ -2472,7 +2478,8 @@ function updateProgress(n){
 function showErr(id){document.getElementById(id).classList.add('show');}
 function hideErr(id){document.getElementById(id).classList.remove('show');}
 
-function validateStep(n){
+let _signupNeedsConfirm=false;
+async function validateStep(n){
   if(n===1){
     if(!document.getElementById('sel-pays').value){showErr('err-pays');return;}
     hideErr('err-pays');
@@ -2521,11 +2528,32 @@ function validateStep(n){
     hideErr('err-pwd');
     if(pwd!==pwd2){showErr('err-pwd2');return;}
     hideErr('err-pwd2');
+    hideErr('err-signup');
     S.email=email;S.pwd=pwd;
     S.phone=(document.getElementById('inp-phone-s8')||{}).value?.trim()||S.phone||'';
-    /* Création du compte Supabase si configuré (non bloquant — le parcours
-       local continue même si le réseau échoue) */
-    if(window.sebaAuth) sebaAuth.signUp(email,pwd).catch(()=>{});
+    /* Création du compte Supabase si configuré — on ATTEND le vrai résultat
+       avant de célébrer. Avant ce correctif, l'appel était fire-and-forget
+       (.catch(()=>{})) : un échec de création (email déjà utilisé, réseau)
+       ou une confirmation email requise passaient inaperçus, et l'écran de
+       succès redirigeait quand même vers dashboard.html — où guard.js, ne
+       trouvant aucune session active, renvoyait aussitôt vers la connexion
+       sans aucune explication pour l'utilisateur. */
+    const btnCreer=document.getElementById('btn-creer');
+    if(window.sebaAuth){
+      const originalLabel=btnCreer.textContent;
+      btnCreer.disabled=true;btnCreer.textContent='Création en cours…';
+      const res=await sebaAuth.signUp(email,pwd);
+      btnCreer.disabled=false;btnCreer.textContent=originalLabel;
+      if(!res.ok){
+        const el=document.getElementById('err-signup');
+        el.textContent=res.error==='User already registered'
+          ?'Un compte existe déjà avec cette adresse e-mail — connectez-vous plutôt.'
+          :(res.error?('Erreur : '+res.error):'Impossible de créer le compte pour le moment — réessayez.');
+        showErr('err-signup');
+        return;
+      }
+      _signupNeedsConfirm=!!res.needsConfirm;
+    }
     AudioUI.playComplete();
     celebratePreview();
   }
@@ -2674,6 +2702,11 @@ function updatePhone(n){
     const refJob=S.selectedJobId?JOB_INDEX.find(j=>j.id===S.selectedJobId):(S.secteur?getDefaultJobForSector(S.secteur):null);
     if(refJob) updateSectorPreview(refJob);
     else if(S.secteurCustom){const m=searchJobs(S.secteurCustom)[0];if(m)updateSectorPreview(m);}
+    // updateSectorPreview() écrase pv-title/pv-avatar-letter avec le libellé
+    // générique du métier — si l'utilisateur a déjà saisi un nom personnalisé
+    // (étape 4/5), on le restaure aussitôt pour qu'il ne soit jamais perdu
+    // de vue sur les étapes suivantes.
+    if(S.publicName||S.nom) updatePreview();
   }
 }
 
@@ -2694,8 +2727,9 @@ function startLoading(){
   const ph=document.getElementById('loading-phase');const sl2=document.getElementById('loading-sub-lbl');
   const TOTAL=351.9;
   function getPhaseText(pct){for(const p of PHASES){if(pct<=p.max)return p.txt;}return PHASES[PHASES.length-1].txt;}
+  const dest=_signupNeedsConfirm?'connexion.html?confirm=1':'dashboard.html';
   if(typeof gsap==='undefined'){
-    setTimeout(()=>{document.body.style.transition='opacity .6s';document.body.style.opacity='0';setTimeout(()=>{window.location.href='dashboard.html';},700);},3000);
+    setTimeout(()=>{document.body.style.transition='opacity .6s';document.body.style.opacity='0';setTimeout(()=>{window.location.href=dest;},700);},3000);
     return;
   }
   ph.classList.add('pulsing');
@@ -2710,11 +2744,17 @@ function startLoading(){
     onComplete(){
       rp.textContent='100%';
       ph.classList.remove('pulsing');
-      ph.textContent=nom+' est prête !';
       AudioUI.playComplete();
       StateRecovery.clear();
-      sl2.textContent='Redirection vers votre tableau de bord…';
-      gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:.6,onComplete(){window.location.href='dashboard.html';}});
+      if(_signupNeedsConfirm){
+        ph.textContent='Compte créé — confirmez votre e-mail';
+        sl2.textContent='Un lien de confirmation vous a été envoyé. Cliquez dessus puis connectez-vous.';
+        gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:1.8,onComplete(){window.location.href=dest;}});
+      } else {
+        ph.textContent=nom+' est prête !';
+        sl2.textContent='Redirection vers votre tableau de bord…';
+        gsap.to('body',{opacity:0,duration:.75,ease:'power2.inOut',delay:.6,onComplete(){window.location.href=dest;}});
+      }
     }
   });
 }

@@ -43,6 +43,7 @@
 
     /* ── Header ── */
     .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
+    .dh-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
     .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
     .dh-meta { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--text-2); flex-wrap: wrap; }
     .sector-badge { display: inline-flex; align-items: center; padding: 2px 9px; background: rgba(0,255,157,.12); color: var(--emerald); border-radius: 20px; font-size: .73rem; font-weight: 600; letter-spacing: .02em; }
@@ -288,7 +289,12 @@
     @media (max-width: 1180px) { .timeline-life-rail { display: none; } }
 
     /* ── Conscience Seba (Bible II.7) — notifications prédictives en "aura" ── */
+    /* Au-delà de 840px la sidebar (220px) est visible en permanence : décale
+       l'aura pour ne jamais recouvrir sa navigation. Sous 840px la sidebar
+       est un tiroir caché par défaut, donc left:24px (bord de l'écran) reste
+       correct — c'est la valeur qui posait problème sur desktop uniquement. */
     .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+    @media (min-width: 841px) { .aura-stack { left: 244px; } }
     .aura-card {
       position: relative; padding: 14px 16px;
       background: var(--glass-bg);
@@ -486,9 +492,11 @@
     .cp-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
 
     /* ── Bibliothèque d'Extensions (Bible IV.9) — tiroir gauche ── */
-    .ext-drawer-trigger{position:fixed;top:24px;left:236px;z-index:250;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,transform .15s;}
+    /* Intégré au fil du header (dh-left) plutôt qu'en position:fixed — évite
+       toute collision avec le titre ou le logo de la sidebar, quel que soit
+       le viewport, sans media query de repli à maintenir. */
+    .ext-drawer-trigger{flex-shrink:0;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,transform .15s;}
     .ext-drawer-trigger:hover{border-color:var(--emerald);transform:scale(1.06);}
-    @media (max-width:840px){ .ext-drawer-trigger{left:16px;top:74px;} }
     .ext-drawer-overlay{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,.4);display:none;}
     .ext-drawer-overlay.open{display:block;}
     .ext-drawer{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:88vw;background:rgba(5,5,5,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-right:1px solid var(--border);box-shadow:8px 0 32px rgba(0,0,0,.5);z-index:521;transform:translateX(-100%);transition:transform .28s cubic-bezier(0.22,1,.36,1);display:flex;flex-direction:column;}
@@ -612,14 +620,19 @@
 
       <!-- ── Zone 1 : En-tête ── -->
       <div class="dash-header">
-        <div>
-          <div class="dh-greeting" id="greeting">Bonjour !</div>
-          <div class="dh-meta">
-            <span class="sector-badge" id="sector-badge">—</span>
-            <span id="topbar-date"></span>
-            <span aria-hidden="true">·</span>
-            <span class="clock-time" id="clock-time">--:--:--</span>
-            <span class="clock-tz" id="clock-tz" title="Heure locale de l'entreprise"></span>
+        <div class="dh-left">
+          <button class="ext-drawer-trigger" id="ext-drawer-trigger" onclick="openExtDrawer()" aria-label="Bibliothèque d'extensions" title="Bibliothèque d'extensions">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+          </button>
+          <div>
+            <div class="dh-greeting" id="greeting">Bonjour !</div>
+            <div class="dh-meta">
+              <span class="sector-badge" id="sector-badge">—</span>
+              <span id="topbar-date"></span>
+              <span aria-hidden="true">·</span>
+              <span class="clock-time" id="clock-time">--:--:--</span>
+              <span class="clock-tz" id="clock-tz" title="Heure locale de l'entreprise"></span>
+            </div>
           </div>
         </div>
         <div class="topbar-actions">
@@ -738,10 +751,7 @@
   <div class="cp-foot">Cochez les widgets que vous voulez voir. Activez le mode réorganisation pour les glisser-déposer.</div>
 </div>
 
-<!-- Bibliothèque d'Extensions (Bible IV.9) — tiroir gauche, glisser une vignette dans la grille -->
-<button class="ext-drawer-trigger" id="ext-drawer-trigger" onclick="openExtDrawer()" aria-label="Bibliothèque d'extensions" title="Bibliothèque d'extensions">
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
-</button>
+<!-- Bibliothèque d'Extensions (Bible IV.9) — le déclencheur vit désormais dans .dh-left (dash-header) -->
 <div class="ext-drawer-overlay" id="ext-drawer-overlay" onclick="closeExtDrawer()"></div>
 <aside class="ext-drawer" id="ext-drawer">
   <div class="ext-drawer-head">
