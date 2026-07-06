@@ -55,6 +55,16 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 3. Effet : le bouton du plan Pro sur la page Tarifs ouvre ton paiement réel ; le bouton "💳 Lien" des factures copie un lien Stripe avec la référence de la facture (`client_reference_id`) pour le rapprochement.
    ⚠️ Ne mets JAMAIS une clé `sk_…` (secrète) dans le site.
 
+### 1d. Mistral (Conscience Seba — recommandations IA du Dashboard) — nécessite un relais serveur
+Comme pour Groq, un site 100% statique ne peut jamais cacher une clé secrète — la clé Mistral ne doit **jamais** être copiée dans `docs/config.js` ni ailleurs dans `docs/`. Elle vit uniquement côté serveur Supabase.
+1. https://console.mistral.ai → **API Keys** → crée une clé.
+2. Supabase → **Edge Functions** → **Deploy a new function**, nom `seba-ai-mistral`.
+3. Colle le contenu de **`supabase-functions/seba-ai-mistral.ts`** (racine du projet) → **Deploy**.
+4. Edge Functions → **Secrets** → ajoute :
+   - Nom : `MISTRAL_API_KEY`
+   - Valeur : ta clé Mistral (colle uniquement le texte de la clé, sans guillemets ni espace superflu)
+5. Effet : `callSebaAI()` dans `widgets.js` peut désormais joindre le relais. Le Dashboard déclenche automatiquement une analyse IA (affichée comme une notification "aura", cf. Conscience Seba) quand le Serenity Score entre en alerte, ou quand un mouvement financier important apparaît dans les Lignes d'Horizon. Sans ce secret configuré, ces déclenchements échouent silencieusement (aucune notification, aucune erreur visible) — le dashboard reste utilisable normalement.
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)

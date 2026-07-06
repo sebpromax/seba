@@ -335,6 +335,7 @@ function serenityStateFor(score) {
 function renderSerenityScore(wctx, el) {
   const score = computeSerenityScore(wctx);
   const state = serenityStateFor(score);
+  maybeTriggerAIOnSerenity(state, wctx); // Bible V.1 — entrée en alerte seulement
   const goal = wctx.demo.goal;
   /* Trésorerie = estimation simplifiée (CA du mois moins les factures en retard
      encore non encaissées) — même logique que le companion "Position de
@@ -549,7 +550,9 @@ function renderHorizonLine(wctx) {
   const canvas = document.getElementById('horizon-line');
   if (!canvas) return;
   if (_horizonCleanup) { _horizonCleanup(); _horizonCleanup = null; }
-  _horizonCleanup = startHorizonAnimation(canvas, canvas.parentElement, buildHorizonSeries(wctx), wctx.sym);
+  const series = buildHorizonSeries(wctx);
+  maybeTriggerAIOnHorizon(series, wctx.sym); // Bible V.1 — point majeur, une fois
+  _horizonCleanup = startHorizonAnimation(canvas, canvas.parentElement, series, wctx.sym);
 }
 
 function startHorizonAnimation(canvas, wrap, series, sym) {
@@ -918,6 +921,76 @@ function triggerAuraDemo() {
   AURA_TEST_SCENARIOS.forEach((s, i) => {
     setTimeout(() => showAuraNotification(s.message, s.probability), 2500 + i * 3500);
   });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INJECTION DE L'INTELLIGENCE (Bible V.1) — Conscience Seba branchée
+   sur Mistral. La clé API ne touche JAMAIS le navigateur : callSebaAI
+   n'appelle pas api.mistral.ai directement, elle appelle un relais
+   Supabase Edge Function (supabase-functions/seba-ai-mistral.ts) qui
+   lit MISTRAL_API_KEY côté serveur — même schéma déjà en place pour
+   Groq (ai-assistant.js). Un site 100% statique ne peut PAS cacher
+   une clé secrète autrement ; c'est une contrainte, pas un choix.
+═══════════════════════════════════════════════════════════════ */
+
+/* Envoie le contexte du dashboard au relais et renvoie la recommandation
+   structurée { action, priority, reasoning }, ou null si le relais n'est
+   pas configuré ou indisponible (aucune exception ne remonte à l'appelant —
+   l'IA est un bonus, jamais un point de blocage du dashboard). */
+async function callSebaAI(context) {
+  const cfg = window.SEBA_CONFIG || {};
+  if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return null;
+  try {
+    const res = await fetch(cfg.supabaseUrl + '/functions/v1/seba-ai-mistral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey },
+      body: JSON.stringify({ context }),
+    });
+    if (!res.ok) throw new Error('Relais IA HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.action || !data.priority) return null;
+    return data;
+  } catch (e) {
+    console.warn('[Conscience Seba] analyse indisponible :', e.message);
+    return null;
+  }
+}
+
+const SEBA_AI_PRIORITY_PCT = { high: 88, medium: 60, low: 30 };
+
+/* Convertit une recommandation IA en aura (réutilise le II.7 tel quel —
+   même "morphing" vers Vecteur d'Action si l'utilisateur valide). */
+function presentSebaAIRecommendation(result) {
+  if (!result) return;
+  const pct = SEBA_AI_PRIORITY_PCT[result.priority] || 50;
+  const message = result.action + (result.reasoning ? ' — ' + result.reasoning : '');
+  showAuraNotification(message, pct);
+}
+
+/* ── Cycle de vie : déclenchement automatique ──────────────────────────
+   1) Transition CRITIQUE du Serenity Score (pas à chaque re-rendu — un
+      score qui RESTE en alerte ne doit pas spammer l'IA en boucle).
+   2) Apparition d'un point "majeur" dans les Lignes d'Horizon (montant
+      au-dessus d'un seuil), une seule fois par point (dédoublonné). */
+let _lastSerenityState = null;
+function maybeTriggerAIOnSerenity(state, wctx) {
+  const wasAlert = _lastSerenityState === 'alerte';
+  _lastSerenityState = state.key;
+  if (state.key !== 'alerte' || wasAlert) return; // seulement l'ENTRÉE en alerte, pas le maintien
+  callSebaAI({ source: 'serenity-score', state: state.key, demo: wctx.demo && wctx.demo.metrics })
+    .then(presentSebaAIRecommendation);
+}
+
+const HORIZON_MAJOR_THRESHOLD = 400; // €, seuil "donnée majeure" — cf. Bible V.1
+const _horizonAiSeen = new Set();
+function maybeTriggerAIOnHorizon(series, sym) {
+  const all = (series.gains || []).concat(series.pending || []);
+  const majorPoint = all.find(p => p.amount >= HORIZON_MAJOR_THRESHOLD && !_horizonAiSeen.has(p.date + ':' + p.amount));
+  if (!majorPoint) return;
+  _horizonAiSeen.add(majorPoint.date + ':' + majorPoint.amount);
+  callSebaAI({ source: 'horizon-line', date: majorPoint.date, amount: majorPoint.amount, devise: sym })
+    .then(presentSebaAIRecommendation);
 }
 
 /* ═══════════════════════════════════════════════════════════════
