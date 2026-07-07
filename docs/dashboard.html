@@ -539,6 +539,17 @@
     .calib-flash.fire{animation:calibFlash .9s ease-out;}
     @keyframes calibFlash{0%{box-shadow:0 0 0 0 rgba(0,255,157,.55);}100%{box-shadow:0 0 60px 40px rgba(0,255,157,0);}}
 
+    /* ── Pont de Données (Bible V.11) — scan de pixels sur les métriques ── */
+    .metric-value.pixel-scan{animation:pixelScan .5s steps(6) both;}
+    @keyframes pixelScan{
+      0%{filter:none;transform:translateX(0);}
+      15%{filter:blur(1px) brightness(2);transform:translateX(-2px);color:var(--emerald);}
+      30%{transform:translateX(2px);}
+      45%{transform:translateX(-1px);filter:blur(0.5px) brightness(1.6);}
+      60%{transform:translateX(1px);}
+      100%{filter:none;transform:translateX(0);color:inherit;}
+    }
+
     /* ── Barre de commande IA (simulée) ── */
     .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
     .ai-bar-overlay.open{display:flex;}
@@ -671,6 +682,7 @@
             <div class="avatar" id="avatar" style="background:var(--emerald);">—</div>
             <div class="user-menu" id="user-menu">
               <a href="reglages.html">Mon compte</a>
+              <a href="#" id="pont-donnees-link" onclick="event.preventDefault();activerDonneesReelles();">Activer mes données réelles</a>
               <div class="menu-sep"></div>
               <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
             </div>
@@ -1618,6 +1630,37 @@
       localStorage.setItem('seba_calibration_seen', '1');
     } catch (e) { /* jamais bloquant : en cas d'erreur, le dashboard reste utilisable normalement */ }
   }
+
+  /* ─── Le Pont de Données (Bible V.11) ────────────────────────────────
+     Seba n'a pas de connexion bancaire réelle : l'interprétation fidèle
+     à l'architecture existante est la bascule des données de démo
+     (seed() dans seba-data.js) vers un état 100% réel — SebaDB._reset()
+     existe déjà pour ça. L'animation de "scan" (vibration des pixels,
+     décrite dans la Bible) traverse les métriques avant la bascule. ─── */
+  function activerDonneesReelles() {
+    if (localStorage.getItem('seba_donnees_reelles') === '1') {
+      alert('Vos données réelles sont déjà activées — ce cockpit ne contient plus de données de démonstration.');
+      return;
+    }
+    const ok = confirm('Ceci efface toutes les données de démonstration (clients, devis, factures fictifs) pour repartir sur une base 100% réelle. Continuer ?');
+    if (!ok) return;
+    const metrics = Array.from(document.querySelectorAll('.metric-value'));
+    metrics.forEach((el, i) => {
+      setTimeout(() => {
+        el.classList.add('pixel-scan');
+        el.addEventListener('animationend', () => el.classList.remove('pixel-scan'), { once: true });
+      }, i * 90);
+    });
+    setTimeout(() => {
+      if (window.SebaDB) SebaDB._reset();
+      localStorage.setItem('seba_donnees_reelles', '1');
+      AudioUI.playComplete();
+      if (biz) renderDashboard(biz);
+      const menuEl2 = document.getElementById('user-menu');
+      if (menuEl2) menuEl2.classList.remove('open');
+    }, metrics.length * 90 + 550);
+  }
+  window.activerDonneesReelles = activerDonneesReelles;
 
   function toggleFocusMode() {
     AudioUI.playClick();
