@@ -1266,9 +1266,13 @@
     renderDashboard(biz);
     /* Re-rendu quand les données changent dans un autre onglet */
     if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
-    /* Conscience Seba (Bible II.7) — une seule fois par chargement, pas à
-       chaque re-rendu (sinon les mêmes prédictions ressurgiraient en boucle). */
-    if (typeof triggerAuraDemo === 'function') triggerAuraDemo();
+    /* Conscience Seba (Bible II.7) — les vrais déclencheurs (maybeTriggerAIOnSerenity/
+       maybeTriggerAIOnHorizon, dans widgets.js) restent actifs et se déclenchent sur
+       de vraies conditions. triggerAuraDemo() était un scénario de test hardcodé
+       ("client X") qui s'affichait à CHAQUE chargement pour TOUS les utilisateurs —
+       retiré (audit 2026-07-07, §1.1). La fonction reste définie dans widgets.js
+       pour permettre un déclenchement manuel en QA (scripts/qa-dashboard-full.js
+       l'appelle directement via page.evaluate si besoin). */
     showCalibration(biz);
   }
 
