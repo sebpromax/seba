@@ -876,6 +876,16 @@ const AURA_TEST_SCENARIOS = [
   { message: 'Planning semaine prochaine à 90% de capacité', probability: 90 },
 ];
 
+/* Réserve/relâche l'espace en bas du document (audit 1.2) tant que la pile
+   Conscience Seba a au moins une carte visible, pour qu'elle ne se retrouve
+   jamais superposée aux Vecteurs d'Action une fois la page scrollée en bas. */
+function updateAuraReserve() {
+  const stack = document.getElementById('aura-stack');
+  const main = document.querySelector('.main');
+  if (!stack || !main) return;
+  main.classList.toggle('has-aura-notifications', !!stack.querySelector('.aura-card'));
+}
+
 function showAuraNotification(message, probability) {
   const stack = document.getElementById('aura-stack');
   if (!stack) return null;
@@ -891,6 +901,7 @@ function showAuraNotification(message, probability) {
     '</div>';
   stack.appendChild(card);
   requestAnimationFrame(() => card.classList.add('visible'));
+  updateAuraReserve();
 
   card.querySelector('.ignore').addEventListener('click', () => dismissAuraNotification(card, false, message));
   card.querySelector('.validate').addEventListener('click', () => dismissAuraNotification(card, true, message));
@@ -901,6 +912,7 @@ function dismissAuraNotification(card, validated, message) {
   card.classList.add('leaving');
   card.addEventListener('transitionend', () => {
     card.remove();
+    updateAuraReserve();
     if (!validated) return;
     if (window.AudioUI) window.AudioUI.playSuccess();
     /* Morphing : la prédiction devient un Vecteur d'Action réel (II.4).

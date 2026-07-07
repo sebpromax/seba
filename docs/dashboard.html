@@ -47,7 +47,13 @@
     .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
 
     /* ── Main ── */
-    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; }
+    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; transition: padding-bottom .3s var(--ease-std); }
+    /* Zone d'exclusion dynamique (audit 1.2) : quand la pile Conscience Seba a au
+       moins une carte visible, on réserve de l'espace en bas du document pour que
+       le flux principal (Vecteurs d'Action, Welcome Checklist) ne se retrouve
+       jamais physiquement sous la pile fixe une fois la page scrollée en bas —
+       classe posée/retirée par updateAuraReserve() dans widgets.js. */
+    .main.has-aura-notifications { padding-bottom: 260px; }
 
     /* ── Header ── */
     .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
@@ -314,12 +320,19 @@
        pas de recouvrement possible). Au-delà de 840px (TD-3) : vrai tiroir
        à DROITE de l'écran ("Tiroir Droit" du cockpit), plutôt que collée
        au bord de la sidebar comme avant. */
-    .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+    /* max-height + overflow : empêche la pile de grandir sans limite et de recouvrir
+       le flux principal (Vecteurs d'Action, Welcome Checklist) — audit 1.2. La pile
+       elle-même laisse passer les clics (pointer-events:none) ; seules les cartes
+       réellement visibles interceptent les clics qui leur sont destinés. */
+    .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 300px; max-height: 46vh; overflow: hidden; pointer-events: none; }
     @media (min-width: 841px) { .aura-stack { left: auto; right: 24px; } }
     .aura-stack-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 0 2px 2px; display: none; }
     @media (min-width: 841px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
+    /* Mobile : encore plus contenue, pour ne jamais masquer la Welcome Checklist
+       (avant ce correctif, la pile recouvrait ~60% de la hauteur d'écran). */
+    @media (max-width: 840px) { .aura-stack { max-height: 34vh; max-width: 260px; } }
     .aura-card {
-      position: relative; padding: 14px 16px;
+      position: relative; padding: 14px 16px; pointer-events: auto;
       background: var(--glass-bg);
       backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
       border: 1px solid var(--border);
