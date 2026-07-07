@@ -149,8 +149,12 @@ function buildFinanceSeries(secteur, current) {
 
 /* ── Graphique financier D3 : courbe lissée, dégradé sous la courbe,
    tooltip interactif au survol/toucher, tracé animé. Fallback : sparkline
-   SVG inline (buildBentoChartHTML) si D3 absent. ── */
-function renderFinanceChartD3(wrapEl, series, sym) {
+   SVG inline (buildBentoChartHTML) si D3 absent.
+   goalTarget (benchmark Stripe §1.1, optionnel) : trace une ligne d'objectif
+   en pointillé — la donnée existe déjà (ctx.demo.goal.target, consommée
+   par le widget 'goal') mais n'apparaissait jamais sur ce graphique-ci,
+   obligeant l'artisan à croiser deux widgets pour voir sa trajectoire. ── */
+function renderFinanceChartD3(wrapEl, series, sym, goalTarget) {
   if (typeof d3 === 'undefined' || !wrapEl) return false;
   const W = 400, H = 96, PAD = { top: 8, right: 8, bottom: 4, left: 8 };
   wrapEl.innerHTML = '';
@@ -160,7 +164,7 @@ function renderFinanceChartD3(wrapEl, series, sym) {
     .style('width', '100%').style('display', 'block').style('overflow', 'visible');
 
   const x = d3.scalePoint().domain(series.map(d => d.month)).range([PAD.left, W - PAD.right]);
-  const maxV = d3.max(series, d => d.value);
+  const maxV = Math.max(d3.max(series, d => d.value), goalTarget > 0 ? goalTarget : 0);
   const y = d3.scaleLinear().domain([0, maxV * 1.08]).range([H - PAD.bottom, PAD.top]);
 
   const defs = svg.append('defs');
@@ -173,6 +177,14 @@ function renderFinanceChartD3(wrapEl, series, sym) {
 
   svg.append('path').datum(series).attr('d', area).attr('fill', 'url(#d3-fin-fill)').attr('opacity', 0)
     .transition().duration(900).delay(350).attr('opacity', 1);
+
+  if (goalTarget > 0) {
+    svg.append('line')
+      .attr('x1', PAD.left).attr('x2', W - PAD.right)
+      .attr('y1', y(goalTarget)).attr('y2', y(goalTarget))
+      .attr('stroke', 'rgba(255,255,255,.28)').attr('stroke-width', 1.2).attr('stroke-dasharray', '3 3')
+      .attr('opacity', 0).transition().duration(600).delay(250).attr('opacity', 1);
+  }
 
   const path = svg.append('path').datum(series).attr('d', line)
     .attr('fill', 'none').attr('stroke', '#00FF9D').attr('stroke-width', 2.5)
@@ -1110,7 +1122,7 @@ window.WIDGET_CATALOG = {
         '<div class="bc-delta-row"><span class="bc-delta up">↑ ' + deltaLabel + '</span></div></div>' +
         '<span style="font-size:.73rem;color:var(--text-2);">Ce mois · ' + new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + '</span>' +
         '</div><div class="bc-d3-wrap"></div></div>';
-      renderFinanceChartD3(el.querySelector('.bc-d3-wrap'), buildFinanceSeries(ctx.secteur, cur), ctx.sym);
+      renderFinanceChartD3(el.querySelector('.bc-d3-wrap'), buildFinanceSeries(ctx.secteur, cur), ctx.sym, tgt);
     } },
   'bento-actions': { id: 'bento-actions', title: 'Actions flash', size: 'L', category: 'core', source: 'static',
     keywords: ['actions flash', 'raccourcis', 'programmer intervention', 'envoyer lien paiement'],
