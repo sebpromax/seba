@@ -236,6 +236,31 @@ function renderFinanceChartD3(wrapEl, series, sym, goalTarget) {
   return true;
 }
 
+/* Benchmark Shopify §7.1 : sélecteur de période sur le Cockpit financier.
+   Ce n'est pas un vrai changement de vue, juste un zoom temporel — et plutôt
+   que d'inventer une 3e source de données, on réutilise buildHorizonSeries
+   (déjà calculée pour les Lignes d'Horizon : 12 derniers jours, réels via
+   SebaDB ou simulés) pour "7 jours", et buildFinanceSeries (existant) pour
+   "6 mois". window._ctx est exposé par renderDashboard() (dashboard.html). */
+function switchChartPeriod(period) {
+  const shell = document.querySelector('[data-widget-id="bento-chart"]');
+  const wrap = shell && shell.querySelector('.bc-d3-wrap');
+  if (!wrap || !window._ctx) return;
+  shell.querySelectorAll('.bc-period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  const ctx = window._ctx;
+  const goal = ctx.demo.goal;
+  if (period === 'jour') {
+    const daily = buildHorizonSeries(ctx).gains.slice(-7).map(p => ({
+      month: new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+      value: p.amount,
+    }));
+    renderFinanceChartD3(wrap, daily, ctx.sym, 0); // pas de ligne d'objectif sur une granularité journalière
+  } else {
+    renderFinanceChartD3(wrap, buildFinanceSeries(ctx.secteur, goal ? goal.current : 0), ctx.sym, goal ? goal.target : 0);
+  }
+}
+window.switchChartPeriod = switchChartPeriod;
+
 /* Mini-sparkline D3 pour les metric cards (style terminal financier) */
 function renderMetricSparkline(el, secteur, seed) {
   if (typeof d3 === 'undefined' || !el) return;
@@ -1117,6 +1142,10 @@ window.WIDGET_CATALOG = {
       const deltaLabel = pct !== null ? (pct >= 100 ? '✓ Objectif atteint' : pct + " % de l'objectif") : '+12% vs mois précédent';
       const totalFmt = cur >= 1000 ? (cur / 1000).toFixed(1).replace('.', ',') + ' k' : cur.toString();
       el.innerHTML = '<div class="bc-pad">' +
+        '<div class="bc-period-row">' +
+        '<button type="button" class="bc-period-btn active" data-period="mois" onclick="switchChartPeriod(\'mois\')">6 mois</button>' +
+        '<button type="button" class="bc-period-btn" data-period="jour" onclick="switchChartPeriod(\'jour\')">7 jours</button>' +
+        '</div>' +
         '<div class="bc-hdr">' +
         '<div><div class="bc-amount">' + totalFmt + '<span class="bc-u">' + ctx.sym + '</span></div>' +
         '<div class="bc-delta-row"><span class="bc-delta up">↑ ' + deltaLabel + '</span></div></div>' +

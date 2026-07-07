@@ -382,6 +382,13 @@
     .widget-shell[data-serenity-state="alerte"]:hover { border-color: rgba(139,30,30,.55) !important; box-shadow: 0 0 0 1px rgba(139,30,30,.32), 0 4px 24px rgba(139,30,30,.18); }
 
     /* ── Bento Cockpit + Flash ── */
+    /* Sélecteur de période (benchmark Shopify §7.1) — zoom temporel sur la même
+       courbe, pas un changement de vue : "7 jours" réutilise buildHorizonSeries
+       (déjà calculée pour les Lignes d'Horizon), "6 mois" reste buildFinanceSeries. */
+    .bc-period-row{display:flex;gap:6px;margin-bottom:8px;}
+    .bc-period-btn{padding:4px 10px;border-radius:20px;background:var(--bg);border:1.5px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .15s,color .15s,background .15s;}
+    .bc-period-btn:hover{border-color:var(--emerald);color:var(--emerald);}
+    .bc-period-btn.active{background:rgba(0,255,157,.12);border-color:var(--emerald);color:var(--emerald);}
     .bc-pad{padding:16px 18px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
     .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
     .bc-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
@@ -1356,6 +1363,7 @@
 
     /* Widgets */
     _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
+    window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
     if (typeof renderCockpitTelemetry === 'function') renderCockpitTelemetry(_ctx);
     renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
