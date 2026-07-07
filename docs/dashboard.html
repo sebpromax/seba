@@ -7,11 +7,19 @@
   <title>Seba — L'écosystème des entreprises de terrain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── Tactical Dark Absolu (refonte) — override scopé à cette page uniquement,
+       pro-global.css n'est pas touché : le reste du site garde sa palette actuelle.
+       Force le thème sombre resserré quel que soit le réglage stocké (on jette le
+       thème clair pour ce cockpit). ── */
+    [data-theme="dark"], [data-theme="light"] {
+      --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
+    }
+    .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
     /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
     body::before {
