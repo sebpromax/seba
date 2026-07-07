@@ -21,8 +21,8 @@
     "cartographe": {
       "role": "Analyse d'impact + Code Review Graph",
       "provider": "gemini",
-      "model": "gemini-2.5-pro",
-      "$note_model": "Verifie le nom de modele courant sur ai.google.dev avant usage, l'offre Gemini change regulierement.",
+      "model": "gemini-2.5-flash",
+      "$note_model": "gemini-2.5-pro a un quota gratuit a ZERO (verifie le 2026-07-07, erreur 429 RESOURCE_EXHAUSTED) -- necessite facturation activee. gemini-2.5-flash fonctionne en gratuit, verifie la meme chose si tu changes de modele.",
       "apiKeyEnvVar": "GEMINI_API_KEY",
       "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "input": ["arborescence complete du depot", "supabase-schema.sql"],

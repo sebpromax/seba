@@ -4,7 +4,7 @@
 // Voir agents_config.json pour les cles API (variables d'environnement) et les garde-fous.
 // Voir CLAUDE.md pour les regles de projet que l'executeur doit respecter.
 
-import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, symlinkSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -26,9 +26,12 @@ function firstUncheckedTask() {
   return { index: idx, text: lines[idx].replace(/^\s*-\s\[ \]\s/, '').trim(), lines };
 }
 
-function checkTask(lines, idx) {
+// Ecrit la case cochee dans la copie de PLAN.md DU WORKTREE (pas ROOT) pour
+// qu'elle soit committee dans le meme commit que le code — sinon la case
+// cochee et le code change finissent desynchronises sur deux branches.
+function checkTask(worktreeDir, lines, idx) {
   lines[idx] = lines[idx].replace('- [ ]', '- [x]');
-  writeFileSync(path.join(ROOT, cfg.planFile), lines.join('\n'));
+  writeFileSync(path.join(worktreeDir, cfg.planFile), lines.join('\n'));
 }
 
 // --- appel generique a une API chat-completions-like (Groq/Mistral) ---
@@ -81,6 +84,15 @@ function runExecuteur(taskText, cartographie) {
   const branch = `orch-${Date.now()}`;
   const worktreeDir = path.join(ROOT, '..', `seba-worktree-${branch}`);
   execFileSync('git', ['worktree', 'add', '-b', branch, worktreeDir, 'HEAD'], { cwd: ROOT, stdio: 'inherit' });
+  // node_modules n'est pas suivi par git (gitignore) donc absent du nouveau
+  // worktree par defaut -- jonction (pas de copie, pas de droits admin requis
+  // sous Windows) vers le node_modules de ROOT pour que les scripts QA
+  // (puppeteer-core) resolvent leurs dependances depuis le worktree.
+  try {
+    symlinkSync(path.join(ROOT, 'node_modules'), path.join(worktreeDir, 'node_modules'), 'junction');
+  } catch (e) {
+    log('WARN', `node_modules-link-echoue:${e.message}`);
+  }
   try {
     const instructions = `Tache PLAN.md: ${taskText}\n\nFichiers cibles identifies par l'agent cartographe:\n${cartographie}\n\nRespecte CLAUDE.md a la racine du depot. Ne modifie AUCUN fichier de test (${cfg.safety.protectedTestGlobs.join(', ')}).`;
     execFileSync(
@@ -148,9 +160,10 @@ async function runArchiviste(taskText, qaOutput, worktreeDir) {
   return commitMsg;
 }
 
-function updateProgress(taskText, commitMsg, qaVerdict) {
-  const entry = `\n## ${new Date().toISOString()} — orchestrateur\n\n**Tache**: ${taskText}\n**Commit**: ${commitMsg}\n**QA**: ${qaVerdict}\n`;
-  appendFileSync(path.join(ROOT, cfg.progressFile), entry);
+// Meme logique que checkTask : ecrit dans le worktree, pas ROOT.
+function updateProgress(worktreeDir, taskText, qaVerdict) {
+  const entry = `\n## ${new Date().toISOString()} — orchestrateur\n\n**Tache**: ${taskText}\n**QA**: ${qaVerdict}\n`;
+  appendFileSync(path.join(worktreeDir, cfg.progressFile), entry);
 }
 
 // --- disjoncteur d'urgence ---
@@ -206,15 +219,19 @@ async function main() {
       if (verdict === 'FAIL') throw new Error(`QA_FAILED`);
       log('OK', 'QA: PASS');
 
+      // PLAN.md/PROGRESS.md ecrits AVANT le commit de l'archiviste, dans le
+      // worktree, pour finir dans le MEME commit que le code (voir note sur
+      // checkTask/updateProgress plus haut).
+      updateProgress(worktreeDir, task.text, verdict);
+      checkTask(worktreeDir, task.lines, task.index);
+
       const commitMsg = await runArchiviste(task.text, output, worktreeDir);
-      updateProgress(task.text, commitMsg, verdict);
-      checkTask(task.lines, task.index);
 
       const branch = execSync('git branch --show-current', { cwd: worktreeDir, encoding: 'utf8' }).trim();
       maybePush(worktreeDir, branch);
 
       execFileSync('git', ['worktree', 'remove', '--force', worktreeDir], { cwd: ROOT, stdio: 'ignore' });
-      log('OK', 'cycle termine — /clear recommande manuellement avant la tache suivante (voir note ci-dessous)');
+      log('OK', `cycle termine — commit "${commitMsg}" sur la branche "${branch}" (worktree supprime, branche conservee dans le depot principal). Revue humaine + merge manuel requis. /clear recommande avant la tache suivante.`);
       return;
     } catch (e) {
       lastError = e.message;
