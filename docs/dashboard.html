@@ -1635,22 +1635,31 @@
     });
   }
 
+  /* Audit 2.1 : cette cérémonie bloquait toute l'interface (z-index:900,
+     inset:0) pendant ~4.7s minimum sans échappatoire, ignorait
+     prefers-reduced-motion, et le fetch du globe (jsdelivr) n'avait aucun
+     timeout — un CDN lent pouvait geler l'accès au dashboard à la toute
+     première connexion. Correctifs : reduced-motion saute directement à
+     l'état verrouillé (pas de rotation JS pilotée par rAF), timeout de
+     3.5s sur le fetch (Promise.race), et clic/Échap ferment immédiatement. */
   async function showCalibration(biz) {
     try {
       if (localStorage.getItem('seba_calibration_seen') === '1') return;
       if (typeof d3 === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       await loadTopojsonScript();
       if (typeof topojson === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
 
       const code = (biz && biz.paysCode) || 'FR';
       const country = CALIB_COUNTRIES[code] || CALIB_COUNTRIES.FR;
+      const target = [-country.lng, -country.lat, 0];
       const overlay = document.getElementById('calib-overlay');
       const caption = document.getElementById('calib-caption');
       overlay.classList.add('open');
       requestAnimationFrame(() => overlay.classList.add('visible'));
 
       const W = 340, H = 340, R = 155;
-      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate([0, -25, 0]);
+      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate(reduceMotion ? target : [0, -25, 0]);
       const gpath = d3.geoPath().projection(proj);
       const graticuleDatum = d3.geoGraticule()();
       let rot = [0, -25, 0];
@@ -1667,7 +1676,12 @@
       svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', '#091524');
       const gratPath = svgSel.append('path').datum(graticuleDatum).attr('fill', 'none').attr('stroke', '#1a3050').attr('stroke-width', 0.35).attr('d', gpath).attr('opacity', 0.5);
 
-      const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()).catch(() => null);
+      /* Timeout de sécurité : jamais plus de 3.5s à attendre le CDN avant
+         d'abandonner proprement la cérémonie (le dashboard reste utilisable). */
+      const world = await Promise.race([
+        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
+      ]).catch(() => null);
       if (!world) { overlay.classList.remove('open', 'visible'); localStorage.setItem('seba_calibration_seen', '1'); return; }
       const countries = topojson.feature(world, world.objects.countries);
       const pathsG = svgSel.append('g');
@@ -1676,10 +1690,50 @@
       svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', 'none').attr('stroke', '#1c2d50').attr('stroke-width', 1.2);
 
       function render() { pathsG.selectAll('path').attr('d', gpath); gratPath.attr('d', gpath); }
+      function paintLocked() {
+        pathsG.selectAll('path')
+          .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
+          .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
+        caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
+        caption.classList.add('locked');
+      }
 
-      let spinning = true;
+      let cancelled = false;
+      let spinning = !reduceMotion; // reduced-motion : pas de boucle de rotation, déjà positionné sur target
+      function closeCalibration() {
+        document.removeEventListener('keydown', onKeyDown);
+        overlay.removeEventListener('click', onSkip);
+        overlay.classList.remove('visible');
+        setTimeout(() => overlay.classList.remove('open'), reduceMotion ? 0 : 650);
+      }
+      /* Échap ou clic n'importe où sur l'overlay = passer directement à l'état
+         verrouillé puis fermer, quel que soit le point de la cérémonie. */
+      function onSkip() {
+        if (cancelled) return;
+        cancelled = true;
+        spinning = false;
+        proj.rotate(target);
+        render();
+        paintLocked();
+        closeCalibration();
+      }
+      function onKeyDown(e) { if (e.key === 'Escape') onSkip(); }
+      document.addEventListener('keydown', onKeyDown);
+      overlay.addEventListener('click', onSkip);
+
+      localStorage.setItem('seba_calibration_seen', '1');
+
+      if (reduceMotion) {
+        /* Pas de rotation pilotée par rAF : l'état verrouillé est déjà la
+           position de départ du globe (proj.rotate(target) ci-dessus). */
+        cancelled = true;
+        paintLocked();
+        setTimeout(closeCalibration, 700);
+        return;
+      }
+
       function spinLoop() {
-        if (!spinning) return;
+        if (!spinning || cancelled) return;
         rot[0] += 0.5;
         proj.rotate(rot);
         render();
@@ -1689,32 +1743,24 @@
       caption.textContent = 'Localisation de votre territoire…';
 
       setTimeout(() => {
+        if (cancelled) return;
         spinning = false;
-        const target = [-country.lng, -country.lat, 0];
         const from = proj.rotate().slice();
         const interp = d3.interpolate(from, target);
         const ease = d3.easeCubicInOut;
         d3.timer(function (elapsed) {
+          if (cancelled) return true;
           proj.rotate(interp(ease(Math.min(elapsed / 980, 1))));
           render();
           if (elapsed >= 980) {
-            pathsG.selectAll('path')
-              .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
-              .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
-            caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
-            caption.classList.add('locked');
+            paintLocked();
             document.getElementById('calib-flash').classList.add('fire');
             AudioUI.playComplete();
-            setTimeout(() => {
-              overlay.classList.remove('visible');
-              setTimeout(() => overlay.classList.remove('open'), 650);
-            }, 1300);
+            setTimeout(() => { if (!cancelled) closeCalibration(); }, 1300);
             return true;
           }
         });
       }, 1800);
-
-      localStorage.setItem('seba_calibration_seen', '1');
     } catch (e) { /* jamais bloquant : en cas d'erreur, le dashboard reste utilisable normalement */ }
   }
 
