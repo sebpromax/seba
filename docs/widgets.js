@@ -1477,10 +1477,17 @@ function persistOrder(orderedIds) {
    GRILLE UNIFIÉE (Phase 2/3) — construit .widget-shell par widget
    visible, dans l'ordre du layout, taille S/M/L/XL
 ═══════════════════════════════════════════════════════════════ */
+/* Refonte Tactical Dark (TD-3) : ces 3 widgets sont ancrés dans la zone
+   "télémétrie" fixe en haut du cockpit (voir renderCockpitTelemetry
+   ci-dessous) — exclus de #widget-grid, donc structurellement hors de
+   portée de SortableJS, sans toucher à sa configuration. Le reste du
+   catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable. */
+const PINNED_TELEMETRY_IDS = ['metric-0', 'serenity-score', 'timeline'];
+
 function renderGrid(gridEl, ctx, customizeMode) {
   const layout = getEffectiveLayout();
   gridEl.innerHTML = '';
-  const visible = layout.filter(w => w.visible);
+  const visible = layout.filter(w => w.visible && !PINNED_TELEMETRY_IDS.includes(w.id));
   if (!visible.length) {
     gridEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 24px;"><p>Tout est masqué. Ouvrez <strong>Personnaliser</strong> pour ajouter des widgets.</p></div>';
     return;
@@ -1503,6 +1510,29 @@ function renderGrid(gridEl, ctx, customizeMode) {
     def.render(ctx, shell.querySelector('.widget-body'));
   });
 }
+
+/* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : CA à gauche, Serenity
+   Score au centre, Missions du jour à droite — ordre volontaire, pas
+   celui de defaultOrder utilisé pour la grille modulable. Jamais de
+   drag-handle/bouton de retrait : ces 3 widgets ne sont pas gérés par
+   le mode personnalisation. */
+function renderCockpitTelemetry(ctx) {
+  const container = document.getElementById('cockpit-telemetry');
+  if (!container) return;
+  container.innerHTML = '';
+  PINNED_TELEMETRY_IDS.forEach(id => {
+    const def = window.WIDGET_CATALOG[id];
+    if (!def) return;
+    const shell = document.createElement('div');
+    shell.className = 'widget-shell cockpit-pinned';
+    shell.dataset.size = def.size;
+    shell.dataset.widgetId = id;
+    shell.innerHTML = '<div class="module-head"><span class="module-title">' + def.title + '</span></div><div class="widget-body"></div>';
+    container.appendChild(shell);
+    def.render(ctx, shell.querySelector('.widget-body'));
+  });
+}
+window.renderCockpitTelemetry = renderCockpitTelemetry;
 
 /* ═══════════════════════════════════════════════════════════════
    DRAG-AND-DROP (Phase 4) — SortableJS, actif uniquement en

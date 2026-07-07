@@ -81,6 +81,19 @@
     .metric-delta.up { color: var(--emerald); }
     .metric-delta.down { color: var(--amber); }
 
+    /* ── Cockpit : zone télémétrie fixe (TD-3) — CA / Serenity Score / Missions,
+       jamais déplaçable, toujours dans cet ordre ── */
+    .cockpit-telemetry { display: grid; grid-template-columns: 1fr 1.3fr 1.4fr; gap: 16px; margin-bottom: 20px; }
+    .cockpit-telemetry .widget-shell { min-height: 260px; }
+    /* Les 3 widgets pinnés gardent leur data-size d'origine (utile ailleurs
+       dans le catalogue), mais ici la grille télémétrie n'a que 3 pistes :
+       chacun occupe exactement 1 colonne/1 rangée, pas le span S/M/L/XL
+       habituel de la grille modulable. */
+    .cockpit-telemetry .widget-shell[data-size] { grid-column: span 1; grid-row: span 1; }
+    .cockpit-telemetry [data-widget-id="metric-0"] .metric-card { height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    .cockpit-telemetry [data-widget-id="metric-0"] .metric-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 3rem; line-height: 1; margin: 10px 0; }
+    @media (max-width: 980px) { .cockpit-telemetry { grid-template-columns: 1fr; } }
+
     /* ── Widget grid (Notion blocs × Apple widgets) ── */
     .widget-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 96px; gap: 16px; grid-auto-flow: dense; margin-bottom: 20px; }
     .customize-mode .widget-grid { grid-auto-rows: 122px; }
@@ -297,12 +310,14 @@
     @media (max-width: 1180px) { .timeline-life-rail { display: none; } }
 
     /* ── Conscience Seba (Bible II.7) — notifications prédictives en "aura" ── */
-    /* Au-delà de 840px la sidebar (220px) est visible en permanence : décale
-       l'aura pour ne jamais recouvrir sa navigation. Sous 840px la sidebar
-       est un tiroir caché par défaut, donc left:24px (bord de l'écran) reste
-       correct — c'est la valeur qui posait problème sur desktop uniquement. */
+    /* Sous 840px : bord gauche de l'écran (la sidebar est un tiroir caché,
+       pas de recouvrement possible). Au-delà de 840px (TD-3) : vrai tiroir
+       à DROITE de l'écran ("Tiroir Droit" du cockpit), plutôt que collée
+       au bord de la sidebar comme avant. */
     .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
-    @media (min-width: 841px) { .aura-stack { left: 244px; } }
+    @media (min-width: 841px) { .aura-stack { left: auto; right: 24px; } }
+    .aura-stack-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 0 2px 2px; display: none; }
+    @media (min-width: 841px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
     .aura-card {
       position: relative; padding: 14px 16px;
       background: var(--glass-bg);
@@ -732,6 +747,10 @@
         <button class="portal-btn primary" style="padding:5px 14px;" onclick="toggleCustomizeMode()">Terminer</button>
       </div>
 
+      <!-- ── Zone télémétrie (Cockpit, TD-3) — CA / Serenity Score / Missions,
+           ancrée, jamais déplaçable ── -->
+      <div class="cockpit-telemetry" id="cockpit-telemetry"></div>
+
       <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
       <div class="widget-grid" id="widget-grid"></div>
 
@@ -745,8 +764,8 @@
   </main>
 </div>
 
-<!-- Conscience Seba (Bible II.7) — notifications predictives, coin oppose au FAB -->
-<div class="aura-stack" id="aura-stack"></div>
+<!-- Conscience Seba (Bible II.7) — notifications predictives, tiroir droit (TD-3) -->
+<div class="aura-stack" id="aura-stack"><div class="aura-stack-label">Conscience Seba</div></div>
 
 <!-- Timeline de Vie (Bible III.6) — rail vertical fixe, pouls d'activite en continu -->
 <div class="timeline-life-rail"><canvas id="timeline-life"></canvas></div>
@@ -1286,6 +1305,7 @@
 
     /* Widgets */
     _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
+    if (typeof renderCockpitTelemetry === 'function') renderCockpitTelemetry(_ctx);
     renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);
