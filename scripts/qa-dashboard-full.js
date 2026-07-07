@@ -97,6 +97,15 @@ try {
       nom: 'Menage Pro Test', secteur: 'menage', couleur: '#00FF9D',
       services: ['Menage'], slug: 'menage-pro-test', deviseSymbole: '€',
     }));
+    // QA 2026-07-08 : sans ce flag, showCalibration() (dashboard.html) ouvre la
+    // Planète de Calibration à chaque rechargement (elle ne s'affiche qu'une fois
+    // par navigateur via ce flag) — l'overlay plein écran (position:fixed;inset:0)
+    // reste ouvert ~5s et intercepte silencieusement les clics de test suivants
+    // (ex. "Valider" sur un Vecteur d'Action), produisant un FINDING trompeur sans
+    // rapport avec le widget testé. Ce script teste le dashboard "utilisateur
+    // revenant", pas la cérémonie elle-même (non couverte ici) : on la marque donc
+    // comme déjà vue, comme le ferait un vrai utilisateur au 2e chargement.
+    localStorage.setItem('seba_calibration_seen', '1');
   });
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
   await new Promise(r => setTimeout(r, 1500));
@@ -189,14 +198,22 @@ try {
   }
 
   // 5. Timeline de Vie hover + resize
+  // QA 2026-07-08 : .timeline-life-rail est caché en CSS sous 1180px par design
+  // (audit 3.4 — la boucle rAF associée est même volontairement arrêtée en dessous
+  // de ce seuil, cf. widgets.js renderTimelineLife). Sur le viewport mobile
+  // (390px), un canvas zero-size est donc le comportement ATTENDU, pas un bug :
+  // ne pas le signaler comme un FINDING, seulement le journaliser.
   mark('5-timeline-hover-resize');
   const timelineCanvas = await page.$('#timeline-life');
   if (timelineCanvas) {
     const box = await timelineCanvas.boundingBox();
+    const vpWidth = page.viewport().width;
     if (box) {
       await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.4);
       await new Promise(r => setTimeout(r, 400));
       await page.screenshot({ path: path.join(outDir, '05-timeline-hover.png') });
+    } else if (vpWidth < 1181) {
+      log('timeline', `zero-size canvas at ${vpWidth}px viewport — attendu (rail masqué < 1180px par design, audit 3.4)`);
     } else {
       finding('Timeline de Vie canvas (#timeline-life) found but zero-size / not visible');
     }
