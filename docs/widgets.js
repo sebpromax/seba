@@ -954,12 +954,27 @@ const AURA_TEST_SCENARIOS = [
 
 /* Réserve/relâche l'espace en bas du document (audit 1.2) tant que la pile
    Conscience Seba a au moins une carte visible, pour qu'elle ne se retrouve
-   jamais superposée aux Vecteurs d'Action une fois la page scrollée en bas. */
+   jamais superposée aux Vecteurs d'Action une fois la page scrollée en bas.
+   QA 2026-07-07 : la classe .has-aura-notifications posait une réserve FIXE de
+   260px (dashboard.html), mais .aura-stack peut grandir jusqu'à son max-height
+   CSS (46vh, soit ~414px sur un viewport de 900px) dès que 3-4 notifications
+   s'accumulent avant d'être traitées (confirmé par mesure : sur 4 cartes, la
+   pile occupe bien 414px alors que la réserve restait plafonnée à 260px — un
+   vrai recouvrement résiduel). On mesure donc la hauteur réelle de la pile à
+   chaque appel et on pose une réserve dynamique (inline, prioritaire sur la
+   règle CSS de secours) au lieu d'une valeur devinée. */
 function updateAuraReserve() {
   const stack = document.getElementById('aura-stack');
   const main = document.querySelector('.main');
   if (!stack || !main) return;
-  main.classList.toggle('has-aura-notifications', !!stack.querySelector('.aura-card'));
+  const hasCards = !!stack.querySelector('.aura-card');
+  main.classList.toggle('has-aura-notifications', hasCards);
+  if (hasCards) {
+    const h = stack.getBoundingClientRect().height;
+    main.style.paddingBottom = Math.max(h + 40, 260) + 'px';
+  } else {
+    main.style.paddingBottom = '';
+  }
 }
 
 function showAuraNotification(message, probability) {
