@@ -562,6 +562,10 @@
     .calib-flash.fire{animation:calibFlash .9s ease-out;}
     @keyframes calibFlash{0%{box-shadow:0 0 0 0 rgba(0,255,157,.55);}100%{box-shadow:0 0 60px 40px rgba(0,255,157,0);}}
 
+    /* ── Toast (TD-4) — remplace les window.alert() ── */
+    .dash-toast{position:fixed;bottom:28px;right:28px;z-index:700;background:var(--white);border:1px solid var(--border);border-left:3px solid var(--emerald);color:var(--ink);padding:12px 18px;border-radius:var(--rs);font-size:.86rem;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,.4);opacity:0;transform:translateY(12px);transition:opacity .25s ease,transform .25s ease;pointer-events:none;max-width:320px;}
+    .dash-toast.visible{opacity:1;transform:translateY(0);}
+
     /* ── Pont de Données (Bible V.11) — scan de pixels sur les métriques ── */
     .metric-value.pixel-scan{animation:pixelScan .5s steps(6) both;}
     @keyframes pixelScan{
@@ -1480,13 +1484,31 @@
   ═══════════════════════════════════════════════════════ */
   let _focusCleanup = null;
   let _focusActive = false;
+
+  /* ─── Toast (TD-4) — remplace les window.alert() natifs, jugés
+     amateurs pour un SaaS pro. Glisse en bas à droite, accent émeraude,
+     disparaît après ~3s. ─── */
+  let _dashToastEl = null, _dashToastTimer = null;
+  function showDashToast(msg) {
+    if (!_dashToastEl) {
+      _dashToastEl = document.createElement('div');
+      _dashToastEl.className = 'dash-toast';
+      document.body.appendChild(_dashToastEl);
+    }
+    _dashToastEl.textContent = msg;
+    _dashToastEl.classList.add('visible');
+    clearTimeout(_dashToastTimer);
+    _dashToastTimer = setTimeout(() => { _dashToastEl.classList.remove('visible'); }, 3000);
+  }
+  window.showDashToast = showDashToast;
+
   async function enablePushNotifications() {
     if (!window.sebaPush || !sebaPush.isConfigured) {
-      alert('Notifications push non configurées côté administrateur pour le moment.');
+      showDashToast('Notifications push non configurées côté administrateur pour le moment.');
       return;
     }
     const res = await sebaPush.subscribe();
-    alert(res.ok ? 'Notifications activées ✓ Vous recevrez vos rappels ici.' : 'Activation impossible : ' + (res.error || 'permission refusée'));
+    showDashToast(res.ok ? 'Notifications activées ✓ Vous recevrez vos rappels ici.' : 'Activation impossible : ' + (res.error || 'permission refusée'));
   }
 
   /* ─── Interface Sonore (Bible VI.13) — Web Audio API, zero fichier externe.
@@ -1667,7 +1689,7 @@
      décrite dans la Bible) traverse les métriques avant la bascule. ─── */
   function activerDonneesReelles() {
     if (localStorage.getItem('seba_donnees_reelles') === '1') {
-      alert('Vos données réelles sont déjà activées — ce cockpit ne contient plus de données de démonstration.');
+      showDashToast('Vos données réelles sont déjà activées — ce cockpit ne contient plus de données de démonstration.');
       return;
     }
     const ok = confirm('Ceci efface toutes les données de démonstration (clients, devis, factures fictifs) pour repartir sur une base 100% réelle. Continuer ?');
