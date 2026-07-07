@@ -226,6 +226,8 @@ function renderMetricSparkline(el, secteur, seed) {
 
 /* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ── */
 let _leafletPromise = null;
+/* Instance vivante du widget 'lot-carte' — cf. audit 2.2 (fuite mémoire). */
+let _lotCarteMapInstance = null;
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
   if (_leafletPromise) return _leafletPromise;
@@ -1261,11 +1263,20 @@ window.WIDGET_CATALOG = {
     keywords: ['carte', 'map', 'tournée sur carte', 'localisation', 'itinéraire carte', 'géolocalisation'],
     defaultVisible: false, defaultOrder: 24, link: { href: 'planning.html', label: 'Planning →' },
     render(ctx, el) {
+      /* Audit 2.2 : renderGrid() vide et reconstruit tout #widget-grid à chaque
+         bascule du mode personnalisation/ajout de widget — sans ce nettoyage,
+         chaque re-rendu créait une NOUVELLE instance L.map() sans jamais
+         appeler .remove() sur la précédente (le conteneur DOM disparaissait,
+         mais les listeners window/tuiles Leaflet restaient actifs : fuite
+         mémoire cumulative). Une seule instance vivante à la fois. */
+      if (_lotCarteMapInstance) { try { _lotCarteMapInstance.remove(); } catch (e) {} _lotCarteMapInstance = null; }
       el.innerHTML = '<div class="widget-map" style="height:100%;min-height:150px;border-radius:0 0 var(--r) var(--r);overflow:hidden;"></div>';
       const box = el.querySelector('.widget-map');
       loadLeaflet().then(() => {
+        if (!document.body.contains(box)) return; // widget retiré/re-rendu avant la fin du chargement
         const jour = (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsJour : [];
         const map = L.map(box, { zoomControl: false, attributionControl: false }).setView([48.8566, 2.3522], 11);
+        _lotCarteMapInstance = map;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         const pts = jour.length ? jour : [{ clientName: 'Aucune intervention aujourd\'hui', time: '', service: '' }];
         const markers = [];
