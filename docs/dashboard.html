@@ -20,6 +20,13 @@
       --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
     }
     .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    /* Benchmark Vercel §3.1 : la classe .mono-num existait mais n'était appliquée
+       nulle part — seul le CA pinné en télémétrie avait sa propre règle locale
+       dupliquée. Applique désormais "chiffres en monospace façon terminal
+       financier" (charte Tactical Dark) à toute donnée numérique principale. */
+    .metric-value, .bc-amount, .goal-current, .serenity-score-num, .focus-score-num {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;
+    }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
     /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
     body::before {
@@ -93,6 +100,12 @@
     .metric-delta { font-size: .73rem; font-weight: 500; }
     .metric-delta.up { color: var(--emerald); }
     .metric-delta.down { color: var(--amber); }
+
+    /* ── Eyebrows de section (benchmark Notion §4.1) — rendent visible, dans
+       l'UI elle-même (pas seulement dans les commentaires du code), la
+       distinction entre zones fixes (télémétrie, vecteurs d'action) et zone
+       modulable (grille de widgets). Discrets, pas des titres de module. ── */
+    .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
 
     /* ── Cockpit : zone télémétrie fixe (TD-3) — CA / Serenity Score / Missions,
        jamais déplaçable, toujours dans cet ordre ── */
@@ -779,12 +792,15 @@
 
       <!-- ── Zone télémétrie (Cockpit, TD-3) — CA / Serenity Score / Missions,
            ancrée, jamais déplaçable ── -->
+      <div class="zone-eyebrow">Vue d'ensemble</div>
       <div class="cockpit-telemetry" id="cockpit-telemetry"></div>
 
       <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
+      <div class="zone-eyebrow">Votre espace de travail</div>
       <div class="widget-grid" id="widget-grid"></div>
 
       <!-- ── Vecteurs d'action (Bible II.4) — gains a valider, pas des taches ── -->
+      <div class="zone-eyebrow">À traiter maintenant</div>
       <section id="action-stream" class="action-stream"></section>
 
       <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
