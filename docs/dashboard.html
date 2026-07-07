@@ -819,9 +819,9 @@
 <!-- FAB + menu -->
 <button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>
 <div class="fab-menu" id="fab-menu">
-  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client</a>
-  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis</a>
-  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention</a>
+  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
+  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
+  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention<span class="pal-key" style="margin-left:auto;">3</span></a>
 </div>
 
 <!-- Cmd+K palette -->
@@ -895,6 +895,7 @@
     <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
     <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
     <div class="shortcut-row"><span>Mode Focus</span><span class="pal-key">F</span></div>
+    <div class="shortcut-row"><span>Actions rapides</span><span class="pal-key">C</span></div>
     <div class="shortcut-row"><span>Afficher cette aide</span><span class="pal-key">?</span></div>
     <div class="shortcut-row"><span>Fermer une fenêtre</span><span class="pal-key">Esc</span></div>
   </div>
@@ -2146,10 +2147,21 @@
     const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
     if (!typing && (e.key === 'e' || e.key === 'E')) { toggleCustomizeMode(); return; }
     if (!typing && (e.key === 'f' || e.key === 'F')) { toggleFocusMode(); return; }
+    /* Benchmark Linear §2.1/2.2 : le FAB "Actions rapides" n'était accessible
+       qu'à la souris/tactile — C l'ouvre/ferme, et 1/2/3 vont directement à
+       chaque action une fois le menu ouvert (cohérent avec les badges .pal-key
+       posés sur chaque .fab-item). */
+    if (!typing && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); toggleFab(); return; }
+    if (!typing && _fabOpen && /^[123]$/.test(e.key)) {
+      const links = ['clients.html', 'devis-nouveau.html', 'planning.html'];
+      window.location.href = links[+e.key - 1];
+      return;
+    }
     if (!typing && e.key === '?') { openShortcuts(); return; }
 
     if (e.key === 'Escape') {
       if (_focusActive) toggleFocusMode();
+      if (_fabOpen) toggleFab();
       closePaletteForce();
       closeAiBar();
       closeCustomizePanel();
