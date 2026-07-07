@@ -1613,3 +1613,58 @@ function suggestClosest(normQuery) {
   }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   return scored.slice(0, 2).map(x => x.w);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BARRE DE COMMANDE IA — burst de particules (Bible I.2)
+   Effet ponctuel (pas un système continu comme Serenity/Horizon/
+   Timeline) : quand un widget est trouvé, un court éclat de
+   particules émeraude traverse la barre pour vendre l'idée de
+   "projection" décrite dans la Bible, avant que le widget n'apparaisse
+   réellement dans la grille.
+═══════════════════════════════════════════════════════════════ */
+function aiBarParticleBurst(canvas) {
+  if (!canvas) return;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+
+  const emerald = readThemeVar('--emerald', '#00FF9D');
+  const cx = rect.width / 2, cy = 40;
+  const N = 22;
+  const particles = Array.from({ length: N }, () => ({
+    x: cx, y: cy,
+    vx: (Math.random() - 0.5) * 5,
+    vy: Math.random() * -2 - 1,
+    r: Math.random() * 2 + 1,
+    life: 1,
+  }));
+
+  let raf = null;
+  function frame() {
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.028;
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillStyle = emerald;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (alive) raf = requestAnimationFrame(frame);
+    else ctx.clearRect(0, 0, rect.width, rect.height);
+  }
+  raf = requestAnimationFrame(frame);
+  setTimeout(() => { if (raf) cancelAnimationFrame(raf); ctx.clearRect(0, 0, rect.width, rect.height); }, 1200);
+}
+window.aiBarParticleBurst = aiBarParticleBurst;

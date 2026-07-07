@@ -530,7 +530,8 @@
     /* ── Barre de commande IA (simulée) ── */
     .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
     .ai-bar-overlay.open{display:flex;}
-    .ai-bar-box{background:var(--white);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);overflow:hidden;}
+    .ai-bar-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3),var(--shadow-glow);overflow:hidden;position:relative;}
+    .ai-bar-burst-canvas{position:absolute;inset:0;pointer-events:none;z-index:1;}
     .ai-bar-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
     .ai-bar-ico{color:var(--emerald);font-size:1.1rem;}
     .ai-bar-inp{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.95rem;color:var(--ink);background:transparent;}
@@ -770,6 +771,7 @@
 <!-- Barre de commande IA (simulée, 100% côté client) -->
 <div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
   <div class="ai-bar-box" onclick="event.stopPropagation()">
+    <canvas class="ai-bar-burst-canvas" id="ai-bar-burst-canvas"></canvas>
     <div class="ai-bar-inp-wrap">
       <span class="ai-bar-ico">✨</span>
       <input type="text" class="ai-bar-inp" id="ai-bar-inp" placeholder="Ex : « Affiche mon CA du mois et mes factures en retard »" onkeydown="if(event.key==='Enter')submitAiBar()">
@@ -1392,6 +1394,7 @@
     resEl.innerHTML = html;
     if (addedAny) {
       AudioUI.playSuccess();
+      if (window.aiBarParticleBurst) aiBarParticleBurst(document.getElementById('ai-bar-burst-canvas'));
       renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
       if (_customizeMode) initSortable(document.getElementById('widget-grid'));
       setTimeout(closeAiBar, 1400);
