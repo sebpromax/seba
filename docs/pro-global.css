@@ -187,6 +187,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   font-weight: 500;
   text-decoration: none;
   transform: none;
+  position: relative; /* ancre le repère ::before de l'état actif, hors du flux */
 }
 .sidebar .nav-item {
   color: rgba(255,255,255,.55);
@@ -202,11 +203,38 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   color: rgba(255,255,255,.9);
 }
 .sidebar .nav-item:active { opacity: .75; } /* pression : fondu, jamais un changement de forme */
+/* Repère "rail tactique" : une fine barre à gauche plutôt qu'un fond teinté —
+   ::before est en position:absolute, donc jamais de saut de box model. */
 .sidebar .nav-item.active {
-  background-color: rgba(0,255,157,.12);
-  color: var(--emerald);
+  background-color: transparent;
+  color: var(--ink);
+}
+.sidebar .nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: 6px; bottom: 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--emerald);
 }
 .sidebar .nav-item:focus-visible { border-color: var(--emerald); }
+
+/* Indice de raccourci — visible seulement au survol, jamais gênant */
+.sidebar .nav-shortcut {
+  margin-left: auto;
+  font-size: .68rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.35);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-std);
+}
+.sidebar .nav-item:hover .nav-shortcut { opacity: 1; }
+
+/* Grand espace entre les opérations (Principal) et le reste (Équipe/Compte/Découvrir) */
+.sidebar .nav-group-gap { margin-top: 22px; }
 
 /* Labels de groupe */
 .sidebar .nav-label {

@@ -43,14 +43,15 @@
       label: 'Principal',
       items: [
         { href: 'dashboard.html', label: 'Tableau de bord', key: 'dashboard', match: ['dashboard'] },
-        { href: 'clients.html',   label: 'Clients',         key: 'clients',   match: ['client'] },
-        { href: 'planning.html',  label: 'Planning',        key: 'planning',  match: ['planning'] },
-        { href: 'devis.html',     label: 'Devis',           key: 'devis',     match: ['devis'] },
-        { href: 'factures.html',  label: 'Factures',        key: 'factures',  match: ['factures'] },
+        { href: 'clients.html',   label: 'Clients',         key: 'clients',   match: ['client'],  shortcut: 'C' },
+        { href: 'planning.html',  label: 'Planning',        key: 'planning',  match: ['planning'], shortcut: 'P' },
+        { href: 'devis.html',     label: 'Devis',           key: 'devis',     match: ['devis'],    shortcut: 'D' },
+        { href: 'factures.html',  label: 'Factures',        key: 'factures',  match: ['factures'], shortcut: 'F' },
       ],
     },
     {
       label: 'Équipe',
+      gapBefore: true, // grand espace pour séparer "opérations" du reste ("système")
       items: [
         { href: 'equipe.html',     label: 'Équipe',     key: 'equipe',     match: ['equipe', 'employe'] },
         { href: 'historique.html', label: 'Historique', key: 'historique', match: ['historique'] },
@@ -91,11 +92,14 @@
     var html = '<div class="s-logo"><div class="s-logo-dot"></div>Seba</div>';
 
     NAV.forEach(function (group) {
-      html += '<div class="nav-group"><div class="nav-label">' + group.label + '</div>';
+      var groupCls = 'nav-group' + (group.gapBefore ? ' nav-group-gap' : '');
+      html += '<div class="' + groupCls + '"><div class="nav-label">' + group.label + '</div>';
       group.items.forEach(function (item) {
         var cls = 'nav-item' + (isActive(item) ? ' active' : '');
         html += '<a href="' + item.href + '" class="' + cls + '">'
-              + (I[item.key] || '') + item.label + '</a>';
+              + (I[item.key] || '') + item.label
+              + (item.shortcut ? '<span class="nav-shortcut">' + item.shortcut + '</span>' : '')
+              + '</a>';
       });
       html += '</div>';
     });
