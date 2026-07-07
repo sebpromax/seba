@@ -401,11 +401,23 @@
     .bc-svg-wrap{flex:1;margin-top:12px;position:relative;}
     .bc-svg{width:100%;display:block;}
     .bc-months{display:flex;justify-content:space-between;padding-top:5px;font-size:.65rem;color:var(--text-2);}
-    .bc-empty-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 0 0;}
-    .bc-empty-ico{width:48px;height:48px;border-radius:12px;background:rgba(0,255,157,.08);border:1.5px solid rgba(0,255,157,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-    .bc-empty-title{font-size:1rem;font-weight:700;margin-bottom:5px;}
-    .bc-empty-sub{font-size:.82rem;color:var(--text-2);line-height:1.55;margin-bottom:18px;max-width:240px;}
-    .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+    /* QA 2026-07-08 : buildRichEmptyHTML() (widgets.js, benchmark Airbnb §5.1) est
+       injecté directement dans .widget-body pour lot-tournee/lot-pipeline/lot-impayes
+       — sans le wrapper .bc-pad (flex + height:100%) dont bento-chart profite pour
+       centrer son propre état vide. Résultat mesuré (Puppeteer, boundingClientRect) :
+       sur widget L/XL, flex:1 n'a aucun ancêtre flex (.widget-body n'est display:flex
+       que pour S/M) donc justify-content:center ne centre rien ; et même là où
+       .widget-body EST flex (M, ex. lot-impayes), le contenu (icône 48px + titre +
+       sous-titre) réclamait ~174px dans une boîte de ~94px, débordant de 80px.
+       Correctifs : height:100% (fonctionne que le parent soit flex ou non, tant
+       qu'il a une hauteur définie — .widget-body en a toujours une via son propre
+       flex:1) + gabarit sensiblement plus compact pour tenir dans les tailles M/L. */
+    .bc-empty-body{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px 0 0;}
+    .bc-empty-ico{width:34px;height:34px;border-radius:9px;background:rgba(0,255,157,.08);border:1.5px solid rgba(0,255,157,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+    .bc-empty-ico svg{width:16px;height:16px;}
+    .bc-empty-title{font-size:.88rem;font-weight:700;margin-bottom:4px;}
+    .bc-empty-sub{font-size:.78rem;color:var(--text-2);line-height:1.4;margin-bottom:10px;max-width:360px;}
+    .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
     .bc-empty-btn:hover{opacity:.88;}
     .bento-flash{display:flex;flex-direction:column;gap:10px;}
     .flash-btn{flex:1;display:flex;align-items:center;gap:14px;padding:18px 18px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,background .15s;text-decoration:none;color:var(--ink);font-family:'Inter',sans-serif;}
