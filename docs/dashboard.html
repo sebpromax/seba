@@ -527,6 +527,18 @@
     .ext-rss-item:last-child{border-bottom:none;}
     .ext-rss-note{font-size:.7rem;color:var(--text-2);padding:8px 16px 12px;font-style:italic;}
 
+    /* ── Planète de Calibration (Bible V.10) — cérémonie one-shot ── */
+    .calib-overlay{position:fixed;inset:0;z-index:900;background:#020204;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;opacity:0;transition:opacity .6s ease;}
+    .calib-overlay.open{display:flex;}
+    .calib-overlay.visible{opacity:1;}
+    .calib-globe-wrap{position:relative;width:340px;height:340px;}
+    .calib-globe-wrap svg{width:100%;height:100%;}
+    .calib-caption{color:var(--text-2);font-size:.9rem;text-align:center;max-width:320px;min-height:1.4em;transition:color .3s;}
+    .calib-caption.locked{color:var(--emerald);font-weight:600;}
+    .calib-flash{position:absolute;inset:-20px;border-radius:50%;box-shadow:0 0 0 0 rgba(0,255,157,0);pointer-events:none;}
+    .calib-flash.fire{animation:calibFlash .9s ease-out;}
+    @keyframes calibFlash{0%{box-shadow:0 0 0 0 rgba(0,255,157,.55);}100%{box-shadow:0 0 60px 40px rgba(0,255,157,0);}}
+
     /* ── Barre de commande IA (simulée) ── */
     .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
     .ai-bar-overlay.open{display:flex;}
@@ -767,6 +779,15 @@
   <div class="ext-drawer-body" id="ext-drawer-body"></div>
   <div class="ext-drawer-foot">Chaque extension s'installe comme un widget normal — déplaçable, retirable.</div>
 </aside>
+
+<!-- Planète de Calibration (Bible V.10) — cérémonie one-shot -->
+<div class="calib-overlay" id="calib-overlay">
+  <div class="calib-globe-wrap">
+    <svg id="calib-globe-canvas" width="340" height="340"></svg>
+    <div class="calib-flash" id="calib-flash"></div>
+  </div>
+  <div class="calib-caption" id="calib-caption">Calibration de votre cockpit en cours…</div>
+</div>
 
 <!-- Barre de commande IA (simulée, 100% côté client) -->
 <div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
@@ -1205,6 +1226,7 @@
     /* Conscience Seba (Bible II.7) — une seule fois par chargement, pas à
        chaque re-rendu (sinon les mêmes prédictions ressurgiraient en boucle). */
     if (typeof triggerAuraDemo === 'function') triggerAuraDemo();
+    showCalibration(biz);
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -1478,6 +1500,124 @@
     },
   };
   window.AudioUI = AudioUI;
+
+  /* ─── Planète de Calibration (Bible V.10) ───────────────────────────
+     Cérémonie one-shot (localStorage.seba_calibration_seen) affichée à
+     la première visite du dashboard. Réutilise le globe D3 orthographique
+     de onboarding.html (adapté, recoloré aux tokens Tactical Dark) — le
+     pays a déjà été choisi à l'onboarding, cette planète ne fait que le
+     confirmer/verrouiller visuellement, elle ne recollecte rien. ─── */
+  const CALIB_COUNTRIES = {
+    FR: { lat: 46.2, lng: 2.2, label: 'France' }, BE: { lat: 50.5, lng: 4.5, label: 'Belgique' },
+    CH: { lat: 46.8, lng: 8.2, label: 'Suisse' }, LU: { lat: 49.8, lng: 6.1, label: 'Luxembourg' },
+    CA: { lat: 56.1, lng: -106.3, label: 'Canada' }, MA: { lat: 31.8, lng: -7.1, label: 'Maroc' },
+    TN: { lat: 33.9, lng: 9.6, label: 'Tunisie' }, DZ: { lat: 28.0, lng: 2.6, label: 'Algérie' },
+    SN: { lat: 14.5, lng: -14.5, label: 'Sénégal' }, CI: { lat: 7.5, lng: -5.5, label: "Côte d'Ivoire" },
+    CM: { lat: 3.9, lng: 11.5, label: 'Cameroun' }, CD: { lat: -4.0, lng: 21.8, label: 'RD Congo' },
+    MG: { lat: -18.8, lng: 47.0, label: 'Madagascar' }, HT: { lat: 18.9, lng: -72.3, label: 'Haïti' },
+    MC: { lat: 43.7, lng: 7.4, label: 'Monaco' }, RE: { lat: -21.1, lng: 55.5, label: 'La Réunion' },
+    MQ: { lat: 14.7, lng: -61.0, label: 'Martinique' }, GP: { lat: 16.3, lng: -61.7, label: 'Guadeloupe' },
+    GF: { lat: 3.9, lng: -53.1, label: 'Guyane française' }, NC: { lat: -20.9, lng: 165.6, label: 'Nouvelle-Calédonie' },
+    PF: { lat: -17.7, lng: -149.4, label: 'Polynésie française' }, ES: { lat: 40.5, lng: -3.7, label: 'Espagne' },
+    PT: { lat: 39.4, lng: -8.2, label: 'Portugal' }, IT: { lat: 41.9, lng: 12.5, label: 'Italie' },
+    DE: { lat: 51.2, lng: 10.5, label: 'Allemagne' }, GB: { lat: 55.4, lng: -3.4, label: 'Royaume-Uni' },
+    US: { lat: 37.1, lng: -95.7, label: 'États-Unis' },
+  };
+  const CALIB_ISO_NUM = { FR: 250, BE: 56, CH: 756, LU: 442, CA: 124, MA: 504, TN: 788, DZ: 12, SN: 686, CI: 384, CM: 120, CD: 180, MG: 450, HT: 332, MC: 492, RE: 638, MQ: 474, GP: 312, GF: 254, NC: 540, PF: 258, ES: 724, PT: 620, IT: 380, DE: 276, GB: 826, US: 840 };
+
+  function loadTopojsonScript() {
+    return new Promise((resolve) => {
+      if (typeof topojson !== 'undefined') return resolve();
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => resolve();
+      document.head.appendChild(s);
+    });
+  }
+
+  async function showCalibration(biz) {
+    try {
+      if (localStorage.getItem('seba_calibration_seen') === '1') return;
+      if (typeof d3 === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
+      await loadTopojsonScript();
+      if (typeof topojson === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
+
+      const code = (biz && biz.paysCode) || 'FR';
+      const country = CALIB_COUNTRIES[code] || CALIB_COUNTRIES.FR;
+      const overlay = document.getElementById('calib-overlay');
+      const caption = document.getElementById('calib-caption');
+      overlay.classList.add('open');
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+
+      const W = 340, H = 340, R = 155;
+      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate([0, -25, 0]);
+      const gpath = d3.geoPath().projection(proj);
+      const graticuleDatum = d3.geoGraticule()();
+      let rot = [0, -25, 0];
+      const svgSel = d3.select('#calib-globe-canvas');
+      const defs = svgSel.append('defs');
+      const f = defs.append('filter').attr('id', 'calib-glow').attr('x', '-45%').attr('y', '-45%').attr('width', '190%').attr('height', '190%');
+      f.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', '8').attr('result', 'blur');
+      f.append('feFlood').attr('flood-color', '#00FF9D').attr('flood-opacity', '0.7').attr('result', 'color');
+      f.append('feComposite').attr('in', 'color').attr('in2', 'blur').attr('operator', 'in').attr('result', 'shadow');
+      const mg = f.append('feMerge');
+      mg.append('feMergeNode').attr('in', 'shadow');
+      mg.append('feMergeNode').attr('in', 'SourceGraphic');
+
+      svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', '#091524');
+      const gratPath = svgSel.append('path').datum(graticuleDatum).attr('fill', 'none').attr('stroke', '#1a3050').attr('stroke-width', 0.35).attr('d', gpath).attr('opacity', 0.5);
+
+      const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()).catch(() => null);
+      if (!world) { overlay.classList.remove('open', 'visible'); localStorage.setItem('seba_calibration_seen', '1'); return; }
+      const countries = topojson.feature(world, world.objects.countries);
+      const pathsG = svgSel.append('g');
+      pathsG.selectAll('path').data(countries.features).enter().append('path')
+        .attr('d', gpath).attr('fill', '#1e293b').attr('stroke', '#263a5a').attr('stroke-width', 0.4);
+      svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', 'none').attr('stroke', '#1c2d50').attr('stroke-width', 1.2);
+
+      function render() { pathsG.selectAll('path').attr('d', gpath); gratPath.attr('d', gpath); }
+
+      let spinning = true;
+      function spinLoop() {
+        if (!spinning) return;
+        rot[0] += 0.5;
+        proj.rotate(rot);
+        render();
+        requestAnimationFrame(spinLoop);
+      }
+      spinLoop();
+      caption.textContent = 'Localisation de votre territoire…';
+
+      setTimeout(() => {
+        spinning = false;
+        const target = [-country.lng, -country.lat, 0];
+        const from = proj.rotate().slice();
+        const interp = d3.interpolate(from, target);
+        const ease = d3.easeCubicInOut;
+        d3.timer(function (elapsed) {
+          proj.rotate(interp(ease(Math.min(elapsed / 980, 1))));
+          render();
+          if (elapsed >= 980) {
+            pathsG.selectAll('path')
+              .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
+              .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
+            caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
+            caption.classList.add('locked');
+            document.getElementById('calib-flash').classList.add('fire');
+            AudioUI.playComplete();
+            setTimeout(() => {
+              overlay.classList.remove('visible');
+              setTimeout(() => overlay.classList.remove('open'), 650);
+            }, 1300);
+            return true;
+          }
+        });
+      }, 1800);
+
+      localStorage.setItem('seba_calibration_seen', '1');
+    } catch (e) { /* jamais bloquant : en cas d'erreur, le dashboard reste utilisable normalement */ }
+  }
 
   function toggleFocusMode() {
     AudioUI.playClick();
