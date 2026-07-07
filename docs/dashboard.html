@@ -1389,15 +1389,21 @@
       });
     });
   }
+  let _customizeModeBeforeDrawer = false;
   function openExtDrawer() {
     refreshExtDrawer();
     document.getElementById('ext-drawer-overlay').classList.add('open');
     document.getElementById('ext-drawer').classList.add('open');
+    _customizeModeBeforeDrawer = _customizeMode; // état à restaurer symétriquement à la fermeture (audit 1.3)
     if (!_customizeMode) toggleCustomizeMode(); // la nouvelle vignette doit tout de suite montrer sa poignée (IV.8)
   }
   function closeExtDrawer() {
     document.getElementById('ext-drawer-overlay').classList.remove('open');
     document.getElementById('ext-drawer').classList.remove('open');
+    /* Ne restaure le mode personnalisation à son état d'avant-ouverture que s'il
+       avait été activé automatiquement par openExtDrawer() — si l'utilisateur l'a
+       activé lui-même AVANT d'ouvrir le tiroir, on ne le désactive pas dans son dos. */
+    if (_customizeMode && !_customizeModeBeforeDrawer) toggleCustomizeMode();
   }
   (function initExtDropZone() {
     const grid = document.getElementById('widget-grid');
