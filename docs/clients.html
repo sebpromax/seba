@@ -270,6 +270,15 @@
     return (c.prenom[0] + c.nom[0]).toUpperCase();
   }
 
+  // Echappe les champs saisis par l'utilisateur avant injection dans innerHTML
+  // (prenom/nom/contact/service peuvent contenir du HTML si un client malveillant
+  // ou un import CSV non fiable les a renseignes — faille XSS stockee sinon).
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function filtered() {
     return CLIENTS.filter(c => {
       const matchFilter = _filter === 'tous' || c.statut === _filter;
@@ -309,9 +318,9 @@
       if (canOpen) tr.onclick = () => location.href = href;
       else tr.onclick = () => relancer(c);
       tr.innerHTML =
-        '<td><div class="client-name"><div class="mini-avatar">' + initials(c) + '</div>' + c.prenom + ' ' + c.nom + '</div></td>' +
-        '<td>' + c.contact + '</td>' +
-        '<td>' + c.service + '</td>' +
+        '<td><div class="client-name"><div class="mini-avatar">' + initials(c) + '</div>' + esc(c.prenom) + ' ' + esc(c.nom) + '</div></td>' +
+        '<td>' + esc(c.contact) + '</td>' +
+        '<td>' + esc(c.service) + '</td>' +
         '<td class="ca-cell">' + (c.ca > 0 ? c.ca + ' ' + sym : '—') + '</td>' +
         '<td><span class="badge ' + BADGE[c.statut] + '">' + BADGE_LBL[c.statut] + '</span></td>' +
         '<td class="row-action">' + (canOpen ? '<a href="' + href + '">Ouvrir</a>' : '<span onclick="event.stopPropagation();relancer(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">Relancer</span>') + '</td>';
