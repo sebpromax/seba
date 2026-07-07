@@ -1,0 +1,60 @@
+{
+  "$comment": "Config de l'orchestrateur multi-agents asymetrique. Aucune cle API en dur ici : tout passe par des variables d'environnement (voir *_env). Verifie les noms de modeles avant usage reel, ils peuvent avoir change depuis la redaction de ce fichier.",
+
+  "planFile": "PLAN.md",
+  "progressFile": "PROGRESS.md",
+  "crashLogFile": "CRASH_LOG.txt",
+
+  "safety": {
+    "maxConsecutiveFailures": 3,
+    "allowAutoPush": false,
+    "allowAutoPushEnvVar": "SEBA_ORCH_ALLOW_PUSH",
+    "allowPushMain": false,
+    "allowPushMainEnvVar": "SEBA_ORCH_ALLOW_PUSH_MAIN",
+    "$note_push": "allowAutoPush controle le push de la branche de travail courante. allowPushMain est un DEUXIEME gate independant, requis en plus du premier, pour autoriser un push/merge vers main. Les deux sont false par defaut : l'orchestrateur s'arrete au commit local.",
+    "protectedTestGlobs": ["scripts/qa-*.js", "**/*.test.js"],
+    "cavemanLogging": true,
+    "$note_caveman": "Si true, les agents ne produisent que des lignes de log brutes (OK/FAILED/RETRYING + metriques), aucune narration/texte de courtoisie."
+  },
+
+  "agents": {
+    "cartographe": {
+      "role": "Analyse d'impact + Code Review Graph",
+      "provider": "gemini",
+      "model": "gemini-2.5-pro",
+      "$note_model": "Verifie le nom de modele courant sur ai.google.dev avant usage, l'offre Gemini change regulierement.",
+      "apiKeyEnvVar": "GEMINI_API_KEY",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+      "input": ["arborescence complete du depot", "supabase-schema.sql"],
+      "output": "liste des fichiers a ouvrir + points d'ancrage Supabase impactes"
+    },
+    "executeur": {
+      "role": "Modification du code source, en isolation (git worktree dedie)",
+      "provider": "claude-code-cli",
+      "command": "claude",
+      "invocation": "claude -p \"<instructions>\" --allowedTools \"Read Edit Write Grep Glob\"",
+      "$note": "Execute dans un git worktree temporaire cree par l'orchestrateur (git worktree add), jamais directement sur la branche de travail principale, pour permettre un rollback propre en cas d'echec."
+    },
+    "qa": {
+      "role": "Execution des tests + inspection des logs en boucle fermee",
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "$note_model": "Verifie le nom de modele courant sur console.groq.com avant usage.",
+      "apiKeyEnvVar": "GROQ_API_KEY",
+      "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "localCommands": [
+        "node scripts/qa-dashboard-full.js --target=local --viewport=desktop",
+        "node scripts/qa-dashboard-full.js --target=local --viewport=mobile"
+      ],
+      "$note": "Les tests reels tournent en local (Puppeteer). Groq sert a interpreter rapidement les logs/erreurs et rendre un verdict PASS/FAIL, pas a executer les tests lui-meme."
+    },
+    "archiviste": {
+      "role": "Messages de commit, mise a jour de PROGRESS.md, case a cocher dans PLAN.md",
+      "provider": "mistral",
+      "model": "mistral-small-latest",
+      "$note_model": "Alternative : Haiku via l'API Anthropic (ANTHROPIC_API_KEY) si preferable pour la coherence avec le reste de la stack Claude.",
+      "apiKeyEnvVar": "MISTRAL_API_KEY",
+      "endpoint": "https://api.mistral.ai/v1/chat/completions"
+    }
+  }
+}
