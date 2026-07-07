@@ -709,12 +709,34 @@ function timelineColorFor(type) {
 }
 
 let _timelineLifeCleanup = null;
+let _timelineLifeMQ = null;
+let _timelineLifeMQHandler = null;
 
+/* Audit 3.4 : .timeline-life-rail est caché en CSS sous 1180px, mais la boucle
+   rAF tournait quand même en continu sur un canvas réduit à 1×1px (coût minime
+   par frame, mais une boucle qui tourne pour rien sur tout appareil mobile).
+   On n'anime désormais que si le rail est effectivement visible, et on
+   démarre/arrête dynamiquement au franchissement du seuil (redimensionnement,
+   rotation d'écran) plutôt que de figer la décision au premier rendu. */
 function renderTimelineLife(wctx) {
   const canvas = document.getElementById('timeline-life');
   if (!canvas) return;
   if (_timelineLifeCleanup) { _timelineLifeCleanup(); _timelineLifeCleanup = null; }
-  _timelineLifeCleanup = startTimelineLifeAnimation(canvas, canvas.parentElement, buildTimelinePulses(wctx));
+  if (_timelineLifeMQ && _timelineLifeMQHandler) {
+    if (_timelineLifeMQ.removeEventListener) _timelineLifeMQ.removeEventListener('change', _timelineLifeMQHandler);
+    else if (_timelineLifeMQ.removeListener) _timelineLifeMQ.removeListener(_timelineLifeMQHandler);
+  }
+  const events = buildTimelinePulses(wctx);
+  const mq = window.matchMedia('(min-width: 1181px)');
+  _timelineLifeMQ = mq;
+  function apply(visible) {
+    if (_timelineLifeCleanup) { _timelineLifeCleanup(); _timelineLifeCleanup = null; }
+    if (visible) _timelineLifeCleanup = startTimelineLifeAnimation(canvas, canvas.parentElement, events);
+  }
+  apply(mq.matches);
+  _timelineLifeMQHandler = (e) => apply(e.matches);
+  if (mq.addEventListener) mq.addEventListener('change', _timelineLifeMQHandler);
+  else if (mq.addListener) mq.addListener(_timelineLifeMQHandler); // Safari <14
 }
 
 function startTimelineLifeAnimation(canvas, wrap, events) {

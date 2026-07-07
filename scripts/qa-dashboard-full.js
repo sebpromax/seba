@@ -245,15 +245,14 @@ try {
   }
 
   // 8. Conscience Seba aura notifications
+  // NB (audit 1.1, 2026-07-07) : triggerAuraDemo() n'est plus auto-déclenché au
+  // chargement (c'était un scénario de test "client X" affiché à tout utilisateur
+  // réel à chaque F5) — on le force nous-mêmes ici pour tester le mécanisme, et on
+  // attend au moins le délai du 1er scénario (2500ms) avant de vérifier.
   mark('8-aura-notifications');
-  await new Promise(r => setTimeout(r, 3500)); // auto-trigger delay
+  await page.evaluate(() => { if (typeof triggerAuraDemo === 'function') triggerAuraDemo(); });
+  await new Promise(r => setTimeout(r, 3000));
   let auraCard = await page.$('#aura-stack .aura-card');
-  if (!auraCard) {
-    // try forcing it
-    await page.evaluate(() => { if (typeof triggerAuraDemo === 'function') triggerAuraDemo(); });
-    await new Promise(r => setTimeout(r, 800));
-    auraCard = await page.$('#aura-stack .aura-card');
-  }
   if (auraCard) {
     await page.screenshot({ path: path.join(outDir, '08-aura-visible.png') });
     const ignoreBtn = await page.$('#aura-stack .aura-btn.ignore');
@@ -268,7 +267,7 @@ try {
     }
     // trigger again for validate test
     await page.evaluate(() => { if (typeof triggerAuraDemo === 'function') triggerAuraDemo(); });
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 3000));
     const validateBtn = await page.$('#aura-stack .aura-btn.validate');
     if (validateBtn) {
       await validateBtn.click();
