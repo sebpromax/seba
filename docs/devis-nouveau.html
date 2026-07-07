@@ -95,7 +95,15 @@
   .ticket-head .tlabel{font-weight:600;font-size:0.93rem;}
   .ticket-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:5px 0;color:var(--text-2);}
   .ticket-row b{color:var(--ink);font-weight:500;}
-  .stamp{position:absolute;right:16px;bottom:12px;font-weight:700;font-size:0.95rem;color:var(--emerald);border:2.5px solid var(--emerald);padding:3px 10px;border-radius:4px;transform:rotate(-8deg);letter-spacing:0.03em;}
+  /* Micro-check SVG animé (remplace l'ancien tampon statique "WordArt") */
+  .stamp-check{position:absolute;right:16px;bottom:12px;display:flex;align-items:center;gap:7px;}
+  .stamp-check svg{width:30px;height:30px;}
+  .stamp-check-circle{fill:none;stroke:var(--emerald);stroke-width:2.5;stroke-dasharray:145;stroke-dashoffset:145;animation:stampCircle .5s ease forwards;}
+  .stamp-check-path{fill:none;stroke:var(--emerald);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:stampCheck .35s ease forwards .4s;}
+  .stamp-label{font-weight:700;font-size:.85rem;color:var(--emerald);letter-spacing:.03em;opacity:0;animation:stampLabelIn .3s ease forwards .7s;}
+  @keyframes stampCircle{to{stroke-dashoffset:0;}}
+  @keyframes stampCheck{to{stroke-dashoffset:0;}}
+  @keyframes stampLabelIn{to{opacity:1;}}
   .btn-back{display:inline-block;background:var(--ink);color:var(--bg);padding:13px 26px;border-radius:var(--rs);font-weight:600;font-size:0.92rem;}
   .btn-back:hover{opacity:.88;}
 
@@ -249,7 +257,13 @@
             <div class="ticket-row"><span>Service</span><b id="conf-service">—</b></div>
             <div class="ticket-row"><span>Montant</span><b id="conf-amount">—</b></div>
             <div class="ticket-row"><span>Date souhaitée</span><b id="conf-date">—</b></div>
-            <div class="stamp">ENVOYÉ</div>
+            <div class="stamp-check">
+              <svg viewBox="0 0 52 52" aria-hidden="true">
+                <circle class="stamp-check-circle" cx="26" cy="26" r="23"/>
+                <path class="stamp-check-path" d="M14 27l7 7 16-16"/>
+              </svg>
+              <span class="stamp-label">Envoyé</span>
+            </div>
           </div>
           <a href="devis.html" class="btn-back">← Retour aux devis</a>
         </div>
