@@ -111,6 +111,21 @@ function buildBentoChartHTML(goal, sym) {
     '</div>';
 }
 
+/* Benchmark Airbnb §5.1 : les widgets "Compagnon" (pipeline, tournée, impayés)
+   sont defaultVisible:false — donc ajoutés volontairement — souvent le premier
+   contact d'un artisan avec ces fonctionnalités avancées. Ils avaient pourtant
+   l'état vide le plus pauvre du dashboard (une ligne .tl-empty), alors que
+   bento-chart soigne le sien (icône + titre + sous-titre + CTA). Helper unique,
+   réutilise .bc-empty-* (déjà générique, pas lié à bento-chart). */
+function buildRichEmptyHTML(icon, title, sub, ctaLabel, ctaHref) {
+  return '<div class="bc-empty-body">' +
+    '<div class="bc-empty-ico">' + icon + '</div>' +
+    '<div class="bc-empty-title">' + title + '</div>' +
+    '<div class="bc-empty-sub">' + sub + '</div>' +
+    (ctaHref ? '<button class="bc-empty-btn" onclick="window.location.href=\'' + ctaHref + '\'">' + ctaLabel + '</button>' : '') +
+    '</div>';
+}
+
 /* ── Série financière 6 mois par secteur (variance réaliste, pas une simple
    rampe linéaire) : creux saisonnier, reprise, accélération récente ── */
 const SECTOR_VARIANCE = {
@@ -1193,7 +1208,14 @@ window.WIDGET_CATALOG = {
     render(ctx, el) {
       const RELANCE_LABELS = ['Amiable J+8', 'Relance 1 J+30', 'Relance 2 J+60', 'Mise en demeure J+90', 'Huissier / LRE'];
       const list = (ctx.creances || []).slice().sort((a, b) => b.relanceStep - a.relanceStep);
-      if (!list.length) { el.innerHTML = '<div class="tl-empty">✓ Aucune facture en retard.</div>'; return; }
+      if (!list.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+          'Rien en retard',
+          'Toutes vos factures sont à jour — aucune relance nécessaire pour le moment.'
+        );
+        return;
+      }
       const total = list.reduce((s, c) => s + c.montant, 0);
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
         list.slice(0, 3).map(c =>
@@ -1206,7 +1228,15 @@ window.WIDGET_CATALOG = {
     defaultVisible: false, defaultOrder: 21, link: { href: 'mutation-contextuelle.html', label: 'Pipeline complet →' },
     render(ctx, el) {
       const docs = ctx.mutationDocs || [];
-      if (!docs.length) { el.innerHTML = '<div class="tl-empty">Aucun dossier dans le pipeline. <a href="mutation-contextuelle.html" style="color:var(--emerald)">Créer un RDV →</a></div>'; return; }
+      if (!docs.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8L4 4z"/></svg>',
+          'Aucun dossier en cours',
+          'Suivez vos devis jusqu\'à l\'encaissement, du premier RDV au paiement.',
+          'Créer un RDV', 'mutation-contextuelle.html'
+        );
+        return;
+      }
       const STAGES = [['rdv', 'RDV'], ['devis', 'Devis'], ['facture', 'Facture'], ['encaisse', 'Encaissé']];
       el.innerHTML = '<div class="qa-grid" style="grid-template-columns:repeat(4,1fr);">' +
         STAGES.map(([key, label]) => {
@@ -1220,7 +1250,15 @@ window.WIDGET_CATALOG = {
     defaultVisible: false, defaultOrder: 22, link: { href: 'haversine-engine.html', label: 'Optimiser →' },
     render(ctx, el) {
       const pts = ctx.haversinePts || [];
-      if (!pts.length) { el.innerHTML = '<div class="tl-empty">Aucun point de tournée. <a href="haversine-engine.html" style="color:var(--emerald)">Ajouter des points →</a></div>'; return; }
+      if (!pts.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
+          'Optimisez vos trajets du jour',
+          'Ajoutez vos arrêts et Seba calcule l\'ordre le plus rapide.',
+          'Ajouter des points', 'haversine-engine.html'
+        );
+        return;
+      }
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
         pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + p.nom + '</span></div>').join('');
     } },
