@@ -85,12 +85,25 @@ input,button{font-family:'Inter',sans-serif;}
 
 .field-pw-wrap{position:relative;}
 .field-pw-wrap input{width:100%;padding-right:42px;}
-.toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);transition:color .2s;}
+.toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:10;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);transition:color .2s;}
 .toggle-pw:hover{color:#00ff88;}
 .toggle-pw svg{width:18px;height:18px;}
 .toggle-pw .eye-off{display:none;}
 .toggle-pw.showing .eye{display:none;}
 .toggle-pw.showing .eye-off{display:block;}
+
+/* Champ mot de passe "indestructible" cross-browser :
+   - Edge superpose son propre bouton oeil natif par-dessus le notre -> on le tue.
+   - Chrome ecrase notre theme sombre avec un fond clair sur l'autofill -> on force la palette. */
+input::-ms-reveal, input::-ms-clear { display: none !important; }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #18181B inset !important;
+  -webkit-text-fill-color: #EDEDED !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
 
 .forgot{display:flex;justify-content:flex-end;margin-top:-6px;margin-bottom:18px;}
 .forgot a{font-size:.76rem;color:rgba(255,255,255,.3);transition:color .2s;}
