@@ -1348,6 +1348,7 @@
          "vendre" l'instantiation, comme une pièce qui vient de s'enclencher. */
       const newShell = grid.querySelector('.widget-shell[data-widget-id="' + id + '"]');
       if (newShell) {
+        AudioUI.playSuccess();
         newShell.classList.add('lock-wave');
         newShell.addEventListener('animationend', () => newShell.classList.remove('lock-wave'), { once: true });
         newShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1359,6 +1360,7 @@
      BARRE DE COMMANDE IA (simulée)
   ═══════════════════════════════════════════════════════ */
   function openAiBar() {
+    AudioUI.playClick();
     document.getElementById('ai-bar-overlay').classList.add('open');
     const inp = document.getElementById('ai-bar-inp');
     document.getElementById('ai-bar-results').textContent = 'Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.';
@@ -1389,6 +1391,7 @@
     });
     resEl.innerHTML = html;
     if (addedAny) {
+      AudioUI.playSuccess();
       renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
       if (_customizeMode) initSortable(document.getElementById('widget-grid'));
       setTimeout(closeAiBar, 1400);
@@ -1421,7 +1424,60 @@
     alert(res.ok ? 'Notifications activées ✓ Vous recevrez vos rappels ici.' : 'Activation impossible : ' + (res.error || 'permission refusée'));
   }
 
+  /* ─── Interface Sonore (Bible VI.13) — Web Audio API, zero fichier externe.
+     Meme objet que docs/onboarding.html (AudioUI), copie ici car le
+     dashboard n'importe pas onboarding.html. ─── */
+  const AudioUI = {
+    ctx: null,
+    init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    playClick() {
+      try {
+        this.init();
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(660, this.ctx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(330, this.ctx.currentTime + 0.06);
+        g.gain.setValueAtTime(0.035, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.06);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + 0.06);
+      } catch (e) {}
+    },
+    playSuccess() {
+      try {
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25].forEach((freq, i) => {
+          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, now + i * 0.06);
+          g.gain.setValueAtTime(0.028, now + i * 0.06);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.14);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.14);
+        });
+      } catch (e) {}
+    },
+    playComplete() {
+      try {
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, now + i * 0.08);
+          g.gain.setValueAtTime(0.025, now + i * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.18);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.18);
+        });
+      } catch (e) {}
+    },
+  };
+  window.AudioUI = AudioUI;
+
   function toggleFocusMode() {
+    AudioUI.playClick();
     _focusActive = !_focusActive;
     const overlay = document.getElementById('focus-overlay');
     if (_focusActive) {

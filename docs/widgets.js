@@ -902,6 +902,7 @@ function dismissAuraNotification(card, validated, message) {
   card.addEventListener('transitionend', () => {
     card.remove();
     if (!validated) return;
+    if (window.AudioUI) window.AudioUI.playSuccess();
     /* Morphing : la prédiction devient un Vecteur d'Action réel (II.4).
        On réutilise createActionCard tel quel — seule la matérialisation
        (opacité/scale) est pilotée ici pour vendre l'idée de transformation
@@ -1530,6 +1531,7 @@ function initSortable(gridEl) {
       persistOrder(ids);
       /* Verrouillage : onde lumineuse émeraude sur les bords, puis nettoyage */
       const el = evt.item;
+      if (window.AudioUI) window.AudioUI.playClick();
       el.classList.remove('lock-wave'); // relance l'animation même si elle tournait déjà
       void el.offsetWidth; // force le reflow pour redémarrer le keyframe
       el.classList.add('lock-wave');
