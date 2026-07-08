@@ -101,16 +101,31 @@
       const cfg = window.SEBA_CONFIG;
       return Object.assign({ apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + this._bearer() }, extra || {});
     },
+    /* Sans jeton de session reel, _bearer() retombe sur la cle anonyme
+       (voir ci-dessus) : RLS (auth.uid() = user_id) refusera de toute
+       facon lecture/ecriture pour ce cas. Ne pas meme tenter l'appel
+       reseau evite un aller-retour et un 401 systematique en console pour
+       un mode demo/anonyme ou l'echec est garanti, pas accidentel. */
+    _hasSession(cfg) {
+      return this._bearer() !== cfg.supabaseAnonKey;
+    },
     async pull() {
       const cfg = window.SEBA_CONFIG;
+      if (!this._hasSession(cfg)) return null;
       try {
         const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?select=state&account=eq.' + encodeURIComponent(this._accountId()), {
           headers: this._headers(),
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+          console.warn('[seba-data] lecture distante en echec (HTTP ' + res.status + ') — le cache local fait foi.');
+          return null;
+        }
         const rows = await res.json();
         return rows.length ? rows[0].state : null;
-      } catch (e) { return null; }
+      } catch (e) {
+        console.warn('[seba-data] lecture distante impossible (reseau) — le cache local fait foi.', e.message);
+        return null;
+      }
     },
     save(state) {
       LocalAdapter.save(state); // cache local toujours à jour
@@ -119,13 +134,22 @@
     },
     async _push(state) {
       const cfg = window.SEBA_CONFIG;
+      if (!this._hasSession(cfg)) {
+        console.debug('[seba-data] synchronisation ignoree : pas de session active (mode demo/anonyme).');
+        return;
+      }
       try {
-        await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?on_conflict=account', {
+        const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?on_conflict=account', {
           method: 'POST',
           headers: this._headers({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
           body: JSON.stringify({ account: this._accountId(), state, updated_at: new Date().toISOString() }),
         });
-      } catch (e) { /* offline : le cache local fait foi, re-push à la prochaine écriture */ }
+        if (!res.ok) {
+          console.warn('[seba-data] synchronisation distante en echec (HTTP ' + res.status + ') — le cache local reste a jour, re-essai a la prochaine ecriture.');
+        }
+      } catch (e) {
+        console.warn('[seba-data] synchronisation distante impossible (reseau) — le cache local reste a jour.', e.message);
+      }
     },
   };
 

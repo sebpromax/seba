@@ -33,7 +33,12 @@
     };
     if (!window.SEBA_CONFIG_PUBLIC) loadLayer('config.public.js');
     const merged = Object.assign({}, window.SEBA_CONFIG_PUBLIC || {});
-    loadLayer('config.js'); // pose window.SEBA_CONFIG si le fichier local existe
+    /* config.js est gitignoré et n'existe donc jamais sur le site déployé
+       (sebpromax.github.io) — le sonder en prod ne produit qu'un 404
+       systématique en console, sans aucune chance d'aboutir. Restreint
+       aux contextes où le fichier peut réellement exister (dev local). */
+    const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (isLocalDev) loadLayer('config.js'); // pose window.SEBA_CONFIG si le fichier local existe
     window.SEBA_CONFIG = Object.assign(merged, window.SEBA_CONFIG || {});
     // valeurs placeholder = non renseignées → on les vide champ par champ
     const c = window.SEBA_CONFIG;
