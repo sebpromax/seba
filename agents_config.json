@@ -7,11 +7,11 @@
 
   "safety": {
     "maxConsecutiveFailures": 3,
-    "allowAutoPush": false,
-    "allowAutoPushEnvVar": "SEBA_ORCH_ALLOW_PUSH",
+    "allowAutoPR": true,
+    "allowAutoPREnvVar": "SEBA_ORCH_ALLOW_PR",
     "allowPushMain": false,
     "allowPushMainEnvVar": "SEBA_ORCH_ALLOW_PUSH_MAIN",
-    "$note_push": "allowAutoPush controle le push de la branche de travail courante. allowPushMain est un DEUXIEME gate independant, requis en plus du premier, pour autoriser un push/merge vers main. Les deux sont false par defaut : l'orchestrateur s'arrete au commit local.",
+    "$note_push": "3 paliers (voir maybeDeploy dans tools/orchestrator.js) : (1) allowAutoPR=true (DEFAUT depuis le 2026-07-08) -> push la branche + ouvre une vraie Pull Request via `gh pr create`, revue humaine via l'interface GitHub normale ; (2) mettre SEBA_ORCH_ALLOW_PR=false pour repasser en local-only silencieux ; (3) allowPushMain=true (JAMAIS par defaut) -> fast-forward merge + push direct sur main, main sert la prod (GitHub Pages), ce palier reste un choix explicite distinct du premier.",
     "protectedTestGlobs": ["scripts/qa-*.js", "**/*.test.js"],
     "cavemanLogging": true,
     "$note_caveman": "Si true, les agents ne produisent que des lignes de log brutes (OK/FAILED/RETRYING + metriques), aucune narration/texte de courtoisie."

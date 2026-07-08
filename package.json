@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "audit:mobile": "node scripts/mobile-audit.js"
+    "audit:mobile": "node scripts/mobile-audit.js",
+    "orchestrator": "node --env-file=.env tools/orchestrator.js"
   },
   "devDependencies": {
     "eslint": "^10.6.0",

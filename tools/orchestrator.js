@@ -30,7 +30,7 @@
 //   n'implique pas un perimetre par defaut fiable en mode non-interactif (-p). Le vrai
 //   garde-fou est donc en aval, pas en amont : voir snapshotSentinels/assertSentinelsIntact.
 
-import { readFileSync, writeFileSync, existsSync, appendFileSync, symlinkSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, symlinkSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -68,57 +68,85 @@ function updateProgress(worktreeDir, taskText, qaVerdict, secopsVerdict) {
 
 // --- appel generique a une API chat-completions-like (Groq/Mistral) ---
 async function callChatAPI(agentCfg, systemPrompt, userPrompt) {
-  const apiKey = process.env[agentCfg.apiKeyEnvVar];
-  if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
-  const res = await fetch(agentCfg.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: agentCfg.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
+  return withRetry(async () => {
+    const apiKey = process.env[agentCfg.apiKeyEnvVar];
+    if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
+    const res = await fetch(agentCfg.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: agentCfg.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`API_ERROR:${agentCfg.provider}:${res.status}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? '';
   });
-  if (!res.ok) throw new Error(`API_ERROR:${agentCfg.provider}:${res.status}`);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? '';
+}
+
+// Retry court avec backoff pour les erreurs transitoires (429/503 constates a
+// plusieurs reprises en test reel sur Gemini -- sans ca, un simple hoquet
+// reseau fait planter tout le cycle au lieu d'etre absorbe silencieusement).
+// Ne retente PAS les erreurs 4xx hors 429 (ex: mauvaise cle, 401/403) : pas
+// de raison qu'un retry change le resultat, ce serait juste 2x plus lent a
+// echouer pour rien.
+async function withRetry(fn, { retries = 2, delayMs = 3000 } = {}) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      const retryable = /API_ERROR:.*:(429|500|502|503|504)/.test(e.message);
+      if (!retryable || i === retries) throw e;
+      log('WARN', `retry ${i + 1}/${retries} apres erreur transitoire: ${e.message}`);
+      await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 async function callGemini(agentCfg, prompt) {
-  const apiKey = process.env[agentCfg.apiKeyEnvVar];
-  if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
-  const url = agentCfg.endpoint.replace('{model}', agentCfg.model) + `?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  return withRetry(async () => {
+    const apiKey = process.env[agentCfg.apiKeyEnvVar];
+    if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
+    const url = agentCfg.endpoint.replace('{model}', agentCfg.model) + `?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    });
+    if (!res.ok) throw new Error(`API_ERROR:gemini:${res.status}`);
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   });
-  if (!res.ok) throw new Error(`API_ERROR:gemini:${res.status}`);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
 // Meme modele que le cartographe (gemini-2.5-flash, multimodal) mais avec des
 // images en plus du texte -- utilise par le Worker 5 (QA visuelle).
 async function callGeminiVision(agentCfg, prompt, imagePaths) {
-  const apiKey = process.env[agentCfg.apiKeyEnvVar];
-  if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
-  const url = agentCfg.endpoint.replace('{model}', agentCfg.model) + `?key=${apiKey}`;
-  const parts = [{ text: prompt }];
-  for (const p of imagePaths) {
-    const mimeType = p.endsWith('.jpg') || p.endsWith('.jpeg') ? 'image/jpeg' : 'image/png';
-    parts.push({ inlineData: { mimeType, data: readFileSync(p).toString('base64') } });
-  }
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] }),
+  return withRetry(async () => {
+    const apiKey = process.env[agentCfg.apiKeyEnvVar];
+    if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
+    const url = agentCfg.endpoint.replace('{model}', agentCfg.model) + `?key=${apiKey}`;
+    const parts = [{ text: prompt }];
+    for (const p of imagePaths) {
+      const mimeType = p.endsWith('.jpg') || p.endsWith('.jpeg') ? 'image/jpeg' : 'image/png';
+      parts.push({ inlineData: { mimeType, data: readFileSync(p).toString('base64') } });
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }] }),
+    });
+    if (!res.ok) throw new Error(`API_ERROR:gemini-vision:${res.status}`);
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   });
-  if (!res.ok) throw new Error(`API_ERROR:gemini-vision:${res.status}`);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
 function extractJSON(text) {
@@ -177,6 +205,17 @@ function creerWorktree() {
     log('WARN', `node_modules-link-echoue:${e.message}`);
   }
   return { branch, worktreeDir };
+}
+
+// `git worktree remove` ne sait pas nettoyer la jonction node_modules (pas
+// suivie par git) -- sans ce retrait explicite, le dossier parent survit
+// vide-mais-non-vide indefiniment (constate : 8 dossiers residuels apres les
+// tests a blanc de cette session). On la retire d'abord, dans TOUS les cas
+// (succes, echec, arret manuel), pour que le worktree parte vraiment.
+function removeWorktree(worktreeDir) {
+  try { rmSync(path.join(worktreeDir, 'node_modules'), { force: true }); } catch {}
+  try { execFileSync('git', ['worktree', 'remove', '--force', worktreeDir], { cwd: ROOT, stdio: 'ignore' }); } catch {}
+  try { rmSync(worktreeDir, { recursive: true, force: true }); } catch {}
 }
 
 // Fichiers sentinelles verifies avant/apres chaque appel executeur -- si l'un
@@ -391,29 +430,53 @@ function crashAndFreeze(taskText, attempts, lastError, worktreeDir, branch) {
   // Rollback : rien de valide n'a ete produit (aucun commit archiviste n'a eu
   // lieu avant le disjoncteur) -- on supprime le worktree ET la branche
   // jetable pour ne laisser aucun residu dans le depot local.
-  if (worktreeDir) { try { execFileSync('git', ['worktree', 'remove', '--force', worktreeDir], { cwd: ROOT, stdio: 'ignore' }); } catch {} }
+  if (worktreeDir) removeWorktree(worktreeDir);
   if (branch) { try { execFileSync('git', ['branch', '-D', branch], { cwd: ROOT, stdio: 'ignore' }); } catch {} }
   process.stdout.write('\x07'); // signal sonore terminal
   log('FROZEN', `circuit-breaker apres ${attempts} echecs — voir ${cfg.crashLogFile} — rollback effectue — controle rendu a l'operateur humain`);
   process.exit(1);
 }
 
-// --- deploiement, double gate explicite (voir CLAUDE.md) ---
-function maybeDeploy(worktreeDir, branch, commitMsg) {
-  const allowPush = cfg.safety.allowAutoPush || process.env[cfg.safety.allowAutoPushEnvVar] === 'true';
+// --- deploiement : 3 paliers, du plus sur au plus risque (voir CLAUDE.md) ---
+// 1. Rien (tout local)                          -- allowAutoPR=false ET allowPushMain=false
+// 2. Pull Request reelle (gh pr create)         -- allowAutoPR=true (defaut), revue humaine via GitHub
+// 3. Fast-forward merge + push direct sur main  -- allowPushMain=true (jamais par defaut)
+// Le palier 2 est le comportement par defaut demande le 2026-07-08 : jamais
+// plus "silencieusement local uniquement" sans que ce soit un choix explicite
+// (allowAutoPR=false), mais jamais de merge production sans le flag dedie.
+function ghAvailable() {
+  try { execFileSync('gh', ['--version'], { stdio: 'ignore' }); execFileSync('gh', ['auth', 'status'], { stdio: 'ignore' }); return true; }
+  catch { return false; }
+}
+
+function maybeDeploy(worktreeDir, branch, commitMsg, taskText, verdicts) {
+  const allowPR = process.env[cfg.safety.allowAutoPREnvVar] === 'false' ? false : (cfg.safety.allowAutoPR ?? true);
   const allowMain = cfg.safety.allowPushMain || process.env[cfg.safety.allowPushMainEnvVar] === 'true';
-  if (!allowPush) {
-    log('SKIP', `deploiement desactive (allowAutoPush=false) — commit "${commitMsg}" reste local sur la branche "${branch}", revue humaine requise`);
+
+  if (!allowPR && !allowMain) {
+    log('SKIP', `deploiement desactive (allowAutoPR=false) — commit "${commitMsg}" reste local sur la branche "${branch}", revue humaine requise`);
     return;
   }
+
   if (!allowMain) {
-    execFileSync('git', ['push', 'origin', branch], { cwd: worktreeDir, stdio: 'inherit' });
-    log('OK', `push origin/${branch} (allowPushMain=false, pas de merge vers main)`);
+    execFileSync('git', ['push', '-u', 'origin', branch], { cwd: worktreeDir, stdio: 'inherit' });
+    if (!ghAvailable()) {
+      log('SKIP', `gh CLI absent ou non authentifie — branche "${branch}" poussee sur origin, ouvre la PR manuellement sur GitHub`);
+      return;
+    }
+    const body = `Tache : ${taskText}\n\nVerdicts automatiques :\n- QA : ${verdicts.qa}\n- QA visuelle : ${verdicts.visualqa}\n- Sec-Ops (Strix) : ${verdicts.secops}\n\nGenere automatiquement par tools/orchestrator.js -- revue humaine requise avant merge.`;
+    try {
+      const prUrl = execFileSync('gh', ['pr', 'create', '--title', commitMsg, '--body', body, '--base', 'main', '--head', branch], { cwd: worktreeDir, encoding: 'utf8' }).trim();
+      log('OK', `Pull Request ouverte : ${prUrl}`);
+    } catch (e) {
+      log('WARN', `gh pr create echoue (${e.message}) — branche "${branch}" quand meme poussee sur origin, ouvre la PR manuellement`);
+    }
     return;
   }
-  // Fast-forward merge + push vers main -- SEULEMENT si les deux flags sont
-  // actives ET si ROOT est propre (jamais de merge sur un working tree sale,
-  // on ne veut pas ecraser un travail humain en cours).
+
+  // Fast-forward merge + push vers main -- SEULEMENT si allowPushMain ET si
+  // ROOT est propre (jamais de merge sur un working tree sale, on ne veut
+  // pas ecraser un travail humain en cours).
   const dirty = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' }).trim();
   if (dirty) {
     log('SKIP', 'merge vers main annule : working tree principal non propre (changements non commites presents) — revue humaine requise');
@@ -478,9 +541,9 @@ async function main() {
 
       const commitMsg = await runArchiviste(task.text, output, worktreeDir);
 
-      maybeDeploy(worktreeDir, branch, commitMsg);
+      maybeDeploy(worktreeDir, branch, commitMsg, task.text, { qa: verdict, visualqa: visualqa.verdict, secops: secops.verdict });
 
-      execFileSync('git', ['worktree', 'remove', '--force', worktreeDir], { cwd: ROOT, stdio: 'ignore' });
+      removeWorktree(worktreeDir);
       log('OK', `cycle termine — commit "${commitMsg}" sur la branche "${branch}" (worktree supprime). /clear recommande avant la tache suivante.`);
       return;
     } catch (e) {
