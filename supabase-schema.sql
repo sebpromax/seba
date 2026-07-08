@@ -132,6 +132,67 @@ create policy "employes_insert" on employes for insert with check (auth.uid() = 
 create policy "employes_update" on employes for update using (auth.uid() = user_id);
 create policy "employes_delete" on employes for delete using (auth.uid() = user_id);
 
+-- ── 6. Profils & Entreprises (tunnel "Flash & Drop", onboarding.html) ──
+-- Corrige les 3 defauts du script propose par l'agent Groq
+-- (COMPARATIF-PARCOURS.md, TASK 3.1) : variable _profile_id non
+-- declaree dans la fonction (Postgres aurait refuse de la creer),
+-- policy INSERT ecrite avec `using` au lieu de `with check`, et
+-- aucune policy RLS definie du tout sur ces 2 tables.
+create table if not exists profiles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  sector text not null check (sector in ('Nettoyage', 'Conciergerie', 'Artisanat')),
+  created_at timestamptz default now()
+);
+alter table profiles enable row level security;
+create policy "profiles_select" on profiles for select using (auth.uid() = user_id);
+create policy "profiles_insert" on profiles for insert with check (auth.uid() = user_id);
+create index if not exists profiles_user_idx on profiles (user_id);
+-- Pas de policy update/delete : aucune UI n'ecrit encore sur ces champs
+-- apres la creation initiale. RLS refuse par defaut toute operation
+-- sans policy correspondante (echec ferme, pas une faille) -- a ajouter
+-- explicitement le jour ou une page permet de modifier le secteur.
+
+create table if not exists companies (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references profiles(id) on delete cascade,
+  name varchar not null,
+  created_at timestamptz default now()
+);
+alter table companies enable row level security;
+-- `companies` n'a pas de colonne user_id propre (juste profile_id) --
+-- la policy doit donc verifier la propriete indirectement via le
+-- profil parent, pas un `auth.uid() = user_id` litteral qui n'aurait
+-- rien a comparer sur cette table.
+create policy "companies_select" on companies for select using (
+  exists (select 1 from profiles where profiles.id = companies.profile_id and profiles.user_id = auth.uid())
+);
+create policy "companies_insert" on companies for insert with check (
+  exists (select 1 from profiles where profiles.id = companies.profile_id and profiles.user_id = auth.uid())
+);
+create index if not exists companies_profile_idx on companies (profile_id);
+
+-- Insertion en une seule operation (profil + entreprise) depuis l'ecran 2
+-- du tunnel Flash & Drop. SECURITY INVOKER (par defaut, pas de
+-- `security definer`) : la fonction s'execute avec les droits de
+-- l'appelant, donc la policy `profiles_insert` (auth.uid() = user_id)
+-- s'applique normalement -- un appel avec un _user_id qui n'est pas le
+-- votre est rejete par RLS, pas seulement par la logique applicative.
+create or replace function create_profile_and_company(
+  _user_id uuid,
+  _sector text,
+  _company_name varchar
+) returns uuid as $$
+declare
+  _profile_id uuid;
+begin
+  insert into profiles (user_id, sector) values (_user_id, _sector)
+    returning id into _profile_id;
+  insert into companies (profile_id, name) values (_profile_id, _company_name);
+  return _profile_id;
+end;
+$$ language plpgsql;
+
 -- ═══════════════════════════════════════════════════════════════
 -- NOTE ARCHITECTURE
 -- Le site utilise aujourd'hui la table seba_state (blob JSON) via
