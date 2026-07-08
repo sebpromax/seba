@@ -111,6 +111,21 @@ function buildBentoChartHTML(goal, sym) {
     '</div>';
 }
 
+/* Benchmark Airbnb §5.1 : les widgets "Compagnon" (pipeline, tournée, impayés)
+   sont defaultVisible:false — donc ajoutés volontairement — souvent le premier
+   contact d'un artisan avec ces fonctionnalités avancées. Ils avaient pourtant
+   l'état vide le plus pauvre du dashboard (une ligne .tl-empty), alors que
+   bento-chart soigne le sien (icône + titre + sous-titre + CTA). Helper unique,
+   réutilise .bc-empty-* (déjà générique, pas lié à bento-chart). */
+function buildRichEmptyHTML(icon, title, sub, ctaLabel, ctaHref) {
+  return '<div class="bc-empty-body">' +
+    '<div class="bc-empty-ico">' + icon + '</div>' +
+    '<div class="bc-empty-title">' + title + '</div>' +
+    '<div class="bc-empty-sub">' + sub + '</div>' +
+    (ctaHref ? '<button class="bc-empty-btn" onclick="window.location.href=\'' + ctaHref + '\'">' + ctaLabel + '</button>' : '') +
+    '</div>';
+}
+
 /* ── Série financière 6 mois par secteur (variance réaliste, pas une simple
    rampe linéaire) : creux saisonnier, reprise, accélération récente ── */
 const SECTOR_VARIANCE = {
@@ -134,8 +149,12 @@ function buildFinanceSeries(secteur, current) {
 
 /* ── Graphique financier D3 : courbe lissée, dégradé sous la courbe,
    tooltip interactif au survol/toucher, tracé animé. Fallback : sparkline
-   SVG inline (buildBentoChartHTML) si D3 absent. ── */
-function renderFinanceChartD3(wrapEl, series, sym) {
+   SVG inline (buildBentoChartHTML) si D3 absent.
+   goalTarget (benchmark Stripe §1.1, optionnel) : trace une ligne d'objectif
+   en pointillé — la donnée existe déjà (ctx.demo.goal.target, consommée
+   par le widget 'goal') mais n'apparaissait jamais sur ce graphique-ci,
+   obligeant l'artisan à croiser deux widgets pour voir sa trajectoire. ── */
+function renderFinanceChartD3(wrapEl, series, sym, goalTarget) {
   if (typeof d3 === 'undefined' || !wrapEl) return false;
   const W = 400, H = 96, PAD = { top: 8, right: 8, bottom: 4, left: 8 };
   wrapEl.innerHTML = '';
@@ -145,7 +164,7 @@ function renderFinanceChartD3(wrapEl, series, sym) {
     .style('width', '100%').style('display', 'block').style('overflow', 'visible');
 
   const x = d3.scalePoint().domain(series.map(d => d.month)).range([PAD.left, W - PAD.right]);
-  const maxV = d3.max(series, d => d.value);
+  const maxV = Math.max(d3.max(series, d => d.value), goalTarget > 0 ? goalTarget : 0);
   const y = d3.scaleLinear().domain([0, maxV * 1.08]).range([H - PAD.bottom, PAD.top]);
 
   const defs = svg.append('defs');
@@ -158,6 +177,14 @@ function renderFinanceChartD3(wrapEl, series, sym) {
 
   svg.append('path').datum(series).attr('d', area).attr('fill', 'url(#d3-fin-fill)').attr('opacity', 0)
     .transition().duration(900).delay(350).attr('opacity', 1);
+
+  if (goalTarget > 0) {
+    svg.append('line')
+      .attr('x1', PAD.left).attr('x2', W - PAD.right)
+      .attr('y1', y(goalTarget)).attr('y2', y(goalTarget))
+      .attr('stroke', 'rgba(255,255,255,.28)').attr('stroke-width', 1.2).attr('stroke-dasharray', '3 3')
+      .attr('opacity', 0).transition().duration(600).delay(250).attr('opacity', 1);
+  }
 
   const path = svg.append('path').datum(series).attr('d', line)
     .attr('fill', 'none').attr('stroke', '#00FF9D').attr('stroke-width', 2.5)
@@ -209,6 +236,31 @@ function renderFinanceChartD3(wrapEl, series, sym) {
   return true;
 }
 
+/* Benchmark Shopify §7.1 : sélecteur de période sur le Cockpit financier.
+   Ce n'est pas un vrai changement de vue, juste un zoom temporel — et plutôt
+   que d'inventer une 3e source de données, on réutilise buildHorizonSeries
+   (déjà calculée pour les Lignes d'Horizon : 12 derniers jours, réels via
+   SebaDB ou simulés) pour "7 jours", et buildFinanceSeries (existant) pour
+   "6 mois". window._ctx est exposé par renderDashboard() (dashboard.html). */
+function switchChartPeriod(period) {
+  const shell = document.querySelector('[data-widget-id="bento-chart"]');
+  const wrap = shell && shell.querySelector('.bc-d3-wrap');
+  if (!wrap || !window._ctx) return;
+  shell.querySelectorAll('.bc-period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  const ctx = window._ctx;
+  const goal = ctx.demo.goal;
+  if (period === 'jour') {
+    const daily = buildHorizonSeries(ctx).gains.slice(-7).map(p => ({
+      month: new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+      value: p.amount,
+    }));
+    renderFinanceChartD3(wrap, daily, ctx.sym, 0); // pas de ligne d'objectif sur une granularité journalière
+  } else {
+    renderFinanceChartD3(wrap, buildFinanceSeries(ctx.secteur, goal ? goal.current : 0), ctx.sym, goal ? goal.target : 0);
+  }
+}
+window.switchChartPeriod = switchChartPeriod;
+
 /* Mini-sparkline D3 pour les metric cards (style terminal financier) */
 function renderMetricSparkline(el, secteur, seed) {
   if (typeof d3 === 'undefined' || !el) return;
@@ -226,6 +278,8 @@ function renderMetricSparkline(el, secteur, seed) {
 
 /* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ── */
 let _leafletPromise = null;
+/* Instance vivante du widget 'lot-carte' — cf. audit 2.2 (fuite mémoire). */
+let _lotCarteMapInstance = null;
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
   if (_leafletPromise) return _leafletPromise;
@@ -707,12 +761,34 @@ function timelineColorFor(type) {
 }
 
 let _timelineLifeCleanup = null;
+let _timelineLifeMQ = null;
+let _timelineLifeMQHandler = null;
 
+/* Audit 3.4 : .timeline-life-rail est caché en CSS sous 1180px, mais la boucle
+   rAF tournait quand même en continu sur un canvas réduit à 1×1px (coût minime
+   par frame, mais une boucle qui tourne pour rien sur tout appareil mobile).
+   On n'anime désormais que si le rail est effectivement visible, et on
+   démarre/arrête dynamiquement au franchissement du seuil (redimensionnement,
+   rotation d'écran) plutôt que de figer la décision au premier rendu. */
 function renderTimelineLife(wctx) {
   const canvas = document.getElementById('timeline-life');
   if (!canvas) return;
   if (_timelineLifeCleanup) { _timelineLifeCleanup(); _timelineLifeCleanup = null; }
-  _timelineLifeCleanup = startTimelineLifeAnimation(canvas, canvas.parentElement, buildTimelinePulses(wctx));
+  if (_timelineLifeMQ && _timelineLifeMQHandler) {
+    if (_timelineLifeMQ.removeEventListener) _timelineLifeMQ.removeEventListener('change', _timelineLifeMQHandler);
+    else if (_timelineLifeMQ.removeListener) _timelineLifeMQ.removeListener(_timelineLifeMQHandler);
+  }
+  const events = buildTimelinePulses(wctx);
+  const mq = window.matchMedia('(min-width: 1181px)');
+  _timelineLifeMQ = mq;
+  function apply(visible) {
+    if (_timelineLifeCleanup) { _timelineLifeCleanup(); _timelineLifeCleanup = null; }
+    if (visible) _timelineLifeCleanup = startTimelineLifeAnimation(canvas, canvas.parentElement, events);
+  }
+  apply(mq.matches);
+  _timelineLifeMQHandler = (e) => apply(e.matches);
+  if (mq.addEventListener) mq.addEventListener('change', _timelineLifeMQHandler);
+  else if (mq.addListener) mq.addListener(_timelineLifeMQHandler); // Safari <14
 }
 
 function startTimelineLifeAnimation(canvas, wrap, events) {
@@ -876,6 +952,31 @@ const AURA_TEST_SCENARIOS = [
   { message: 'Planning semaine prochaine à 90% de capacité', probability: 90 },
 ];
 
+/* Réserve/relâche l'espace en bas du document (audit 1.2) tant que la pile
+   Conscience Seba a au moins une carte visible, pour qu'elle ne se retrouve
+   jamais superposée aux Vecteurs d'Action une fois la page scrollée en bas.
+   QA 2026-07-07 : la classe .has-aura-notifications posait une réserve FIXE de
+   260px (dashboard.html), mais .aura-stack peut grandir jusqu'à son max-height
+   CSS (46vh, soit ~414px sur un viewport de 900px) dès que 3-4 notifications
+   s'accumulent avant d'être traitées (confirmé par mesure : sur 4 cartes, la
+   pile occupe bien 414px alors que la réserve restait plafonnée à 260px — un
+   vrai recouvrement résiduel). On mesure donc la hauteur réelle de la pile à
+   chaque appel et on pose une réserve dynamique (inline, prioritaire sur la
+   règle CSS de secours) au lieu d'une valeur devinée. */
+function updateAuraReserve() {
+  const stack = document.getElementById('aura-stack');
+  const main = document.querySelector('.main');
+  if (!stack || !main) return;
+  const hasCards = !!stack.querySelector('.aura-card');
+  main.classList.toggle('has-aura-notifications', hasCards);
+  if (hasCards) {
+    const h = stack.getBoundingClientRect().height;
+    main.style.paddingBottom = Math.max(h + 40, 260) + 'px';
+  } else {
+    main.style.paddingBottom = '';
+  }
+}
+
 function showAuraNotification(message, probability) {
   const stack = document.getElementById('aura-stack');
   if (!stack) return null;
@@ -891,6 +992,7 @@ function showAuraNotification(message, probability) {
     '</div>';
   stack.appendChild(card);
   requestAnimationFrame(() => card.classList.add('visible'));
+  updateAuraReserve();
 
   card.querySelector('.ignore').addEventListener('click', () => dismissAuraNotification(card, false, message));
   card.querySelector('.validate').addEventListener('click', () => dismissAuraNotification(card, true, message));
@@ -901,6 +1003,7 @@ function dismissAuraNotification(card, validated, message) {
   card.classList.add('leaving');
   card.addEventListener('transitionend', () => {
     card.remove();
+    updateAuraReserve();
     if (!validated) return;
     if (window.AudioUI) window.AudioUI.playSuccess();
     /* Morphing : la prédiction devient un Vecteur d'Action réel (II.4).
@@ -1054,12 +1157,16 @@ window.WIDGET_CATALOG = {
       const deltaLabel = pct !== null ? (pct >= 100 ? '✓ Objectif atteint' : pct + " % de l'objectif") : '+12% vs mois précédent';
       const totalFmt = cur >= 1000 ? (cur / 1000).toFixed(1).replace('.', ',') + ' k' : cur.toString();
       el.innerHTML = '<div class="bc-pad">' +
+        '<div class="bc-period-row">' +
+        '<button type="button" class="bc-period-btn active" data-period="mois" onclick="switchChartPeriod(\'mois\')">6 mois</button>' +
+        '<button type="button" class="bc-period-btn" data-period="jour" onclick="switchChartPeriod(\'jour\')">7 jours</button>' +
+        '</div>' +
         '<div class="bc-hdr">' +
         '<div><div class="bc-amount">' + totalFmt + '<span class="bc-u">' + ctx.sym + '</span></div>' +
         '<div class="bc-delta-row"><span class="bc-delta up">↑ ' + deltaLabel + '</span></div></div>' +
         '<span style="font-size:.73rem;color:var(--text-2);">Ce mois · ' + new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + '</span>' +
         '</div><div class="bc-d3-wrap"></div></div>';
-      renderFinanceChartD3(el.querySelector('.bc-d3-wrap'), buildFinanceSeries(ctx.secteur, cur), ctx.sym);
+      renderFinanceChartD3(el.querySelector('.bc-d3-wrap'), buildFinanceSeries(ctx.secteur, cur), ctx.sym, tgt);
     } },
   'bento-actions': { id: 'bento-actions', title: 'Actions flash', size: 'L', category: 'core', source: 'static',
     keywords: ['actions flash', 'raccourcis', 'programmer intervention', 'envoyer lien paiement'],
@@ -1120,7 +1227,7 @@ window.WIDGET_CATALOG = {
         '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + ctx.sectorLabel + '</span></div>' +
         '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
         '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#00FF9D">Actif</span></div>' +
-        '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (ctx.biz.pays || '—') + ' · ' + ctx.sym + '</span></div>';
+        '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (ctx.biz.pays || 'Non renseigné') + ' · ' + ctx.sym + '</span></div>';
     } },
 
   'portal': { id: 'portal', title: 'Portail client', size: 'L', category: 'core', source: 'demo',
@@ -1157,7 +1264,14 @@ window.WIDGET_CATALOG = {
     render(ctx, el) {
       const RELANCE_LABELS = ['Amiable J+8', 'Relance 1 J+30', 'Relance 2 J+60', 'Mise en demeure J+90', 'Huissier / LRE'];
       const list = (ctx.creances || []).slice().sort((a, b) => b.relanceStep - a.relanceStep);
-      if (!list.length) { el.innerHTML = '<div class="tl-empty">✓ Aucune facture en retard.</div>'; return; }
+      if (!list.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+          'Rien en retard',
+          'Toutes vos factures sont à jour — aucune relance nécessaire pour le moment.'
+        );
+        return;
+      }
       const total = list.reduce((s, c) => s + c.montant, 0);
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
         list.slice(0, 3).map(c =>
@@ -1170,7 +1284,15 @@ window.WIDGET_CATALOG = {
     defaultVisible: false, defaultOrder: 21, link: { href: 'mutation-contextuelle.html', label: 'Pipeline complet →' },
     render(ctx, el) {
       const docs = ctx.mutationDocs || [];
-      if (!docs.length) { el.innerHTML = '<div class="tl-empty">Aucun dossier dans le pipeline. <a href="mutation-contextuelle.html" style="color:var(--emerald)">Créer un RDV →</a></div>'; return; }
+      if (!docs.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8L4 4z"/></svg>',
+          'Aucun dossier en cours',
+          'Suivez vos devis jusqu\'à l\'encaissement, du premier RDV au paiement.',
+          'Créer un RDV', 'mutation-contextuelle.html'
+        );
+        return;
+      }
       const STAGES = [['rdv', 'RDV'], ['devis', 'Devis'], ['facture', 'Facture'], ['encaisse', 'Encaissé']];
       el.innerHTML = '<div class="qa-grid" style="grid-template-columns:repeat(4,1fr);">' +
         STAGES.map(([key, label]) => {
@@ -1184,7 +1306,15 @@ window.WIDGET_CATALOG = {
     defaultVisible: false, defaultOrder: 22, link: { href: 'haversine-engine.html', label: 'Optimiser →' },
     render(ctx, el) {
       const pts = ctx.haversinePts || [];
-      if (!pts.length) { el.innerHTML = '<div class="tl-empty">Aucun point de tournée. <a href="haversine-engine.html" style="color:var(--emerald)">Ajouter des points →</a></div>'; return; }
+      if (!pts.length) {
+        el.innerHTML = buildRichEmptyHTML(
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
+          'Optimisez vos trajets du jour',
+          'Ajoutez vos arrêts et Seba calcule l\'ordre le plus rapide.',
+          'Ajouter des points', 'haversine-engine.html'
+        );
+        return;
+      }
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
         pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + p.nom + '</span></div>').join('');
     } },
@@ -1249,11 +1379,20 @@ window.WIDGET_CATALOG = {
     keywords: ['carte', 'map', 'tournée sur carte', 'localisation', 'itinéraire carte', 'géolocalisation'],
     defaultVisible: false, defaultOrder: 24, link: { href: 'planning.html', label: 'Planning →' },
     render(ctx, el) {
+      /* Audit 2.2 : renderGrid() vide et reconstruit tout #widget-grid à chaque
+         bascule du mode personnalisation/ajout de widget — sans ce nettoyage,
+         chaque re-rendu créait une NOUVELLE instance L.map() sans jamais
+         appeler .remove() sur la précédente (le conteneur DOM disparaissait,
+         mais les listeners window/tuiles Leaflet restaient actifs : fuite
+         mémoire cumulative). Une seule instance vivante à la fois. */
+      if (_lotCarteMapInstance) { try { _lotCarteMapInstance.remove(); } catch (e) {} _lotCarteMapInstance = null; }
       el.innerHTML = '<div class="widget-map" style="height:100%;min-height:150px;border-radius:0 0 var(--r) var(--r);overflow:hidden;"></div>';
       const box = el.querySelector('.widget-map');
       loadLeaflet().then(() => {
+        if (!document.body.contains(box)) return; // widget retiré/re-rendu avant la fin du chargement
         const jour = (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsJour : [];
         const map = L.map(box, { zoomControl: false, attributionControl: false }).setView([48.8566, 2.3522], 11);
+        _lotCarteMapInstance = map;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         const pts = jour.length ? jour : [{ clientName: 'Aucune intervention aujourd\'hui', time: '', service: '' }];
         const markers = [];

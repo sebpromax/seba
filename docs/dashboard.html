@@ -20,6 +20,13 @@
       --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
     }
     .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    /* Benchmark Vercel §3.1 : la classe .mono-num existait mais n'était appliquée
+       nulle part — seul le CA pinné en télémétrie avait sa propre règle locale
+       dupliquée. Applique désormais "chiffres en monospace façon terminal
+       financier" (charte Tactical Dark) à toute donnée numérique principale. */
+    .metric-value, .bc-amount, .goal-current, .serenity-score-num, .focus-score-num {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;
+    }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
     /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
     body::before {
@@ -47,7 +54,13 @@
     .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
 
     /* ── Main ── */
-    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; }
+    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; transition: padding-bottom .3s var(--ease-std); }
+    /* Zone d'exclusion dynamique (audit 1.2) : quand la pile Conscience Seba a au
+       moins une carte visible, on réserve de l'espace en bas du document pour que
+       le flux principal (Vecteurs d'Action, Welcome Checklist) ne se retrouve
+       jamais physiquement sous la pile fixe une fois la page scrollée en bas —
+       classe posée/retirée par updateAuraReserve() dans widgets.js. */
+    .main.has-aura-notifications { padding-bottom: 260px; }
 
     /* ── Header ── */
     .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
@@ -61,6 +74,13 @@
     .topbar-btn { width: 36px; height: 36px; border-radius: var(--rs); border: 1.5px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: border-color .15s; }
     .topbar-btn:hover { border-color: var(--ink); }
     .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--emerald); color: var(--on-emerald); font-size: .58rem; font-weight: 700; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .notif-wrap { position: relative; }
+    .notif-panel { width: 300px; max-width: 80vw; padding: 4px 0 6px; }
+    .notif-panel-head { font-size: .76rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; padding: 8px 14px 6px; }
+    .notif-item { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; border-radius: 6px; font-size: .84rem; color: var(--ink); }
+    .notif-item:hover { background: var(--bg); }
+    .notif-item .ni-sub { font-size: .74rem; color: var(--text-2); }
+    .notif-empty { padding: 16px 14px 18px; font-size: .84rem; color: var(--text-2); text-align: center; }
     .avatar-wrap { position: relative; }
     .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; color: var(--on-emerald); cursor: pointer; transition: opacity .15s; user-select: none; }
     .avatar:hover { opacity: .85; }
@@ -80,6 +100,12 @@
     .metric-delta { font-size: .73rem; font-weight: 500; }
     .metric-delta.up { color: var(--emerald); }
     .metric-delta.down { color: var(--amber); }
+
+    /* ── Eyebrows de section (benchmark Notion §4.1) — rendent visible, dans
+       l'UI elle-même (pas seulement dans les commentaires du code), la
+       distinction entre zones fixes (télémétrie, vecteurs d'action) et zone
+       modulable (grille de widgets). Discrets, pas des titres de module. ── */
+    .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
 
     /* ── Cockpit : zone télémétrie fixe (TD-3) — CA / Serenity Score / Missions,
        jamais déplaçable, toujours dans cet ordre ── */
@@ -314,12 +340,19 @@
        pas de recouvrement possible). Au-delà de 840px (TD-3) : vrai tiroir
        à DROITE de l'écran ("Tiroir Droit" du cockpit), plutôt que collée
        au bord de la sidebar comme avant. */
-    .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+    /* max-height + overflow : empêche la pile de grandir sans limite et de recouvrir
+       le flux principal (Vecteurs d'Action, Welcome Checklist) — audit 1.2. La pile
+       elle-même laisse passer les clics (pointer-events:none) ; seules les cartes
+       réellement visibles interceptent les clics qui leur sont destinés. */
+    .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 300px; max-height: 46vh; overflow: hidden; pointer-events: none; }
     @media (min-width: 841px) { .aura-stack { left: auto; right: 24px; } }
     .aura-stack-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 0 2px 2px; display: none; }
     @media (min-width: 841px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
+    /* Mobile : encore plus contenue, pour ne jamais masquer la Welcome Checklist
+       (avant ce correctif, la pile recouvrait ~60% de la hauteur d'écran). */
+    @media (max-width: 840px) { .aura-stack { max-height: 34vh; max-width: 260px; } }
     .aura-card {
-      position: relative; padding: 14px 16px;
+      position: relative; padding: 14px 16px; pointer-events: auto;
       background: var(--glass-bg);
       backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
       border: 1px solid var(--border);
@@ -349,6 +382,13 @@
     .widget-shell[data-serenity-state="alerte"]:hover { border-color: rgba(139,30,30,.55) !important; box-shadow: 0 0 0 1px rgba(139,30,30,.32), 0 4px 24px rgba(139,30,30,.18); }
 
     /* ── Bento Cockpit + Flash ── */
+    /* Sélecteur de période (benchmark Shopify §7.1) — zoom temporel sur la même
+       courbe, pas un changement de vue : "7 jours" réutilise buildHorizonSeries
+       (déjà calculée pour les Lignes d'Horizon), "6 mois" reste buildFinanceSeries. */
+    .bc-period-row{display:flex;gap:6px;margin-bottom:8px;}
+    .bc-period-btn{padding:4px 10px;border-radius:20px;background:var(--bg);border:1.5px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .15s,color .15s,background .15s;}
+    .bc-period-btn:hover{border-color:var(--emerald);color:var(--emerald);}
+    .bc-period-btn.active{background:rgba(0,255,157,.12);border-color:var(--emerald);color:var(--emerald);}
     .bc-pad{padding:16px 18px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
     .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
     .bc-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
@@ -361,11 +401,23 @@
     .bc-svg-wrap{flex:1;margin-top:12px;position:relative;}
     .bc-svg{width:100%;display:block;}
     .bc-months{display:flex;justify-content:space-between;padding-top:5px;font-size:.65rem;color:var(--text-2);}
-    .bc-empty-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 0 0;}
-    .bc-empty-ico{width:48px;height:48px;border-radius:12px;background:rgba(0,255,157,.08);border:1.5px solid rgba(0,255,157,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-    .bc-empty-title{font-size:1rem;font-weight:700;margin-bottom:5px;}
-    .bc-empty-sub{font-size:.82rem;color:var(--text-2);line-height:1.55;margin-bottom:18px;max-width:240px;}
-    .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+    /* QA 2026-07-08 : buildRichEmptyHTML() (widgets.js, benchmark Airbnb §5.1) est
+       injecté directement dans .widget-body pour lot-tournee/lot-pipeline/lot-impayes
+       — sans le wrapper .bc-pad (flex + height:100%) dont bento-chart profite pour
+       centrer son propre état vide. Résultat mesuré (Puppeteer, boundingClientRect) :
+       sur widget L/XL, flex:1 n'a aucun ancêtre flex (.widget-body n'est display:flex
+       que pour S/M) donc justify-content:center ne centre rien ; et même là où
+       .widget-body EST flex (M, ex. lot-impayes), le contenu (icône 48px + titre +
+       sous-titre) réclamait ~174px dans une boîte de ~94px, débordant de 80px.
+       Correctifs : height:100% (fonctionne que le parent soit flex ou non, tant
+       qu'il a une hauteur définie — .widget-body en a toujours une via son propre
+       flex:1) + gabarit sensiblement plus compact pour tenir dans les tailles M/L. */
+    .bc-empty-body{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px 0 0;}
+    .bc-empty-ico{width:34px;height:34px;border-radius:9px;background:rgba(0,255,157,.08);border:1.5px solid rgba(0,255,157,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+    .bc-empty-ico svg{width:16px;height:16px;}
+    .bc-empty-title{font-size:.88rem;font-weight:700;margin-bottom:4px;}
+    .bc-empty-sub{font-size:.78rem;color:var(--text-2);line-height:1.4;margin-bottom:10px;max-width:360px;}
+    .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
     .bc-empty-btn:hover{opacity:.88;}
     .bento-flash{display:flex;flex-direction:column;gap:10px;}
     .flash-btn{flex:1;display:flex;align-items:center;gap:14px;padding:18px 18px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,background .15s;text-decoration:none;color:var(--ink);font-family:'Inter',sans-serif;}
@@ -701,9 +753,15 @@
           <button class="topbar-btn" title="Activer les notifications push" aria-label="Activer les notifications push" onclick="enablePushNotifications()">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/><circle cx="12.5" cy="3.5" r="2.5" fill="var(--emerald)" stroke="none"/></svg>
           </button>
-          <div class="topbar-btn" title="Notifications" role="button" aria-label="Notifications (2 non lues)" tabindex="0">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
-            <div class="notif-badge">2</div>
+          <div class="notif-wrap">
+            <button class="topbar-btn" id="notif-btn" title="Notifications" aria-label="Notifications" aria-haspopup="true" onclick="toggleNotifPanel(event)">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
+              <div class="notif-badge" id="notif-badge" style="display:none;">0</div>
+            </button>
+            <div class="user-menu notif-panel" id="notif-panel">
+              <div class="notif-panel-head">Notifications</div>
+              <div id="notif-panel-body"></div>
+            </div>
           </div>
           <div class="avatar-wrap">
             <div class="avatar" id="avatar" style="background:var(--emerald);">—</div>
@@ -753,12 +811,15 @@
 
       <!-- ── Zone télémétrie (Cockpit, TD-3) — CA / Serenity Score / Missions,
            ancrée, jamais déplaçable ── -->
+      <div class="zone-eyebrow">Vue d'ensemble</div>
       <div class="cockpit-telemetry" id="cockpit-telemetry"></div>
 
       <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
+      <div class="zone-eyebrow">Votre espace de travail</div>
       <div class="widget-grid" id="widget-grid"></div>
 
       <!-- ── Vecteurs d'action (Bible II.4) — gains a valider, pas des taches ── -->
+      <div class="zone-eyebrow">À traiter maintenant</div>
       <section id="action-stream" class="action-stream"></section>
 
       <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
@@ -777,9 +838,9 @@
 <!-- FAB + menu -->
 <button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>
 <div class="fab-menu" id="fab-menu">
-  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client</a>
-  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis</a>
-  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention</a>
+  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
+  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
+  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention<span class="pal-key" style="margin-left:auto;">3</span></a>
 </div>
 
 <!-- Cmd+K palette -->
@@ -853,6 +914,7 @@
     <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
     <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
     <div class="shortcut-row"><span>Mode Focus</span><span class="pal-key">F</span></div>
+    <div class="shortcut-row"><span>Actions rapides</span><span class="pal-key">C</span></div>
     <div class="shortcut-row"><span>Afficher cette aide</span><span class="pal-key">?</span></div>
     <div class="shortcut-row"><span>Fermer une fenêtre</span><span class="pal-key">Esc</span></div>
   </div>
@@ -1266,9 +1328,13 @@
     renderDashboard(biz);
     /* Re-rendu quand les données changent dans un autre onglet */
     if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
-    /* Conscience Seba (Bible II.7) — une seule fois par chargement, pas à
-       chaque re-rendu (sinon les mêmes prédictions ressurgiraient en boucle). */
-    if (typeof triggerAuraDemo === 'function') triggerAuraDemo();
+    /* Conscience Seba (Bible II.7) — les vrais déclencheurs (maybeTriggerAIOnSerenity/
+       maybeTriggerAIOnHorizon, dans widgets.js) restent actifs et se déclenchent sur
+       de vraies conditions. triggerAuraDemo() était un scénario de test hardcodé
+       ("client X") qui s'affichait à CHAQUE chargement pour TOUS les utilisateurs —
+       retiré (audit 2026-07-07, §1.1). La fonction reste définie dans widgets.js
+       pour permettre un déclenchement manuel en QA (scripts/qa-dashboard-full.js
+       l'appelle directement via page.evaluate si besoin). */
     showCalibration(biz);
   }
 
@@ -1309,12 +1375,14 @@
 
     /* Widgets */
     _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
+    window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
     if (typeof renderCockpitTelemetry === 'function') renderCockpitTelemetry(_ctx);
     renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);
     if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
     if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
+    if (typeof renderNotifPanel === 'function') renderNotifPanel(_ctx);
     setTimeout(animateMetrics, 80);
   }
 
@@ -1385,15 +1453,21 @@
       });
     });
   }
+  let _customizeModeBeforeDrawer = false;
   function openExtDrawer() {
     refreshExtDrawer();
     document.getElementById('ext-drawer-overlay').classList.add('open');
     document.getElementById('ext-drawer').classList.add('open');
+    _customizeModeBeforeDrawer = _customizeMode; // état à restaurer symétriquement à la fermeture (audit 1.3)
     if (!_customizeMode) toggleCustomizeMode(); // la nouvelle vignette doit tout de suite montrer sa poignée (IV.8)
   }
   function closeExtDrawer() {
     document.getElementById('ext-drawer-overlay').classList.remove('open');
     document.getElementById('ext-drawer').classList.remove('open');
+    /* Ne restaure le mode personnalisation à son état d'avant-ouverture que s'il
+       avait été activé automatiquement par openExtDrawer() — si l'utilisateur l'a
+       activé lui-même AVANT d'ouvrir le tiroir, on ne le désactive pas dans son dos. */
+    if (_customizeMode && !_customizeModeBeforeDrawer) toggleCustomizeMode();
   }
   (function initExtDropZone() {
     const grid = document.getElementById('widget-grid');
@@ -1598,22 +1672,31 @@
     });
   }
 
+  /* Audit 2.1 : cette cérémonie bloquait toute l'interface (z-index:900,
+     inset:0) pendant ~4.7s minimum sans échappatoire, ignorait
+     prefers-reduced-motion, et le fetch du globe (jsdelivr) n'avait aucun
+     timeout — un CDN lent pouvait geler l'accès au dashboard à la toute
+     première connexion. Correctifs : reduced-motion saute directement à
+     l'état verrouillé (pas de rotation JS pilotée par rAF), timeout de
+     3.5s sur le fetch (Promise.race), et clic/Échap ferment immédiatement. */
   async function showCalibration(biz) {
     try {
       if (localStorage.getItem('seba_calibration_seen') === '1') return;
       if (typeof d3 === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       await loadTopojsonScript();
       if (typeof topojson === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
 
       const code = (biz && biz.paysCode) || 'FR';
       const country = CALIB_COUNTRIES[code] || CALIB_COUNTRIES.FR;
+      const target = [-country.lng, -country.lat, 0];
       const overlay = document.getElementById('calib-overlay');
       const caption = document.getElementById('calib-caption');
       overlay.classList.add('open');
       requestAnimationFrame(() => overlay.classList.add('visible'));
 
       const W = 340, H = 340, R = 155;
-      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate([0, -25, 0]);
+      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate(reduceMotion ? target : [0, -25, 0]);
       const gpath = d3.geoPath().projection(proj);
       const graticuleDatum = d3.geoGraticule()();
       let rot = [0, -25, 0];
@@ -1630,7 +1713,12 @@
       svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', '#091524');
       const gratPath = svgSel.append('path').datum(graticuleDatum).attr('fill', 'none').attr('stroke', '#1a3050').attr('stroke-width', 0.35).attr('d', gpath).attr('opacity', 0.5);
 
-      const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()).catch(() => null);
+      /* Timeout de sécurité : jamais plus de 3.5s à attendre le CDN avant
+         d'abandonner proprement la cérémonie (le dashboard reste utilisable). */
+      const world = await Promise.race([
+        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
+      ]).catch(() => null);
       if (!world) { overlay.classList.remove('open', 'visible'); localStorage.setItem('seba_calibration_seen', '1'); return; }
       const countries = topojson.feature(world, world.objects.countries);
       const pathsG = svgSel.append('g');
@@ -1639,10 +1727,50 @@
       svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', 'none').attr('stroke', '#1c2d50').attr('stroke-width', 1.2);
 
       function render() { pathsG.selectAll('path').attr('d', gpath); gratPath.attr('d', gpath); }
+      function paintLocked() {
+        pathsG.selectAll('path')
+          .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
+          .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
+        caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
+        caption.classList.add('locked');
+      }
 
-      let spinning = true;
+      let cancelled = false;
+      let spinning = !reduceMotion; // reduced-motion : pas de boucle de rotation, déjà positionné sur target
+      function closeCalibration() {
+        document.removeEventListener('keydown', onKeyDown);
+        overlay.removeEventListener('click', onSkip);
+        overlay.classList.remove('visible');
+        setTimeout(() => overlay.classList.remove('open'), reduceMotion ? 0 : 650);
+      }
+      /* Échap ou clic n'importe où sur l'overlay = passer directement à l'état
+         verrouillé puis fermer, quel que soit le point de la cérémonie. */
+      function onSkip() {
+        if (cancelled) return;
+        cancelled = true;
+        spinning = false;
+        proj.rotate(target);
+        render();
+        paintLocked();
+        closeCalibration();
+      }
+      function onKeyDown(e) { if (e.key === 'Escape') onSkip(); }
+      document.addEventListener('keydown', onKeyDown);
+      overlay.addEventListener('click', onSkip);
+
+      localStorage.setItem('seba_calibration_seen', '1');
+
+      if (reduceMotion) {
+        /* Pas de rotation pilotée par rAF : l'état verrouillé est déjà la
+           position de départ du globe (proj.rotate(target) ci-dessus). */
+        cancelled = true;
+        paintLocked();
+        setTimeout(closeCalibration, 700);
+        return;
+      }
+
       function spinLoop() {
-        if (!spinning) return;
+        if (!spinning || cancelled) return;
         rot[0] += 0.5;
         proj.rotate(rot);
         render();
@@ -1652,32 +1780,24 @@
       caption.textContent = 'Localisation de votre territoire…';
 
       setTimeout(() => {
+        if (cancelled) return;
         spinning = false;
-        const target = [-country.lng, -country.lat, 0];
         const from = proj.rotate().slice();
         const interp = d3.interpolate(from, target);
         const ease = d3.easeCubicInOut;
         d3.timer(function (elapsed) {
+          if (cancelled) return true;
           proj.rotate(interp(ease(Math.min(elapsed / 980, 1))));
           render();
           if (elapsed >= 980) {
-            pathsG.selectAll('path')
-              .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
-              .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
-            caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
-            caption.classList.add('locked');
+            paintLocked();
             document.getElementById('calib-flash').classList.add('fire');
             AudioUI.playComplete();
-            setTimeout(() => {
-              overlay.classList.remove('visible');
-              setTimeout(() => overlay.classList.remove('open'), 650);
-            }, 1300);
+            setTimeout(() => { if (!cancelled) closeCalibration(); }, 1300);
             return true;
           }
         });
       }, 1800);
-
-      localStorage.setItem('seba_calibration_seen', '1');
     } catch (e) { /* jamais bloquant : en cas d'erreur, le dashboard reste utilisable normalement */ }
   }
 
@@ -1784,8 +1904,44 @@
   ═══════════════════════════════════════════════════════ */
   const avatarEl  = document.getElementById('avatar');
   const menuEl    = document.getElementById('user-menu');
-  avatarEl.addEventListener('click', e => { e.stopPropagation(); menuEl.classList.toggle('open'); });
+  avatarEl.addEventListener('click', e => { e.stopPropagation(); document.getElementById('notif-panel').classList.remove('open'); menuEl.classList.toggle('open'); });
   document.addEventListener('click', () => menuEl.classList.remove('open'));
+
+  /* ═══════════════════════════════════════════════════════
+     NOTIFICATIONS (audit 1.4) — le bouton cloche était mort (aucun
+     handler, badge "2" figé en dur). Panneau réel, alimenté par les
+     mêmes créances en retard que les Vecteurs d'Action/lot-impayes —
+     pas une nouvelle source de données inventée.
+  ═══════════════════════════════════════════════════════ */
+  function toggleNotifPanel(e) {
+    if (e) e.stopPropagation();
+    menuEl.classList.remove('open');
+    document.getElementById('notif-panel').classList.toggle('open');
+  }
+  window.toggleNotifPanel = toggleNotifPanel;
+  document.addEventListener('click', () => document.getElementById('notif-panel').classList.remove('open'));
+
+  function renderNotifPanel(ctx) {
+    const badge = document.getElementById('notif-badge');
+    const body = document.getElementById('notif-panel-body');
+    if (!badge || !body || !ctx) return;
+    const late = (ctx.creances || []);
+    if (!late.length) {
+      badge.style.display = 'none';
+      body.innerHTML = '<div class="notif-empty">Rien à signaler — tout est à jour.</div>';
+      return;
+    }
+    badge.style.display = 'flex';
+    badge.textContent = late.length > 9 ? '9+' : String(late.length);
+    const notifBtn = document.getElementById('notif-btn');
+    if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications (' + late.length + ' non lue' + (late.length > 1 ? 's' : '') + ')');
+    body.innerHTML = late.slice(0, 5).map(c =>
+      '<a href="contentieux-recouvrement.html" class="notif-item">' +
+        '<span>Facture en retard — ' + c.client + '</span>' +
+        '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + ctx.sym + ' en attente</span>' +
+      '</a>'
+    ).join('');
+  }
 
   /* ═══════════════════════════════════════════════════════
      WELCOME CHECKLIST
@@ -2011,10 +2167,21 @@
     const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
     if (!typing && (e.key === 'e' || e.key === 'E')) { toggleCustomizeMode(); return; }
     if (!typing && (e.key === 'f' || e.key === 'F')) { toggleFocusMode(); return; }
+    /* Benchmark Linear §2.1/2.2 : le FAB "Actions rapides" n'était accessible
+       qu'à la souris/tactile — C l'ouvre/ferme, et 1/2/3 vont directement à
+       chaque action une fois le menu ouvert (cohérent avec les badges .pal-key
+       posés sur chaque .fab-item). */
+    if (!typing && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); toggleFab(); return; }
+    if (!typing && _fabOpen && /^[123]$/.test(e.key)) {
+      const links = ['clients.html', 'devis-nouveau.html', 'planning.html'];
+      window.location.href = links[+e.key - 1];
+      return;
+    }
     if (!typing && e.key === '?') { openShortcuts(); return; }
 
     if (e.key === 'Escape') {
       if (_focusActive) toggleFocusMode();
+      if (_fabOpen) toggleFab();
       closePaletteForce();
       closeAiBar();
       closeCustomizePanel();
