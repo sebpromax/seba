@@ -93,6 +93,8 @@
     .layout{grid-template-columns:1fr;}
     .team-grid{grid-template-columns:repeat(2,1fr);}
     .main{padding:24px 20px;}
+    .topbar-right{flex-wrap:wrap;justify-content:flex-end;}
+    .topbar-right .btn-em{width:auto!important;max-width:none!important;}
     .ss-panel{width:100vw;}
   }
   @media (max-width:620px){
@@ -212,7 +214,7 @@
       const slug = encodeURIComponent(e.prenom + ' ' + e.nom);
       const card = document.createElement('div');
       card.className = 'member-card';
-      card.onclick = () => location.href = 'employe-fiche.html?nom=' + slug;
+      card.onclick = () => location.href = 'employe-fiche.html?nom=' + slug + '&id=' + encodeURIComponent(e.id);
       card.innerHTML =
         '<div class="member-top">' +
           '<div class="member-avatar">' + initials(e) + '</div>' +
