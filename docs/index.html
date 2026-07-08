@@ -6,7 +6,7 @@
 <script>if(typeof extDomain==='undefined')window.extDomain='';</script>
 <title>Seba — Développez votre activité en toute confiance.</title>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
-<meta name="description" content="Seba est le système d'exploitation tout-en-un pour la planification, les devis, la facturation et la performance financière des entreprises de services.">
+<meta name="description" content="Seba centralise la planification, les devis, la facturation et le suivi financier des entreprises de services, en un seul espace de travail.">
 <style>
   :root{
     /* ── Design system : couleurs ── */
@@ -56,8 +56,9 @@
   }
 
   .headline-gradient{
-    background:linear-gradient(135deg,#fff 40%,rgba(0,255,136,.7) 100%);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    /* Degrade retire (audit 2026-07-08) : le vert doit rester reserve aux
+       statuts/CTA, pas decorer le texte de titre. Blanc plein a la place. */
+    color:#fff;
   }
 
   .badge-glow{
@@ -239,9 +240,9 @@
   .ticker-track:hover{animation-play-state:paused;}
 
   .hero-glow{
-    position:absolute;top:0;left:50%;transform:translateX(-50%);
-    width:min(800px,100vw);height:500px;pointer-events:none;
-    background:radial-gradient(ellipse at 50% -20%,rgba(0,255,136,.12) 0%,transparent 70%);
+    /* Halo retire (audit 2026-07-08) : lisait "glow tech/hype" plutot
+       qu'institutionnel pour une cible PME traditionnelle. */
+    display:none;
   }
 
   .bento-white{
@@ -352,7 +353,7 @@
   <div class="hero-glow"></div>
   <div style="position:relative;z-index:1;text-align:center;width:min(760px,90%);margin:0 auto;">
     <h1 style="font-size:clamp(2.4rem,6.5vw,4.6rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px;">
-      <span class="headline-gradient">Le système d'exploitation<br>des entreprises de services.</span>
+      <span class="headline-gradient">Toute votre entreprise de service,<br>pilotée depuis un seul endroit.</span>
     </h1>
     <p style="font-size:1.1rem;color:#94A3B8;font-weight:400;line-height:1.65;letter-spacing:-0.01em;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto;">
       Centralisez vos opérations, finances et croissance. Remplacez vos outils dispersés par un seul espace de travail intelligent.
@@ -406,7 +407,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <div class="proc-num" style="background:rgba(0,255,136,.15);border-color:#00ff88;">⚡</div>
       </div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;color:#00ff88;">C'est parti.</div>
+      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;color:var(--em);">Opérationnel.</div>
       <div style="color:#94A3B8;font-size:.83rem;line-height:1.6;">Vos processus tournent en arrière-plan. Concentrez-vous sur votre métier.</div>
     </div>
   </div>

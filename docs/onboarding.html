@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<!-- D3/TopoJSON/GSAP are heavy — load on desktop only via dynamic loader -->
+<!-- GSAP is heavy — load on desktop only via dynamic loader.
+     D3/TopoJSON retires (audit 2026-07-08) : ne servaient qu'au globe 3D
+     de l'ecran d'accueil, remplace par un panneau statique. -->
 <script>
   (function(){
     function loadScript(src, cb){ var s=document.createElement('script'); s.src=src; s.defer=true; s.onload=cb; s.onerror=cb; document.head.appendChild(s); }
     function isDesktopReady(){ var isPhone = document.body && document.body.classList.contains('phone-mode'); return !isPhone && window.innerWidth >= 880; }
     function maybeLoad(){ if (!isDesktopReady()) return; if (window.__seba_assets_loaded) return; window.__seba_assets_loaded = true;
-      loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js', function(){
-        loadScript('https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js', function(){ if (typeof window.initGlobe === 'function') try{ window.initGlobe(); }catch(e){console.error(e);} });
-      });
       loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js');
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', maybeLoad); else maybeLoad();
@@ -86,8 +85,13 @@ a{color:inherit;text-decoration:none;}
 
 .ob-layout{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px);}
 .ob-left{background:var(--ink);position:relative;overflow:hidden;}
-.ob-right{background:radial-gradient(ellipse at 50% 48%,#111a2e 0%,#060913 72%);display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;}
-.ob-right::before{content:'';position:absolute;width:560px;height:560px;background:radial-gradient(circle,rgba(0,255,136,.065) 0%,transparent 60%);pointer-events:none;}
+.ob-right{background:var(--ink-r);display:flex;align-items:center;justify-content:center;position:sticky;top:60px;height:calc(100vh - 60px);overflow:hidden;}
+/* Halo retire (audit 2026-07-08) : fond plat, plus de degrade/glow decoratif. */
+
+.ob-static-panel{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;max-width:340px;padding:0 24px;}
+.ob-static-mark{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;color:#fff;}
+.ob-static-line{width:40px;height:2px;background:var(--em);}
+.ob-static-caption{font-size:.9rem;line-height:1.6;color:var(--t2);}
 
 .ob-progress{position:absolute;top:32px;left:60px;right:60px;z-index:10;display:none;align-items:center;gap:14px;}
 .ob-progress.show{display:flex;}
@@ -671,11 +675,11 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
       <div class="job-tags-wrap" id="job-tags-wrap" style="display:none;">
         <div class="job-tags" id="job-tags"></div>
-        <div class="polyvalent-banner" id="polyvalent-banner">💡 Profil polyvalent — vos prestations combineront plusieurs expertises.</div>
+        <div class="polyvalent-banner" id="polyvalent-banner">Profil polyvalent — vos prestations combineront plusieurs expertises.</div>
       </div>
       <div class="sr-wrap">
         <div class="sector-reaction" id="sector-reaction">
-          <span id="reaction-text">Parfait !</span>
+          <span id="reaction-text">Secteur sélectionné.</span>
         </div>
       </div>
 
@@ -721,7 +725,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
     <!-- 4 BAPTÊME — Nom uniquement -->
     <div class="step-container" id="step-4">
       <div class="step-eyebrow">Votre identité</div>
-      <h2 class="step-title">Donnez un nom à votre aventure</h2>
+      <h2 class="step-title">Nommez votre entreprise</h2>
       <p class="step-sub">Il apparaîtra sur vos devis et votre vitrine publique.</p>
 
       <div class="field" style="max-width:420px;">
@@ -744,14 +748,14 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
     <!-- 5 SIGNATURE — Slogan + Description + Couleur -->
     <div class="step-container" id="step-5">
       <div class="step-eyebrow">Votre signature</div>
-      <h2 class="step-title">Votre voix, votre univers</h2>
+      <h2 class="step-title">Identité visuelle</h2>
       <p class="step-sub">Un slogan accrocheur et une description juste — les clients décident en 3 secondes.</p>
 
       <div class="field suggest-field">
         <label for="inp-welcome">Slogan / Message d'accueil</label>
         <div class="suggest-wrap">
           <input type="text" id="inp-welcome" placeholder="ex. Votre maison, propre et sereine." maxlength="80" oninput="updatePreview()">
-          <button class="smart-suggest-btn" onclick="openSuggest('inp-welcome','slogan')" title="✨ Suggestions automatiques">✨</button>
+          <button class="smart-suggest-btn" onclick="openSuggest('inp-welcome','slogan')" title="Suggestions automatiques">✨</button>
         </div>
         <div class="suggest-dropdown" id="suggest-inp-welcome" style="display:none;"></div>
       </div>
@@ -759,14 +763,14 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
         <label for="inp-desc">Description de votre activité</label>
         <div class="suggest-wrap" style="align-items:flex-start;">
           <textarea id="inp-desc" rows="3" placeholder="Décrivez votre activité en quelques phrases…" maxlength="220" oninput="S.desc=this.value;updatePreview()" style="flex:1;resize:none;height:72px;padding:10px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;font-family:'Inter',sans-serif;font-size:.88rem;color:#fff;outline:none;transition:border-color .2s;"></textarea>
-          <button class="smart-suggest-btn" onclick="openSuggest('inp-desc','description')" title="✨ Suggestions automatiques" style="align-self:flex-start;margin-top:0;">✨</button>
+          <button class="smart-suggest-btn" onclick="openSuggest('inp-desc','description')" title="Suggestions automatiques" style="align-self:flex-start;margin-top:0;">✨</button>
         </div>
         <div class="suggest-dropdown" id="suggest-inp-desc" style="display:none;"></div>
       </div>
       <div class="field">
         <label>Couleur principale</label>
         <div class="swatches" id="swatches"></div>
-        <div class="field-hint" style="margin-top:10px;">✨ Cette couleur sera l'identité visuelle de votre vitrine et de votre tableau de bord. Vous pourrez la modifier à tout moment.</div>
+        <div class="field-hint" style="margin-top:10px;">Cette couleur sera utilisée sur votre vitrine et votre tableau de bord. Modifiable à tout moment.</div>
       </div>
 
       <div class="nav-btns">
@@ -787,7 +791,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(5,false)">← Retour</button>
-        <p class="reassurance-hint"><em>✨</em> Configuration rapide. Tarifs et statut juridique modifiables à tout moment depuis votre tableau de bord.</p>
+        <p class="reassurance-hint">Tarifs et statut juridique modifiables à tout moment depuis votre tableau de bord.</p>
         <button class="btn btn-em"    onclick="validateStep(6)">Continuer →</button>
       </div>
     </div>
@@ -800,7 +804,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
       <!-- Bloc 1 : Horaires standards -->
       <div class="horaires-bloc">
-        <div class="horaires-label">🏢 Vos horaires d'ouverture classiques</div>
+        <div class="horaires-label">Horaires d'ouverture</div>
         <div class="horaire-day-grid" id="h-days-std"></div>
         <div class="horaires-times">
           <span>De</span>
@@ -817,7 +821,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
       </div>
       <div id="bloc-horaires-urgences" style="display:none;">
         <div class="horaires-bloc fade-in-smooth">
-          <div class="horaires-label">🚨 Plage d'urgence indépendante</div>
+          <div class="horaires-label">Plage d'urgence indépendante</div>
           <div class="horaire-day-grid" id="h-days-urg"></div>
           <div class="horaires-times">
             <span>De</span>
@@ -830,15 +834,15 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
       <div class="nav-btns">
         <button class="btn btn-ghost" onclick="goStep(6,false)">← Retour</button>
-        <p class="reassurance-hint"><em>✨</em> Horaires modifiables à tout moment depuis votre tableau de bord.</p>
+        <p class="reassurance-hint">Horaires modifiables à tout moment depuis votre tableau de bord.</p>
         <button class="btn btn-em"    onclick="validateStep(7)">Continuer →</button>
       </div>
     </div>
 
     <!-- 8 APOTHÉOSE — Compte -->
     <div class="step-container" id="step-8">
-      <div class="step-eyebrow">Dernière étape ✨</div>
-      <h2 class="step-title">Votre espace est prêt à naître</h2>
+      <div class="step-eyebrow">Dernière étape</div>
+      <h2 class="step-title">Créez votre accès</h2>
       <p class="step-sub">Créez votre accès sécurisé pour déployer votre vitrine professionnelle.</p>
 
       <div class="field">
@@ -876,12 +880,12 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
       <p class="s8-legal" style="font-size:.72rem;color:rgba(197,208,230,.3);">En créant votre compte, vous acceptez nos <a href="#" style="color:rgba(0,255,136,.45);">conditions d'utilisation</a>.</p>
 
       <div class="s8-info" style="background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.12);border-radius:10px;color:rgba(197,208,230,.5);line-height:1.5;">
-        <em style="color:rgba(0,255,136,.55);font-style:normal;">✨</em> Statut juridique, SIRET et paramètres fiscaux configurables depuis votre tableau de bord.
+        Statut juridique, SIRET et paramètres fiscaux configurables depuis votre tableau de bord.
       </div>
 
       <div class="nav-btns">
         <button id="btn-retour" class="btn btn-ghost" onclick="goStep(7,false)">← Retour</button>
-        <button id="btn-creer" class="btn btn-em" onclick="validateStep(8)" style="font-size:.95rem;height:46px;padding:0 28px;">🚀 Créer mon espace →</button>
+        <button id="btn-creer" class="btn btn-em" onclick="validateStep(8)" style="font-size:.95rem;height:46px;padding:0 28px;">Créer mon espace →</button>
       </div>
     </div>
 
@@ -906,7 +910,7 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
     <!-- 10 RÉSUMÉ -->
     <div class="step-container" id="step-10">
       <div class="step-eyebrow">Compte créé</div>
-      <h2 class="step-title">C'est parti !</h2>
+      <h2 class="step-title">Votre espace est prêt</h2>
       <p class="step-sub" id="s9-sub">Votre espace Seba est configuré et prêt à l'emploi.</p>
 
       <div class="summary-ticket">
@@ -944,10 +948,16 @@ input:focus,select:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(0,255,
 
 <!-- RIGHT — globe (toujours présent) + bento (steps 2+) -->
 <div class="ob-right">
-  <!-- Globe panel — visible steps 0-1 plein format, mini steps 2+ -->
+  <!-- Panneau statique — visible steps 0-1 plein format, mini steps 2+.
+       Remplace un globe 3D generique (audit 2026-07-08 : imagerie "startup
+       tech mondiale" sans rapport avec le metier, jugee trop "gadget"). -->
   <div class="ob-globe-panel" id="ob-globe-panel">
     <div class="globe-wrap" id="globe-wrap">
-      <svg id="globe-canvas" width="540" height="540" style="display:block;border-radius:50%;"></svg>
+      <div class="ob-static-panel">
+        <div class="ob-static-mark">Seba</div>
+        <div class="ob-static-line"></div>
+        <p class="ob-static-caption">Gestion de la relation client, de la facturation et du planning en un seul espace de travail.</p>
+      </div>
     </div>
   </div>
   <!-- Profil Public Premium — visible steps 2+ -->
@@ -1283,7 +1293,7 @@ function openSuggest(fieldId,type){
   const list=(SMART_SUGGEST[type]||{})[nicheKey]||(SMART_SUGGEST[type]||{})[sector]||(SMART_SUGGEST[type]||{})['autre']||[];
   const dd=document.getElementById('suggest-'+fieldId);
   if(!dd) return;
-  dd.innerHTML='<div class="suggest-hdr">✨ Suggestions pour votre activité</div>'+
+  dd.innerHTML='<div class="suggest-hdr">Suggestions pour votre activité</div>'+
     list.map(t=>'<button class="suggest-item" onclick="applySuggest(\''+fieldId+'\',this.getAttribute(\'data-t\'))" data-t="'+t.replace(/'/g,'&#39;')+'">'+t+'</button>').join('');
   dd.style.display='block';
   setTimeout(()=>document.addEventListener('click',_suggestOutside,{once:true,capture:true}),10);
@@ -1502,7 +1512,7 @@ const COUNTRIES=[
   {code:'US',name:'🇺🇸 États-Unis',         devise:'Dollar américain',sym:'$',   lang:'en',zone:'US', tz:'America/New_York',      dial:'+1',  lat:37.1, lng:-95.7},
 ];
 const COLORS=['#00ff88','#3D2645','#0066FF','#FF6B35','#8B5CF6','#EF4444','#F59E0B','#10B981'];
-const SC_REACT={menage:'Parfait pour le ménage !',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Super pour le jardinage !',maintenance:'Très bien pour la maintenance !',pressing:'Parfait pour le pressing !',beaute:'Idéal pour la beauté à domicile !',animaux:"Super pour les soins d'animaux !",demenagement:'Parfait pour le déménagement !',autre:'On adapte tout à votre activité !',conciergerie:'Idéal pour la location courte durée !',conciergerieCopro:'Parfait pour la copropriété !',conciergerieEntreprise:"Très bien pour la conciergerie d'entreprise !"};
+const SC_REACT={menage:'Secteur : Ménage',__conciergerie__:'Conciergerie — précisez votre type.',jardinage:'Secteur : Jardinage',maintenance:'Secteur : Maintenance',pressing:'Secteur : Pressing',beaute:'Secteur : Beauté à domicile',animaux:"Secteur : Soins d'animaux",demenagement:'Secteur : Déménagement',autre:'Secteur personnalisé',conciergerie:'Secteur : Location courte durée',conciergerieCopro:'Secteur : Copropriété',conciergerieEntreprise:"Secteur : Conciergerie d'entreprise"};
 const SECTOR2=[{key:'menage',label:'Ménage & nettoyage'},{key:'__conciergerie__',label:'Conciergerie'},{key:'jardinage',label:'Jardinage'},{key:'maintenance',label:'Maintenance'},{key:'pressing',label:'Pressing'},{key:'beaute',label:'Beauté à domicile'},{key:'animaux',label:'Animaux de compagnie'},{key:'demenagement',label:'Déménagement'},{key:'autre',label:'Autre activité'}];
 const PROG_LABELS={1:'Votre pays',2:'Votre vocation',3:'Votre niche',4:'Votre identité',5:'Votre signature',6:'Vos prestations',7:'Vos horaires',8:'Votre compte',9:'Déploiement',10:'Compte créé'};
 
@@ -2104,7 +2114,7 @@ function renderSearchResults(jobs,query){
     const cb=document.createElement('button');
     cb.className='search-create';
     cb.setAttribute('tabindex','0');
-    cb.innerHTML='✨ &nbsp;Créer «&nbsp;'+query+'&nbsp;»';
+    cb.innerHTML='Créer «&nbsp;'+query+'&nbsp;»';
     cb.addEventListener('click',()=>pickCustomSector(query));
     res.appendChild(cb);
   }
@@ -2283,7 +2293,7 @@ function selectSector(key,card){
   updateJobTags();
   updateMultiSectorPreview();
   const r=document.getElementById('sector-reaction');
-  document.getElementById('reaction-text').textContent=SC_REACT[key]||'Parfait !';
+  document.getElementById('reaction-text').textContent=SC_REACT[key]||'Secteur sélectionné.';
   r.classList.add('show');
   setTimeout(()=>r.classList.remove('show'),2400);
 }

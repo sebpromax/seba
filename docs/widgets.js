@@ -442,7 +442,11 @@ function startSerenityAnimation(canvas, wrap, state) {
   const onThemeChange = () => { state.color = readThemeVar(state.varName, state.fallback); };
   document.addEventListener('seba-theme-change', onThemeChange);
 
-  const N = 90;
+  // Densite reduite (etait 90) : le rendu original ("particules dorees" en
+  // etat Vigilance) lisait trop "gadget/jeu video" pour un indicateur de
+  // sante de compte destine a des patrons de PME non-tech (audit du
+  // 2026-07-08). Le mecanisme reste identique, juste plus sobre.
+  const N = 36;
   const particles = Array.from({ length: N }, () => ({
     baseAngle: Math.random() * Math.PI * 2,
     baseRadius: Math.sqrt(Math.random()) * R,
@@ -464,7 +468,7 @@ function startSerenityAnimation(canvas, wrap, state) {
     /* Halo nébuleuse — flou gaussien natif du canvas */
     ctx2d.save();
     ctx2d.filter = 'blur(' + Math.round(14 * dpr) + 'px)';
-    ctx2d.globalAlpha = 0.35;
+    ctx2d.globalAlpha = 0.22;
     ctx2d.fillStyle = state.color;
     ctx2d.beginPath();
     ctx2d.arc(cx, cy, coreR * 1.6, 0, Math.PI * 2);
@@ -479,7 +483,7 @@ function startSerenityAnimation(canvas, wrap, state) {
       const x = cx + Math.cos(ang) * rad;
       const y = cy + Math.sin(ang) * rad * 0.86;
       const size = (1.2 + p.z * 2.2) * dpr;
-      ctx2d.globalAlpha = 0.25 + p.z * 0.55;
+      ctx2d.globalAlpha = 0.15 + p.z * 0.4;
       ctx2d.fillStyle = state.color;
       ctx2d.beginPath();
       ctx2d.arc(x, y, size, 0, Math.PI * 2);
@@ -1125,8 +1129,8 @@ function maybeTriggerAIOnHorizon(series, sym) {
 ═══════════════════════════════════════════════════════════════ */
 window.WIDGET_CATALOG = {
 
-  'serenity-score': { id: 'serenity-score', title: 'Serenity Score', size: 'L', category: 'core', source: 'live',
-    keywords: ['serenity score', 'score de sante', 'sante entreprise', 'coeur reacteur', 'barometre'],
+  'serenity-score': { id: 'serenity-score', title: 'Indice de santé du compte', size: 'L', category: 'core', source: 'live',
+    keywords: ['indice de sante', 'score de sante', 'sante entreprise', 'coeur reacteur', 'barometre'],
     defaultVisible: true, defaultOrder: -1,
     render(ctx, el) { renderSerenityScore(ctx, el); } },
 
@@ -1147,8 +1151,8 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 3,
     render(ctx, el) { const m = ctx.demo.metrics[3]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 3)); } },
 
-  'bento-chart': { id: 'bento-chart', title: 'Cockpit financier', size: 'L', category: 'core', source: 'demo',
-    keywords: ['cockpit financier', 'graphique', 'courbe', "évolution ca", 'chiffre d\'affaires'],
+  'bento-chart': { id: 'bento-chart', title: 'Suivi des encaissements', size: 'L', category: 'core', source: 'demo',
+    keywords: ['suivi des encaissements', 'graphique', 'courbe', "évolution ca", 'chiffre d\'affaires'],
     defaultVisible: true, defaultOrder: 4,
     render(ctx, el) {
       const goal = ctx.demo.goal;
