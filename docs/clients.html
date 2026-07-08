@@ -271,7 +271,7 @@
       const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
       if (biz.deviseSymbole) sym = biz.deviseSymbole;
       if (biz.nom) {
-        document.getElementById('sidebar-footer').innerHTML = biz.nom + '<br>Compte de démonstration';
+        document.getElementById('sidebar-footer').innerHTML = esc(biz.nom) + '<br>Compte de démonstration';
       }
     } catch(e) {}
   }

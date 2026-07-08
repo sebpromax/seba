@@ -309,10 +309,18 @@
     document.body.style.overflow = '';
   }
 
+  // Echappe les champs saisis par l'utilisateur avant injection dans innerHTML
+  // (faille XSS stockee sinon, cf. AUDIT-RISQUES.md section 3.1)
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   // ── Init ──
   try {
     const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-    if (biz.nom) document.getElementById('sidebar-footer').innerHTML = biz.nom + '<br>Compte de démonstration';
+    if (biz.nom) document.getElementById('sidebar-footer').innerHTML = esc(biz.nom) + '<br>Compte de démonstration';
   } catch(e) {}
 
   render();
