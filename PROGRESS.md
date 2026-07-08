@@ -35,4 +35,14 @@ Chaque agent (humain ou automatisé) ajoute une entrée en bas de fichier avant 
 
 Les 3 branches (`amelioration-dashboard`, `fix-securite-xss-suppression`, `infra-orchestrateur`) ont ete poussees sur origin avec des Pull Requests ouvertes. Le fondateur a mergé `amelioration-dashboard` via l'interface GitHub (commit `8aa487a`). Déploiement GitHub Pages vérifié **en direct** (pas seulement "le workflow a réussi") : `bc-period-btn`, `notif-panel`, `bc-empty-body` (classes introduites par cette PR) confirmées présentes sur `https://sebpromax.github.io/seba/dashboard.html` après déploiement.
 
+---
+
+## 2026-07-08 — Merge des 2 PR restantes (`fix-securite-xss-suppression`, `infra-orchestrateur`)
+
+Les deux dernières PR ont été mergées dans `main` (commits `e3acb97` et `f1e1330`). Déploiement Pages vérifié en direct : `function esc(` présent dans `clients.html`/`crm-tech.html`/`widgets.js`, `eraseAllData` présent dans `seba-data.js`, tous sur `sebpromax.github.io`. Les 3 branches ont été supprimées (locales + origin), plus utiles une fois fondues dans `main`.
+
+**Incident mineur** : le dernier commit poussé sur `infra-orchestrateur` avant son merge (`897196a`, mise à jour de suivi PLAN.md/PROGRESS.md) n'a pas été inclus dans la PR mergée (probablement mergée depuis l'interface GitHub avant que le push ne soit pris en compte). Récupéré via `git reflog` et cherry-pické directement sur `main` (`02f9226`) — aucune perte, uniquement du contenu de suivi documentaire, aucun code applicatif concerné.
+
+**`tools/orchestrator.js` vit maintenant sur `main`.** Prochaine tâche codable prête à être traitée par l'orchestrateur : migration Tactical Dark de `client-fiche.html`/`employe-fiche.html` (voir PLAN.md).
+
 `fix-securite-xss-suppression` et `infra-orchestrateur` restent en attente de revue (PR ouvertes, pas encore mergées).

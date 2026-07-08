@@ -9,8 +9,8 @@ Source unique de vérité pour la direction produit. L'orchestrateur (`tools/orc
 
 ## Dette RGPD/sécurité identifiée (voir audit du 2026-07-07, classement gravité dans la conversation — pas encore fichier dédié)
 
-- [x] Suppression de compte : ajouter la suppression réelle côté Supabase — Art. 17 RGPD, critique (fait sur la branche `fix-securite-xss-suppression`, en attente de merge)
-- [x] Corriger les injections `innerHTML` non échappées — faille XSS stockée, critique (fait sur la branche `fix-securite-xss-suppression`, en attente de merge)
+- [x] Suppression de compte : ajouter la suppression réelle côté Supabase — Art. 17 RGPD, critique (mergé 2026-07-08, vérifié en direct : `eraseAllData` présent dans `seba-data.js` en production)
+- [x] Corriger les injections `innerHTML` non échappées — faille XSS stockée, critique (mergé 2026-07-08, vérifié en direct : `function esc(` présent dans `clients.html`/`crm-tech.html`/`widgets.js` en production)
 - [ ] Brancher `SebaDB.remove()` à l'UI pour la suppression individuelle d'un client/employé — Art. 17
 - [ ] Exposer un export JSON complet des données personnelles dans réglages.html (la fonction `SebaDB.exportJSON()` existe déjà) — Art. 20
 - [ ] Retirer/mitiger `prefilled_email` en clair dans l'URL des Payment Links Stripe
