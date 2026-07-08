@@ -14,8 +14,8 @@ Source unique de vérité pour la direction produit. L'orchestrateur (`tools/orc
 - [x] Brancher `SebaDB.remove()` à l'UI pour la suppression individuelle d'un client/employé — Art. 17 (2026-07-08 : bouton dans `client-fiche.html`/`employe-fiche.html` + action rapide dans `clients.html`, id désormais propagé dans l'URL)
 - [x] Exposer un export JSON complet des données personnelles dans réglages.html (la fonction `SebaDB.exportJSON()` existe déjà) — Art. 20 (déjà implémenté — bouton "Exporter mes données" présent, checkbox juste restée non cochée)
 - [x] Retirer/mitiger `prefilled_email` en clair dans l'URL des Payment Links Stripe (2026-07-08 : supprimé de `stripe-service.js`, `client_reference_id` seul suffit au rapprochement)
-- [ ] Créer la page politique de confidentialité / mentions légales (actuellement absente — lien mort dans `faq.html`) — nécessite du contenu juridique du fondateur, pas seulement du code
-- [ ] Trancher l'incohérence entre le discours marketing ("tout est hébergé en Europe") et les fournisseurs IA/email/push américains (Groq, OpenRouter, Gemini, Resend, OneSignal) — décision métier/juridique du fondateur
+- [x] Créer la page politique de confidentialité / mentions légales (2026-07-08 : `docs/politique-confidentialite.html` créée, contenu factuel — voir PROGRESS.md pour le détail et la reserve sur l'identité juridique du responsable de traitement, marquée `[À compléter par le fondateur]`)
+- [x] Trancher l'incohérence entre le discours marketing ("tout est hébergé en Europe") et les fournisseurs IA/email/push américains (2026-07-08 : `confiance.html`/`faq.html` reformulés pour être honnêtes — données métier en UE, services annexes internationaux détaillés dans la nouvelle politique de confidentialité)
 
 ## Thème Tactical Dark — migration restante
 
