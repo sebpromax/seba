@@ -7,105 +7,10 @@
  * ══════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. Design Tokens ────────────────────────────────────────────────────── */
-:root {
-  /* Échelle, easing, typo — indépendants du thème */
-  --r:       12px;
-  --rs:      8px;
-  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
-  --ease-in:  cubic-bezier(0.4, 0, 1,   1);
-  --t-fast: 0.15s;
-  --t-std:  0.25s;
-  --t-slow: 0.35s;
-  --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px; --spacing-4: 16px;
-  --spacing-5: 20px; --spacing-6: 24px;  --spacing-7: 32px; --spacing-8: 40px;
-  --spacing-9: 48px; --spacing-10: 64px;
-
-  /* Typographie industrielle — hiérarchie stricte, tracking/leading nommés
-     plutôt que des valeurs ad hoc répétées à chaque règle. */
-  --font-size-xs: .72rem; --font-size-sm: .84rem; --font-size-base: .95rem;
-  --font-size-lg: 1.15rem; --font-size-xl: 1.5rem; --font-size-2xl: 2.1rem;
-  --line-height-tight: 1.12; --line-height-base: 1.5;
-  --leading-data: 1.15;        /* chiffres/valeurs : compact, "lu d'un coup d'œil" */
-  --leading-text: 1.5;         /* phrases/descriptions : confort de lecture */
-  --tracking-tight: -0.02em;   /* titres/valeurs numériques */
-  --tracking-normal: 0;
-  --tracking-label: .06em;     /* petits libellés MAJUSCULES type "CA CE MOIS" */
-  --weight-data: 700;          /* les chiffres pèsent plus que le texte autour */
-  --weight-label: 600;
-
-  /* Couleurs "toujours sombres" — tooltips, tiroir d'extensions, Mode Focus :
-     ces surfaces restent volontairement noires quel que soit le thème
-     Dark/Light (lisibilité + effet "mise sous vide" du Focus), donc identiques
-     dans les deux blocs de thème ci-dessous plutôt que dupliquées. */
-  --surface-inverse: #000;     /* fond des tooltips, du canvas Mode Focus */
-  --ink-inverse: #fff;         /* texte sur ces surfaces toujours sombres */
-  --on-emerald: #031A12;       /* texte/icônes sur un fond émeraude vif (boutons, FAB, avatar) */
-  --accent-glow: #8B5CF6;      /* violet d'accent — dégradés décoratifs (ex: liseré de la checklist) */
-}
-
-/* ── 1b. Thème — Tactical Dark (defaut) / Audit Light ───────────────────── */
-/* data-theme est pose sur <html> par theme.js. Sans attribut (chargement du
-   script pas encore joue) le mode Dark reste le defaut, jamais de flash blanc. */
-:root,
-[data-theme="dark"] {
-  --ink:     rgba(255,255,255,.92);
-  --emerald: #00FF9D;
-  --plum:    #C9A9DA;
-  --bg:      #050505;
-  --white:   #101114;
-  --text-2:  rgba(255,255,255,.55);
-  --border:  rgba(255,255,255,.1);
-  --amber:   #FFB800;
-  --critical: #8B1E1E;
-  --glass-bg: rgba(255,255,255,.03);
-  --glass-blur: blur(20px);
-
-  --badge-success-bg:  rgba(0,255,157,.12);
-  --badge-success-txt: #00FF9D;
-  --badge-warning-bg:  rgba(255,184,0,.12);
-  --badge-warning-txt: #FFB800;
-  --badge-error-bg:    rgba(255,184,0,.18);
-  --badge-error-txt:   #FFB800;
-  --badge-info-bg:     rgba(255,255,255,.06);
-  --badge-info-txt:    rgba(255,255,255,.55);
-
-  --shadow-sm: 0 1px 4px rgba(0,0,0,.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.4);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
-  --shadow-glow: 0 0 0 1px rgba(0,255,157,.28), 0 4px 24px rgba(0,255,157,.14);
-  --grain-opacity: .035;
-}
-
-[data-theme="light"] {
-  /* Épuré, clair — glassmorphism inversé (givre sombre sur fond clair) pour rester lisible */
-  --ink:     #14161A;
-  --emerald: #00996B;
-  --plum:    #5B3868;
-  --bg:      #F6F5F2;
-  --white:   #FFFFFF;
-  --text-2:  #6B6A6F;
-  --border:  #E5E3DE;
-  --amber:   #B45309;
-  --critical: #B91C1C;
-  --glass-bg: rgba(20,22,26,.035);
-  --glass-blur: blur(20px);
-
-  --badge-success-bg:  rgba(0,153,107,.10);
-  --badge-success-txt: #00875A;
-  --badge-warning-bg:  rgba(180,83,9,.10);
-  --badge-warning-txt: #B45309;
-  --badge-error-bg:    rgba(180,83,9,.14);
-  --badge-error-txt:   #B45309;
-  --badge-info-bg:     rgba(20,22,26,.05);
-  --badge-info-txt:    #6B6A6F;
-
-  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.10);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,.16);
-  --shadow-glow: 0 0 0 1px rgba(0,153,107,.25), 0 4px 24px rgba(0,153,107,.12);
-  --grain-opacity: 0;
-}
+/* Extraits vers src/ui/theme.css (Seba-Core V2) — valeurs inchangees, juste
+   deplacees dans un fichier partage. Ne pas ajouter de token ici : theme.css
+   est desormais la source de verite. */
+@import url('src/ui/theme.css');
 
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */
 button,
