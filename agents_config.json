@@ -43,7 +43,15 @@
       "$note_model": "Verifie le nom de modele courant sur console.groq.com avant usage.",
       "apiKeyEnvVar": "GROQ_API_KEY",
       "endpoint": "https://api.groq.com/openai/v1/chat/completions",
-      "$note": "Pas de localCommands fixes : tools/orchestrator.js choisit dynamiquement, par tache, parmi scripts/qa-*.js selon la sortie du cartographe (champ qa_scripts). Ce depot n'a pas de dossier tests/e2e -- si aucun script ne correspond aux fichiers touches, bascule sur `node --check` (JS) + verification grossiere des balises <script> (HTML), sans lancer Puppeteer, pour eviter des faux positifs de rendu sur des taches sans rapport avec l'UI. Groq interprete ensuite la sortie brute et rend PASS/FAIL."
+      "$note": "Pas de localCommands fixes : tools/orchestrator.js choisit dynamiquement, par tache, parmi scripts/qa-*.js selon la sortie du cartographe (champ qa_scripts). Ce depot n'a pas de dossier tests/e2e -- si aucun script ne correspond aux fichiers touches, bascule sur ESLint (eslint.config.js, JS) + verification grossiere des balises <script> (HTML), sans lancer Puppeteer, pour eviter des faux positifs de rendu sur des taches sans rapport avec l'UI. Ce verdict statique est deterministe (Groq n'intervient PAS dessus, seulement sur les vraies sorties Puppeteer -- bug corrige le 2026-07-08 : Groq flippait en FAIL une sortie ambigue sans rien de casse)."
+    },
+    "visualqa": {
+      "role": "Worker 5 -- QA visuelle : conformite esthetique Tactical Dark sur les captures d'ecran produites par les scripts QA",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "apiKeyEnvVar": "GEMINI_API_KEY",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+      "$note": "Reutilise gemini-2.5-flash (multimodal, aucune cle supplementaire necessaire). Lit CLAUDE.md a chaque appel comme reference de charte (pas de tokens dupliques ici) pour eviter toute derive si la charte change. SKIP (pas de verdict invente) si aucune capture n'existe -- seulement actif quand qa_scripts a reellement fait tourner un script Puppeteer qui produit des screenshots dans docs/audit-screenshots/."
     },
     "secops": {
       "role": "Worker 4 -- Sec-Ops / Agent Strix : revue de securite (SAST) du diff avant cloture, lecture seule",

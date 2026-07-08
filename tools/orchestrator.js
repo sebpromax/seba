@@ -23,9 +23,16 @@
 //   agents_config.json: safety.allowAutoPush / allowPushMain). main sert directement le
 //   site en production (GitHub Pages) : un merge/push automatique sans relecture humaine
 //   est un risque qui ne s'active que si tu mets ces deux flags a true toi-meme.
+// - CONFINEMENT (trouve en test reel le 2026-07-08) : `cwd: worktreeDir` sur l'executeur
+//   NE SUFFIT PAS a empecher `claude -p` d'ecrire en dehors du worktree -- constate en
+//   conditions reelles (l'executeur a modifie CE fichier, en dehors de son worktree,
+//   pendant qu'il tournait). `--add-dir` etend l'acces, mais l'absence de restriction
+//   n'implique pas un perimetre par defaut fiable en mode non-interactif (-p). Le vrai
+//   garde-fou est donc en aval, pas en amont : voir snapshotSentinels/assertSentinelsIntact.
 
-import { readFileSync, writeFileSync, existsSync, appendFileSync, symlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, symlinkSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -93,6 +100,27 @@ async function callGemini(agentCfg, prompt) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
+// Meme modele que le cartographe (gemini-2.5-flash, multimodal) mais avec des
+// images en plus du texte -- utilise par le Worker 5 (QA visuelle).
+async function callGeminiVision(agentCfg, prompt, imagePaths) {
+  const apiKey = process.env[agentCfg.apiKeyEnvVar];
+  if (!apiKey) throw new Error(`MISSING_ENV:${agentCfg.apiKeyEnvVar}`);
+  const url = agentCfg.endpoint.replace('{model}', agentCfg.model) + `?key=${apiKey}`;
+  const parts = [{ text: prompt }];
+  for (const p of imagePaths) {
+    const mimeType = p.endsWith('.jpg') || p.endsWith('.jpeg') ? 'image/jpeg' : 'image/png';
+    parts.push({ inlineData: { mimeType, data: readFileSync(p).toString('base64') } });
+  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }] }),
+  });
+  if (!res.ok) throw new Error(`API_ERROR:gemini-vision:${res.status}`);
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+}
+
 function extractJSON(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const raw = fenced ? fenced[1] : text;
@@ -151,10 +179,37 @@ function creerWorktree() {
   return { branch, worktreeDir };
 }
 
+// Fichiers sentinelles verifies avant/apres chaque appel executeur -- si l'un
+// d'eux change dans ROOT (pas dans le worktree), c'est une sortie de perimetre,
+// pas un echec de tache normal. Volontairement une liste courte et ciblee
+// (fichiers de pilotage/config), pas tout le depot (trop lent, hors propos).
+const SENTINEL_FILES = ['tools/orchestrator.js', 'agents_config.json', 'CLAUDE.md', 'package.json', '.env'];
+
+function hashFile(p) {
+  if (!existsSync(p)) return null;
+  return createHash('sha256').update(readFileSync(p)).digest('hex');
+}
+function snapshotSentinels() {
+  return Object.fromEntries(SENTINEL_FILES.map((f) => [f, hashFile(path.join(ROOT, f))]));
+}
+// Si une sentinelle a change dans ROOT, on la restaure depuis git (fichiers
+// suivis) et on leve une erreur distincte -- ceci n'est PAS une simple
+// QA_FAILED a corriger, c'est une sortie de perimetre a signaler tel quel.
+function assertSentinelsIntact(before) {
+  const after = snapshotSentinels();
+  const violated = SENTINEL_FILES.filter((f) => before[f] !== after[f]);
+  if (!violated.length) return;
+  for (const f of violated) {
+    if (f === '.env') continue; // jamais suivi par git, rien a restaurer depuis un commit
+    try { execFileSync('git', ['checkout', '--', f], { cwd: ROOT, stdio: 'ignore' }); } catch {}
+  }
+  throw new Error(`PERIMETRE_VIOLE:${violated.join(',')}`);
+}
+
 function runExecuteur(worktreeDir, taskText, cartographie, priorFailureLog) {
   const instructions = priorFailureLog
-    ? `Tentative de correction. Tache PLAN.md: ${taskText}\n\nCartographie: ${JSON.stringify(cartographie)}\n\nLe cycle precedent a echoue avec ce log brut, corrige le probleme specifique qu'il decrit (n'invente pas un autre changement) :\n${priorFailureLog.slice(0, 6000)}\n\nRespecte CLAUDE.md a la racine du depot. Ne modifie AUCUN fichier de test (${cfg.safety.protectedTestGlobs.join(', ')}).`
-    : `Tache PLAN.md: ${taskText}\n\nFichiers cibles identifies par l'agent cartographe: ${JSON.stringify(cartographie)}\n\nRespecte CLAUDE.md a la racine du depot. Ne modifie AUCUN fichier de test (${cfg.safety.protectedTestGlobs.join(', ')}).`;
+    ? `Tentative de correction. Tache PLAN.md: ${taskText}\n\nCartographie: ${JSON.stringify(cartographie)}\n\nLe cycle precedent a echoue avec ce log brut, corrige le probleme specifique qu'il decrit, en modifiant UNIQUEMENT des fichiers a l'interieur de ce worktree (jamais un chemin en dehors, jamais l'orchestrateur lui-meme ou sa config) :\n${priorFailureLog.slice(0, 6000)}\n\nRespecte CLAUDE.md a la racine du depot. Ne modifie AUCUN fichier de test (${cfg.safety.protectedTestGlobs.join(', ')}).`
+    : `Tache PLAN.md: ${taskText}\n\nFichiers cibles identifies par l'agent cartographe: ${JSON.stringify(cartographie)}\n\nModifie UNIQUEMENT des fichiers a l'interieur de ce worktree. Respecte CLAUDE.md a la racine du depot. Ne modifie AUCUN fichier de test (${cfg.safety.protectedTestGlobs.join(', ')}).`;
   execFileSync(
     cfg.agents.executeur.command,
     ['-p', instructions, '--allowedTools', 'Read Edit Write Grep Glob'],
@@ -195,12 +250,22 @@ async function runQA(worktreeDir, cartographie) {
       if (!existsSync(abs)) continue;
       if (f.endsWith('.js')) {
         checked++;
+        // ESLint (eslint.config.js) plutot que node --check seul : detecte
+        // aussi les vraies erreurs (no-undef, redeclarations...), pas
+        // seulement les fautes de syntaxe. Les warnings (ex: fonctions
+        // exposees globalement, normal sans bundler) ne font PAS echouer
+        // le gate -- seul un exit code non-nul (erreurs) le fait.
         try {
-          execFileSync('node', ['--check', abs]);
-          output += `OK node --check ${f}\n`;
+          // Point d'entree JS d'ESLint via `node`, pas le shim .bin/*.cmd :
+          // sous Windows, execFileSync ne peut pas lancer un .cmd sans
+          // shell:true (EINVAL constate en test reel), alors que node est un
+          // binaire natif -- aucune des deux plateformes n'a ce probleme ici.
+          const eslintJs = path.join(worktreeDir, 'node_modules', 'eslint', 'bin', 'eslint.js');
+          execFileSync('node', [eslintJs, abs], { cwd: worktreeDir });
+          output += `OK eslint ${f}\n`;
         } catch (e) {
           passed = false;
-          output += `FAIL node --check ${f}: ${e.message}\n`;
+          output += `FAIL eslint ${f}:\n${String(e.stdout || e.message)}\n`;
         }
       } else if (f.endsWith('.html')) {
         checked++;
@@ -242,6 +307,42 @@ async function runQA(worktreeDir, cartographie) {
     log('WARN', `groq-interpretation-skippee:${e.message}`);
   }
   return { verdict, output };
+}
+
+// --- Worker 5 : QA visuelle (Gemini, multimodal) — conformite esthetique
+// Tactical Dark sur les captures d'ecran produites par les scripts QA.
+// N'existe que si des captures ont ete generees (donc si qa_scripts a tourne
+// -- pas de rendu = pas de capture = SKIP, pas de verdict invente). Utilise
+// CLAUDE.md comme reference de tokens plutot que de dupliquer les valeurs
+// dans agents_config.json (une seule source de verite si la charte change). */
+async function runVisualQA(worktreeDir) {
+  const shotDir = path.join(worktreeDir, 'docs', 'audit-screenshots');
+  if (!existsSync(shotDir)) return { verdict: 'SKIP', output: 'aucune capture ecran generee, rien a auditer visuellement' };
+
+  const entries = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      const st = statSync(full);
+      if (st.isDirectory()) walk(full);
+      else if (/\.(png|jpe?g)$/i.test(name)) entries.push({ full, mtime: st.mtimeMs });
+    }
+  };
+  walk(shotDir);
+  if (!entries.length) return { verdict: 'SKIP', output: 'dossier de captures vide' };
+  const recent = entries.sort((a, b) => b.mtime - a.mtime).slice(0, 2).map((e) => e.full);
+
+  const charte = existsSync(path.join(worktreeDir, 'CLAUDE.md')) ? readFileSync(path.join(worktreeDir, 'CLAUDE.md'), 'utf8') : '';
+  const prompt = `Voici la charte visuelle du projet (extrait de CLAUDE.md) :\n${charte}\n\nAnalyse les captures d'ecran jointes. Verifie la conformite aux tokens Tactical Dark (couleurs, typographie monospace des chiffres) SEULEMENT si la page auditee est dans le perimetre concerne (dashboard.html/widgets.js) -- ne penalise pas une autre page qui a legitimement un theme different. Signale aussi tout probleme esthetique evident (chevauchement, texte illisible, alignement casse) independamment de la charte. Termine ta reponse par exactement une ligne "VISUALQA: PASS" ou "VISUALQA: FAIL <raison courte>".`;
+
+  try {
+    const out = await callGeminiVision(cfg.agents.visualqa, prompt, recent);
+    const verdict = /VISUALQA:\s*PASS/i.test(out) ? 'PASS' : 'FAIL';
+    return { verdict, output: out };
+  } catch (e) {
+    log('WARN', `visualqa-echouee:${e.message} -- ignoree, ne bloque pas la tache`);
+    return { verdict: 'SKIP', output: `visualqa-indisponible:${e.message}` };
+  }
 }
 
 // --- Worker 4 : Sec-Ops / Agent Strix (Claude Code CLI, second appel distinct,
@@ -351,14 +452,20 @@ async function main() {
     try {
       log('OK', `cycle ${attempts}/${cfg.safety.maxConsecutiveFailures}`);
 
+      const sentinelsBefore = snapshotSentinels();
       runExecuteur(worktreeDir, task.text, cartographie, attempts > 1 ? lastQaOutput : null);
+      assertSentinelsIntact(sentinelsBefore);
       assertTestFilesUntouched(worktreeDir);
-      log('OK', 'execution terminee, fichiers de test intacts');
+      log('OK', 'execution terminee, fichiers de test intacts, perimetre respecte');
 
       const { verdict, output } = await runQA(worktreeDir, cartographie);
       lastQaOutput = output;
       if (verdict === 'FAIL') throw new Error('QA_FAILED');
       log('OK', 'QA: PASS');
+
+      const visualqa = await runVisualQA(worktreeDir);
+      if (visualqa.verdict === 'FAIL') { lastQaOutput = visualqa.output; throw new Error('VISUALQA_FAILED'); }
+      log(visualqa.verdict === 'SKIP' ? 'SKIP' : 'OK', `QA visuelle (Worker 5): ${visualqa.verdict}`);
 
       const secops = runSecOps(worktreeDir);
       if (secops.verdict === 'FAIL') { lastQaOutput = secops.output; throw new Error('STRIX_FAILED'); }
@@ -378,6 +485,12 @@ async function main() {
       return;
     } catch (e) {
       lastError = e.message;
+      if (lastError.startsWith('PERIMETRE_VIOLE')) {
+        // Sortie de perimetre = arret immediat, pas de nouvelle tentative
+        // (retenter donnerait juste une nouvelle chance de sortir a nouveau).
+        log('SECURITY', `${lastError} — sentinelles restaurees depuis git, arret immediat sans retry`);
+        crashAndFreeze(task.text, attempts, lastError, worktreeDir, branch);
+      }
       log('RETRYING', `echec cycle ${attempts}: ${lastError}`);
     }
   }
