@@ -43,13 +43,17 @@
       return false;
     },
 
-    /* Lien de paiement pour une facture du client de l'utilisateur */
+    /* Lien de paiement pour une facture du client de l'utilisateur.
+       Pas de prefilled_email ici : ce lien est copié/partagé tel quel
+       (email, SMS...) par l'utilisateur, donc tout ce qui est ajouté à
+       l'URL circule en clair dans ces canaux (logs, historiques, aperçus
+       de liens) — l'email du client n'y a rien à faire. client_reference_id
+       (numéro de facture, pas une donnée personnelle) suffit au
+       rapprochement dans le dashboard Stripe. */
     paymentLinkFor(facture) {
       if (payLink) {
-        // Payment Link Stripe avec référence client (rapprochement dans le dashboard Stripe)
         const url = payLink + (payLink.includes('?') ? '&' : '?') +
-          'client_reference_id=' + encodeURIComponent(facture.num || '') +
-          (facture.clientEmail ? '&prefilled_email=' + encodeURIComponent(facture.clientEmail) : '');
+          'client_reference_id=' + encodeURIComponent(facture.num || '');
         return url;
       }
       return 'https://seba.app/pay/' + String(facture.num || '').replace('#', '');
