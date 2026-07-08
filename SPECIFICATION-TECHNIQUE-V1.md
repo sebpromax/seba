@@ -139,17 +139,16 @@ Textes dynamiques par palier (0/50/75/100%) : « Complétez votre profil pour d�
 ```sql
 CREATE TABLE users_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL DEFAULT auth.uid(),
-  devise character varying(3) NOT NULL CHECK (devise IN ('EUR', 'USD', 'GBP', ...)),
+  user_id uuid NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+  currency character varying(3) NOT NULL CHECK (currency IN ('EUR', 'USD', 'GBP', 'CHF', 'CAD', 'AUD')),
   timezone character varying(50) NOT NULL CHECK (timezone IN ('Europe/Paris', 'America/New_York', ...)),
-  taxe_type character varying(20) NOT NULL CHECK (taxe_type IN ('TVA', 'TTC', ...)),
-  CONSTRAINT users_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id)
+  taxe_type character varying(20) NOT NULL CHECK (taxe_type IN ('TVA', 'TTC', ...))
 );
 
 CREATE INDEX users_profiles_user_idx ON users_profiles (user_id);
 
 CREATE POLICY users_profiles_select ON users_profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY users_profiles_insert ON users_profiles FOR INSERT USING (auth.uid() = user_id);
+CREATE POLICY "Allow user to insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY users_profiles_update ON users_profiles FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY users_profiles_delete ON users_profiles FOR DELETE USING (auth.uid() = user_id);
 ```
