@@ -219,7 +219,7 @@
         '<div class="member-top">' +
           '<div class="member-avatar">' + initials(e) + '</div>' +
           '<div>' +
-            '<div class="member-name">' + e.prenom + ' ' + e.nom + '</div>' +
+            '<div class="member-name">' + esc(e.prenom) + ' ' + esc(e.nom) + '</div>' +
             '<div class="member-role"><span class="status-dot ' + (e.actif ? 'on' : 'off') + '"></span>' + (e.actif ? 'En mission' : 'Repos aujourd\'hui') + '</div>' +
           '</div>' +
         '</div>' +
