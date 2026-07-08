@@ -38,19 +38,22 @@ L'adaptateur est **déjà écrit** dans `seba-data.js` (`SupabaseAdapter`). Il n
    - **anon public key** (longue chaîne `eyJ...`)
 
 ### 2. Créer la table (SQL Editor → coller → Run)
+
+**Utilise directement `supabase-schema.sql` à la racine du repo** (schéma complet, policies RLS déjà verrouillées par `auth.uid() = user_id`). L'exemple ci-dessous a longtemps montré une version prototype avec des policies `using (true)` (accès libre à quiconque connaît l'URL du projet) — retiré pour ne plus être copiable par erreur à la place du vrai schéma :
+
 ```sql
 create table if not exists seba_state (
   account text primary key,
+  user_id uuid default auth.uid(),
   state jsonb not null,
   updated_at timestamptz default now()
 );
 
--- Accès via la clé anon (prototype). À restreindre avec l'authentification
--- Supabase (RLS par utilisateur) avant toute mise en production réelle.
 alter table seba_state enable row level security;
-create policy "proto read"  on seba_state for select using (true);
-create policy "proto write" on seba_state for insert with check (true);
-create policy "proto update" on seba_state for update using (true);
+create policy "state_select" on seba_state for select using (auth.uid() = user_id);
+create policy "state_insert" on seba_state for insert with check (auth.uid() = user_id);
+create policy "state_update" on seba_state for update using (auth.uid() = user_id);
+create policy "state_delete" on seba_state for delete using (auth.uid() = user_id);
 ```
 
 ### 3. Déclarer les clés côté site
@@ -66,7 +69,7 @@ Puis ajouter **avant** `seba-data.js` dans chaque page pro :
 ```html
 <script src="config.js"></script>
 ```
-⚠️ **Ne jamais committer config.js avec de vraies clés** dans un repo public — ajouter `docs/config.js` au `.gitignore`. La clé *anon* est conçue pour être exposée côté navigateur, mais les policies ci-dessus sont permissives (prototype) : n'importe qui connaissant l'URL pourrait lire/écrire. L'étape suivante (auth Supabase + RLS par utilisateur) verrouille ça.
+⚠️ **Ne jamais committer config.js avec de vraies clés** dans un repo public — ajouter `docs/config.js` au `.gitignore`. La clé *anon* est conçue pour être exposée côté navigateur : ça ne pose pas de problème ici car les policies ci-dessus restreignent déjà chaque ligne à son propre `auth.uid()` (voir aussi `api_usage` dans `supabase-schema.sql`, protégée différemment : RLS activé sans policy = accès service_role uniquement).
 
 ### 4. C'est tout
 `SebaDB` détecte `window.SEBA_CONFIG` au chargement : lecture instantanée depuis le cache local, rapatriement du cloud en arrière-plan, sauvegarde débouncée (800 ms) vers Supabase à chaque écriture, tolérance hors-ligne (le cache local fait foi, re-push à la prochaine écriture).
