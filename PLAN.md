@@ -5,7 +5,7 @@ Source unique de vérité pour la direction produit. L'orchestrateur (`tools/orc
 ## Chantier dashboard (2026-07-07/08)
 
 - [x] Audit + benchmark + implémentation + QA du dashboard (branche `amelioration-dashboard`, 16 commits)
-- [ ] Revue humaine et merge de `amelioration-dashboard` dans `main`
+- [x] Revue humaine et merge de `amelioration-dashboard` dans `main` (mergé 2026-07-08 via PR GitHub, déploiement Pages vérifié en direct sur sebpromax.github.io/seba/dashboard.html)
 
 ## Dette RGPD/sécurité identifiée (voir audit du 2026-07-07, classement gravité dans la conversation — pas encore fichier dédié)
 
