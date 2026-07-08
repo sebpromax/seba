@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "audit:mobile": "node scripts/mobile-audit.js",
-    "orchestrator": "node --env-file=.env tools/orchestrator.js"
+    "orchestrator": "node --env-file=.env tools/orchestrator.js",
+    "visual-qa": "node scripts/qa-visual-regression.js",
+    "chaos-monkey": "node --env-file=.env tools/chaos-monkey.js",
+    "check-design-system": "node tools/check-design-system.js"
   },
   "devDependencies": {
     "eslint": "^10.6.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
     "puppeteer-core": "^21.0.0"
   }
 }
