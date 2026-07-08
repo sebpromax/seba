@@ -1,0 +1,286 @@
+{
+  "_meta": {
+    "genere": "2026-07-09",
+    "source": "docs/dashboard.html (audit statique, grep exhaustif des attributs onclick + lecture de chaque fonction cible)",
+    "note": "Aucune des fonctions listees n'utilise `this` (verifie une par une) - la liste d'exclusion 'EXCLUE - COMPLEXE' de la Phase 1 est donc vide pour ce critere precis. 2 entrees sont neanmoins marquees EXCLUES pour une autre raison explicite (voir champ exclusion) : elles executent plusieurs instructions chainees / manipulent le DOM directement dans l'attribut onclick lui-meme, pas un simple appel de fonction."
+  },
+  "entries": [
+    {
+      "element": "#hamburger",
+      "targetFunction": "toggleSidebar",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": true
+    },
+    {
+      "element": "#sidebar-overlay",
+      "targetFunction": "closeSidebar",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": true
+    },
+    {
+      "element": "#ext-drawer-trigger",
+      "targetFunction": "openExtDrawer",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : _customizeMode, _customizeModeBeforeDrawer",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".topbar-btn[title='Mode Focus (F)']",
+      "targetFunction": "toggleFocusMode",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de plusieurs états globaux (élevé) : window.AudioUI (module-scope const, mais large surface), _focusActive/_focusCleanup (closures), computeSerenityScore()/serenityStateFor() (fonctions partagées avec widgets.js)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".topbar-btn[title*='commande IA']",
+      "targetFunction": "openAiBar",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : AudioUI",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".topbar-btn[title='Personnaliser le dashboard']",
+      "targetFunction": "openCustomizePanel",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : _customizeMode, appelle refreshLibraryPanel()/toggleCustomizeMode()",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".topbar-btn[title*='notifications push']",
+      "targetFunction": "enablePushNotifications",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de window.sebaPush (fichier externe : docs/push-init.js) - async, effet de bord reseau",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#notif-btn",
+      "targetFunction": "toggleNotifPanel",
+      "params": ["event"],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : menuEl",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#pont-donnees-link",
+      "targetFunction": "activerDonneesReelles",
+      "params": [],
+      "note": "onclick composite : event.preventDefault() puis appel de fonction - 2 instructions, pas 1 appel simple",
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de plusieurs états globaux (élevé) : window.SebaDB, biz (closure), renderDashboard() (autre fonction locale), confirm() natif, AudioUI",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".menu-deconnect",
+      "targetFunction": "sebaAuth.signOut",
+      "params": [],
+      "note": "n'appelle pas une fonction locale de dashboard.html : appelle directement window.sebaAuth (docs/auth.js), avec garde if(window.sebaAuth)",
+      "sourceFile": "docs/auth.js",
+      "globalDependencyLevel": "Dépend de window.sebaAuth (fichier externe)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".wc-close",
+      "targetFunction": "closeChecklist",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de localStorage (Web Storage API, pas un etat applicatif window.X)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#wci-1",
+      "targetFunction": "checkItem",
+      "params": [1],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de localStorage + navigator.clipboard + appelle fireConfetti()/updateChecklistBar() (autres fonctions locales)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#wci-2",
+      "targetFunction": "checkItem",
+      "params": [2],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de localStorage + navigator.clipboard + appelle fireConfetti()/updateChecklistBar() (autres fonctions locales)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".portal-btn.primary (bouton 'Terminer' du welcome checklist)",
+      "targetFunction": "toggleCustomizeMode",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : _customizeMode, _ctx ; appelle renderGrid() (docs/widgets.js, fichier externe)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#fab",
+      "targetFunction": "toggleFab",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : _fabOpen",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": true
+    },
+    {
+      "element": "#palette-overlay",
+      "targetFunction": "closePalette",
+      "params": ["event"],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".palette-box",
+      "targetFunction": "event.stopPropagation",
+      "params": [],
+      "note": "appel natif du navigateur, pas une fonction metier de dashboard.html",
+      "sourceFile": null,
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": "EXCLUE - HORS PERIMETRE (pas une fonction applicative)",
+      "recommandePhase3": false
+    },
+    {
+      "element": "#customize-panel-overlay",
+      "targetFunction": "closeCustomizePanel",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".cp-close",
+      "targetFunction": "closeCustomizePanel",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#ext-drawer-overlay",
+      "targetFunction": "closeExtDrawer",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": "#ai-bar-overlay",
+      "targetFunction": "closeAiBar",
+      "params": ["event"],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".ai-bar-box",
+      "targetFunction": "event.stopPropagation",
+      "params": [],
+      "note": "appel natif du navigateur, pas une fonction metier de dashboard.html",
+      "sourceFile": null,
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": "EXCLUE - HORS PERIMETRE (pas une fonction applicative)",
+      "recommandePhase3": false
+    },
+    {
+      "element": "#shortcuts-overlay",
+      "targetFunction": "closeShortcuts",
+      "params": ["event"],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".shortcuts-box",
+      "targetFunction": "event.stopPropagation",
+      "params": [],
+      "note": "appel natif du navigateur, pas une fonction metier de dashboard.html",
+      "sourceFile": null,
+      "globalDependencyLevel": "Indépendant",
+      "usesThis": false,
+      "exclusion": "EXCLUE - HORS PERIMETRE (pas une fonction applicative)",
+      "recommandePhase3": false
+    },
+    {
+      "element": ".focus-exit",
+      "targetFunction": "toggleFocusMode",
+      "params": [],
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de plusieurs états globaux (élevé) : voir entrée .topbar-btn[title='Mode Focus (F)'] ci-dessus, meme fonction",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    },
+    {
+      "element": ".ai-bar-match a (genere dynamiquement dans submitAiBar(), ligne ~1529)",
+      "targetFunction": "addWidgetToLayout + manipulation DOM inline + renderGrid",
+      "params": ["w.id"],
+      "note": "onclick composite genere par concatenation de chaine : event.preventDefault() + addWidgetToLayout(id) + document.getElementById(...).innerHTML=... + renderGrid(...) - 4 instructions chainees, dont une ecriture DOM directe non echappee dans l'attribut lui-meme",
+      "sourceFile": "docs/dashboard.html (genere) / docs/widgets.js (fonctions cibles)",
+      "globalDependencyLevel": "Dépend de plusieurs états globaux (élevé) : window.addWidgetToLayout/renderGrid (docs/widgets.js, fichier externe), _ctx/_customizeMode (closures dashboard.html)",
+      "usesThis": false,
+      "exclusion": "EXCLUE - COMPLEXE (onclick multi-instructions + ecriture DOM directe, pas un simple appel de fonction)",
+      "recommandePhase3": false
+    },
+    {
+      "element": ".pal-item (genere dynamiquement dans filterPalette(), lignes ~2128 et ~2145)",
+      "targetFunction": "palGo",
+      "params": ["idx"],
+      "note": "genere par concatenation de chaine (2 boucles de rendu identiques produisent ce meme onclick), mais reste un appel simple a 1 seule fonction",
+      "sourceFile": "docs/dashboard.html",
+      "globalDependencyLevel": "Dépend de closures locales (module scope) : _palFiltered ; appelle CmdHistory.push() (objet local) et window.location.href (API navigateur, pas un etat applicatif)",
+      "usesThis": false,
+      "exclusion": null,
+      "recommandePhase3": false
+    }
+  ]
+}
