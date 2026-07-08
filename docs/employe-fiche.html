@@ -179,6 +179,7 @@
         <button class="btn-outline" onclick="showEmpToast('Droits d\'accès modifiés')">Modifier les accès</button>
         <button class="btn-outline" onclick="showEmpToast('Message envoyé')">Envoyer un message</button>
         <button class="btn-em" onclick="location.href='planning.html'">+ Assigner une mission</button>
+        <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerEmploye()">Retirer de l'équipe</button>
       </div>
     </div>
 
@@ -303,6 +304,7 @@
   </main>
 </div>
 
+<script src="seba-data.js"></script>
 <script>
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {
@@ -314,12 +316,23 @@
   } catch(e) {}
 
   const _n = new URLSearchParams(window.location.search).get('nom');
+  const _id = new URLSearchParams(window.location.search).get('id');
   if (_n) {
     document.title = _n + ' — Seba';
     document.getElementById('emp-name').textContent = _n;
     const _p = _n.trim().split(/\s+/);
     document.getElementById('emp-avatar').textContent =
       (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
+  }
+
+  // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
+  function supprimerEmploye() {
+    if (!_id) { showEmpToast('Employé non identifié — impossible de supprimer'); return; }
+    const label = _n || 'cet employé';
+    if (!confirm('Retirer définitivement ' + label + ' de l\'équipe ? Cette action est irréversible.')) return;
+    SebaDB.remove('employes', _id);
+    SebaDB.log('client', 'Employé retiré — ' + label, 'employe-fiche.html');
+    location.href = 'equipe.html';
   }
 
   const avatarBtn = document.getElementById('avatar-btn');

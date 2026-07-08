@@ -102,6 +102,16 @@
   @media (max-width:980px){
     .layout{grid-template-columns:1fr;}
     .main{padding:24px 20px;}
+    /* Sans ce wrap, les 3 boutons .btn-em du topbar-right (forcés en
+       width:100% par la regle "Mobile safety overrides" de pro-global.css,
+       pensee pour un CTA marketing unique) debordent horizontalement et
+       poussent le bouton hamburger hors du viewport — sidebar mobile alors
+       inaccessible en pratique. */
+    .topbar-right{flex-wrap:wrap;justify-content:flex-end;}
+    /* pro-global.css force .btn-em a width:100%/max-width:420px (pense pour
+       un CTA marketing unique) — ici on a 3 boutons de barre d'outils, on
+       restaure leur largeur naturelle pour que le wrap ci-dessus suffise. */
+    .topbar-right .btn-em{width:auto!important;max-width:none!important;}
     table{font-size:0.8rem;}
     th,td{padding:10px 8px;}
     .mini-avatar{width:26px;height:26px;font-size:0.65rem;}
@@ -311,8 +321,9 @@
     }
     list.forEach(c => {
       const slug = encodeURIComponent(c.prenom + ' ' + c.nom);
-      const href = 'client-fiche.html?nom=' + slug;
+      const href = 'client-fiche.html?nom=' + slug + '&id=' + encodeURIComponent(c.id);
       const canOpen = c.statut === 'actif';
+      const cJson = JSON.stringify(c).replace(/"/g,'&quot;');
       const tr = document.createElement('tr');
       tr.className = 'client-row';
       if (canOpen) tr.onclick = () => location.href = href;
@@ -323,7 +334,8 @@
         '<td>' + esc(c.service) + '</td>' +
         '<td class="ca-cell">' + (c.ca > 0 ? c.ca + ' ' + sym : '—') + '</td>' +
         '<td><span class="badge ' + BADGE[c.statut] + '">' + BADGE_LBL[c.statut] + '</span></td>' +
-        '<td class="row-action">' + (canOpen ? '<a href="' + href + '">Ouvrir</a>' : '<span onclick="event.stopPropagation();relancer(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">Relancer</span>') + '</td>';
+        '<td class="row-action">' + (canOpen ? '<a href="' + href + '">Ouvrir</a>' : '<span onclick="event.stopPropagation();relancer(' + cJson + ')">Relancer</span>') +
+        ' · <span onclick="event.stopPropagation();supprimerClient(' + cJson + ')" style="color:var(--text-2)" title="Supprimer ce client">Supprimer</span></td>';
       tbody.appendChild(tr);
     });
   }
@@ -338,6 +350,14 @@
   function relancer(c) {
     SebaDB.log('client', 'Relance envoyée — ' + c.prenom + ' ' + c.nom, 'clients.html');
     showToast('Relance envoyée à ' + c.prenom + ' ' + c.nom + ' ✓');
+  }
+
+  // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
+  function supprimerClient(c) {
+    if (!confirm('Supprimer définitivement ' + c.prenom + ' ' + c.nom + ' ? Cette action est irréversible.')) return;
+    SebaDB.remove('clients', c.id);
+    SebaDB.log('client', 'Client supprimé — ' + c.prenom + ' ' + c.nom, 'clients.html');
+    showToast(c.prenom + ' ' + c.nom + ' supprimé');
   }
 
   // ── Side sheet ──

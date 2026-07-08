@@ -46,3 +46,22 @@ Les deux dernières PR ont été mergées dans `main` (commits `e3acb97` et `f1e
 **`tools/orchestrator.js` vit maintenant sur `main`.** Prochaine tâche codable prête à être traitée par l'orchestrateur : migration Tactical Dark de `client-fiche.html`/`employe-fiche.html` (voir PLAN.md).
 
 `fix-securite-xss-suppression` et `infra-orchestrateur` restent en attente de revue (PR ouvertes, pas encore mergées).
+
+---
+
+## 2026-07-08 — Chantier conformité/UI (branche `amelioration-conformite-ui`)
+
+**Tâches PLAN.md traitées** : les 5 items codables de la dette RGPD/sécurité + thème + bug mobile → toutes cochées (les 2 items nécessitant une décision juridique/métier du fondateur restent volontairement non traités).
+
+**Fichiers touchés** : `docs/clients.html`, `docs/client-fiche.html`, `docs/equipe.html`, `docs/employe-fiche.html`, `docs/stripe-service.js`, `docs/devis.html`, `docs/factures.html`, `docs/planning.html`, `docs/pro-global.css` (fichier partagé — voir note ci-dessous).
+
+**Détail** :
+- `SebaDB.remove()` branché à l'UI : bouton de suppression dans les fiches client/employé + action rapide dans la liste clients (Art. 17).
+- Export JSON RGPD (Art. 20) : déjà implémenté en amont, checkbox PLAN.md juste restée non cochée — aucun code changé.
+- `prefilled_email` retiré des Payment Links Stripe (`stripe-service.js`) — `client_reference_id` seul suffit au rapprochement, évite l'email en clair dans une URL copiée/partagée.
+- Migration Tactical Dark de `client-fiche.html`/`employe-fiche.html` : déjà faite (tokens `pro-global.css` corrects en dark ET light) — note PLAN.md obsolète, aucun code changé.
+- Bug sidebar mobile sur `clients.html` : root-cause réel identifié différent du diagnostic initial — `.layout{grid-template-columns:1fr!important}` dans `pro-global.css` (fichier partagé — impact large, signalé ici) laissait la piste grid grandir jusqu'au `min-content` du tableau responsive au lieu de tenir dans le viewport, poussant le hamburger hors-écran sur 5 pages (`clients`, `devis`, `equipe`, `factures`, `planning`). Fix d'une ligne (`minmax(0,1fr)`) + wrap des boutons de toolbar par page.
+
+**Statut des tests** : pas de script `qa-*.js` dédié à ces pages en mobile ; vérification manuelle via Puppeteer ad hoc (scripts temporaires, supprimés après usage, jamais commités) sur les 8 pages `pro-global.css` (clients/devis/equipe/factures/planning/reglages/historique/dashboard) : 0 débordement horizontal, hamburger accessible, 0 erreur console, rendu desktop pixel-identique avant/après.
+
+**En attente** : revue humaine, commit local sur `amelioration-conformite-ui` (pas de push — `git push origin main` reste une action humaine explicite).

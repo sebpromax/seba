@@ -516,8 +516,13 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
 
 @media (max-width: 840px) {
   /* Cacher la sidebar dans la grille, l'afficher en overlay */
+  /* minmax(0,1fr), pas 1fr seul : une piste de grille "1fr" garde un
+     min-width:auto implicite = min-content de son contenu. Sur les pages
+     avec un tableau responsive (table{min-width:560px} plus bas), la piste
+     grandissait donc jusqu'a ~560-670px au lieu de tenir dans le viewport,
+     poussant tout le contenu (et le bouton hamburger) hors de l'ecran. */
   .app,
-  .layout { grid-template-columns: 1fr !important; }
+  .layout { grid-template-columns: minmax(0,1fr) !important; }
 
   .sidebar {
     position: fixed;
