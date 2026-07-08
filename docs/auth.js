@@ -75,7 +75,11 @@
         const sb = await loadSDK();
         const { data, error } = await sb.auth.signUp({ email, password });
         if (error) return { ok: false, error: error.message };
-        return { ok: true, session: data.session, needsConfirm: !data.session };
+        // data.user existe toujours (meme si la confirmation email est requise
+        // et que data.session est encore null) -- l'appelant a besoin de
+        // l'id utilisateur immediatement (ex: RPC juste apres l'inscription),
+        // pas seulement quand une session est deja active.
+        return { ok: true, session: data.session, user: data.user, needsConfirm: !data.session };
       } catch (e) { return { ok: false, error: e.message }; }
     },
 
@@ -114,6 +118,20 @@
         const { data } = await sb.auth.getSession();
         return data.session || null;
       } catch (e) { return null; }
+    },
+
+    /* Passerelle RPC generique -- auth.js reste le seul point d'entree
+       Supabase du site (le client SDK n'est jamais initialise ailleurs).
+       Pas de mode demo ici : appeler une fonction Postgres n'a de sens
+       que si Supabase est reellement configure, l'appelant doit tester
+       isConfigured avant d'appeler rpc() et prevoir son propre repli
+       (ex: persistance locale) sinon. */
+    async rpc(fnName, params) {
+      if (!configured) return { data: null, error: new Error('Supabase non configure') };
+      try {
+        const sb = await loadSDK();
+        return await sb.rpc(fnName, params);
+      } catch (e) { return { data: null, error: e }; }
     },
   };
 })();

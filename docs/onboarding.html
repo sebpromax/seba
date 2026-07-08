@@ -228,7 +228,7 @@ a{color:inherit;text-decoration:none;}
 <script>
   // ── Moteur du tunnel Flash & Drop — 3 ecrans, JS vanilla, aucune dependance externe ──
   let _currentStep = 1;
-  const S = { email: '', sector: '', nom: '' };
+  const S = { email: '', sector: '', nom: '', userId: null };
 
   function goStep(toIdx) {
     document.getElementById('fstep-' + _currentStep).classList.add('hidden');
@@ -271,7 +271,12 @@ a{color:inherit;text-decoration:none;}
       return;
     }
 
+    // data.user existe des la reponse signUp, meme si la confirmation email
+    // est requise et qu'aucune session active n'existe encore (result.session
+    // serait null dans ce cas) -- c'est cet id qu'on chaine vers saveProfile(),
+    // pas un id tire d'une session qui pourrait ne pas exister a ce stade.
     S.email = email;
+    S.userId = (result.user && result.user.id) || null;
     goStep(2);
   });
 
@@ -306,17 +311,44 @@ a{color:inherit;text-decoration:none;}
         fillEl.style.width = ((i + 1) / messages.length * 100) + '%';
       }
     }, 800);
-    setTimeout(function () {
+    // async + await sur saveProfile() avant la redirection : sans ca, la
+    // navigation vers dashboard.html annulerait la requete RPC en plein vol
+    // (fire-and-forget qui n'aurait jamais le temps d'aboutir).
+    setTimeout(async function () {
       clearInterval(interval);
-      saveProfile();
+      await saveProfile();
       window.location.href = 'dashboard.html';
     }, 2400);
   }
 
-  function saveProfile() {
+  let isSaving = false;
+
+  async function saveProfile() {
+    if (isSaving) return; // protection double-appel (impatience utilisateur, etc.)
+    isSaving = true;
     try {
-      localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email }));
-    } catch (e) {}
+      // Cache local immediat dans tous les cas, comme le reste du site
+      // (SebaDB) -- la RPC est un enrichissement serveur, pas la seule
+      // source de verite locale.
+      try { localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email })); } catch (e) {}
+
+      if (!window.sebaAuth || !window.sebaAuth.isConfigured) return; // mode demo : rien de plus a faire
+      if (!S.sector) { console.error('[onboarding] secteur manquant, RPC annulee.'); return; }
+      if (!S.userId) { console.error("[onboarding] userId manquant (l'inscription a-t-elle abouti ?), RPC annulee."); return; }
+
+      // 3 parametres exacts de create_profile_and_company() (supabase-schema.sql) --
+      // pas de 4e parametre _name separe, la fonction reutilise _company_name
+      // pour les deux tables (profiles n'a pas de colonne nom, companies si).
+      const payload = { _user_id: S.userId, _sector: S.sector, _company_name: S.nom };
+      if (location.hostname === 'localhost' || location.protocol === 'file:') {
+        console.log('[onboarding][dev] payload RPC create_profile_and_company:', payload);
+      }
+
+      const { error } = await window.sebaAuth.rpc('create_profile_and_company', payload);
+      if (error) console.error('[onboarding] echec RPC create_profile_and_company:', error.message || error);
+    } finally {
+      isSaving = false;
+    }
   }
 </script>
 
