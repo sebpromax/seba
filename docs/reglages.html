@@ -350,15 +350,18 @@
     clearTimeout(_reglToastT);
     _reglToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
   }
-  function confirmDelete() {
+  async function confirmDelete() {
     if (confirm('Êtes-vous sûr(e) de vouloir supprimer votre entreprise ? Cette action est irréversible.')) {
+      // Efface d'abord les données réelles (local + ligne cloud Supabase si connecté) —
+      // avant ce correctif, seul le localStorage était vidé et les données restaient
+      // sur Supabase pour tout compte connecté au cloud (faille Art. 17 RGPD).
+      try { await SebaDB.eraseAllData(); } catch (e) {}
       try {
-        localStorage.removeItem('seba_db');
         localStorage.removeItem('sebaEntreprise');
         localStorage.removeItem('seba_dashboard_layout');
       } catch(e) {}
       showReglToast('Compte supprimé — redirection...');
-      setTimeout(() => location.href = 'connexion.html', 2000);
+      setTimeout(() => location.href = 'connexion.html', 1500);
     }
   }
 </script>

@@ -2636,6 +2636,10 @@ function buildSvcList(sector){
   updateLiveSvcPreview();
 }
 
+// Echappe le nom de prestation (seul champ libre de ce template) avant injection
+// dans innerHTML — un nom de prestation personnalise contenant du HTML sinon exécuté.
+function escSvc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 function makeSvcRow(id,name,checked,price,priceType){
   const row=document.createElement('div');
   row.className='svc-row'+(checked?' checked':'');
@@ -2643,7 +2647,7 @@ function makeSvcRow(id,name,checked,price,priceType){
   const isConc=S.secteur==='conciergerie'||(S.selectedJobs[0]?.key==='conciergerie');
   const concOpts=isConc?'<option value="percent">% des revenus</option><option value="sejour">par séjour</option>':'';
   const pOpts=['forfait','heure','jour','m2'].map(v=>'<option value="'+v+'"'+(v===priceType?' selected':'')+'>'+(v==='forfait'?'Unique (Prix fixe)':v==='heure'?'/ heure':v==='jour'?'/ jour':'/ m²')+'</option>').join('')+concOpts;
-  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+name+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select><button class="svc-rm" onclick="rmSvc(\''+id+'\')" title="Supprimer">✕</button>';
+  row.innerHTML='<div class="svc-check"><input type="checkbox" id="chk-'+id+'" '+(checked?'checked':'')+' onchange="toggleSvc(\''+id+'\')"><label for="chk-'+id+'">'+escSvc(name)+'</label></div><input type="number" class="svc-price" id="price-'+id+'" placeholder="Prix" min="0" step="0.01" value="'+(price||'')+'" oninput="S.svcs[\''+id+'\'].price=this.value;updateLiveSvcPreview()"><select class="svc-type" id="type-'+id+'" onchange="S.svcs[\''+id+'\'].priceType=this.value">'+pOpts+'</select><button class="svc-rm" onclick="rmSvc(\''+id+'\')" title="Supprimer">✕</button>';
   return row;
 }
 

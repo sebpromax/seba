@@ -22,6 +22,7 @@
      SebaDB.nextNum('devis'|'facture') -> '#0125' / '#F-0099'
      SebaDB.onChange(fn)               -> écoute (même page + autres onglets)
      SebaDB.exportJSON() / importJSON(str)
+     SebaDB.eraseAllData()             -> efface tout (local + ligne cloud), Art. 17 RGPD
      SebaDB.hasData()                  -> vrai si le compte a des données
 ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -358,6 +359,28 @@
       if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.clients)) throw new Error('Format de sauvegarde invalide');
       state = Object.assign(EMPTY(), parsed);
       persist();
+    },
+
+    /* Suppression réelle (Art. 17 RGPD — droit à l'effacement). Avant ce
+       correctif, "Supprimer mon entreprise" ne vidait que le localStorage :
+       la ligne seba_state restait sur Supabase pour tout compte connecté au
+       cloud. Supprime maintenant la ligne cloud (RLS: auth.uid()=user_id
+       autorise l'utilisateur à supprimer sa propre ligne) en plus du local.
+       Ne supprime PAS l'identité Supabase Auth elle-même (email/mot de
+       passe) : ça nécessite la clé service_role côté serveur, hors de
+       portée d'un appel client — seules les données métier sont effacées. */
+    async eraseAllData() {
+      if (hasSupabase) {
+        const cfg = window.SEBA_CONFIG;
+        try {
+          await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?account=eq.' + encodeURIComponent(SupabaseAdapter._accountId()), {
+            method: 'DELETE',
+            headers: SupabaseAdapter._headers(),
+          });
+        } catch (e) { /* hors ligne : la suppression locale a quand même lieu ci-dessous */ }
+      }
+      try { localStorage.removeItem(DB_KEY); } catch (e) {}
+      state = EMPTY();
     },
 
     _reset() { state = EMPTY(); persist(); },

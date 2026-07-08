@@ -299,14 +299,19 @@ function loadLeaflet() {
 
 const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
 
+// Echappe le texte libre (noms clients/employes, notes, reponses IA) avant
+// injection dans innerHTML — sans ca, un nom de client ou une note contenant
+// du HTML s'execute dans le navigateur du patron qui consulte son dashboard.
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
 function buildTimelineHTML(timeline) {
   if (!timeline.length) return '<div class="tl-empty">Aucune tâche planifiée. <a href="planning.html" style="color:var(--emerald)">Planifier →</a></div>';
   return timeline.map(t =>
     '<a href="' + t.href + '" class="tl-item' + (t.done ? ' done' : '') + '">' +
     '<div class="tl-time-col"><span class="tl-time">' + t.time + '</span><div class="tl-dot' + (t.done ? ' done' : '') + '"></div></div>' +
     '<div><div class="tl-type-pill ' + t.type + '">' + (TYPE_PILL_LABEL[t.type] || t.type) + '</div>' +
-    '<div class="tl-label">' + t.label + '</div>' +
-    '<div class="tl-sub">' + t.sub + '</div></div></a>'
+    '<div class="tl-label">' + esc(t.label) + '</div>' +
+    '<div class="tl-sub">' + esc(t.sub) + '</div></div></a>'
   ).join('');
 }
 
@@ -314,8 +319,8 @@ function buildActivityHTML(activity) {
   return activity.map(item =>
     '<a href="' + item.href + '" class="activity-item">' +
     '<div class="act-dot ' + item.type + '"></div>' +
-    '<div class="act-body"><div class="act-label">' + item.label + '</div>' +
-    '<div class="act-time">' + item.time + '</div></div></a>'
+    '<div class="act-body"><div class="act-label">' + esc(item.label) + '</div>' +
+    '<div class="act-time">' + esc(item.time) + '</div></div></a>'
   ).join('');
 }
 
@@ -339,7 +344,7 @@ function buildTeamItemEl(t, couleur) {
   a.innerHTML =
     '<div class="team-av-wrap"><div class="team-av" style="background:' + avBg + ';color:' + avCol + '">' + initials + '</div>' +
     '<div class="team-av-status ' + stCls + '"></div></div>' +
-    '<div class="team-info"><div class="team-name">' + t.name + '</div><div class="team-role">' + t.role + '</div></div>' +
+    '<div class="team-info"><div class="team-name">' + esc(t.name) + '</div><div class="team-role">' + esc(t.role) + '</div></div>' +
     '<span class="team-status ' + (t.working ? 'working' : 'off') + '">' + stLbl + '</span>';
   return a;
 }
@@ -526,8 +531,8 @@ function createActionCard(title, amount) {
   card.className = 'action-vector';
   card.innerHTML =
     '<div>' +
-      '<div class="av-title">' + title + '</div>' +
-      '<div class="av-amount">' + amount + '</div>' +
+      '<div class="av-title">' + esc(title) + '</div>' +
+      '<div class="av-amount">' + esc(amount) + '</div>' +
     '</div>' +
     '<button class="av-validate" type="button">Valider</button>';
 
@@ -985,7 +990,7 @@ function showAuraNotification(message, probability) {
   card.className = 'aura-card';
   card.innerHTML =
     '<div class="aura-badge">' + probability + ' %</div>' +
-    '<div class="aura-msg">' + message + '</div>' +
+    '<div class="aura-msg">' + esc(message) + '</div>' +
     '<div class="aura-actions">' +
       '<button class="aura-btn ignore" type="button">Ignorer</button>' +
       '<button class="aura-btn validate" type="button">Valider</button>' +
@@ -1275,7 +1280,7 @@ window.WIDGET_CATALOG = {
       const total = list.reduce((s, c) => s + c.montant, 0);
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
         list.slice(0, 3).map(c =>
-          '<div class="ws-row"><span class="ws-label">' + c.client + '</span><span class="ws-val" style="color:' + (c.relanceStep >= 2 ? '#FFB800' : '#FFB800') + '">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
+          '<div class="ws-row"><span class="ws-label">' + esc(c.client) + '</span><span class="ws-val" style="color:' + (c.relanceStep >= 2 ? '#FFB800' : '#FFB800') + '">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
         ).join('');
     } },
 
@@ -1316,7 +1321,7 @@ window.WIDGET_CATALOG = {
         return;
       }
       el.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
-        pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + p.nom + '</span></div>').join('');
+        pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + esc(p.nom) + '</span></div>').join('');
     } },
 
   'chart-donut': { id: 'chart-donut', title: 'Répartition des interventions', size: 'L', category: 'core', source: 'live',

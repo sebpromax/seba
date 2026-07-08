@@ -85,6 +85,10 @@ body{font-family:var(--font-sans);}
 const SebaStorage={write:(k,v)=>{try{localStorage.setItem('seba_'+k,JSON.stringify(v));}catch(e){}},read:(k)=>{try{const d=localStorage.getItem('seba_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}};
 const CAT_COLORS={particulier:'text-blue-400',entreprise:'text-violet-400',copro:'text-amber-400',syndic:'text-emerald-400'};
 
+// Echappe les champs saisis (nom/adresse/tel/cat/notes) avant injection dans
+// innerHTML — sans ca, un nom ou une note contenant du HTML s'execute (XSS stockee).
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 let clients=SebaStorage.read('crm_clients')||[
   {id:'cl1',nom:'Mme Sophie Lacroix',tel:'06 12 34 56 78',adresse:'12 rue des Lilas, Paris 15e',cat:'particulier',stars:4,notes:[{id:'n1',txt:'Prévenir 1h avant · Chien dans l\'appartement',date:'15/05/2026',type:'alerte'}],photos:[]},
   {id:'cl2',nom:'Résidence Les Pins',tel:'01 45 67 89 01',adresse:'5 allée des Pins, Évry-Courcouronnes',cat:'copro',stars:5,notes:[{id:'n2',txt:'Badge magnétique fourni. Contact: M. Moreau syndic.',date:'01/04/2026',type:'info'}],photos:[]},
@@ -116,13 +120,13 @@ function renderList(q=''){
     <div class="client-card bg-slate-950 border ${activeClientId===c.id?'border-emerald-500/40':'border-slate-800'} rounded-xl p-4 cursor-pointer" onclick="selectClient('${c.id}')">
       <div class="flex items-start justify-between">
         <div>
-          <div class="text-sm font-bold text-slate-200">${c.nom}</div>
-          <div class="text-3xs text-slate-500 mt-0.5">${c.adresse||'—'}</div>
+          <div class="text-sm font-bold text-slate-200">${esc(c.nom)}</div>
+          <div class="text-3xs text-slate-500 mt-0.5">${esc(c.adresse)||'—'}</div>
         </div>
-        <span class="text-2xs font-bold ${CAT_COLORS[c.cat]||'text-slate-400'} uppercase ml-2">${c.cat}</span>
+        <span class="text-2xs font-bold ${CAT_COLORS[c.cat]||'text-slate-400'} uppercase ml-2">${esc(c.cat)}</span>
       </div>
       <div class="mt-2 flex items-center justify-between">
-        <span class="text-3xs font-mono text-slate-600">${c.tel||'—'}</span>
+        <span class="text-3xs font-mono text-slate-600">${esc(c.tel)||'—'}</span>
         <span class="text-xs">${'★'.repeat(c.stars)+'☆'.repeat(5-c.stars)}</span>
       </div>
     </div>`).join('');
@@ -136,9 +140,9 @@ function selectClient(id){
     <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-5">
       <div class="flex items-start justify-between">
         <div>
-          <div class="text-lg font-bold text-slate-100">${c.nom}</div>
-          <div class="text-2xs text-slate-500 font-mono mt-1">${c.adresse||'—'} · ${c.tel||'—'}</div>
-          <div class="mt-2"><span class="text-2xs font-bold ${CAT_COLORS[c.cat]} uppercase bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">${c.cat}</span></div>
+          <div class="text-lg font-bold text-slate-100">${esc(c.nom)}</div>
+          <div class="text-2xs text-slate-500 font-mono mt-1">${esc(c.adresse)||'—'} · ${esc(c.tel)||'—'}</div>
+          <div class="mt-2"><span class="text-2xs font-bold ${CAT_COLORS[c.cat]} uppercase bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">${esc(c.cat)}</span></div>
         </div>
         <div class="flex gap-1">${[1,2,3,4,5].map(n=>`<span class="star ${n<=c.stars?'filled':''} text-xl" onclick="setStars('${c.id}',${n})">★</span>`).join('')}</div>
       </div>
@@ -180,10 +184,10 @@ function renderNotes(id){
     :c.notes.map(n=>`
     <div class="note-bubble pl-3 py-1.5">
       <div class="flex items-center gap-2 mb-0.5">
-        <span class="text-3xs font-bold ${n.type==='alerte'?'text-amber-400':'text-blue-400'} font-mono uppercase">${n.type}</span>
-        <span class="text-3xs text-slate-600 font-mono">${n.date}</span>
+        <span class="text-3xs font-bold ${n.type==='alerte'?'text-amber-400':'text-blue-400'} font-mono uppercase">${esc(n.type)}</span>
+        <span class="text-3xs text-slate-600 font-mono">${esc(n.date)}</span>
       </div>
-      <div class="text-xs text-slate-300">${n.txt}</div>
+      <div class="text-xs text-slate-300">${esc(n.txt)}</div>
     </div>`).join('');
 }
 
