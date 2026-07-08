@@ -1,6 +1,6 @@
 # PLAN — Seba
 
-Source unique de vérité pour la direction produit. L'orchestrateur (`orchestrator.js`) traite les tâches dans l'ordre, une par une, en cochant au fur et à mesure. Ne pas réordonner manuellement sans mettre à jour `PROGRESS.md` en conséquence.
+Source unique de vérité pour la direction produit. L'orchestrateur (`tools/orchestrator.js`) traite les tâches dans l'ordre, une par une, en cochant au fur et à mesure. Ne pas réordonner manuellement sans mettre à jour `PROGRESS.md` en conséquence.
 
 ## Chantier dashboard (2026-07-07/08)
 
@@ -9,8 +9,8 @@ Source unique de vérité pour la direction produit. L'orchestrateur (`orchestra
 
 ## Dette RGPD/sécurité identifiée (voir audit du 2026-07-07, classement gravité dans la conversation — pas encore fichier dédié)
 
-- [ ] Suppression de compte : ajouter la suppression réelle côté Supabase (`reglages.html` ne fait aujourd'hui qu'un `localStorage.removeItem`, les données cloud restent) — Art. 17 RGPD, critique
-- [ ] Corriger les injections `innerHTML` non échappées (clients.html, crm-tech.html, widgets.js, onboarding.html) — faille XSS stockée, critique
+- [x] Suppression de compte : ajouter la suppression réelle côté Supabase — Art. 17 RGPD, critique (fait sur la branche `fix-securite-xss-suppression`, en attente de merge)
+- [x] Corriger les injections `innerHTML` non échappées — faille XSS stockée, critique (fait sur la branche `fix-securite-xss-suppression`, en attente de merge)
 - [ ] Brancher `SebaDB.remove()` à l'UI pour la suppression individuelle d'un client/employé — Art. 17
 - [ ] Exposer un export JSON complet des données personnelles dans réglages.html (la fonction `SebaDB.exportJSON()` existe déjà) — Art. 20
 - [ ] Retirer/mitiger `prefilled_email` en clair dans l'URL des Payment Links Stripe

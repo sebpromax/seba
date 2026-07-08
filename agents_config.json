@@ -25,8 +25,9 @@
       "$note_model": "gemini-2.5-pro a un quota gratuit a ZERO (verifie le 2026-07-07, erreur 429 RESOURCE_EXHAUSTED) -- necessite facturation activee. gemini-2.5-flash fonctionne en gratuit, verifie la meme chose si tu changes de modele.",
       "apiKeyEnvVar": "GEMINI_API_KEY",
       "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-      "input": ["arborescence complete du depot", "supabase-schema.sql"],
-      "output": "liste des fichiers a ouvrir + points d'ancrage Supabase impactes"
+      "input": ["arborescence complete du depot", "supabase-schema.sql", "liste reelle des scripts/qa-*.js disponibles"],
+      "output": "JSON strict {\"mutations_target\": [...], \"qa_scripts\": [...]} -- qa_scripts vide si aucun script existant n'est pertinent (declenche le lint statique du worker 3 plutot que Puppeteer)",
+      "$note_ast": "Raisonnement LLM sur l'arborescence, pas un parseur AST litteral -- pas de librairie AST integree ici."
     },
     "executeur": {
       "role": "Modification du code source, en isolation (git worktree dedie)",
@@ -36,17 +37,21 @@
       "$note": "Execute dans un git worktree temporaire cree par l'orchestrateur (git worktree add), jamais directement sur la branche de travail principale, pour permettre un rollback propre en cas d'echec."
     },
     "qa": {
-      "role": "Execution des tests + inspection des logs en boucle fermee",
+      "role": "Execution des tests choisis par le cartographe (qa_scripts), OU lint statique si aucun script pertinent",
       "provider": "groq",
       "model": "llama-3.3-70b-versatile",
       "$note_model": "Verifie le nom de modele courant sur console.groq.com avant usage.",
       "apiKeyEnvVar": "GROQ_API_KEY",
       "endpoint": "https://api.groq.com/openai/v1/chat/completions",
-      "localCommands": [
-        "node scripts/qa-dashboard-full.js --target=local --viewport=desktop",
-        "node scripts/qa-dashboard-full.js --target=local --viewport=mobile"
-      ],
-      "$note": "Les tests reels tournent en local (Puppeteer). Groq sert a interpreter rapidement les logs/erreurs et rendre un verdict PASS/FAIL, pas a executer les tests lui-meme."
+      "$note": "Pas de localCommands fixes : tools/orchestrator.js choisit dynamiquement, par tache, parmi scripts/qa-*.js selon la sortie du cartographe (champ qa_scripts). Ce depot n'a pas de dossier tests/e2e -- si aucun script ne correspond aux fichiers touches, bascule sur `node --check` (JS) + verification grossiere des balises <script> (HTML), sans lancer Puppeteer, pour eviter des faux positifs de rendu sur des taches sans rapport avec l'UI. Groq interprete ensuite la sortie brute et rend PASS/FAIL."
+    },
+    "secops": {
+      "role": "Worker 4 -- Sec-Ops / Agent Strix : revue de securite (SAST) du diff avant cloture, lecture seule",
+      "provider": "claude-code-cli",
+      "command": "claude",
+      "invocation": "claude -p \"<instructions>\" --allowedTools \"Read Grep Glob\"",
+      "checks": ["injection XSS (innerHTML/template non echappes)", "regressions d'authentification", "violations RLS Supabase (policies auth.uid()=user_id)"],
+      "$note": "Deuxieme appel Claude Code CLI distinct de l'executeur, en LECTURE SEULE (pas d'Edit/Write) -- audite le diff produit par le worker 2, ne le modifie pas. Un STRIX FAIL reinjecte son verdict dans la boucle de correction (meme mecanisme que le QA)."
     },
     "archiviste": {
       "role": "Messages de commit, mise a jour de PROGRESS.md, case a cocher dans PLAN.md",
