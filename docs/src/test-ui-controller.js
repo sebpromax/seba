@@ -14,8 +14,10 @@ const writes = [];
 function mockDomWriter(targetId, html) {
   writes.push({ targetId, html });
 }
+let sidebarToggled = 0;
+function mockToggleSidebar() { sidebarToggled++; }
 
-new UIController({ domWriter: mockDomWriter });
+new UIController({ domWriter: mockDomWriter, toggleSidebar: mockToggleSidebar });
 
 async function run() {
   // 1. "Le rendu ne change pas" : meme marquage exact que la production
@@ -44,7 +46,21 @@ async function run() {
   assert.ok(toastWrite, 'DATA_ERROR doit declencher un toast au lieu d\'un crash');
   assert.ok(toastWrite.html.includes('JSON corrompu'), 'le toast doit porter le message d\'erreur (echappe)');
 
-  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique et resilience DATA_ERROR confirmes.');
+  // 5. UI_ACTION('toggleSidebar') : doit appeler la dependance injectee et
+  // marquer ack.handled=true (empeche le bridge de retomber sur le fallback)
+  const ack = { handled: false };
+  eventBus.publish('UI_ACTION', { action: 'toggleSidebar', args: [], ack });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.strictEqual(sidebarToggled, 1, 'UI_ACTION toggleSidebar doit appeler la dependance toggleSidebar injectee');
+  assert.strictEqual(ack.handled, true, 'UIController doit marquer ack.handled=true pour eviter le fallback du bridge');
+
+  // 6. Une action inconnue ne doit jamais etre prise en charge (pas de faux handled)
+  const ackUnknown = { handled: false };
+  eventBus.publish('UI_ACTION', { action: 'actionInconnue', args: [], ack: ackUnknown });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.strictEqual(ackUnknown.handled, false, 'une action non geree ne doit jamais marquer ack.handled=true');
+
+  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique, resilience DATA_ERROR et UI_ACTION(toggleSidebar) confirmes.');
 }
 
 run().catch((e) => {

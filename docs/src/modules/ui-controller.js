@@ -1,9 +1,11 @@
 /**
  * @module modules/ui-controller
  * UIController — logique de rendu du dashboard, decouplee du DOM reel.
- * Voir dashboard-init.js pour le cablage cote navigateur, et le rapport de
- * mission (commit/PR) pour les points de friction qui empechent, pour
- * l'instant, de brancher ce module sur docs/dashboard.html sans regression.
+ * Migration progressive en cours (voir MIGRATION_REPORT.md) : le bouton
+ * #hamburger (action 'toggleSidebar') est le premier onclick reellement
+ * bascule sur ce module via docs/src/ui/event-bridge.js. Le reste des 27
+ * sites de migration-map.json reste en onclick pur jusqu'a migration
+ * individuelle (un commit atomique par bouton).
  *
  * Decisions volontaires, et pourquoi :
  *
@@ -28,19 +30,28 @@ import { esc } from '../core/esc.js';
 
 export class UIController {
   #domWriter;
+  #toggleSidebar;
 
   /**
-   * @param {{ domWriter: (targetId: string, html: string) => void }} deps
+   * @param {{ domWriter: (targetId: string, html: string) => void, toggleSidebar?: () => void }} deps
+   * `toggleSidebar` est optionnel et injecte (meme sandboxing que domWriter) :
+   * c'est la logique DOM reelle de bascule du menu mobile, fournie par
+   * dashboard-init.js (seul fichier autorise a toucher document). Sans elle,
+   * l'action 'toggleSidebar' de UI_ACTION reste non geree et retombe sur le
+   * fallback window.toggleSidebar() du bridge — zero regression meme si ce
+   * module est instancie sans cette dependance (tests, pages sans sidebar...).
    */
-  constructor({ domWriter } = {}) {
+  constructor({ domWriter, toggleSidebar } = {}) {
     if (typeof domWriter !== 'function') {
       throw new Error('UIController requiert un domWriter injecte (targetId, html) => void — voir sandboxing.');
     }
     this.#domWriter = domWriter;
+    this.#toggleSidebar = typeof toggleSidebar === 'function' ? toggleSidebar : null;
 
     eventBus.subscribe('DATA_SUCCESS', (payload) => this.#onDataSuccess(payload));
     eventBus.subscribe('DATA_ERROR', (payload) => this.#onDataError(payload));
     eventBus.subscribe('AUTH_SUCCESS', () => this.#onAuthSuccess());
+    eventBus.subscribe('UI_ACTION', (payload) => this.#onUiAction(payload));
   }
 
   /**
@@ -79,5 +90,20 @@ export class UIController {
 
   #onAuthSuccess() {
     eventBus.publish('DATA_REQUEST', { action: 'FETCH', key: 'sebaEntreprise' });
+  }
+
+  /**
+   * Reagit aux clics passes par docs/src/ui/event-bridge.js
+   * (window.handleLegacyClick). Ne prend en charge QUE les actions pour
+   * lesquelles ce module a reellement une dependance injectee — sinon
+   * n'appelle jamais ack.handled=true, et le bridge retombe lui-meme sur
+   * la fonction globale historique (fallback deja teste dans
+   * test-event-bridge.js, zero regression).
+   */
+  #onUiAction({ action, ack }) {
+    if (action === 'toggleSidebar' && this.#toggleSidebar) {
+      this.#toggleSidebar();
+      if (ack) ack.handled = true;
+    }
   }
 }
