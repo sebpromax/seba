@@ -702,7 +702,7 @@
   <!-- ═══════ SIDEBAR ═══════ -->
   <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div>Seba</div>
-    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="handleLegacyClick('toggleSidebar')">
       <span></span><span></span><span></span>
     </button>
   </div>
@@ -2263,6 +2263,9 @@
     if (typeof origToggle !== 'undefined') return;
   })();
 </script>
+<!-- Seba-Core (migration progressive des onclick, voir docs/src/ui/MIGRATION_REPORT.md) —
+     script additif en type="module", n'affecte pas le script classique ci-dessus. -->
+<script type="module" src="src/ui/dashboard-init.js"></script>
 </body>
 </html>
 
