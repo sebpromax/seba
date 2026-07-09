@@ -28,30 +28,64 @@
 import { eventBus } from '../core/event-bus.js';
 import { esc } from '../core/esc.js';
 
+/* Elements statiques de telemetry-map.json (Prompt 1) et le champ de
+   `data` (sortie de TelemetryModule.computeAggregates(), voir
+   docs/src/modules/telemetry-module.js) cense les nourrir. IMPORTANT :
+   seul notif-badge a reellement une source dans TelemetryModule aujourd'hui
+   (facturesRetard). Les 3 autres (Serenity Score, checklist onboarding)
+   viennent de calculs totalement distincts (computeSerenityScore() dans
+   widgets.js, flags localStorage seba_check_*) jamais produits par
+   TelemetryModule — les documenter ici plutot que fabriquer une fausse
+   correspondance ; renderTelemetry() les ignore proprement (voir guards)
+   tant qu'aucune source reelle ne les alimente. */
+const STATIC_TELEMETRY_FIELDS = [
+  { id: 'notif-badge', dataKey: 'facturesRetard', format: (n) => (n > 9 ? '9+' : String(n)) },
+  { id: 'focus-score-num', dataKey: 'serenityScore', format: (n) => String(n) },
+  { id: 'focus-score-lbl', dataKey: 'serenityLabel', format: (s) => String(s) },
+  { id: 'wc-pct', dataKey: 'checklistLabel', format: (s) => String(s) },
+];
+
 export class UIController {
   #domWriter;
+  #domStyleWriter;
   #toggleSidebar;
+  #latestTelemetry = null;
 
   /**
-   * @param {{ domWriter: (targetId: string, html: string) => void, toggleSidebar?: () => void }} deps
+   * @param {{
+   *   domWriter: (targetId: string, html: string) => void,
+   *   domStyleWriter?: (targetId: string, property: string, value: string) => void,
+   *   toggleSidebar?: () => void
+   * }} deps
    * `toggleSidebar` est optionnel et injecte (meme sandboxing que domWriter) :
    * c'est la logique DOM reelle de bascule du menu mobile, fournie par
    * dashboard-init.js (seul fichier autorise a toucher document). Sans elle,
    * l'action 'toggleSidebar' de UI_ACTION reste non geree et retombe sur le
    * fallback window.toggleSidebar() du bridge — zero regression meme si ce
    * module est instancie sans cette dependance (tests, pages sans sidebar...).
+   * `domStyleWriter` est optionnel, meme sandboxing : necessaire pour #wc-bar
+   * (style.width, une propriete CSS — pas un cas ou esc()/innerHTML a un
+   * sens, voir renderTelemetry).
    */
-  constructor({ domWriter, toggleSidebar } = {}) {
+  constructor({ domWriter, domStyleWriter, toggleSidebar } = {}) {
     if (typeof domWriter !== 'function') {
       throw new Error('UIController requiert un domWriter injecte (targetId, html) => void — voir sandboxing.');
     }
     this.#domWriter = domWriter;
+    this.#domStyleWriter = typeof domStyleWriter === 'function' ? domStyleWriter : null;
     this.#toggleSidebar = typeof toggleSidebar === 'function' ? toggleSidebar : null;
 
     eventBus.subscribe('DATA_SUCCESS', (payload) => this.#onDataSuccess(payload));
     eventBus.subscribe('DATA_ERROR', (payload) => this.#onDataError(payload));
     eventBus.subscribe('AUTH_SUCCESS', () => this.#onAuthSuccess());
     eventBus.subscribe('UI_ACTION', (payload) => this.#onUiAction(payload));
+  }
+
+  /** Derniers agregats recus (ou null) — expose pour un futur consommateur
+      (ex: un widget qui voudrait lire la valeur courante sans re-ecouter
+      TELEMETRY_READY depuis le debut). */
+  get latestTelemetry() {
+    return this.#latestTelemetry;
   }
 
   /**
@@ -90,6 +124,67 @@ export class UIController {
 
   #onAuthSuccess() {
     eventBus.publish('DATA_REQUEST', { action: 'FETCH', key: 'sebaEntreprise' });
+  }
+
+  /**
+   * renderTelemetry(data) — mode hybride, appelee a la reception de
+   * TELEMETRY_READY (voir dashboard-init.js).
+   *
+   * VOLET STATIQUE : met a jour les elements de telemetry-map.json dont
+   * `data` fournit reellement la valeur (voir STATIC_TELEMETRY_FIELDS et
+   * son commentaire — 3 des 4 champs n'ont aujourd'hui aucune source dans
+   * TelemetryModule, ils sont donc ignores un par un, pas globalement).
+   * Toute valeur textuelle passe par esc() avant assemblage HTML — meme
+   * pour des nombres, en garantie defensive systematique (voir
+   * SECURITY_AUDIT.md : aucune de ces valeurs n'est une faille active
+   * aujourd'hui, esc() est ici une ceinture de securite, pas un correctif).
+   *
+   * VOLET DYNAMIQUE : stocke les agregats dans un etat local accessible
+   * (#latestTelemetry / latestTelemetry) puis declenche le VRAI point
+   * d'entree de rafraichissement des widgets (window.renderCockpitTelemetry,
+   * docs/widgets.js) avec le VRAI contexte deja construit par
+   * dashboard.html (window._ctx) — jamais un contexte fabrique de toutes
+   * pieces a partir des seuls agregats : renderCockpitTelemetry(ctx)
+   * attend un contexte complet (biz/secteur/demo/creances/sym/...), pas
+   * seulement des totaux numeriques (voir telemetry-map.json,
+   * avertissement_perimetre). Sans window._ctx/renderCockpitTelemetry
+   * disponibles (module pas encore charge, ou test hors navigateur), ce
+   * volet est silencieusement ignore — pas une erreur.
+   *
+   * GUARDS : si `data` est absent/corrompu (pas un objet, aucun champ
+   * numerique exploitable), log un avertissement et s'arrete NET avant
+   * tout ecriture DOM — le rendu precedent reste affiche tel quel.
+   * @param {Record<string, number|string>|null} data
+   */
+  renderTelemetry(data) {
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+      console.warn('[ui-controller] renderTelemetry: donnees absentes ou invalides, DOM existant conserve.', data);
+      return;
+    }
+
+    this.#latestTelemetry = data;
+
+    // Volet statique — un champ manquant/invalide est ignore individuellement,
+    // jamais un abandon global (les autres champs presents restent appliques).
+    STATIC_TELEMETRY_FIELDS.forEach(({ id, dataKey, format }) => {
+      const value = data[dataKey];
+      if (value === undefined || value === null) return;
+      this.#domWriter(id, esc(format(value)));
+    });
+
+    if (typeof data.checklistPct === 'number' && this.#domStyleWriter) {
+      // style.width : propriete CSS, pas un contexte HTML — esc() n'a pas de
+      // sens ici (ce n'est pas de l'innerHTML). La protection adaptee est la
+      // validation numerique/le clamp, pas l'echappement d'entites HTML.
+      const pct = Math.max(0, Math.min(100, Number(data.checklistPct) || 0));
+      this.#domStyleWriter('wc-bar', 'width', pct + '%');
+    }
+
+    // Volet dynamique — re-declenche le vrai point d'entree des widgets
+    // avec le vrai contexte existant, sans le remplacer ni le deviner.
+    if (typeof window !== 'undefined' && window._ctx && typeof window.renderCockpitTelemetry === 'function') {
+      window.renderCockpitTelemetry(window._ctx);
+    }
   }
 
   /**

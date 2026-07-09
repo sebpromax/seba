@@ -1279,6 +1279,21 @@
   /* ═══════════════════════════════════════════════════════
      HELPERS
   ═══════════════════════════════════════════════════════ */
+  /* Echappement HTML avant innerHTML — copie locale plutot qu'un import de
+     docs/src/core/esc.js : renderDashboard()/renderNotifPanel() s'executent
+     de facon SYNCHRONE des le chargement (voir l'appel renderDashboard(biz)
+     au niveau superieur de ce script, ligne ~1328), donc AVANT que le
+     script differe type="module" (dashboard-init.js, charge en fin de
+     document) ait la moindre chance de s'executer. Attendre un import
+     async ici creerait une regression reelle au premier chargement
+     (esc undefined). Meme fonction que clients.html/crm-tech.html/widgets.js
+     (voir AUDIT-RISQUES.md section 1.2 sur cette duplication deja connue). */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function slugify(str) {
     return (str || '').toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -1937,8 +1952,8 @@
     if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications (' + late.length + ' non lue' + (late.length > 1 ? 's' : '') + ')');
     body.innerHTML = late.slice(0, 5).map(c =>
       '<a href="contentieux-recouvrement.html" class="notif-item">' +
-        '<span>Facture en retard — ' + c.client + '</span>' +
-        '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + ctx.sym + ' en attente</span>' +
+        '<span>Facture en retard — ' + esc(c.client) + '</span>' +
+        '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + esc(ctx.sym) + ' en attente</span>' +
       '</a>'
     ).join('');
   }
