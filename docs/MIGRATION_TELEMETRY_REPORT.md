@@ -23,17 +23,23 @@ Laisser le mapping actif aurait fait remplacer, dès le premier `TELEMETRY_READY
 
 Conséquence assumée : le volet statique de `renderTelemetry()` (notif-badge/focus-score/checklist) est aujourd'hui un no-op complet en production — aucun des 4 champs de `STATIC_TELEMETRY_FIELDS` n'a de source réelle dans `TelemetryModule`. Documenté dans le code plutôt que masqué.
 
-## Dette technique trouvée en activant (nouvelle, découverte par le test bout-en-bout)
+## Dette technique trouvée en activant — RÉSOLUE (PR #31, `feature/telemetry-deduplication`)
 
-**`TelemetryModule` et `DataModule` réagissent chacun indépendamment à `AUTH_SUCCESS`** et déclenchent chacun un fetch de `seba_db` :
+**Correctif appliqué** : `DataModule` n'écoute plus `AUTH_SUCCESS` du tout (voir `docs/src/modules/data-module.js`). Il ne réagit plus qu'à `DATA_REQUEST` (SAVE/FETCH/DELETE) et à `AUTH_SIGNED_OUT` (purge). Seuls les consommateurs réels demandent désormais explicitement ce dont ils ont besoin : `TelemetryModule` pour `seba_db`, `UIController` pour `sebaEntreprise` — chacun via son propre `DATA_REQUEST` sur `AUTH_SUCCESS`, un fetch par clé et par connexion. Aucune donnée perdue : les deux clés métier réelles étaient déjà redemandées explicitement par un consommateur, le fetch direct de `DataModule` était strictement redondant.
+
+Vérifié après correctif : 1 seul `DATA_REQUEST`, 1 seul `DATA_SUCCESS(seba_db)`, 1 seul `TELEMETRY_READY` par connexion — confirmé par un test isolé, par `test-dashboard-init.js` (assertion stricte sur le compteur brut de `TELEMETRY_READY`), et en navigateur réel (Chrome headless). `test-data-migration.js` et `test-telemetry.js` (qui testent chaque module en isolation) restent inchangés et passants — aucun des deux n'exerçait le comportement retiré.
+
+Détail du diagnostic original (pour mémoire) :
+
+**`TelemetryModule` et `DataModule` réagissaient chacun indépendamment à `AUTH_SUCCESS`** et déclenchaient chacun un fetch de `seba_db` :
 - `TelemetryModule` via `#requestRefresh()` → publie `DATA_REQUEST { action:'FETCH', key:'seba_db' }`
 - `DataModule` via son propre `eventBus.subscribe(AUTH_SUCCESS, ...)` qui appelle `this.fetch('seba_db')` directement (indépendamment de tout `DATA_REQUEST`)
 
-Résultat mesuré (test isolé + confirmé en navigateur réel) : **1 seul `DATA_REQUEST` publié, mais 2 `DATA_SUCCESS(seba_db)` et donc 2 calculs `TELEMETRY_READY` pour une seule connexion.** Idempotent (même résultat calculé deux fois, pas de donnée incohérente) mais redondant : double lecture localStorage, double calcul d'agrégats, double re-render du volet dynamique à chaque login.
+Résultat mesuré à l'époque (test isolé + confirmé en navigateur réel) : **1 seul `DATA_REQUEST` publié, mais 2 `DATA_SUCCESS(seba_db)` et donc 2 calculs `TELEMETRY_READY` pour une seule connexion.** Idempotent (même résultat calculé deux fois, pas de donnée incohérente) mais redondant : double lecture localStorage, double calcul d'agrégats, double re-render du volet dynamique à chaque login.
 
-Une redondance similaire existe pour `sebaEntreprise` : `DataModule` la fetch directement sur `AUTH_SUCCESS`, et `UIController.#onAuthSuccess()` la redemande *aussi* via `DATA_REQUEST` — double écriture (identique) de `#sidebar-footer`.
+Une redondance similaire existait pour `sebaEntreprise` : `DataModule` la fetchait directement sur `AUTH_SUCCESS`, et `UIController.#onAuthSuccess()` la redemandait *aussi* via `DATA_REQUEST` — double écriture (identique) de `#sidebar-footer`. Résolue par le même correctif (`DataModule` ne fetch plus rien directement sur `AUTH_SUCCESS`).
 
-**Non corrigé dans cette PR**, volontairement : `TelemetryModule` et `DataModule` sont chacun déjà testés et validés **en isolation** (`test-telemetry.js`, `test-data-migration.js`) sur exactement ce comportement individuel (chacun suppose qu'il pourrait être le seul à réagir à `AUTH_SUCCESS`). Les corriger correctement demande de trancher qui reste propriétaire du "fetch sur connexion" — une décision d'architecture séparée de l'activation elle-même, pas un correctif sûr à improviser en fin de séquence. `docs/src/test-dashboard-init.js` fige ce compte à 2 explicitement (pas 1), avec commentaire, pour que toute correction future de cette duplication fasse échouer volontairement ce test (signal, pas surprise) plutôt que de dériver silencieusement.
+À l'époque (PR #30), volontairement non corrigé dans la même PR que l'activation : corriger correctement demandait de trancher qui reste propriétaire du "fetch sur connexion" — une décision d'architecture séparée de l'activation elle-même, pas un correctif sûr à improviser en fin de séquence. C'est précisément l'objet de cette PR #31.
 
 **Recommandation pour une séquence future** : soit retirer la responsabilité de fetch direct de `DataModule.constructor` sur `AUTH_SUCCESS` (laisser les *consommateurs* — `TelemetryModule`, `UIController` — demander explicitement ce dont ils ont besoin via `DATA_REQUEST`), soit dédupliquer dans `DataModule.fetch()` les appels concurrents sur une même clé dans le même tick. Nécessite de revalider les deux suites de tests isolées.
 
