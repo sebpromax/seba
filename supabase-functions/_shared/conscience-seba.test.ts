@@ -14,8 +14,12 @@
 // restent verifiees par relecture (voir supabase-schema.sql section 20).
 // ═══════════════════════════════════════════════════════════════
 
-import { assertEquals, assertNotEquals } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { buildStructuredContext, decideDeterministe, formatAssistantTechniquePrompt, lookupHistory, withContextCache } from './conscience-seba.ts';
+import { assertEquals } from 'https://deno.land/std@0.208.0/assert/mod.ts';
+import { buildStructuredContext, decideDeterministe, formatAssistantTechniquePrompt, prepareAssistantTechniqueContext, withContextCache } from './conscience-seba.ts';
+
+// lookupHistory() elle-meme est testee dans memoire-lookup.test.ts (le
+// fichier qui la definit desormais) -- ce fichier ne teste plus que
+// l'orchestration qui la consomme (prepareAssistantTechniqueContext).
 
 /** Client Supabase mocké minimal — enregistre les appels .rpc()/.from()
     pour inspection, retourne des données canned par test. */
@@ -48,17 +52,11 @@ function makeMockSupabase(opts: {
   return { client: client as unknown as import('https://esm.sh/@supabase/supabase-js@2').SupabaseClient, calls };
 }
 
-// ═══ 1. lookupHistory() doit passer p_account EXACTEMENT le compte de
-// l'appelant courant, jamais un autre — c'est la SEULE frontière de
-// sécurité de match_interventions() sous une connexion service_role
-// (voir supabase-schema.sql section 20). Ce test échouerait si un futur
-// refactor oubliait de transmettre `account` ou le mélangeait avec un
-// autre paramètre. ═══
-Deno.test('lookupHistory() scope match_interventions au compte de l\'appelant, jamais un autre', async () => {
-  // embed() appelle Mistral en reseau -- hors de portee d'un test unitaire
-  // sans cle API reelle. On ne teste ici QUE le threading du parametre
-  // account a travers l'appel RPC, pas le calcul d'embedding lui-meme
-  // (couvert par embed-content.ts en integration, hors perimetre ici).
+// ═══ 1. prepareAssistantTechniqueContext() doit composer lookupHistory()
+// + formatAssistantTechniquePrompt() dans le bon ordre, et propager le
+// compte demandé jusqu'à l'appel RPC sous-jacent — c'est le chemin RAG
+// réel de l'agent assistant_technique (product-agents.config.json). ═══
+Deno.test('prepareAssistantTechniqueContext() scope la recherche au compte demandé et injecte les extraits dans le prompt', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (() => Promise.resolve(new Response(JSON.stringify({ data: [{ embedding: new Array(1024).fill(0.01) }] }), { status: 200 }))) as typeof fetch;
   Deno.env.set('MISTRAL_API_KEY', 'test-key-fake');
@@ -67,16 +65,30 @@ Deno.test('lookupHistory() scope match_interventions au compte de l\'appelant, j
     const { client, calls } = makeMockSupabase({
       rpcResultsByAccount: {
         'compte-A': [{ id: '1', intervention_id: 'id_abc', content: 'Fuite détectée sous évier', metadata: {}, similarity: 0.9 }],
-        'compte-B': [{ id: '2', intervention_id: 'id_xyz', content: 'Autre compte, ne doit jamais apparaître pour A', metadata: {}, similarity: 0.99 }],
       },
     });
 
-    const resultsA = await lookupHistory(client, 'compte-A', 'fuite évier');
-    const rpcCallA = calls.find((c) => c.method === 'rpc:match_interventions');
-    assertEquals((rpcCallA?.args[0] as Record<string, unknown>).p_account, 'compte-A', 'p_account doit être exactement le compte demandé');
-    assertEquals(resultsA.length, 1);
-    assertEquals(resultsA[0].content, 'Fuite détectée sous évier');
-    assertNotEquals(resultsA[0].content, 'Autre compte, ne doit jamais apparaître pour A', 'les résultats du compte B ne doivent jamais fuiter vers le compte A');
+    const { systemPrompt, matches } = await prepareAssistantTechniqueContext(client, 'compte-A', 'que s\'est-il passé chez le client X ?');
+
+    const rpcCall = calls.find((c) => c.method === 'rpc:match_interventions');
+    assertEquals((rpcCall?.args[0] as Record<string, unknown>).p_account, 'compte-A', 'p_account doit être exactement le compte demandé');
+    assertEquals(matches.length, 1);
+    assertEquals(systemPrompt.includes('Fuite détectée sous évier'), true, 'le prompt système doit incorporer l\'extrait trouvé');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test('prepareAssistantTechniqueContext() signale l\'absence d\'historique sans exception si aucun match', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (() => Promise.resolve(new Response(JSON.stringify({ data: [{ embedding: new Array(1024).fill(0.01) }] }), { status: 200 }))) as typeof fetch;
+  Deno.env.set('MISTRAL_API_KEY', 'test-key-fake');
+
+  try {
+    const { client } = makeMockSupabase({ rpcResultsByAccount: { 'compte-A': [] } });
+    const { systemPrompt, matches } = await prepareAssistantTechniqueContext(client, 'compte-A', 'question sans historique');
+    assertEquals(matches.length, 0);
+    assertEquals(systemPrompt.includes('Aucun historique pertinent'), true);
   } finally {
     globalThis.fetch = originalFetch;
   }
