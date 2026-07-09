@@ -564,3 +564,29 @@ $$ language plpgsql;
 create trigger qa_photos_alert_trigger
 after insert on qa_photos
 for each row execute function trigger_qa_alert();
+
+-- ═══════════════════════════════════════════════════════════════
+-- 18. CORRECTIF AUDIT GO-LIVE (AUDIT-GO-LIVE-SEBA.md, section 1, RED) —
+-- Postgres accorde EXECUTE a PUBLIC par defaut sur toute fonction
+-- nouvellement creee, ce qui inclut anon/authenticated via
+-- POST /rest/v1/rpc/<fonction>. Aucune des 4 fonctions ci-dessous n'a de
+-- raison legitime d'etre appelee directement par un client : elles ne
+-- sont invoquees qu'en interne (le trigger qa_photos_alert_trigger,
+-- lui-meme declenche par une ecriture service_role dans vision-qa.ts).
+--
+-- IMPORTANT : ne JAMAIS regranter a `authenticated` -- call_notify_alert
+-- est SECURITY DEFINER et lit le service_role_key depuis Vault ; regranter
+-- a authenticated reouvrirait exactement le trou trouve par l'audit
+-- (n'importe quel utilisateur connecte pourrait declencher rpc/
+-- call_notify_alert avec des donnees arbitraires). apply_entity_patch/
+-- trigger_qa_alert/derive_type_alerte sont deja proteges par RLS
+-- (SECURITY INVOKER, voir leurs commentaires respectifs) mais restreintes
+-- ici aussi en defense en profondeur -- aucun de ces 4 revoke ne change
+-- le comportement legitime du systeme : sync-push.ts/vision-qa.ts
+-- utilisent le client service_role, qui conserve ses privileges
+-- independamment de ce que PUBLIC perd ici.
+-- ═══════════════════════════════════════════════════════════════
+revoke execute on function call_notify_alert(uuid, text, text, text, text) from public, anon, authenticated;
+revoke execute on function apply_entity_patch(text, text, text, jsonb) from public, anon, authenticated;
+revoke execute on function trigger_qa_alert() from public, anon, authenticated;
+revoke execute on function derive_type_alerte(text) from public, anon, authenticated;

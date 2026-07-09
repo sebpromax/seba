@@ -24,6 +24,14 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
+// Audit go-live (AUDIT-GO-LIVE-SEBA.md, section 2) : voir ai-relay.ts pour
+// le detail du raisonnement (AbortSignal.timeout, pas de construction
+// manuelle). Particulierement important ici : ce batch boucle sur TOUS
+// les comptes ayant des donnees reelles -- un seul appel bloque sans
+// timeout aurait pu ralentir ou geler l'integralite du cron pour tous
+// les comptes suivants dans la boucle, pas seulement celui en cours.
+const FETCH_TIMEOUT_MS = 5000;
+
 async function callMistralOrGroq(context: Record<string, unknown>): Promise<{ action: string; priority: string; reasoning: string } | null> {
   const system =
     "Tu es Seba, l'intelligence de pilotage d'un cockpit de gestion. " +
@@ -41,6 +49,7 @@ async function callMistralOrGroq(context: Record<string, unknown>): Promise<{ ac
           messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(context) }],
           response_format: { type: 'json_object' }, max_tokens: 250, temperature: 0.3,
         }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error('Mistral HTTP ' + res.status);
       const data = await res.json();
@@ -58,6 +67,7 @@ async function callMistralOrGroq(context: Record<string, unknown>): Promise<{ ac
           messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(context) }],
           max_tokens: 250, temperature: 0.3,
         }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error('Groq HTTP ' + res.status);
       const data = await res.json();
@@ -82,6 +92,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + resendKey },
       body: JSON.stringify({ from: Deno.env.get('RESEND_FROM') || 'Seba <onboarding@resend.dev>', to: [to], subject, html }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch { /* best-effort */ }
 }
@@ -98,6 +109,7 @@ async function sendPush(accountId: string, title: string, message: string) {
         app_id: appId, include_external_user_ids: [accountId], channel_for_external_user_ids: 'push',
         headings: { fr: title }, contents: { fr: message },
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch { /* best-effort */ }
 }
@@ -114,7 +126,7 @@ Deno.serve(async (req) => {
   const results: Array<{ account: string; action: string | null }> = [];
 
   try {
-    const rowsRes = await fetch(supaUrl + '/rest/v1/seba_state?select=account,user_id,state', { headers });
+    const rowsRes = await fetch(supaUrl + '/rest/v1/seba_state?select=account,user_id,state', { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     const rows = rowsRes.ok ? await rowsRes.json() : [];
 
     for (const row of rows) {
@@ -139,7 +151,7 @@ Deno.serve(async (req) => {
       // E-mail au patron du compte (adresse récupérée via l'API admin Supabase)
       if (row.user_id) {
         try {
-          const userRes = await fetch(supaUrl + '/auth/v1/admin/users/' + row.user_id, { headers });
+          const userRes = await fetch(supaUrl + '/auth/v1/admin/users/' + row.user_id, { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
           if (userRes.ok) {
             const user = await userRes.json();
             if (user.email) {
