@@ -23,8 +23,8 @@ Contexte complet : `ANALYSE-ANGLES-MORTS-IA-TERRAIN.md` (audit produit) et `VISI
 - [x] `supabase-functions/_shared/conscience-seba.ts` — module partagé, prompt unifié.
 - [x] Table `ai_context_hash` (cache SHA256 de contexte).
 - [x] Extension `pgvector` + table `memoire_embeddings` (`mistral-embed`, 1024 dimensions), fonction `match_interventions()`, `_shared/memoire-lookup.ts` (`lookupHistory`), embedding branché sur `vision-qa.ts` (`_shared/embeddings.ts`).
-- [ ] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` — troncature de chaîne pouvant produire un JSON invalide envoyé au modèle. **Reporté** (non traité dans ces PR, remonté en dette technique ci-dessous).
-- [ ] Table `client_memoire` (résumé incrémental par client) — **non créée**, remontée en dette technique ci-dessous.
+- [x] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` — fait, voir "Phase API & Frontend Connect" ci-dessous.
+- [x] Table `client_memoire` — fait, voir "Phase API & Frontend Connect" ci-dessous.
 
 ### P5 (ex-P4 du cadrage initial) — Analytique financière
 **[X] Terminé** — PR #40 (`4789590`), 2026-07-09.
@@ -38,18 +38,21 @@ Contexte complet : `ANALYSE-ANGLES-MORTS-IA-TERRAIN.md` (audit produit) et `VISI
 ### AI Core — System prompt, tool routing, garde-fous
 **[X] Terminé** — PR #41 (`d5fc885`), 2026-07-09. Descriptions d'outils optimisées pour le tool-routing LLM (`llmDirective` par outil dans `product-agents.config.json`), `SEBA_SAFETY_RAILS` (anti-hallucination, non-exposition d'identifiants bruts, traçabilité) injecté dans `conscience-seba.ts`, gestion gracieuse des échecs d'outil (`.catch()` sur chaque appel RAG/financier, jamais de crash pipeline).
 
+### Phase API & Frontend Connect
+**[X] Terminée** — PR #44 (`d6a8a7f`), 2026-07-09. L'infrastructure IA (mémoire vectorielle, analytique financière, garde-fous LLM) livrée aux Paliers 4/5 + AI Core est désormais **exposée côté client**, plus seulement backend :
+- [x] Route HTTP `supabase-functions/assistant-technique.ts` — expose `assistant_technique` (RAG + analytique financière) au navigateur, JWT → compte résolu serveur, quota dédié, ne renvoie jamais de réponse inventée si tous les providers échouent. `_shared/llm-providers.ts` créé (chaîne de fallback Mistral→Groq→OpenRouter→Gemini centralisée).
+- [x] `ai-relay.ts`/`daily-digest.ts` migrés sur `callWithFallback()`/`decideAvecLLM()` (`_shared/conscience-seba.ts`) — System Prompt centralisé, plus de duplication de la chaîne de providers. Troncature JSON corrigée (`buildStructuredContext()` borne par nombre d'éléments, jamais par caractères). Bonus sécurité : quota `ai-relay.ts` résolu par compte métier partagé (`resolveAccount()`) au lieu du `user_id` brut.
+- [x] Vue sécurisée `client_memoire` (`security_invoker = true`, RLS héritée de `qa_photos`/`memoire_embeddings`/`paiements`) — historique technique par intervention exposé au frontend sans appel IA. `migrations/20260709_create_client_memoire.sql` + test SQL d'isolation multi-tenant (`migrations/20260709_create_client_memoire.test.sql`).
+
+**Architecture Full-Stack V1 opérationnelle.**
+
 ---
 
-## Dette technique / Prochaines étapes (priorité — clôture Palier 4/5 + AI Core)
+## Dette technique / Prochaines étapes
 
-Trouvée en clôturant les Paliers 4 & 5 + AI Core (PR #37→#41, 2026-07-09) : l'infrastructure IA (mémoire vectorielle, analytique financière, garde-fous LLM) est opérationnelle **côté backend uniquement** — rien côté client ne l'appelle encore.
-
-- [ ] **Créer la route HTTP/Edge Function pour interroger `assistant_technique` depuis le client** — `prepareAssistantTechniqueContext()` (`_shared/conscience-seba.ts`) n'a aujourd'hui aucun point d'entrée HTTP dédié (voir `product-agents.config.json` → `agents.assistant_technique.entrypoint`, encore marqué "à définir").
-- [ ] **Brancher `ai-relay.ts` et `daily-digest.ts` sur `conscience-seba.ts`** — ces deux fonctions existent déjà mais n'utilisent pas encore le module partagé refactoré (System Prompt + garde-fous + routage d'outils du Palier AI Core).
-- [ ] **Configurer un environnement CI ou CLI Deno pour exécuter les tests unitaires** (RAG, Finance, Safety Rails) — les dizaines de `Deno.test` écrits depuis le Palier 1 (`sync-push.test.ts`, `vision-qa.test.ts`, `conscience-seba.test.ts`, `finance-analytics` couvert indirectement, etc.) n'ont **jamais été exécutés réellement** dans cet environnement (pas de CLI Deno disponible) — vérifiés uniquement par relecture et équilibrage syntaxique. Risque cumulatif à mesure que la suite grossit.
-- [ ] **Créer la vue/table `client_memoire`** pour l'historique brut côté frontend (résumé incrémental par client, cadré au Palier 4 mais non implémenté — voir `summarize_tech_notes` dans `product-agents.config.json`, qui documente déjà l'absence de cette table).
-- [ ] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` (troncature de chaîne pouvant produire un JSON invalide envoyé au modèle) — pertinent au moment du branchement sur `conscience-seba.ts` ci-dessus.
-- [ ] Table `client_payment_history` + prédiction déterministe des impayés, widget dashboard "marge réelle" (aucune UI ne consomme encore `vue_marge_interventions`/`get_marge_reelle`) — reste du périmètre P5 non traité.
+- [ ] **Configurer un environnement CI ou CLI Deno pour exécuter les tests unitaires** (RAG, Finance, Safety Rails, LLM providers) — les dizaines de `Deno.test` écrites depuis le Palier 1 (`sync-push.test.ts`, `vision-qa.test.ts`, `conscience-seba.test.ts`, `llm-providers.test.ts`, `finance-analytics` couvert indirectement, etc.) n'ont **jamais été exécutées réellement** dans cet environnement (pas de CLI Deno disponible) — vérifiées uniquement par relecture et équilibrage syntaxique. Risque cumulatif à mesure que la suite grossit.
+- [ ] Tables `intervention_materiaux`, `intervention_trajets`, `fournisseurs_prix_historique` — non créées, périmètre P5 réduit au strict nécessaire pour `calculate_profitability`/`get_financial_summary`.
+- [ ] Table `client_payment_history` + prédiction déterministe des impayés, widget dashboard "marge réelle" (aucune UI ne consomme encore `vue_marge_interventions`/`get_marge_reelle`/`client_memoire`) — reste du périmètre P5 non traité, et premier consommateur front naturel de `client_memoire`.
 
 ### Dette technique — audit Go-Live (résolue)
 
