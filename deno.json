@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "lib": ["deno.window"],
+        "strict": true
+    },
+    "lint": {
+        "include": ["supabase-functions/"],
+        "exclude": ["docs/", "scripts/", "tools/", "node_modules/"]
+    },
+    "fmt": {
+        "include": ["supabase-functions/"],
+        "exclude": ["docs/", "scripts/", "tools/", "node_modules/"]
+    },
+    "exclude": ["docs/", "scripts/", "tools/", "node_modules/"]
+}
