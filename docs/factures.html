@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
+<script src="esc-global.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
@@ -166,7 +167,7 @@
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucune facture.</td></tr>'; return; }
     tbody.innerHTML = list.map(f => {
       const s = STATUS[f.status] || STATUS.attente;
-      return '<tr><td class="num">' + f.num + '</td><td>' + f.clientName + '</td><td>' + f.service + '</td>' +
+      return '<tr><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
         '<td class="amount">' + f.amount + ' ' + sym + '</td>' +
         '<td><span class="badge ' + s.cls + '">' + s.lbl(f) + '</span></td>' +
         '<td class="row-action"><span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span>' +

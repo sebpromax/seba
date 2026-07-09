@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
+<script src="esc-global.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
@@ -307,7 +308,7 @@
 
   function buildReceipt(d) {
     const lines = d.lines.map(l =>
-      `<tr><td>${l.desc}</td><td>${l.qty}</td><td class="td-r">${l.u} ${_sym}</td></tr>`
+      `<tr><td>${esc(l.desc)}</td><td>${esc(l.qty)}</td><td class="td-r">${esc(l.u)} ${_sym}</td></tr>`
     ).join('');
     const hist = d.history.map(h =>
       `<div class="hist-item"><div class="hist-dot ${h.cls}"></div><span>${h.label}</span><span class="hist-date">${h.date}</span></div>`
@@ -315,15 +316,15 @@
     return `
       <div class="receipt-header">
         <div class="receipt-from">
-          <strong>${_bizName}</strong>
+          <strong>${esc(_bizName)}</strong>
           Devis émis le ${new Date(d.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
         </div>
         <span class="receipt-badge ${d.status}">${STATUS_LABEL[d.status]}</span>
       </div>
       <div class="receipt-to">
         <div class="receipt-to-lbl">Destinataire</div>
-        <div class="receipt-to-name">${d.client}</div>
-        <div class="receipt-to-meta">${d.service}</div>
+        <div class="receipt-to-name">${esc(d.client)}</div>
+        <div class="receipt-to-meta">${esc(d.service)}</div>
       </div>
       <table class="receipt-lines">
         <thead><tr><th>Prestation</th><th>Qté</th><th style="text-align:right">Montant</th></tr></thead>
@@ -417,7 +418,7 @@
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucun devis.</td></tr>'; return; }
     tbody.innerHTML = list.map(d => {
       const action = d.status === 'signe' ? 'Voir' : (d.status === 'attente' ? 'Relancer' : 'Renouveler');
-      return '<tr><td class="num">' + d.num + '</td><td>' + d.client + '</td><td>' + d.service + '</td>' +
+      return '<tr><td class="num">' + d.num + '</td><td>' + esc(d.client) + '</td><td>' + esc(d.service) + '</td>' +
         '<td class="amount">' + d.amount + ' ' + _sym + '</td>' +
         '<td><span class="badge ' + d.status + '">' + STATUS_LABEL[d.status] + '</span></td>' +
         '<td class="row-action"><span data-num="' + d.num + '" data-act="' + action.toLowerCase() + '">' + action + '</span></td></tr>';
