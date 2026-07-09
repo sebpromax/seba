@@ -120,6 +120,17 @@ Une fois par jour, `daily-digest.ts` regarde chaque compte : s'il y a des factur
 5. Pour vérifier que ça tourne : Supabase → **Database → Cron Jobs** affiche l'historique des exécutions.
 6. Pour arrêter : `select cron.unschedule('seba-daily-digest');` dans le SQL Editor.
 
+### 1k. Terrain, QA visuelle & alerting (Paliers 1-3, 07/2026) — GRATUIT
+
+Trois briques livrées le 2026-07-09 (PR #32/#33/#34), 4 nouvelles Edge Functions à déployer en plus de celles ci-dessus :
+
+1. **`employe-auth`** : login PIN 4 chiffres pour les employés de terrain sur une tablette partagée (deuxième couche d'identité au-dessus du compte patron). Supabase → Edge Functions → Deploy, nom `employe-auth`, colle **`supabase-functions/employe-auth.ts`**. Aucune nouvelle clé (réutilise Supabase URL/service_role déjà injectées automatiquement).
+2. **`sync-push`** : reçoit les modifications en attente d'un appareil (patch par patch, pas le blob entier) et les applique. Déploie **`supabase-functions/sync-push.ts`** sous le nom `sync-push`, même principe, aucune clé supplémentaire.
+3. **`vision-qa`** : analyse une photo de fin d'intervention avec Gemini Vision (conformité/non-conformité/incertain). Déploie **`supabase-functions/vision-qa.ts`** sous le nom `vision-qa` — réutilise **`GEMINI_API_KEY`** (déjà configurée en 1b si l'assistant IA est actif ; sinon, même étape que 1b : [ai.google.dev](https://ai.google.dev/) → clé gratuite → Secrets de la fonction).
+4. **`notify-alert`** : relais de notification d'alerte (stub aujourd'hui — enregistre l'alerte, n'envoie pas encore d'email/push réel). Déploie **`supabase-functions/notify-alert.ts`** sous le nom `notify-alert`.
+
+Pour que le bucket photo et le trigger d'alerte fonctionnent, `supabase-schema.sql` doit être exécuté en entier (voir Section 2 ci-dessous) — les 4 fonctions ci-dessus ne suffisent pas seules.
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)
@@ -131,6 +142,19 @@ Le fichier **`supabase-schema.sql`** (racine du projet) contient tout le schéma
 3. Résultat : les tables `seba_state`, `clients`, `interventions`, `devis`, `factures`, `employes` sont créées **avec Row Level Security activée** — chaque utilisateur ne peut lire/écrire QUE ses propres lignes (`auth.uid() = user_id`). Le Patron A ne verra jamais les données du Patron B. La table `api_usage` (compteur de quota IA du relais `ai-relay`) est aussi créée — elle n'est accessible qu'via la clé `service_role`, jamais depuis le navigateur.
 
 Note : le site utilise aujourd'hui la table `seba_state` (sauvegarde JSON du moteur `seba-data.js`). Les tables normalisées sont prêtes pour l'étape suivante sans rien changer aux pages.
+
+### 2a. Prérequis Vault — notifications d'alerte (Palier 3, optionnel)
+
+Le trigger `qa_photos_alert_trigger` (dans `supabase-schema.sql`) crée automatiquement une alerte dès qu'une photo est jugée `non_conforme`/`incertain`. **Sans l'étape ci-dessous, les alertes se créent normalement et restent visibles dans le tableau de bord — seule la notification (email/push, pas encore branchée de toute façon, voir 1k) reste silencieuse.** Rien ne casse si tu sautes cette étape ; à faire quand tu veux activer la notification pour de vrai.
+
+1. Supabase → **SQL Editor** → **New query**, colle en remplaçant les deux valeurs :
+   ```sql
+   select vault.create_secret('https://TON-PROJET.supabase.co', 'project_url');
+   select vault.create_secret('TA_CLE_SERVICE_ROLE', 'service_role_key');
+   ```
+   (URL et clé **service_role** : Settings → API — ⚠️ jamais dans le repo, seulement ici, une fois.)
+2. **Run**. C'est tout — le trigger retrouve les deux secrets automatiquement à chaque nouvelle alerte.
+3. Pour désactiver sans tout redéployer : voir les commandes "Panic Button" dans `AUDIT-GO-LIVE-SEBA.md`.
 
 ---
 
@@ -153,5 +177,9 @@ Note : le site utilise aujourd'hui la table `seba_state` (sauvegarde JSON du mot
 | `docs/ai-assistant.js` | Assistant IA (Groq ou analyste local) |
 | `docs/stripe-service.js` | Paiements (Payment Links) |
 | `docs/sw.js` / `docs/manifest.json` | PWA (installable + hors-ligne) |
+| `docs/photo-manager.js` | Capture photo terrain + envoi à `vision-qa` |
+| `docs/dashboard-alerts.js` | Tableau de bord des alertes QA (`alert_logs`) |
 | `docs-backend.md` | Architecture données en détail |
 | `release-notes-seba.md` | Historique des livraisons |
+| `PLAN.md` / `PROGRESS.md` | Roadmap produit + journal d'exécution technique |
+| `AUDIT-GO-LIVE-SEBA.md` | Audit sécurité/résilience + commandes "Panic Button" |
