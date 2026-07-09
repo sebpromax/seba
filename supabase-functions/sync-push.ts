@@ -15,6 +15,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
+// Audit go-live (AUDIT-GO-LIVE-SEBA.md, section 2) : ce fichier n'a aucun
+// fetch() litteral (uniquement le client supabase-js) -- l'equivalent reel
+// pour poser une limite de temps est .abortSignal() sur chaque requete/RPC,
+// utilise systematiquement ci-dessous plutot que d'ignorer la consigne
+// faute de fetch() a modifier au sens strict.
+const FETCH_TIMEOUT_MS = 5000;
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
@@ -82,9 +88,15 @@ async function resolveIdentity(req: Request): Promise<{ account: string; user_id
       .select('account, employe_id')
       .match({ token: employeeToken, revoked: false })
       .gt('expires_at', new Date().toISOString())
+      .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
       .maybeSingle();
     if (session) {
-      const { data: owner } = await supabase.from('seba_state').select('user_id').eq('account', session.account).maybeSingle();
+      const { data: owner } = await supabase
+        .from('seba_state')
+        .select('user_id')
+        .eq('account', session.account)
+        .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
+        .maybeSingle();
       if (owner) return { account: session.account, user_id: owner.user_id, employee_id: session.employe_id };
     }
     // Token employé présent mais invalide/expiré : ne PAS retomber
@@ -95,7 +107,12 @@ async function resolveIdentity(req: Request): Promise<{ account: string; user_id
 
   const callerUid = verifyUser(req);
   if (callerUid) {
-    const { data } = await supabase.from('seba_state').select('account, user_id').eq('user_id', callerUid).maybeSingle();
+    const { data } = await supabase
+      .from('seba_state')
+      .select('account, user_id')
+      .eq('user_id', callerUid)
+      .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
+      .maybeSingle();
     if (!data) return null;
     return { account: data.account, user_id: data.user_id, employee_id: null };
   }
@@ -111,17 +128,51 @@ async function applyOne(identity: { account: string; user_id: string; employee_i
     return { client_seq: op.client_seq, status: 'error', error: 'patch invalide (objet requis)' };
   }
 
-  // Idempotence : rejouer le même paquet après une coupure réseau ne doit
-  // jamais réappliquer ni redoubler le journal.
-  const { data: existing } = await supabase
+  // Idempotence, version atomique (audit go-live, AUDIT-GO-LIVE-SEBA.md
+  // section 4) : l'ancienne version faisait un SELECT de verification PUIS
+  // un INSERT separe -- fenetre de course reelle entre les deux si le meme
+  // batch est rejoue en parallele (retry reseau pendant que l'original est
+  // encore en vol), pouvant faire executer apply_entity_patch deux fois
+  // pour UNE operation logique. Remplace par un upsert avec
+  // ignoreDuplicates (= INSERT ... ON CONFLICT (...) DO NOTHING cote
+  // PostgREST) : la contrainte UNIQUE de sync_operations devient le SEUL
+  // arbitre, tranche atomiquement par Postgres, plus de fenetre possible.
+  // Si la ligne existait deja, inserted est un tableau VIDE (pas d'erreur,
+  // pas de ligne retournee) -- c'est ce qui distingue un vrai doublon d'une
+  // premiere ecriture, sans jamais avoir appele apply_entity_patch entre
+  // les deux tentatives concurrentes.
+  const { data: inserted, error: insertError } = await supabase
     .from('sync_operations')
-    .select('client_seq')
-    .match({ account: identity.account, device_id, client_seq: op.client_seq })
-    .maybeSingle();
-  if (existing) {
+    .upsert(
+      {
+        account: identity.account,
+        user_id: identity.user_id,         // explicite : default auth.uid() vaudrait NULL sous service_role
+        employee_id: identity.employee_id,
+        device_id,
+        client_seq: op.client_seq,
+        entity: op.entity,
+        entity_id: op.entity_id,
+        op: op.op,
+        patch: op.patch,
+      },
+      { onConflict: 'account,device_id,client_seq', ignoreDuplicates: true },
+    )
+    .select()
+    .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS));
+
+  if (insertError) {
+    return { client_seq: op.client_seq, status: 'error', error: insertError.message };
+  }
+  if (!inserted || inserted.length === 0) {
+    // Doublon reel, deja journalise par une tentative precedente (gagnante
+    // de la course) -- jamais rejoue, jamais d'erreur trompeuse.
     return { client_seq: op.client_seq, status: 'ack_duplicate' };
   }
 
+  // Garanti a partir d'ici : nous sommes le SEUL appelant a avoir gagne
+  // l'insertion pour ce (account, device_id, client_seq) -- la contrainte
+  // UNIQUE de Postgres a tranche, pas notre code. apply_entity_patch ne
+  // peut donc plus jamais etre invoquee deux fois pour la meme operation.
   const { data: patched, error: rpcError } = await supabase
     .rpc('apply_entity_patch', {
       p_account: identity.account,
@@ -129,33 +180,26 @@ async function applyOne(identity: { account: string; user_id: string; employee_i
       p_entity_id: op.entity_id,
       p_patch_jsonb: op.patch,
     })
+    .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
     .single();
 
   if (rpcError || !patched) {
+    // Compense l'insertion qui vient de reussir : sans ce delete, un
+    // retry futur de ce MEME client_seq serait vu a tort comme un
+    // doublon (inserted.length === 0 au prochain appel) et ne
+    // redeclencherait plus jamais apply_entity_patch -- l'operation
+    // resterait bloquee indefiniment, journalisee mais jamais appliquee.
+    // Fenetre residuelle (assumee, pas ignoree) : un doublon concurrent
+    // qui arriverait EXACTEMENT pendant ce delete pourrait re-gagner la
+    // course et re-appliquer le patch -- au pire aussi severe que la race
+    // d'origine corrigee ci-dessus (merge idempotent en valeur, jamais de
+    // corruption), jamais pire.
+    await supabase
+      .from('sync_operations')
+      .delete()
+      .match({ account: identity.account, device_id, client_seq: op.client_seq })
+      .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS));
     return { client_seq: op.client_seq, status: 'error', error: rpcError?.message ?? 'apply_entity_patch: réponse vide' };
-  }
-
-  const { error: logError } = await supabase.from('sync_operations').insert({
-    account: identity.account,
-    user_id: identity.user_id,           // explicite : default auth.uid() vaudrait NULL sous service_role
-    employee_id: identity.employee_id,
-    device_id,
-    client_seq: op.client_seq,
-    entity: op.entity,
-    entity_id: op.entity_id,
-    op: op.op,
-    patch: op.patch,
-  });
-
-  if (logError) {
-    // Le patch a déjà été appliqué à entity_versions mais pas journalisé :
-    // renvoyer une erreur pour que le client NE PURGE PAS cette opération
-    // de sa file locale. Il la rejouera -- apply_entity_patch est un merge
-    // idempotent en valeur (même patch réappliqué = même résultat), au prix
-    // d'un incrément de version superflu si ça se reproduit. Pas de perte
-    // de données dans tous les cas.
-    console.error('sync_operations insert échoué après apply_entity_patch réussi :', logError.message);
-    return { client_seq: op.client_seq, status: 'error', error: 'journalisation échouée, réessai nécessaire' };
   }
 
   return { client_seq: op.client_seq, status: 'applied', version: patched.out_version, last_snapshot: patched.out_last_snapshot };

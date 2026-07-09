@@ -18,6 +18,16 @@ const DAILY_LIMIT = 40;
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 Mo, coherent avec file_size_limit du bucket (supabase-schema.sql)
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CONFIDENCE_THRESHOLD = 0.6;
+// Audit go-live (AUDIT-GO-LIVE-SEBA.md, section 2) : voir ai-relay.ts pour
+// le raisonnement general. RESERVE PROPRE A CE FICHIER : l'analyse
+// multimodale (vision) est intrinsequement plus lente qu'une completion
+// texte seule -- 5s peut se reveler court pour une vraie photo et
+// declencher plus de verdicts 'incertain' par timeout que par analyse
+// reelle. C'est sans risque (degradation deja geree, jamais de blocage),
+// juste un compromis qualite/latence a surveiller (voir metrique n°3 du
+// rapport d'audit, ratio incertain/total) -- ajuster cette seule
+// constante si le ratio grimpe anormalement apres le go-live.
+const FETCH_TIMEOUT_MS = 5000;
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
@@ -97,6 +107,7 @@ async function callGeminiVision(base64Image: string, mimeType: string): Promise<
         contents: [{ parts: [{ inlineData: { mimeType, data: base64Image } }] }],
         generationConfig: { maxOutputTokens: 300, temperature: 0.2, responseMimeType: 'application/json' },
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     },
   );
   if (!res.ok) throw new Error('Gemini HTTP ' + res.status);

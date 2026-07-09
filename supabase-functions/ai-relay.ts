@@ -33,6 +33,14 @@
 
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const DAILY_LIMIT = 50;
+// Audit go-live (AUDIT-GO-LIVE-SEBA.md, section 2) : aucun appel reseau
+// sortant n'avait de limite de temps propre a l'application, exposant
+// l'invocation entiere a la limite d'execution de la plateforme au lieu
+// d'un echec controle. AbortSignal.timeout() plutot qu'un
+// AbortController+setTimeout manuel : meme resultat ({signal: ...}),
+// nettoyage automatique du timer, pas de risque de fuite si le fetch
+// resout avant l'echeance.
+const FETCH_TIMEOUT_MS = 5000;
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
@@ -74,7 +82,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
   try {
     const res = await fetch(
       supaUrl + '/rest/v1/api_usage?select=count&account=eq.' + encodeURIComponent(userId) + "&kind=eq.ai&day=eq." + today,
-      { headers },
+      { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
     );
     const rows = res.ok ? await res.json() : [];
     const count = rows.length ? rows[0].count : 0;
@@ -83,6 +91,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
       method: 'POST',
       headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
       body: JSON.stringify({ account: userId, kind: 'ai', day: today, count: count + 1 }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     return true;
   } catch {
@@ -115,6 +124,7 @@ async function callMistral(system: string, user: string, jsonMode: boolean): Pro
       ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
       max_tokens: 400, temperature: 0.4,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error('Mistral HTTP ' + res.status);
   const data = await res.json();
@@ -132,6 +142,7 @@ async function callGroq(system: string, user: string, _jsonMode: boolean): Promi
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       max_tokens: 400, temperature: 0.4,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error('Groq HTTP ' + res.status);
   const data = await res.json();
@@ -149,6 +160,7 @@ async function callOpenRouter(system: string, user: string, _jsonMode: boolean):
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       max_tokens: 400, temperature: 0.4,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error('OpenRouter HTTP ' + res.status);
   const data = await res.json();
@@ -168,6 +180,7 @@ async function callGemini(system: string, user: string, _jsonMode: boolean): Pro
         contents: [{ parts: [{ text: user }] }],
         generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     },
   );
   if (!res.ok) throw new Error('Gemini HTTP ' + res.status);
