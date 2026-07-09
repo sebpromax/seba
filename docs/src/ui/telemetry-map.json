@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "genere": "2026-07-09",
+    "source": "docs/dashboard.html + docs/widgets.js (audit statique, grep exhaustif + lecture des fonctions productrices)",
+    "avertissement_perimetre": "La majorite des chiffres metier visibles sur le dashboard (CA, nombre de clients, devis en attente, etc.) ne vivent PAS dans des elements a ID fixe de dashboard.html. Ils sont generes dynamiquement par le systeme de widgets (docs/widgets.js, WIDGET_CATALOG, fonction renderCockpitTelemetry() -> def.render(ctx, container)) : chaque widget cree ses propres noeuds DOM a l'affichage, avec des classes partagees (ex: .metric-value pour l'animation de comptage) mais PAS d'ID stable et unique par metrique. Une liaison TelemetryModule -> renderTelemetry(data) par ID fixe ne peut donc couvrir que les elements HORS du systeme de widgets, listes ci-dessous. Brancher les widgets eux-memes necessiterait un chantier separe sur widgets.js (hors perimetre de cette mission en 4 prompts, qui touche ui-controller.js/dashboard-init.js)."
+  },
+  "elements": [
+    {
+      "id": "focus-score-num",
+      "metric": "Indice de sérénité du compte (Serenity Score, 0-100)",
+      "source": "computeSerenityScore(_ctx) (docs/widgets.js), appelé depuis toggleFocusMode() (docs/dashboard.html ligne ~1845)",
+      "assignation_actuelle": "textContent (deja sur sans echappement necessaire - valeur numerique)"
+    },
+    {
+      "id": "focus-score-lbl",
+      "metric": "Libellé d'état associé au Serenity Score (ex: \"Serein\", \"Tendu\")",
+      "source": "serenityStateFor(score).label (docs/widgets.js), meme appelant que focus-score-num",
+      "assignation_actuelle": "textContent (label interne fixe, pas une donnee utilisateur libre)"
+    },
+    {
+      "id": "notif-badge",
+      "metric": "Nombre de factures en retard (badge de notification)",
+      "source": "ctx.creances.length via renderNotifPanel(ctx) (docs/dashboard.html ligne ~1924), ctx construit par buildWidgetCtx()",
+      "assignation_actuelle": "textContent (deja sur - nombre uniquement, jamais '9+' que via concatenation de chaines fixes)"
+    },
+    {
+      "id": "wc-bar",
+      "metric": "Pourcentage de progression de la checklist d'accueil (onboarding, pas une metrique business CA/clients)",
+      "source": "updateChecklistBar() (docs/dashboard.html ligne ~1984), calcule a partir de localStorage seba_check_1/seba_check_2",
+      "assignation_actuelle": "style.width (pourcentage numerique uniquement)"
+    },
+    {
+      "id": "wc-pct",
+      "metric": "Texte de progression checklist (ex: \"2 / 3\")",
+      "source": "updateChecklistBar() (docs/dashboard.html), meme fonction que wc-bar",
+      "assignation_actuelle": "textContent (deja sur)"
+    },
+    {
+      "id": "cockpit-telemetry",
+      "metric": "HORS PERIMETRE - conteneur du systeme de widgets, pas une metrique unique",
+      "source": "renderCockpitTelemetry(ctx) (docs/widgets.js ligne 1667) -> WIDGET_CATALOG[id].render(ctx, container) par widget epingle",
+      "assignation_actuelle": "innerHTML reconstruit entierement a chaque rendu par def.render() - systeme distinct, voir avertissement_perimetre"
+    }
+  ]
+}
