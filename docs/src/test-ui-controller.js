@@ -74,21 +74,24 @@ async function run() {
   assert.strictEqual(controller.latestTelemetry, null, 'des donnees invalides ne doivent pas remplacer latestTelemetry');
 
   // 8. renderTelemetry() — volet statique : seul le champ reellement fourni
-  // est ecrit (facturesRetard -> notif-badge), les champs absents (Serenity
-  // Score, checklist) sont ignores individuellement, pas d'erreur.
-  controller.renderTelemetry({ caTotal: 500, facturesRetard: 3 });
-  const badgeWrite = writes.find((w) => w.targetId === 'notif-badge');
-  assert.ok(badgeWrite, 'facturesRetard present doit ecrire sur notif-badge');
-  assert.strictEqual(badgeWrite.html, '3');
+  // est ecrit (serenityLabel -> focus-score-lbl), les champs absents
+  // (serenityScore, checklist) sont ignores individuellement, pas d'erreur.
+  controller.renderTelemetry({ caTotal: 500, serenityLabel: 'Serein' });
+  const lblWriteA = writes.find((w) => w.targetId === 'focus-score-lbl');
+  assert.ok(lblWriteA, 'serenityLabel present doit ecrire sur focus-score-lbl');
+  assert.strictEqual(lblWriteA.html, 'Serein');
   assert.strictEqual(controller.latestTelemetry.caTotal, 500, 'latestTelemetry doit exposer les agregats recus');
   assert.ok(!writes.some((w) => w.targetId === 'focus-score-num'), 'un champ absent de data (serenityScore) ne doit jamais ecrire un element');
 
-  // 9. renderTelemetry() — badge avec plus de 9 impayes -> '9+', et donnee
-  // malveillante dans un champ texte reste echappee (defense systematique)
+  // 9. renderTelemetry() — facturesRetard ne doit JAMAIS ecrire sur
+  // notif-badge : cet id DOM est deja possede par renderNotifPanel(ctx)
+  // (dashboard.html), sur un concept metier different (creances/relance,
+  // pas les factures status='retard' de seba_db) — voir le commentaire de
+  // STATIC_TELEMETRY_FIELDS. Un champ texte malveillant reste echappe
+  // (defense systematique).
   controller.renderTelemetry({ facturesRetard: 15, serenityLabel: '<b>Tendu</b>' });
-  const badgeWrite2 = writes.filter((w) => w.targetId === 'notif-badge').at(-1);
-  assert.strictEqual(badgeWrite2.html, '9+', 'plus de 9 factures en retard doit afficher "9+"');
-  const lblWrite = writes.find((w) => w.targetId === 'focus-score-lbl');
+  assert.ok(!writes.some((w) => w.targetId === 'notif-badge'), 'facturesRetard ne doit jamais ecrire sur notif-badge (concept metier different, voir Sequence 4/4)');
+  const lblWrite = writes.filter((w) => w.targetId === 'focus-score-lbl').at(-1);
   assert.ok(lblWrite && !lblWrite.html.includes('<b>'), 'une valeur malveillante dans un champ texte doit rester echappee');
 
   // 10. renderTelemetry() — volet CSS (wc-bar) : passe par domStyleWriter,
@@ -98,7 +101,7 @@ async function run() {
   assert.ok(styleWrite, 'checklistPct present doit ecrire sur wc-bar via domStyleWriter');
   assert.strictEqual(styleWrite.value, '100%', 'un pourcentage hors bornes doit etre clampe a 100%');
 
-  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique, resilience DATA_ERROR, UI_ACTION(toggleSidebar) et renderTelemetry (guards + volet statique/CSS) confirmes.');
+  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique, resilience DATA_ERROR, UI_ACTION(toggleSidebar) et renderTelemetry (guards + volet statique/CSS, notif-badge preserve) confirmes.');
 }
 
 run().catch((e) => {

@@ -30,16 +30,34 @@ import { esc } from '../core/esc.js';
 
 /* Elements statiques de telemetry-map.json (Prompt 1) et le champ de
    `data` (sortie de TelemetryModule.computeAggregates(), voir
-   docs/src/modules/telemetry-module.js) cense les nourrir. IMPORTANT :
-   seul notif-badge a reellement une source dans TelemetryModule aujourd'hui
-   (facturesRetard). Les 3 autres (Serenity Score, checklist onboarding)
-   viennent de calculs totalement distincts (computeSerenityScore() dans
-   widgets.js, flags localStorage seba_check_*) jamais produits par
-   TelemetryModule — les documenter ici plutot que fabriquer une fausse
-   correspondance ; renderTelemetry() les ignore proprement (voir guards)
-   tant qu'aucune source reelle ne les alimente. */
+   docs/src/modules/telemetry-module.js) cense les nourrir. IMPORTANT,
+   corrige en Sequence 4/4 (activation reelle, voir MIGRATION_TELEMETRY_
+   REPORT.md "notif-badge") : AUCUN des 4 elements ci-dessous n'a de source
+   reelle dans TelemetryModule aujourd'hui.
+   - notif-badge : retire de cette liste (etait mappe sur facturesRetard
+     dans la PR#28, jamais active). Verification faite en activant la
+     cascade pour de vrai (Sequence 4/4) : #notif-badge est deja alimente
+     en production par renderNotifPanel(ctx) (dashboard.html), sur
+     ctx.creances (docs/widgets.js buildWidgetCtx, cle localStorage
+     "creances_imp" - un registre de recouvrement/relance), PAS sur les
+     factures status='retard' de seba_db que compte facturesRetard. Ce sont
+     deux concepts metier distincts (creances/relance vs factures en
+     retard) qui partagent le meme id DOM par coincidence historique. Le
+     laisser mappe aurait fait remplacer, une fois la cascade active pour
+     de vrai, un compte correct (creances) par un compte incoherent avec le
+     panneau deroulant en dessous (qui liste toujours les creances) — un
+     vrai regression, pas juste un doublon inoffensif. Documente plutot que
+     fabrique une fausse correspondance.
+   - focus-score-num / focus-score-lbl / wc-pct : Serenity Score
+     (computeSerenityScore() dans widgets.js) et checklist onboarding
+     (flags localStorage seba_check_*) restent des calculs totalement
+     distincts, jamais produits par TelemetryModule.
+   renderTelemetry() ignore proprement (voir guards) tant qu'aucune source
+   reelle n'alimente un de ces champs — le volet statique est donc
+   aujourd'hui un no-op assume en production ; seul le volet dynamique
+   (redeclenchement de renderCockpitTelemetry) et le clamp CSS restent
+   actifs des qu'une donnee reelle existe. */
 const STATIC_TELEMETRY_FIELDS = [
-  { id: 'notif-badge', dataKey: 'facturesRetard', format: (n) => (n > 9 ? '9+' : String(n)) },
   { id: 'focus-score-num', dataKey: 'serenityScore', format: (n) => String(n) },
   { id: 'focus-score-lbl', dataKey: 'serenityLabel', format: (s) => String(s) },
   { id: 'wc-pct', dataKey: 'checklistLabel', format: (s) => String(s) },
