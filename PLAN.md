@@ -18,23 +18,40 @@ Contexte complet : `ANALYSE-ANGLES-MORTS-IA-TERRAIN.md` (audit produit) et `VISI
 **Livré** — PR #34 (`c71157d`), 2026-07-09. `alert_logs`, trigger `qa_photos_alert_trigger`, `supabase-functions/notify-alert.ts` (stub), `docs/dashboard-alerts.js`.
 
 ### P4 (ex-P3 du cadrage initial) — Agents intelligents & mémoire vectorielle
-**Non commencé.** Détail technique complet déjà écrit dans `VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md` section Grok/Mistral — reste à implémenter :
-- [ ] `supabase-functions/product-agents.config.json` — config des agents côté produit, **distincte** de `agents_config.json` (orchestrateur de dev interne, ne jamais fusionner les deux).
-- [ ] `supabase-functions/_shared/conscience-seba.ts` — module partagé, tue la duplication de prompt entre `ai-relay.ts` (mode `json`) et `daily-digest.ts`.
-- [ ] Table `ai_context_hash` (cache SHA256 de contexte, évite les appels LLM redondants quand la situation d'un compte n'a pas changé depuis la veille).
-- [ ] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` — troncature de chaîne pouvant produire un JSON invalide envoyé au modèle. Remplacer par une construction de contexte bornée en nombre d'éléments, pas en caractères.
-- [ ] Extension `pgvector` + table `memoire_embeddings` (`mistral-embed`, 1024 dimensions) + `client_memoire` (résumé incrémental, pas régénéré à chaque digest) — mémoire sémantique par client sans saturer le contexte envoyé au LLM.
+**[X] Terminé** — PR #37 (`6c71361`), #38 (`63c448b`), #39 (`44740eb`), 2026-07-09.
+- [x] `supabase-functions/product-agents.config.json` — config des agents côté produit, **distincte** de `agents_config.json` (orchestrateur de dev interne, jamais fusionnée).
+- [x] `supabase-functions/_shared/conscience-seba.ts` — module partagé, prompt unifié.
+- [x] Table `ai_context_hash` (cache SHA256 de contexte).
+- [x] Extension `pgvector` + table `memoire_embeddings` (`mistral-embed`, 1024 dimensions), fonction `match_interventions()`, `_shared/memoire-lookup.ts` (`lookupHistory`), embedding branché sur `vision-qa.ts` (`_shared/embeddings.ts`).
+- [ ] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` — troncature de chaîne pouvant produire un JSON invalide envoyé au modèle. **Reporté** (non traité dans ces PR, remonté en dette technique ci-dessous).
+- [ ] Table `client_memoire` (résumé incrémental par client) — **non créée**, remontée en dette technique ci-dessous.
 
 ### P5 (ex-P4 du cadrage initial) — Analytique financière
-**Non commencé.** Détail technique complet dans `VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md` section Grok :
-- [ ] Tables `materiaux_couts`, `intervention_materiaux`, `intervention_trajets`, `fournisseurs_prix_historique` — normalisables dès maintenant, indépendamment du calendrier de migration du blob `seba_state` (faible fréquence d'écriture, pas de risque de conflit multi-appareil comme les données opérationnelles de P1).
-- [ ] Fonction Postgres `marge_reelle_interventions()` — rapproche `seba_state.state.factures[]` (JSONB) et les coûts normalisés.
-- [ ] Table `client_payment_history` + prédiction déterministe des impayés (moyenne/écart-type par client, **aucun appel LLM** — le LLM n'intervient qu'à la toute fin pour la mise en forme textuelle du digest).
-- [ ] Widget dashboard "marge réelle" (CA vendu − coûts matériaux − temps de trajet non facturé).
+**[X] Terminé** — PR #40 (`4789590`), 2026-07-09.
+- [x] Tables `materiaux_couts`, `paiements` (colonne `account` directe + RLS `auth.uid() = user_id`, pas de jointure sur une table `interventions` normalisée qui n'existe pas dans ce projet).
+- [x] Vue `vue_marge_interventions` (`security_invoker = true`) + fonction `get_marge_reelle(p_account text, p_intervention_id text)`.
+- [x] `_shared/finance-analytics.ts` (`calculateProfitability`, `getFinancialSummary`) — masquage de `paiements.reference` par omission de colonne.
+- [ ] Tables `intervention_materiaux`, `intervention_trajets`, `fournisseurs_prix_historique` — non créées, périmètre réduit au strict nécessaire pour `calculate_profitability`/`get_financial_summary`.
+- [ ] Table `client_payment_history` + prédiction déterministe des impayés — **non commencé**.
+- [ ] Widget dashboard "marge réelle" — **non commencé**, aucune UI ne consomme encore `vue_marge_interventions`/`get_marge_reelle`.
+
+### AI Core — System prompt, tool routing, garde-fous
+**[X] Terminé** — PR #41 (`d5fc885`), 2026-07-09. Descriptions d'outils optimisées pour le tool-routing LLM (`llmDirective` par outil dans `product-agents.config.json`), `SEBA_SAFETY_RAILS` (anti-hallucination, non-exposition d'identifiants bruts, traçabilité) injecté dans `conscience-seba.ts`, gestion gracieuse des échecs d'outil (`.catch()` sur chaque appel RAG/financier, jamais de crash pipeline).
 
 ---
 
-## Dette technique & maintenance (priorité avant P4/P5)
+## Dette technique / Prochaines étapes (priorité — clôture Palier 4/5 + AI Core)
+
+Trouvée en clôturant les Paliers 4 & 5 + AI Core (PR #37→#41, 2026-07-09) : l'infrastructure IA (mémoire vectorielle, analytique financière, garde-fous LLM) est opérationnelle **côté backend uniquement** — rien côté client ne l'appelle encore.
+
+- [ ] **Créer la route HTTP/Edge Function pour interroger `assistant_technique` depuis le client** — `prepareAssistantTechniqueContext()` (`_shared/conscience-seba.ts`) n'a aujourd'hui aucun point d'entrée HTTP dédié (voir `product-agents.config.json` → `agents.assistant_technique.entrypoint`, encore marqué "à définir").
+- [ ] **Brancher `ai-relay.ts` et `daily-digest.ts` sur `conscience-seba.ts`** — ces deux fonctions existent déjà mais n'utilisent pas encore le module partagé refactoré (System Prompt + garde-fous + routage d'outils du Palier AI Core).
+- [ ] **Configurer un environnement CI ou CLI Deno pour exécuter les tests unitaires** (RAG, Finance, Safety Rails) — les dizaines de `Deno.test` écrits depuis le Palier 1 (`sync-push.test.ts`, `vision-qa.test.ts`, `conscience-seba.test.ts`, `finance-analytics` couvert indirectement, etc.) n'ont **jamais été exécutés réellement** dans cet environnement (pas de CLI Deno disponible) — vérifiés uniquement par relecture et équilibrage syntaxique. Risque cumulatif à mesure que la suite grossit.
+- [ ] **Créer la vue/table `client_memoire`** pour l'historique brut côté frontend (résumé incrémental par client, cadré au Palier 4 mais non implémenté — voir `summarize_tech_notes` dans `product-agents.config.json`, qui documente déjà l'absence de cette table).
+- [ ] Corriger `JSON.stringify(body.context).slice(0, 2000|4000)` dans `ai-relay.ts` (troncature de chaîne pouvant produire un JSON invalide envoyé au modèle) — pertinent au moment du branchement sur `conscience-seba.ts` ci-dessus.
+- [ ] Table `client_payment_history` + prédiction déterministe des impayés, widget dashboard "marge réelle" (aucune UI ne consomme encore `vue_marge_interventions`/`get_marge_reelle`) — reste du périmètre P5 non traité.
+
+### Dette technique — audit Go-Live (résolue)
 
 Trouvée lors de l'audit Go-Live (`AUDIT-GO-LIVE-SEBA.md`, 2026-07-09) et de sa remédiation (PR #35, `f4724c2`) :
 
@@ -42,6 +59,9 @@ Trouvée lors de l'audit Go-Live (`AUDIT-GO-LIVE-SEBA.md`, 2026-07-09) et de sa 
 - [x] Fenêtre de course dans l'idempotence de `sync-push.ts` — fait, PR #35 (`upsert ignoreDuplicates` + `DELETE` compensatoire).
 - [x] Timeout réseau (`AbortSignal.timeout`) sur tous les appels sortants des 4 Edge Functions concernées — fait, PR #35.
 - [x] Prérequis manuel Vault (`vault.create_secret`) documenté — fait, `MANUEL-SEBA-ADMIN.md` section 2a.
+
+### Dette technique — restant (non prioritaire)
+
 - [ ] **Killswitch en config DB pour `vision-qa.ts`/`sync-push.ts`** — aujourd'hui, seul le trigger d'alerte a un vrai killswitch DB (`ALTER TABLE ... DISABLE TRIGGER`). Couper `vision-qa`/`sync-push` demande de désactiver la fonction entière côté dashboard Supabase (arrêt total, pas un mode dégradé). Proposition déjà écrite dans l'audit : table `app_config (key text primary key, value text)` lue en tête de chaque fonction sensible.
 - [ ] **Métriques de monitoring "sync failures" côté serveur** — aujourd'hui, les échecs de synchro d'un appareil ne sont visibles qu'en `console.warn` local (`docs/seba-data.js`), jamais remontés au patron/à l'admin. Priorité : construire dès que le volume d'usage terrain augmente (voir plan d'observabilité, `AUDIT-GO-LIVE-SEBA.md` section 5, métrique n°5).
 - [ ] Comparaison à temps constant pour le secret dans `notify-alert.ts` (sévérité faible, non bloquant — voir audit section 1, YELLOW).
