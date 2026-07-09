@@ -27,20 +27,12 @@ body{font-family:var(--font-sans);}
   <meta name="theme-color" content="#0a0a0c">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+  <script src="layout-manager.js"></script>
 </head>
 <body class="h-full text-slate-100 antialiased">
 
-<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-  <div class="flex items-center space-x-4">
-    <a href="core-ux.html" class="text-xl font-bold tracking-tighter text-white font-mono">seba<span class="text-emerald-500">.</span></a>
-    <div class="h-4 w-px bg-slate-800"></div>
-    <span class="text-2xs font-bold text-slate-400 uppercase tracking-widest font-mono">LOT 2.1 // AGENDA ÉLASTIQUE</span>
-  </div>
-  <div class="flex items-center space-x-3">
-    <a href="compta-expert.html" class="text-2xs font-bold bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded hover:text-white transition-colors">← 1.4</a>
-    <a href="haversine-engine.html" class="text-2xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded hover:bg-emerald-500/20 transition-colors">2.2 →</a>
-  </div>
-</header>
+<div id="header-container" class="min-h-[63px]"></div>
+<script>injectLotHeader('agenda-elastique');</script>
 
 <main class="max-w-6xl mx-auto p-6 space-y-6">
 
