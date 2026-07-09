@@ -46,6 +46,7 @@ function getElementById(id) {
 }
 
 const cockpitCalls = [];
+let telemetryReadyRaised = 0;
 
 // import statique impossible ici : les imports sont hoistes avant tout code
 // de ce fichier, donc window/document/localStorage doivent exister AVANT
@@ -62,6 +63,14 @@ globalThis.document = {
 globalThis.window._ctx = { fake: true };
 globalThis.window.renderCockpitTelemetry = (ctx) => cockpitCalls.push(ctx);
 
+const { eventBus: sharedBus } = await import('./core/event-bus.js');
+const { TELEMETRY_EVENTS: TE } = await import('./modules/telemetry-module.js');
+// Compteur independant de la publication brute TELEMETRY_READY elle-meme
+// (pas seulement de son effet en aval) - assertion stricte demandee par la
+// mission de deduplication : "l'evenement ne doit etre intercepte qu'une
+// seule fois par cycle".
+sharedBus.subscribe(TE.READY, () => { telemetryReadyRaised++; });
+
 const { bindTelemetryReady } = await import('./ui/dashboard-init.js');
 
 async function run() {
@@ -72,30 +81,28 @@ async function run() {
   // (meme principe deja utilise dans test-telemetry.js).
   await new Promise((r) => setTimeout(r, 0));
 
-  // 1. Activation reelle bout-en-bout : la session demo presente dans le
-  // storage mocke doit avoir traverse toute la chaine Auth->Data->Telemetry
-  // ->UIController jusqu'au volet dynamique (window.renderCockpitTelemetry),
-  // avec le VRAI contexte existant (window._ctx), jamais un contexte fabrique.
+  // 1. Activation reelle bout-en-bout, DEDUPLIQUEE : la session demo
+  // presente dans le storage mocke doit avoir traverse toute la chaine
+  // Auth->Data->Telemetry->UIController jusqu'au volet dynamique
+  // (window.renderCockpitTelemetry), avec le VRAI contexte existant
+  // (window._ctx), jamais un contexte fabrique - et EXACTEMENT UNE FOIS,
+  // pas deux.
   //
-  // cockpitCalls.length === 2 (pas 1) pour UNE SEULE session, et c'est une
-  // dette reelle DECOUVERTE par cette activation (pas un bug introduit ici) :
-  // TelemetryModule ET DataModule reagissent CHACUN independamment a
-  // AUTH_SUCCESS et declenchent chacun un fetch('seba_db') -
-  // TelemetryModule via #requestRefresh() -> DATA_REQUEST, DataModule via
-  // son propre eventBus.subscribe(AUTH_SUCCESS) direct (voir data-module.js
-  // "FETCH global des donnees utilisateur"). Resultat mesure : 1 seul
-  // DATA_REQUEST publie, mais 2 DATA_SUCCESS(seba_db) et donc 2
-  // TELEMETRY_READY pour 1 seule connexion (confirme par un test isole,
-  // voir MIGRATION_TELEMETRY_REPORT.md "duplication AUTH_SUCCESS"). Ni
-  // TelemetryModule ni DataModule ne sont modifies dans cette PR : chacun
-  // est deja teste et valide EN ISOLATION (test-telemetry.js/
-  // test-data-migration.js) sur exactement ce comportement individuel -
-  // le corriger correctement demande de trancher qui reste proprietaire du
-  // "fetch sur connexion", une decision d'architecture separee de
-  // l'activation elle-meme. Ce test fige donc la REALITE observee plutot
-  // que la valeur ideale, pour que toute correction future de cette
-  // duplication fasse volontairement echouer ce test (signal, pas surprise).
-  assert.strictEqual(cockpitCalls.length, 2, 'une session demo declenche aujourd\'hui 2 calculs TELEMETRY_READY (duplication connue TelemetryModule/DataModule sur AUTH_SUCCESS, voir MIGRATION_TELEMETRY_REPORT.md) - si ce nombre change, verifier si la duplication a ete corrigee intentionnellement');
+  // Avant deduplication, cockpitCalls.length valait 2 pour une seule
+  // session : TelemetryModule ET DataModule reagissaient CHACUN
+  // independamment a AUTH_SUCCESS et declenchaient chacun un
+  // fetch('seba_db') - TelemetryModule via #requestRefresh() ->
+  // DATA_REQUEST, DataModule via son propre eventBus.subscribe(AUTH_SUCCESS)
+  // direct. Fix (voir docs/src/modules/data-module.js) : DataModule
+  // n'ecoute plus AUTH_SUCCESS du tout - seuls les consommateurs reels
+  // (TelemetryModule pour seba_db, UIController pour sebaEntreprise)
+  // demandent explicitement ce dont ils ont besoin via DATA_REQUEST,
+  // source unique de verite pour "qui declenche quel fetch". Assertion
+  // stricte sur le compteur BRUT de TELEMETRY_READY (telemetryReadyRaised,
+  // independant de son effet en aval) : l'evenement ne doit etre
+  // intercepte qu'une seule fois par cycle de connexion legitime.
+  assert.strictEqual(telemetryReadyRaised, 1, 'une session demo ne doit declencher qu\'UN SEUL TELEMETRY_READY par connexion (deduplication AUTH_SUCCESS, voir MIGRATION_TELEMETRY_REPORT.md et data-module.js)');
+  assert.strictEqual(cockpitCalls.length, 1, 'le volet dynamique de renderTelemetry() ne doit etre declenche qu\'une seule fois par connexion, plus de calcul duplique');
   assert.ok(cockpitCalls.every((c) => c === globalThis.window._ctx), 'le volet dynamique doit toujours reutiliser le VRAI window._ctx, jamais un contexte reconstruit a partir des seuls agregats');
 
   // 2. Regression Sequence 4/4 : seba_db contient une facture status=

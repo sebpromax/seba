@@ -9,13 +9,28 @@
  *
  * Decisions volontaires par rapport au brief, et pourquoi :
  *
- * 1. Pas d'import direct de auth-module.js. Ce module reagit aux evenements
- *    AUTH_SUCCESS/AUTH_SIGNED_OUT par leur NOM (chaine litterale), jamais en
- *    important AUTH_EVENTS depuis modules/auth-module.js — importer un autre
- *    module metier violerait la regle "aucun module n'importe un autre
- *    module directement" (ARCHITECTURE-MODULAIRE.md section B.1). Les deux
- *    modules ne se connaissent que via le nom des evenements qu'ils
- *    partagent, jamais via un import de code.
+ * 1. Pas d'import direct de auth-module.js. Ce module reagit a l'evenement
+ *    AUTH_SIGNED_OUT par son NOM (chaine litterale), jamais en important
+ *    AUTH_EVENTS depuis modules/auth-module.js — importer un autre module
+ *    metier violerait la regle "aucun module n'importe un autre module
+ *    directement" (ARCHITECTURE-MODULAIRE.md section B.1). Les deux modules
+ *    ne se connaissent que via le nom des evenements qu'ils partagent,
+ *    jamais via un import de code.
+ *
+ *    N'ecoute PLUS AUTH_SUCCESS directement (retire lors de la
+ *    deduplication TELEMETRY_READY, voir docs/MIGRATION_TELEMETRY_REPORT.md
+ *    "duplication AUTH_SUCCESS") : ce module reagissait a AUTH_SUCCESS en
+ *    fetchant lui-meme seba_db/sebaEntreprise, EN PARALLELE de consommateurs
+ *    qui redemandaient exactement les memes cles via DATA_REQUEST sur le
+ *    meme evenement (TelemetryModule pour seba_db, UIController pour
+ *    sebaEntreprise) — deux chemins pour une seule cle, donc deux
+ *    DATA_SUCCESS et deux calculs en aval par connexion, verifie en Node ET
+ *    en navigateur reel. Retirer le fetch direct de DataModule ne perd
+ *    aucune donnee : DataModule reste un pur repondeur DATA_REQUEST
+ *    (Request-Response, point 3 ci-dessous), et c'est desormais au
+ *    CONSOMMATEUR de demander ce dont il a besoin — source unique de
+ *    verite pour "qui declenche quel fetch", au lieu de deux emetteurs
+ *    independants pour la meme cle.
  * 2. `storage` est injecte au constructeur (ni window.localStorage lu en
  *    dur, ni aucun autre acces a `window`) — sandboxing demande par le
  *    brief, et ce qui permet de mocker entierement la persistance dans
@@ -45,9 +60,8 @@ export const DATA_EVENTS = Object.freeze({
   CLEARED: 'DATA_CLEARED',
 });
 
-// Noms d'evenements d'un AUTRE module (auth-module.js), references par
+// Nom d'evenement d'un AUTRE module (auth-module.js), reference par
 // chaine litterale et jamais par import — voir point 1 ci-dessus.
-const AUTH_SUCCESS = 'AUTH_SUCCESS';
 const AUTH_SIGNED_OUT = 'AUTH_SIGNED_OUT';
 
 /**
@@ -113,12 +127,6 @@ export class DataModule {
       if (action === 'SAVE') this.save(key, payload);
       else if (action === 'FETCH') this.fetch(key);
       else if (action === 'DELETE') this.delete(key);
-    });
-    eventBus.subscribe(AUTH_SUCCESS, () => {
-      // "FETCH global des donnees utilisateur" : les 2 cles metier reelles
-      // aujourd'hui (pas seba_session_demo, qui est la bookkeeping d'auth).
-      this.fetch('seba_db');
-      this.fetch('sebaEntreprise');
     });
     eventBus.subscribe(AUTH_SIGNED_OUT, () => this.clearAll());
   }

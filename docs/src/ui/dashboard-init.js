@@ -64,15 +64,21 @@ const uiController = new UIController({ domWriter, domStyleWriter, toggleSidebar
  * constructeur s'abonne lui-meme sur l'EventBus (voir data-module.js/
  * telemetry-module.js), aucun cablage supplementaire requis ici pour la
  * cascade DATA_SUCCESS -> TelemetryModule -> TELEMETRY_READY.
- * - TelemetryModule() : reagit a AUTH_SUCCESS (FETCH seba_db) et a
- *   DATA_SUCCESS(seba_db) (calcule les agregats, publie TELEMETRY_READY).
- * - DataModule({ storage: window.localStorage }) : reagit a AUTH_SUCCESS
- *   (FETCH seba_db + sebaEntreprise) et a DATA_REQUEST. Cle et forme
- *   verifiees compatibles avec la production reelle : DB_KEY='seba_db'
- *   dans docs/seba-data.js (SebaDB) est le MEME nom de cle que REGISTRY
- *   dans data-module.js, et le state SebaDB ({clients, devis, factures,
- *   interventions, employes, ...}) satisfait deja le validateur du
- *   registre — DataModule.fetch('seba_db') lit donc les vraies donnees
+ * - TelemetryModule() : reagit a AUTH_SUCCESS (demande un FETCH seba_db
+ *   via DATA_REQUEST) et a DATA_SUCCESS(seba_db) (calcule les agregats,
+ *   publie TELEMETRY_READY).
+ * - DataModule({ storage: window.localStorage }) : repond a DATA_REQUEST
+ *   (SAVE/FETCH/DELETE) uniquement — n'ecoute PLUS AUTH_SUCCESS directement
+ *   depuis la deduplication (voir data-module.js et
+ *   MIGRATION_TELEMETRY_REPORT.md "duplication AUTH_SUCCESS") : seuls les
+ *   consommateurs reels (TelemetryModule pour seba_db, UIController pour
+ *   sebaEntreprise) demandent explicitement ce dont ils ont besoin, un
+ *   fetch par cle et par connexion, plus de calcul TELEMETRY_READY duplique.
+ *   Cle et forme verifiees compatibles avec la production reelle :
+ *   DB_KEY='seba_db' dans docs/seba-data.js (SebaDB) est le MEME nom de cle
+ *   que REGISTRY dans data-module.js, et le state SebaDB ({clients, devis,
+ *   factures, interventions, employes, ...}) satisfait deja le validateur
+ *   du registre — DataModule.fetch('seba_db') lit donc les vraies donnees
  *   metier, pas un blob vide ou incompatible.
  */
 new TelemetryModule();
