@@ -16,7 +16,9 @@
  */
 import { UIController } from '../modules/ui-controller.js';
 import { eventBus } from '../core/event-bus.js';
-import { TELEMETRY_EVENTS } from '../modules/telemetry-module.js';
+import { AuthModule, AUTH_EVENTS } from '../modules/auth-module.js';
+import { DataModule } from '../modules/data-module.js';
+import { TelemetryModule, TELEMETRY_EVENTS } from '../modules/telemetry-module.js';
 import './event-bridge.js'; // pose window.handleLegacyClick (effet de bord a l'import)
 
 function domWriter(targetId, html) {
@@ -58,24 +60,76 @@ function toggleSidebar() {
 const uiController = new UIController({ domWriter, domStyleWriter, toggleSidebar });
 
 /**
- * Souscription a TELEMETRY_READY (emis par TelemetryModule, voir
- * docs/src/modules/telemetry-module.js) -> routage direct vers
- * uiController.renderTelemetry(data). Reference de handler conservee au
- * niveau module et desabonnee avant tout nouvel abonnement : eventBus
- * (docs/src/core/event-bus.js) retrouve un handler par la reference exacte
- * du callback passe a subscribe(), donc un second appel de bindTelemetry()
- * sans ce garde empilerait un listener supplementaire a chaque appel
- * (fuite memoire + renderTelemetry() declenche N fois par evenement).
+ * Sequence 4/4 — eveil du Core : instancie la chaine complete. Chaque
+ * constructeur s'abonne lui-meme sur l'EventBus (voir data-module.js/
+ * telemetry-module.js), aucun cablage supplementaire requis ici pour la
+ * cascade DATA_SUCCESS -> TelemetryModule -> TELEMETRY_READY.
+ * - TelemetryModule() : reagit a AUTH_SUCCESS (FETCH seba_db) et a
+ *   DATA_SUCCESS(seba_db) (calcule les agregats, publie TELEMETRY_READY).
+ * - DataModule({ storage: window.localStorage }) : reagit a AUTH_SUCCESS
+ *   (FETCH seba_db + sebaEntreprise) et a DATA_REQUEST. Cle et forme
+ *   verifiees compatibles avec la production reelle : DB_KEY='seba_db'
+ *   dans docs/seba-data.js (SebaDB) est le MEME nom de cle que REGISTRY
+ *   dans data-module.js, et le state SebaDB ({clients, devis, factures,
+ *   interventions, employes, ...}) satisfait deja le validateur du
+ *   registre — DataModule.fetch('seba_db') lit donc les vraies donnees
+ *   metier, pas un blob vide ou incompatible.
+ */
+new TelemetryModule();
+new DataModule({ storage: window.localStorage });
+const authModule = new AuthModule(window.SEBA_CONFIG || {});
+
+/**
+ * AuthModule.getSession() est une lecture seule (ne publie aucun
+ * evenement, voir auth-module.js) : c'est ce fichier qui traduit une
+ * session confirmee en AUTH_SUCCESS sur le bus, avec la MEME forme de
+ * payload que celle deja publiee par AuthModule.signIn()/signUp()
+ * ({ userId, demo }) — DataModule et TelemetryModule y reagissent deja
+ * (ils ne lisent d'ailleurs aucun champ du payload, seul le nom de
+ * l'evenement compte). Aucune session -> aucune publication : la cascade
+ * ne demarre jamais dans le vide, elle reste silencieuse (etat par defaut
+ * du dashboard, demo ou reel, inchange).
  *
- * Ecart de perimetre assume : ce fichier abonne l'ecouteur, mais
- * TelemetryModule (et la chaine AuthModule -> DataModule dont il depend
- * pour recevoir DATA_SUCCESS) n'est instancie nulle part dans le navigateur
- * a ce jour (verifie : aucun import de auth-module.js/data-module.js/
- * telemetry-module.js hors fichiers de test). TELEMETRY_READY ne sera donc
- * pas encore publie en production - ce cablage reste un tunnel pret mais
- * dormant, exactement comme event-bridge.js l'a ete en Phase 2 (voir
- * MIGRATION_REPORT.md) jusqu'a l'activation complete d'une sequence
- * ulterieure. Documente plutot que fabrique.
+ * docs/guard.js a deja fait respecter l'acces a cette page (redirection
+ * vers connexion.html si Supabase configure et non authentifie) BIEN
+ * AVANT que ce script differe ne s'execute — cet appel ne bloque jamais
+ * l'affichage, il ne fait qu'amorcer le bus une fois la page deja
+ * autorisee a s'afficher.
+ *
+ * Ecart assume : instancier AuthModule ici cree un DEUXIEME client
+ * Supabase (le premier est deja charge par docs/auth.js pour
+ * window.sebaAuth, celui que guard.js utilise reellement) — AuthModule ne
+ * lit jamais window.sebaAuth par conception (sandboxing, voir
+ * auth-module.js, config passee au constructeur). Le SDK Supabase peut
+ * logguer un avertissement "Multiple GoTrueClient instances" en console :
+ * sans impact fonctionnel connu aujourd'hui (getSession() est en lecture
+ * seule, ne rafraichit pas de token), documente comme dette a resorber
+ * quand guard.js migrera lui-meme vers AuthModule — hors perimetre de
+ * cette sequence (voir MIGRATION_TELEMETRY_REPORT.md).
+ */
+async function wakeUpCore() {
+  try {
+    const session = await authModule.getSession();
+    if (!session) return;
+    eventBus.publish(AUTH_EVENTS.SUCCESS, {
+      userId: session.user && session.user.id,
+      demo: !!session.demo,
+    });
+  } catch (e) {
+    console.warn('[Seba-Core] AuthModule.getSession() a echoue, cascade telemetrie non amorcee.', e);
+  }
+}
+wakeUpCore();
+
+/**
+ * Souscription a TELEMETRY_READY (emis par TelemetryModule ci-dessus) ->
+ * routage direct vers uiController.renderTelemetry(data). Reference de
+ * handler conservee au niveau module et desabonnee avant tout nouvel
+ * abonnement : eventBus (docs/src/core/event-bus.js) retrouve un handler
+ * par la reference exacte du callback passe a subscribe(), donc un second
+ * appel de bindTelemetryReady() sans ce garde empilerait un listener
+ * supplementaire a chaque appel (fuite memoire + renderTelemetry()
+ * declenche N fois par evenement).
  */
 let telemetryReadyHandler = null;
 
