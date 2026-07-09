@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createServiceClient } from './_shared/conscience-seba.ts';
-import { embed } from './_shared/embeddings.ts';
+import { runDecoupled, storeEmbedding } from './_shared/embeddings.ts';
 
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const MAX_CONTENT_CHARS = 8000;
@@ -44,22 +44,11 @@ function verifyUser(req: Request): string | null {
 
 const supabase = createServiceClient();
 
-/** Best-effort, ne lève jamais : une erreur ici (API HS, réseau) ne doit
-    jamais remonter à l'appelant, qui a déjà reçu sa réponse 202. */
+/** Enveloppe storeEmbedding() pour journaliser un echec -- storeEmbedding
+    ne leve jamais, mais un echec silencieux serait invisible sans ce log. */
 async function computeAndStore(account: string, interventionId: string | null, content: string, metadata: Record<string, unknown>) {
-  try {
-    const vector = await embed(content);
-    const { error } = await supabase.from('memoire_embeddings').insert({
-      account,
-      intervention_id: interventionId,
-      content,
-      embedding: vector,
-      metadata,
-    });
-    if (error) console.error('[embed-content] insertion échouée :', error.message);
-  } catch (e) {
-    console.error('[embed-content] calcul d\'embedding échoué (best-effort, jamais bloquant) :', String((e as Error)?.message || e));
-  }
+  const result = await storeEmbedding(supabase, account, interventionId, content, metadata);
+  if (!result.ok) console.error('[embed-content] échec (best-effort, jamais bloquant) :', result.error);
 }
 
 Deno.serve(async (req) => {
@@ -91,23 +80,8 @@ Deno.serve(async (req) => {
   const interventionId = typeof body.intervention_id === 'string' ? body.intervention_id : null;
   const metadata = (body.metadata && typeof body.metadata === 'object') ? body.metadata : {};
 
-  const task = computeAndStore(account, interventionId, content, metadata);
-
-  // deno-lint-ignore no-explicit-any -- EdgeRuntime est un global fourni par
-  // le runtime Supabase (pas Deno standard, aucune definition de type
-  // disponible a l'import) ; verification defensive pour rester executable
-  // aussi hors de ce runtime (tests locaux) sans planter.
-  const rt = (globalThis as any).EdgeRuntime;
-  if (rt && typeof rt.waitUntil === 'function') {
-    rt.waitUntil(task);
-  } else {
-    // Environnement sans EdgeRuntime (local/tests) : on attend quand même
-    // le resultat plutot que de risquer une promesse non geree qui
-    // masquerait une erreur silencieusement.
-    await task;
-  }
-
   // 202 Accepted : le contenu est pris en charge, le calcul peut se
-  // terminer apres cette reponse (voir EdgeRuntime.waitUntil ci-dessus).
+  // terminer apres cette reponse (runDecoupled -> EdgeRuntime.waitUntil).
+  await runDecoupled(computeAndStore(account, interventionId, content, metadata));
   return jsonResponse(cors, { accepted: true }, 202);
 });
