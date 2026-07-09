@@ -14,10 +14,14 @@ const writes = [];
 function mockDomWriter(targetId, html) {
   writes.push({ targetId, html });
 }
+const styleWrites = [];
+function mockDomStyleWriter(targetId, property, value) {
+  styleWrites.push({ targetId, property, value });
+}
 let sidebarToggled = 0;
 function mockToggleSidebar() { sidebarToggled++; }
 
-new UIController({ domWriter: mockDomWriter, toggleSidebar: mockToggleSidebar });
+const controller = new UIController({ domWriter: mockDomWriter, domStyleWriter: mockDomStyleWriter, toggleSidebar: mockToggleSidebar });
 
 async function run() {
   // 1. "Le rendu ne change pas" : meme marquage exact que la production
@@ -60,7 +64,41 @@ async function run() {
   await new Promise((r) => setTimeout(r, 0));
   assert.strictEqual(ackUnknown.handled, false, 'une action non geree ne doit jamais marquer ack.handled=true');
 
-  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique, resilience DATA_ERROR et UI_ACTION(toggleSidebar) confirmes.');
+  // 7. renderTelemetry() — guard : donnees absentes/invalides ne doivent
+  // rien ecrire (DOM existant preserve) et doivent avertir proprement.
+  const writesBefore = writes.length;
+  controller.renderTelemetry(null);
+  controller.renderTelemetry('pas un objet');
+  controller.renderTelemetry({});
+  assert.strictEqual(writes.length, writesBefore, 'des donnees invalides ne doivent produire aucune ecriture DOM');
+  assert.strictEqual(controller.latestTelemetry, null, 'des donnees invalides ne doivent pas remplacer latestTelemetry');
+
+  // 8. renderTelemetry() — volet statique : seul le champ reellement fourni
+  // est ecrit (facturesRetard -> notif-badge), les champs absents (Serenity
+  // Score, checklist) sont ignores individuellement, pas d'erreur.
+  controller.renderTelemetry({ caTotal: 500, facturesRetard: 3 });
+  const badgeWrite = writes.find((w) => w.targetId === 'notif-badge');
+  assert.ok(badgeWrite, 'facturesRetard present doit ecrire sur notif-badge');
+  assert.strictEqual(badgeWrite.html, '3');
+  assert.strictEqual(controller.latestTelemetry.caTotal, 500, 'latestTelemetry doit exposer les agregats recus');
+  assert.ok(!writes.some((w) => w.targetId === 'focus-score-num'), 'un champ absent de data (serenityScore) ne doit jamais ecrire un element');
+
+  // 9. renderTelemetry() — badge avec plus de 9 impayes -> '9+', et donnee
+  // malveillante dans un champ texte reste echappee (defense systematique)
+  controller.renderTelemetry({ facturesRetard: 15, serenityLabel: '<b>Tendu</b>' });
+  const badgeWrite2 = writes.filter((w) => w.targetId === 'notif-badge').at(-1);
+  assert.strictEqual(badgeWrite2.html, '9+', 'plus de 9 factures en retard doit afficher "9+"');
+  const lblWrite = writes.find((w) => w.targetId === 'focus-score-lbl');
+  assert.ok(lblWrite && !lblWrite.html.includes('<b>'), 'une valeur malveillante dans un champ texte doit rester echappee');
+
+  // 10. renderTelemetry() — volet CSS (wc-bar) : passe par domStyleWriter,
+  // jamais par esc()/innerHTML (ce n'est pas un contexte HTML), et reste clampe.
+  controller.renderTelemetry({ facturesRetard: 0, checklistPct: 150 });
+  const styleWrite = styleWrites.find((w) => w.targetId === 'wc-bar');
+  assert.ok(styleWrite, 'checklistPct present doit ecrire sur wc-bar via domStyleWriter');
+  assert.strictEqual(styleWrite.value, '100%', 'un pourcentage hors bornes doit etre clampe a 100%');
+
+  console.log('OK — ' + writes.length + ' ecritures DOM simulees, rendu identique, resilience DATA_ERROR, UI_ACTION(toggleSidebar) et renderTelemetry (guards + volet statique/CSS) confirmes.');
 }
 
 run().catch((e) => {
