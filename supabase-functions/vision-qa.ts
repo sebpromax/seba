@@ -12,6 +12,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { runDecoupled, storeEmbedding } from './_shared/embeddings.ts';
 
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const DAILY_LIMIT = 40;
@@ -199,7 +200,14 @@ Deno.serve(async (req) => {
         }
       })();
 
-  await supabase.from('qa_photos').insert({
+  // Le stockage du verdict PRECEDE toujours l'embedding, dans cet ordre.
+  // Pas pour eviter une erreur de cle etrangere : memoire_embeddings.
+  // intervention_id n'a AUCUNE contrainte FK (texte libre, format
+  // id_xxxxx, aucune ligne reelle a referencer -- Pilier 4, voir
+  // supabase-schema.sql section 19). La vraie raison : ne jamais calculer
+  // un embedding pour une analyse qui n'a pas ete reellement enregistree,
+  // et embedder le verdict TEL QU'IL EST PERSISTE, pas un etat intermediaire.
+  const { error: qaInsertError } = await supabase.from('qa_photos').insert({
     account,
     user_id: callerUid,
     intervention_id: interventionId,
@@ -209,6 +217,35 @@ Deno.serve(async (req) => {
     raison: result.raison,
     error: result.error,
   });
+
+  // Embedding declenche uniquement si (a) le verdict a bien ete enregistre
+  // et (b) c'est une VRAIE analyse Gemini (result.error === false) -- un
+  // message d'echec de pipeline ("Analyse indisponible : ...") n'a aucune
+  // valeur pour la memoire semantique future, ce n'est pas du contenu
+  // metier. Decouple du thread de reponse (runDecoupled ->
+  // EdgeRuntime.waitUntil, voir _shared/embeddings.ts) : le technicien
+  // reçoit son verdict immediatement, le calcul mistral-embed continue
+  // apres l'envoi de la reponse HTTP.
+  if (!qaInsertError && !result.error) {
+    try {
+      const content = `Intervention ${interventionId} — verdict ${result.verdict} (confiance ${(result.confidence * 100).toFixed(0)}%) : ${result.raison || 'aucun détail fourni'}`;
+      runDecoupled(
+        storeEmbedding(supabase, account, interventionId, content, {
+          verdict: result.verdict,
+          confidence: result.confidence,
+          photo_path: uploadError ? null : path,
+        }).then((r) => {
+          if (!r.ok) console.error('[vision-qa] embedding non stocké (best-effort) :', r.error);
+        }),
+      );
+    } catch (e) {
+      // Filet de securite supplementaire : storeEmbedding() ne leve deja
+      // jamais (retourne un resultat discrimine), mais ce try/catch
+      // garantit qu'aucune evolution future de cet appel ne peut faire
+      // echouer la reponse QA elle-meme.
+      console.error('[vision-qa] déclenchement de l\'embedding a échoué (non bloquant) :', String((e as Error)?.message || e));
+    }
+  }
 
   // Toujours 200 : le statut HTTP ne doit jamais forcer le client a
   // interpreter ceci comme un blocage. `error` dans le corps distingue un
