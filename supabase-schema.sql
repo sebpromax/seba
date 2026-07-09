@@ -377,3 +377,60 @@ begin
   end loop;
 end;
 $$;
+
+-- ═══════════════════════════════════════════════════════════════
+-- PALIER 2 — Pipeline de QA visuelle (supabase-functions/vision-qa.ts)
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 12. Bucket de stockage des photos d'intervention ──
+-- public=false : jamais d'URL publique, tout acces passe par une policy
+-- RLS ou par service_role (l'Edge Function). Plafond de taille + types
+-- MIME autorises poses au niveau du bucket, en plus de la validation
+-- faite dans vision-qa.ts (defense en profondeur).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('intervention-photos', 'intervention-photos', false, 10485760, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
+
+-- Chemin de stockage : {account}/{intervention_id}/{timestamp}.jpg --
+-- PAS {intervention_id}/{timestamp}.jpg seul : intervention_id (format
+-- id_xxxxx, aucune structure exploitable) ne permet pas a une policy RLS
+-- de determiner le proprietaire. Le prefixe account est le seul moyen
+-- fiable de scoper "SELECT pour les proprietaires" -- l'upload se faisant
+-- via service_role (l'Edge Function), pas via le JWT du patron, la
+-- colonne `owner` automatique de Storage ne se remplit pas et n'est donc
+-- pas utilisable comme critere ici.
+create policy "intervention_photos_insert" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'intervention-photos'
+    and (storage.foldername(name))[1] = (select account from seba_state where user_id = auth.uid())
+  );
+create policy "intervention_photos_select" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'intervention-photos'
+    and (storage.foldername(name))[1] = (select account from seba_state where user_id = auth.uid())
+  );
+-- Pas de policy pour service_role : contourne RLS par nature (upload et
+-- lecture pour l'analyse se font tous les deux via l'Edge Function).
+
+-- ── 13. Verdicts de QA visuelle ──
+create table if not exists qa_photos (
+  id uuid primary key default gen_random_uuid(),
+  account text not null references seba_state (account) on delete cascade,
+  user_id uuid not null default auth.uid(),
+  intervention_id text not null,              -- format id_xxxxx (Pilier 4), pas de FK -- voir note ci-dessus
+  employee_id text,                           -- nullable : non requis par ce palier (auth JWT patron uniquement, voir vision-qa.ts), reserve pour une attribution par employe ulterieure
+  photo_path text,                            -- chemin dans intervention-photos, null si l'upload a echoue
+  verdict text not null check (verdict in ('conforme', 'non_conforme', 'incertain')),
+  confidence numeric(3,2) not null default 0,
+  raison text,
+  error boolean not null default false,       -- distingue un "incertain" authentique (IA prudente) d'un echec de pipeline (upload/API HS)
+  created_at timestamptz default now()
+);
+create index if not exists idx_qa_photos_intervention on qa_photos (account, intervention_id);
+alter table qa_photos enable row level security;
+create policy "qa_photos_select" on qa_photos for select using (auth.uid() = user_id);
+-- Pas de policy insert/update/delete pour authenticated : ecrit exclusivement
+-- par vision-qa.ts (service_role) -- une photo/verdict ne doit jamais pouvoir
+-- etre falsifie depuis le navigateur.
