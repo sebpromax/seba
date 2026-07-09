@@ -8,17 +8,29 @@
 //
 // Pour chaque compte ayant des données réelles : calcule un résumé
 // simple (factures en retard, devis en attente), demande une
-// recommandation à l'IA (Mistral puis Groq), et si une action semble
+// recommandation à l'IA via decideAvecLLM() (_shared/conscience-seba.ts,
+// System Prompt centralisé, même chaîne de fallback à 4 fournisseurs que
+// ai-relay.ts — voir _shared/llm-providers.ts), et si une action semble
 // utile, envoie un email (Resend) + une notification push (OneSignal)
 // au patron de l'entreprise.
+//
+// La boucle ci-dessous itère UNE ligne seba_state = UN compte à la fois :
+// c'est ce qui garantit le cloisonnement multi-tenant du contexte envoyé
+// au LLM (jamais de mélange de données entre comptes), sans qu'il soit
+// nécessaire ni souhaitable d'injecter l'account_id lui-même dans le texte
+// envoyé au modèle (Garde-fou 2 de conscience-seba.ts : aucun identifiant
+// brut dans un prompt/une réponse IA).
 //
 // Contexte de confiance différent de ai-relay.ts/send-email.ts/
 // send-push.ts (qui sont appelés par le NAVIGATEUR d'un utilisateur
 // quelconque, d'où leur JWT + rate-limit) : ici l'appelant est déjà le
 // serveur Supabase lui-même via pg_cron, donc les appels aux
-// fournisseurs (Mistral/Groq/Resend/OneSignal) sont faits directement,
-// sans repasser par ces fonctions HTTP.
+// fournisseurs (Resend/OneSignal) sont faits directement, sans repasser
+// par ces fonctions HTTP.
 // ═══════════════════════════════════════════════════════════════
+
+import { decideAvecLLM } from './_shared/conscience-seba.ts';
+import { LLM_PROVIDERS } from './_shared/llm-providers.ts';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -31,58 +43,6 @@ function jsonResponse(body: unknown, status = 200) {
 // timeout aurait pu ralentir ou geler l'integralite du cron pour tous
 // les comptes suivants dans la boucle, pas seulement celui en cours.
 const FETCH_TIMEOUT_MS = 5000;
-
-async function callMistralOrGroq(context: Record<string, unknown>): Promise<{ action: string; priority: string; reasoning: string } | null> {
-  const system =
-    "Tu es Seba, l'intelligence de pilotage d'un cockpit de gestion. " +
-    'Réponds uniquement en JSON structuré : {"action":"titre court","priority":"high/medium/low","reasoning":"une phrase"}. ' +
-    "Analyse le contexte et propose UNE mesure concrète si utile.";
-  const providers: Array<() => Promise<string>> = [];
-  const mistralKey = Deno.env.get('MISTRAL_API_KEY');
-  if (mistralKey) {
-    providers.push(async () => {
-      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + mistralKey },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(context) }],
-          response_format: { type: 'json_object' }, max_tokens: 250, temperature: 0.3,
-        }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-      if (!res.ok) throw new Error('Mistral HTTP ' + res.status);
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
-    });
-  }
-  const groqKey = Deno.env.get('GROQ_API_KEY');
-  if (groqKey) {
-    providers.push(async () => {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + groqKey },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(context) }],
-          max_tokens: 250, temperature: 0.3,
-        }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-      if (!res.ok) throw new Error('Groq HTTP ' + res.status);
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
-    });
-  }
-  for (const call of providers) {
-    try {
-      const raw = await call();
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.action && parsed.priority) return parsed;
-    } catch { /* fournisseur suivant */ }
-  }
-  return null;
-}
 
 async function sendEmail(to: string, subject: string, html: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
@@ -144,7 +104,8 @@ Deno.serve(async (req) => {
         montantEnRetardEUR: retard.reduce((s: number, f: { amount?: number }) => s + (f.amount || 0), 0),
         devisEnAttente: attente.length,
       };
-      const reco = await callMistralOrGroq(context);
+      const decision = await decideAvecLLM(context, LLM_PROVIDERS);
+      const reco = decision?.verdict ?? null;
       results.push({ account: row.account, action: reco?.action || null });
       if (!reco || reco.priority === 'low') continue;
 

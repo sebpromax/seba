@@ -809,3 +809,45 @@ as $$
   from vue_marge_interventions
   where account = p_account and intervention_id = p_intervention_id;
 $$;
+
+-- ═══════════════════════════════════════════════════════════════
+-- DETTE TECHNIQUE PLAN.md — client_memoire (historique frontend)
+--
+-- Détail complet des 3 écarts assumés par rapport au brief initial
+-- (account_id -> account, aucune table interventions peuplée à joindre,
+-- security_invoker) : voir migrations/20260709_create_client_memoire.sql,
+-- gardée synchronisée avec cette section. Test de non-régression
+-- multi-tenant (isolation compte A / compte B) :
+-- migrations/20260709_create_client_memoire.test.sql.
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 26. Historique technique par intervention (frontend) ──
+create or replace view client_memoire
+with (security_invoker = true) as
+select
+  qp.account,
+  qp.intervention_id,
+  pay.client_id,
+  qp.created_at::date as date_intervention,
+  coalesce(me.content, qp.raison) as resume_technique,
+  qp.verdict as statut,
+  coalesce(vmi.revenu, 0) as montant_total
+from qa_photos qp
+left join (
+  select account, intervention_id, max(content) as content
+  from memoire_embeddings
+  where intervention_id is not null
+  group by account, intervention_id
+) me on me.account = qp.account and me.intervention_id = qp.intervention_id
+left join (
+  select account, intervention_id, max(client_id) as client_id
+  from paiements
+  where intervention_id is not null and client_id is not null
+  group by account, intervention_id
+) pay on pay.account = qp.account and pay.intervention_id = qp.intervention_id
+left join vue_marge_interventions vmi on vmi.account = qp.account and vmi.intervention_id = qp.intervention_id;
+
+-- Aucun nouvel index necessaire : idx_qa_photos_intervention (section 13),
+-- idx_memoire_embeddings_intervention (section 19) et
+-- idx_paiements_intervention (section 23) couvrent deja exactement les
+-- colonnes de jointure/filtrage (account, intervention_id) de cette vue.

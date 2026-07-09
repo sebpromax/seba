@@ -41,8 +41,8 @@
     "assistant_technique": {
       "role": "assistant_technique",
       "description": "Repond aux questions d'un technicien/patron sur l'historique d'une intervention ou d'un client, en s'appuyant sur memoire_embeddings (recherche semantique) plutot que sur l'historique complet charge en contexte.",
-      "sharedModule": "_shared/conscience-seba.ts (orchestration RAG : prepareAssistantTechniqueContext)",
-      "entrypoint": "a definir (pas encore de route HTTP dediee dans ce palier — infrastructure seule, voir RAPPORT-IMPLEMENTATION-PALIER4.md)",
+      "sharedModule": "_shared/conscience-seba.ts (orchestration RAG : prepareAssistantTechniqueContext) + _shared/llm-providers.ts (chaine de fallback LLM)",
+      "entrypoint": "assistant-technique.ts",
       "$comment_tools": "Deux champs distincts par outil, volontairement pas fusionnes : `description` = documentation technique precise (implementation, securite) pour les developpeurs/la revue de code ; `llmDirective` = texte imperatif optimise pour qu'un modele avec function-calling choisisse le bon outil (voir la reserve en tete de conscience-seba.ts : ce mecanisme n'est pas encore cable a un appel LLM reel dans ce projet, ces directives sont ecrites pour etre pretes le jour ou il le sera).",
       "tools": [
         {
