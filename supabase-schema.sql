@@ -851,3 +851,41 @@ left join vue_marge_interventions vmi on vmi.account = qp.account and vmi.interv
 -- idx_memoire_embeddings_intervention (section 19) et
 -- idx_paiements_intervention (section 23) couvrent deja exactement les
 -- colonnes de jointure/filtrage (account, intervention_id) de cette vue.
+
+-- ═══════════════════════════════════════════════════════════════
+-- DISJONCTEUR GLOBAL DE COUT LLM (Tech Lead & Securite Cloud)
+--
+-- Detail complet (distinction avec le quota PAR COMPTE api_usage,
+-- raisonnement fail-closed, risque de DoS cross-tenant via
+-- increment_api_usage sans REVOKE EXECUTE) :
+-- voir migrations/20260709_create_api_usage_guardrail.sql, gardee
+-- synchronisee avec cette section. Implementation cote Edge Function :
+-- _shared/llm-providers.ts (enforceUsageGuardrail), appelee en premiere
+-- ligne de callWithFallback() ET decideAvecLLM() -- toute requete vers
+-- Mistral/Groq/OpenRouter/Gemini passe par l'un des deux.
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 27. Compteur global de requetes LLM par jour ──
+create table if not exists api_usage_daily (
+  date date primary key default current_date,
+  request_count int not null default 0
+);
+alter table api_usage_daily enable row level security;
+-- Pas de policy : accès bloqué à tout le monde sauf service_role.
+
+-- ── 28. Incremente le compteur du jour, retourne le total actuel ──
+create or replace function increment_api_usage()
+returns int
+language plpgsql
+as $$
+declare
+  v_count int;
+begin
+  insert into api_usage_daily (date, request_count)
+  values (current_date, 1)
+  on conflict (date) do update set request_count = api_usage_daily.request_count + 1
+  returning request_count into v_count;
+  return v_count;
+end;
+$$;
+revoke execute on function increment_api_usage() from public, anon, authenticated;

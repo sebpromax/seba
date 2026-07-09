@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 // SEBA — Chaîne de fallback des fournisseurs LLM texte.
 //
-// Extrait de ai-relay.ts (qui définissait ces 4 fonctions + son propre
-// tableau PROVIDERS en interne) pour que assistant-technique.ts puisse les
-// réutiliser sans les dupliquer une 3e fois. ai-relay.ts et daily-digest.ts
-// gardent pour l'instant leur propre copie — leur bascule vers ce module
-// partagé est un point de dette technique distinct (voir PLAN.md,
-// "Brancher ai-relay.ts et daily-digest.ts sur conscience-seba.ts"), pas
-// traité ici pour ne pas mélanger deux changements dans un même commit.
+// Extrait à l'origine de ai-relay.ts, désormais le point de passage
+// UNIQUE vers Mistral/Groq/OpenRouter/Gemini pour tout le projet :
+// ai-relay.ts (callWithFallback, mode chat), assistant-technique.ts
+// (callWithFallback), et ai-relay.ts/daily-digest.ts (decideAvecLLM,
+// _shared/conscience-seba.ts, qui consomme LLM_PROVIDERS directement).
 //
 // Ordre et modèles identiques à product-agents.config.json
 // (sharedProviders.chat) : Mistral → Groq → OpenRouter → Gemini, le
@@ -16,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const FETCH_TIMEOUT_MS = 5000;
+const MAX_DAILY_REQUESTS_DEFAULT = 50;
 
 export type LlmCall = (system: string, user: string, jsonMode: boolean) => Promise<string>;
 export interface LlmProvider {
@@ -112,17 +111,84 @@ export const LLM_PROVIDERS: LlmProvider[] = [
   { name: 'gemini', call: callGemini },
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// Disjoncteur GLOBAL de coût (tous comptes confondus), voir
+// migrations/20260709_create_api_usage_guardrail.sql.
+//
+// DISTINCT du quota PAR COMPTE (table api_usage, checkRateLimit() dans
+// ai-relay.ts/vision-qa.ts/assistant-technique.ts) : celui-ci protège les
+// clés API PARTAGÉES par toute l'app (une seule clé Mistral/Groq/Gemini/
+// OpenRouter pour tous les comptes) d'un dépassement de coût agrégé,
+// même si chaque compte individuellement reste sous son propre plafond.
+// Les deux coexistent, aucun ne remplace l'autre.
+//
+// FAIL-CLOSED, volontairement à L'OPPOSÉ du fail-open de checkRateLimit()
+// partout ailleurs dans ce projet ("mieux vaut un usage non limité
+// temporairement qu'un assistant qui plante") : un garde-fou de COÛT doit
+// bloquer s'il ne peut pas se vérifier lui-même, un garde-fou de confort
+// UX peut se permettre de laisser passer. NE PAS "harmoniser" cette
+// asymétrie avec le reste du code — c'est un choix délibéré, pas un
+// oubli.
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Incrémente puis vérifie le compteur global du jour (RPC
+ * increment_api_usage, service_role uniquement). Lève
+ * `Error('DAILY_LIMIT_REACHED')` si le plafond (MAX_DAILY_REQUESTS, 50
+ * par défaut) est dépassé, OU si la vérification elle-même est
+ * impossible (config Supabase absente, réseau, RPC en erreur) —
+ * fail-closed, jamais un appel LLM laissé passer sans certitude d'être
+ * sous le plafond.
+ */
+export async function enforceUsageGuardrail(): Promise<void> {
+  const supaUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const maxDaily = Number(Deno.env.get('MAX_DAILY_REQUESTS')) || MAX_DAILY_REQUESTS_DEFAULT;
+
+  if (!supaUrl || !serviceKey) {
+    console.error('[llm-providers] enforceUsageGuardrail: SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY absents, impossible de vérifier le quota global — appel bloqué (fail-closed).');
+    throw new Error('DAILY_LIMIT_REACHED');
+  }
+
+  let count: number;
+  try {
+    const res = await fetch(supaUrl + '/rest/v1/rpc/increment_api_usage', {
+      method: 'POST',
+      headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error('increment_api_usage HTTP ' + res.status);
+    count = await res.json();
+    if (typeof count !== 'number') throw new Error('increment_api_usage a renvoyé une réponse inattendue');
+  } catch (e) {
+    console.error('[llm-providers] enforceUsageGuardrail: vérification du quota global impossible — appel bloqué (fail-closed) :', String((e as Error)?.message || e));
+    throw new Error('DAILY_LIMIT_REACHED');
+  }
+
+  if (count > maxDaily) {
+    console.error(`[llm-providers] enforceUsageGuardrail: quota global quotidien dépassé (${count}/${maxDaily}) — appel bloqué.`);
+    throw new Error('DAILY_LIMIT_REACHED');
+  }
+}
+
 /**
  * Essaie chaque provider dans l'ordre jusqu'à ce que l'un renvoie une
- * réponse non vide. Ne lève jamais — retourne `null` si tous échouent,
- * laissant l'appelant décider de la réponse à renvoyer (Garde-fou 1 de
- * conscience-seba.ts : jamais de réponse inventée en remplacement).
+ * réponse non vide. Ne lève jamais pour un échec de provider (réseau/clé
+ * absente) — retourne `null` si tous échouent, laissant l'appelant
+ * décider de la réponse à renvoyer (Garde-fou 1 de conscience-seba.ts :
+ * jamais de réponse inventée en remplacement). PEUT en revanche lever
+ * `Error('DAILY_LIMIT_REACHED')` AVANT même de contacter un provider, si
+ * enforceUsageGuardrail() bloque l'appel — volontairement laissé remonter
+ * (pas de catch ici) pour que l'appelant distingue explicitement "aucun
+ * provider n'a répondu" de "le disjoncteur de coût est ouvert".
  */
 export async function callWithFallback(
   system: string,
   user: string,
   jsonMode = false,
 ): Promise<{ answer: string; provider: string } | null> {
+  await enforceUsageGuardrail();
   for (const p of LLM_PROVIDERS) {
     try {
       const answer = await p.call(system, user, jsonMode);

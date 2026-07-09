@@ -275,11 +275,34 @@ function mockProvider(name: string, respond: () => Promise<string>): LlmProvider
   return { name, call: respond };
 }
 
+// decideAvecLLM() appelle désormais enforceUsageGuardrail() en premier
+// (disjoncteur global de coût, voir llm-providers.ts) : sans stub, elle
+// lèverait DAILY_LIMIT_REACHED avant même d'atteindre les mockProvider()
+// ci-dessus (fail-closed si SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY sont
+// absents, ce qui est le cas dans un environnement de test). Même
+// principe de stub que llm-providers.test.ts, dupliqué ici volontairement
+// pour garder chaque fichier de test autonome (pas d'import croisé entre
+// fichiers de test).
+function withGuardrailPassing<T>(fn: () => Promise<T>): Promise<T> {
+  const originalGet = Deno.env.get.bind(Deno.env);
+  const originalFetch = globalThis.fetch;
+  const env: Record<string, string> = { SUPABASE_URL: 'https://fake.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fake-service-key' };
+  Deno.env.get = ((key: string) => env[key] ?? originalGet(key)) as typeof Deno.env.get;
+  globalThis.fetch = ((url: string) => {
+    if (url.includes('/rpc/increment_api_usage')) return Promise.resolve(new Response('1', { status: 200 }));
+    return Promise.reject(new Error('fetch non stubbé pour ' + url));
+  }) as typeof fetch;
+  return fn().finally(() => {
+    Deno.env.get = originalGet;
+    globalThis.fetch = originalFetch;
+  });
+}
+
 Deno.test('decideAvecLLM() renvoie le verdict + le nom du premier provider qui répond correctement', async () => {
   const providers: LlmProvider[] = [
     mockProvider('mistral', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'high', reasoning: 'test' }))),
   ];
-  const result = await decideAvecLLM({ facturesEnRetard: 3 }, providers);
+  const result = await withGuardrailPassing(() => decideAvecLLM({ facturesEnRetard: 3 }, providers));
   assertEquals(result?.provider, 'mistral');
   assertEquals(result?.verdict.action, 'Relancer');
 });
@@ -289,7 +312,7 @@ Deno.test('decideAvecLLM() bascule sur le provider suivant si le premier renvoie
     mockProvider('mistral', () => Promise.resolve('ceci n\'est pas du JSON')),
     mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'medium', reasoning: 'depuis groq' }))),
   ];
-  const result = await decideAvecLLM({ facturesEnRetard: 3 }, providers);
+  const result = await withGuardrailPassing(() => decideAvecLLM({ facturesEnRetard: 3 }, providers));
   assertEquals(result?.provider, 'groq');
 });
 
@@ -298,7 +321,7 @@ Deno.test('decideAvecLLM() bascule sur le provider suivant si le premier lève u
     mockProvider('mistral', () => Promise.reject(new Error('MISTRAL_API_KEY absente'))),
     mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'low', reasoning: 'depuis groq' }))),
   ];
-  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  const result = await withGuardrailPassing(() => decideAvecLLM({ facturesEnRetard: 1 }, providers));
   assertEquals(result?.provider, 'groq');
 });
 
@@ -307,7 +330,7 @@ Deno.test('decideAvecLLM() retourne null si tous les providers échouent (résea
     mockProvider('mistral', () => Promise.reject(new Error('panne réseau'))),
     mockProvider('groq', () => Promise.resolve('toujours pas du JSON valide')),
   ];
-  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  const result = await withGuardrailPassing(() => decideAvecLLM({ facturesEnRetard: 1 }, providers));
   assertEquals(result, null);
 });
 
@@ -316,6 +339,37 @@ Deno.test('decideAvecLLM() rejette un JSON valide mais incomplet (action/priorit
     mockProvider('mistral', () => Promise.resolve(JSON.stringify({ reasoning: 'sans action ni priority' }))),
     mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'high', reasoning: 'complet' }))),
   ];
-  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  const result = await withGuardrailPassing(() => decideAvecLLM({ facturesEnRetard: 1 }, providers));
   assertEquals(result?.provider, 'groq');
+});
+
+Deno.test('decideAvecLLM() : le disjoncteur global ouvert bloque l\'appel AVANT tout provider', async () => {
+  let providerCalled = false;
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => { providerCalled = true; return Promise.resolve(JSON.stringify({ action: 'x', priority: 'low', reasoning: 'y' })); }),
+  ];
+  const originalGet = Deno.env.get.bind(Deno.env);
+  const originalFetch = globalThis.fetch;
+  Deno.env.get = ((key: string) => (
+    key === 'SUPABASE_URL' ? 'https://fake.supabase.co' :
+    key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'fake-service-key' :
+    key === 'MAX_DAILY_REQUESTS' ? '50' : originalGet(key)
+  )) as typeof Deno.env.get;
+  globalThis.fetch = ((url: string) => {
+    if (url.includes('/rpc/increment_api_usage')) return Promise.resolve(new Response('999', { status: 200 }));
+    return Promise.reject(new Error('ne devrait pas être appelé'));
+  }) as typeof fetch;
+  try {
+    let threw = false;
+    try {
+      await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+    } catch (e) {
+      threw = String((e as Error)?.message) === 'DAILY_LIMIT_REACHED';
+    }
+    assertEquals(threw, true, 'decideAvecLLM() doit propager DAILY_LIMIT_REACHED sans jamais contacter un provider');
+    assertEquals(providerCalled, false);
+  } finally {
+    Deno.env.get = originalGet;
+    globalThis.fetch = originalFetch;
+  }
 });
