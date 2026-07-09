@@ -21,7 +21,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { embed } from './embeddings.ts';
+import { lookupHistory, MemoireMatch } from './memoire-lookup.ts';
 
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -31,13 +31,9 @@ export interface ConscienceVerdict {
   reasoning: string;
 }
 
-export interface MemoireMatch {
-  id: string;
-  intervention_id: string | null;
-  content: string;
-  metadata: Record<string, unknown>;
-  similarity: number;
-}
+// Ré-exportée pour compatibilité : le type venait de ce fichier avant
+// l'extraction de la recherche vectorielle vers memoire-lookup.ts.
+export type { MemoireMatch };
 
 const CONSCIENCE_SYSTEM =
   "Tu es Seba, l'intelligence de pilotage d'un cockpit de gestion. " +
@@ -140,42 +136,7 @@ export async function withContextCache<T>(
   return result;
 }
 
-// ═══ 4. Préparation du contexte : recherche sémantique ═══
-// `account` DOIT être résolu par l'appelant à partir du JWT (jamais un
-// champ envoyé tel quel par un client) : match_interventions() n'a pas
-// d'autre frontière de sécurité sous une connexion service_role (voir
-// supabase-schema.sql section 20).
-export async function lookupHistory(
-  supa: SupabaseClient,
-  account: string,
-  query: string,
-  opts?: { matchThreshold?: number; matchCount?: number },
-): Promise<MemoireMatch[]> {
-  let queryEmbedding: number[];
-  try {
-    queryEmbedding = await embed(query);
-  } catch (e) {
-    console.error('[conscience-seba] lookupHistory: embedding de la requête a échoué', String((e as Error)?.message || e));
-    return []; // jamais bloquant : pas d'historique trouvé, pas une erreur qui casse l'appelant
-  }
-
-  const { data, error } = await supa
-    .rpc('match_interventions', {
-      p_account: account,
-      query_embedding: queryEmbedding,
-      match_threshold: opts?.matchThreshold ?? 0.75,
-      match_count: opts?.matchCount ?? 5,
-    })
-    .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS));
-
-  if (error) {
-    console.error('[conscience-seba] lookupHistory: match_interventions a échoué', error.message);
-    return [];
-  }
-  return (data as MemoireMatch[]) ?? [];
-}
-
-// ═══ 5. Formatage du prompt système "assistant_technique" ═══
+// ═══ 4. Formatage du prompt système "assistant_technique" ═══
 // Incorpore les règles métier Seba (ne jamais inventer un fait) + les
 // extraits pertinents formatés en contexte texte, jamais un historique
 // complet chargé en vrac.
@@ -187,4 +148,29 @@ export function formatAssistantTechniquePrompt(matches: MemoireMatch[]): string 
     .map((m, i) => `[${i + 1}] (pertinence ${(m.similarity * 100).toFixed(0)}%) ${m.content}`)
     .join('\n');
   return ASSISTANT_TECHNIQUE_SYSTEM + '\n\nExtraits pertinents (du plus au moins pertinent) :\n' + extraits;
+}
+
+// ═══ 5. RAG — outil lookup_history de l'agent assistant_technique ═══
+// (product-agents.config.json, agents.assistant_technique.tools[0])
+//
+// "Si la question concerne l'historique technique" : pour CET agent
+// precis, c'est toujours vrai -- son seul rôle (voir ASSISTANT_TECHNIQUE_
+// SYSTEM) est de répondre sur l'historique d'une intervention/d'un
+// client. Il n'existe aucun classifieur d'intention réel dans ce projet
+// (et personne n'a demandé d'en construire un ici) : plutôt que d'en
+// fabriquer un pour cocher la case "si la question concerne...", on
+// documente que la condition est structurellement remplie par la nature
+// même de cet agent, et lookupHistory() est appelée systématiquement.
+// Un futur agent multi-usage (qui répondrait aussi à des questions sans
+// rapport avec l'historique) aurait besoin d'un vrai routage — pas
+// construit ici sans cas d'usage concret.
+export async function prepareAssistantTechniqueContext(
+  supa: SupabaseClient,
+  account: string,
+  question: string,
+  opts?: { threshold?: number; limit?: number },
+): Promise<{ systemPrompt: string; matches: MemoireMatch[] }> {
+  const matches = await lookupHistory(supa, question, account, opts);
+  const systemPrompt = formatAssistantTechniquePrompt(matches);
+  return { systemPrompt, matches };
 }

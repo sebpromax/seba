@@ -41,12 +41,13 @@
     "assistant_technique": {
       "role": "assistant_technique",
       "description": "Repond aux questions d'un technicien/patron sur l'historique d'une intervention ou d'un client, en s'appuyant sur memoire_embeddings (recherche semantique) plutot que sur l'historique complet charge en contexte.",
-      "sharedModule": "_shared/conscience-seba.ts",
+      "sharedModule": "_shared/conscience-seba.ts (orchestration RAG : prepareAssistantTechniqueContext)",
       "entrypoint": "a definir (pas encore de route HTTP dediee dans ce palier — infrastructure seule, voir RAPPORT-IMPLEMENTATION-PALIER4.md)",
       "tools": [
         {
           "name": "lookup_history",
           "description": "Recherche semantique dans memoire_embeddings (match_interventions) pour un compte donne, scopee par account_id resolu serveur — jamais fourni par le client.",
+          "implementation": "_shared/memoire-lookup.ts (lookupHistory)",
           "costTier": "tier0_deterministic (recherche vectorielle, pas d'appel LLM)"
         },
         {
