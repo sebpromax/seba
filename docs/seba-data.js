@@ -6,8 +6,19 @@
    Architecture en adaptateurs :
    - LocalAdapter (défaut)   : localStorage['seba_db'], zéro dépendance.
    - SupabaseAdapter (option): activé si window.SEBA_CONFIG.supabaseUrl
-     et .supabaseAnonKey sont définis (voir docs-backend.md). Persiste
-     l'état côté cloud → multi-appareils. Le reste du code ne change pas.
+     et .supabaseAnonKey sont définis (voir docs-backend.md). Le reste du
+     code ne change pas.
+
+   Synchronisation cloud (Palier 1, VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md) :
+   create()/update()/remove()/log() écrivent TOUJOURS en local en premier
+   (state reste la projection synchrone lue par toutes les pages), PUIS
+   mettent en file un patch delta (localStorage['seba_pending_ops']) au
+   lieu de pousser tout le blob seba_state d'un coup. Un worker debouncé
+   vide cette file vers l'Edge Function sync-push.ts, qui applique chaque
+   patch de façon atomique (apply_entity_patch, verrouillage par ligne
+   côté Postgres). N'existe que si Supabase est configuré ET qu'une
+   session existe -- en mode local pur ou anonyme, aucune file, aucun
+   réseau, comportement rigoureusement identique à avant.
 
    API :
      SebaDB.ready()                    -> init + seed si première visite
@@ -127,29 +138,14 @@
         return null;
       }
     },
+    /* Ne pousse plus le blob entier (voir en-tête de fichier, Palier 1) :
+       la projection locale reste a jour immediatement, la synchronisation
+       reelle passe desormais par pushOp()/syncWorker() ci-dessous, un
+       patch a la fois. save() ne fait donc plus qu'ecrire le cache local
+       -- identique a LocalAdapter, garde une methode nommee explicitement
+       pour documenter pourquoi ce n'est plus un push reseau. */
     save(state) {
-      LocalAdapter.save(state); // cache local toujours à jour
-      clearTimeout(this._pending);
-      this._pending = setTimeout(() => this._push(state), 800);
-    },
-    async _push(state) {
-      const cfg = window.SEBA_CONFIG;
-      if (!this._hasSession(cfg)) {
-        console.debug('[seba-data] synchronisation ignoree : pas de session active (mode demo/anonyme).');
-        return;
-      }
-      try {
-        const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_state?on_conflict=account', {
-          method: 'POST',
-          headers: this._headers({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
-          body: JSON.stringify({ account: this._accountId(), state, updated_at: new Date().toISOString() }),
-        });
-        if (!res.ok) {
-          console.warn('[seba-data] synchronisation distante en echec (HTTP ' + res.status + ') — le cache local reste a jour, re-essai a la prochaine ecriture.');
-        }
-      } catch (e) {
-        console.warn('[seba-data] synchronisation distante impossible (reseau) — le cache local reste a jour.', e.message);
-      }
+      LocalAdapter.save(state);
     },
   };
 
@@ -169,6 +165,123 @@
     listeners.forEach(fn => { try { fn(); } catch (e) {} });
   }
   function uid() { return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  /* ═══════════ File de patchs delta + worker de synchro (Palier 1) ═══════
+     N'existe que si Supabase est configure (hasSupabase) : en mode local
+     pur, pushOp() est un no-op immediat, aucune cle localStorage
+     supplementaire n'est meme ecrite. */
+  const PENDING_KEY = 'seba_pending_ops';
+  const DEVICE_KEY = 'seba_device_id';
+  const SEQ_KEY = 'seba_client_seq';
+  const MAX_OP_ATTEMPTS = 5;
+
+  function getDeviceId() {
+    try {
+      let id = localStorage.getItem(DEVICE_KEY);
+      if (!id) { id = 'dev_' + uid(); localStorage.setItem(DEVICE_KEY, id); }
+      return id;
+    } catch (e) { return 'dev_ephemeral'; } // pas de localStorage (mode prive strict) : identite non persistante, degrade sans planter
+  }
+  let _clientSeq = null;
+  function nextClientSeq() {
+    if (_clientSeq === null) {
+      try { _clientSeq = parseInt(localStorage.getItem(SEQ_KEY) || '0', 10) || 0; }
+      catch (e) { _clientSeq = 0; }
+    }
+    _clientSeq += 1;
+    try { localStorage.setItem(SEQ_KEY, String(_clientSeq)); } catch (e) {}
+    return _clientSeq;
+  }
+  function loadQueue() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function saveQueue(queue) {
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify(queue)); } catch (e) {}
+  }
+
+  /* Met en file un patch delta pour une entite -- jamais l'objet seba_state
+     entier (Pilier 1). `patch` = uniquement les champs concernes : l'objet
+     complet pour un 'create' (entity_versions n'a rien a fusionner dessus),
+     les champs modifies pour un 'update', un marqueur de suppression
+     douce pour un 'delete' (apply_entity_patch ne fait qu'un merge JSONB,
+     il n'existe pas de suppression physique cote serveur aujourd'hui --
+     voir remove() plus bas). */
+  function pushOp(entity, entityId, op, patch) {
+    if (!hasSupabase) return;
+    const queue = loadQueue();
+    queue.push({ client_seq: nextClientSeq(), entity, entity_id: entityId, op, patch, attempts: 0 });
+    saveQueue(queue);
+    scheduleSyncWorker();
+  }
+
+  let _syncTimer = null;
+  let _syncing = false;
+  function scheduleSyncWorker() {
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(syncWorker, 800); // meme debounce que l'ancien push blob, comportement percu inchange
+  }
+
+  /* Vide seba_pending_ops vers sync-push.ts par lots. Idempotent cote
+     serveur (unique(account, device_id, client_seq)) : rejouer le meme
+     lot apres une coupure ne duplique jamais rien, donc aucune precaution
+     particuliere n'est necessaire ici en cas de double declenchement. */
+  async function syncWorker() {
+    if (_syncing) return;
+    const cfg = window.SEBA_CONFIG;
+    if (!hasSupabase || !SupabaseAdapter._hasSession(cfg)) return; // mode demo/anonyme : rien a synchroniser
+    const queue = loadQueue();
+    if (!queue.length) return;
+
+    _syncing = true;
+    try {
+      const employeeToken = (() => { try { return localStorage.getItem('seba_employee_token'); } catch (e) { return null; } })();
+      const headers = Object.assign(
+        { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey },
+        SupabaseAdapter._headers(),
+      );
+      if (employeeToken) headers['X-Employee-Token'] = employeeToken;
+
+      const res = await fetch(cfg.supabaseUrl + '/functions/v1/sync-push', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          device_id: getDeviceId(),
+          operations: queue.map(o => ({ client_seq: o.client_seq, entity: o.entity, entity_id: o.entity_id, op: o.op, patch: o.patch })),
+        }),
+      });
+
+      if (!res.ok && res.status !== 207) {
+        console.warn('[seba-data] sync-push en echec (HTTP ' + res.status + ') — la file reste intacte, re-essai plus tard.');
+        return;
+      }
+      const body = await res.json();
+      const results = (body && body.results) || [];
+      const acked = new Set(results.filter(r => r.status === 'applied' || r.status === 'ack_duplicate').map(r => r.client_seq));
+      const errored = new Set(results.filter(r => r.status === 'error').map(r => r.client_seq));
+
+      const remaining = queue
+        .filter(o => !acked.has(o.client_seq))
+        .map(o => errored.has(o.client_seq) ? Object.assign({}, o, { attempts: o.attempts + 1 }) : o)
+        .filter(o => {
+          if (o.attempts > MAX_OP_ATTEMPTS) {
+            console.error('[seba-data] operation abandonnee apres ' + MAX_OP_ATTEMPTS + ' echecs (' + o.entity + '/' + o.entity_id + '), retiree de la file.', o);
+            return false;
+          }
+          return true;
+        });
+      saveQueue(remaining);
+      if (remaining.length) scheduleSyncWorker(); // ops restantes (erreurs recuperables) : re-essai differe, pas de boucle serree
+    } catch (e) {
+      console.warn('[seba-data] sync-push impossible (reseau) — la file reste intacte, re-essai a la prochaine ecriture ou reconnexion.', e.message);
+    } finally {
+      _syncing = false;
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => { if (hasSupabase) scheduleSyncWorker(); });
+  }
+
   /* Date ISO en HEURE LOCALE — jamais toISOString() qui bascule au jour
      précédent en UTC pour les dates à minuit local (UTC+2 → -2h). */
   function localISO(d) {
@@ -288,6 +401,15 @@
 
     Object.assign(state, { clients, devis, factures, interventions, employes, journal });
     persist();
+    // Un patch 'create' par entite generee -- meme granularite que create(),
+    // pour que le premier compte reel (si Supabase est deja configure a cet
+    // instant) ne diverge jamais du seed local des la premiere synchro.
+    clients.forEach(c => pushOp('clients', c.id, 'create', c));
+    devis.forEach(d => pushOp('devis', d.id, 'create', d));
+    factures.forEach(f => pushOp('factures', f.id, 'create', f));
+    interventions.forEach(i => pushOp('interventions', i.id, 'create', i));
+    employes.forEach(e => pushOp('employes', e.id, 'create', e));
+    journal.forEach(j => pushOp('journal', j.id, 'create', j));
   }
 
   /* ═══════════ API publique ═══════════ */
@@ -324,18 +446,30 @@
       const item = Object.assign({ id: uid(), createdAt: todayISO(0) }, obj);
       state[coll].unshift(item);
       persist();
+      pushOp(coll, item.id, 'create', item); // patch = objet complet, rien a fusionner cote serveur pour une creation
       return item;
     },
     update(coll, id, patch) {
       if (!state) loadState();
       const item = (state[coll] || []).find(x => x.id === id);
-      if (item) { Object.assign(item, patch); persist(); }
+      if (item) {
+        Object.assign(item, patch);
+        persist();
+        pushOp(coll, id, 'update', patch); // patch = uniquement les champs modifies, jamais l'objet entier (Pilier 1)
+      }
       return item;
     },
     remove(coll, id) {
       if (!state) loadState();
+      const existed = (state[coll] || []).some(x => x.id === id);
       state[coll] = (state[coll] || []).filter(x => x.id !== id);
       persist();
+      // apply_entity_patch() ne fait qu'un merge JSONB (voir supabase-schema.sql,
+      // section 11) : il n'existe pas de suppression physique cote serveur
+      // aujourd'hui. On pousse un marqueur de suppression douce -- la
+      // projection LOCALE reste un retrait reel (list()/get() ne renvoient
+      // plus l'element), seule la trace serveur garde _deleted pour l'audit.
+      if (existed) pushOp(coll, id, 'delete', { _deleted: true, deletedAt: todayISO(0) });
     },
 
     nextNum(kind) {
@@ -346,9 +480,11 @@
 
     log(type, label, href) {
       if (!state) loadState();
-      state.journal.unshift({ id: uid(), ts: Date.now(), type, label, href: href || '#' });
+      const entry = { id: uid(), ts: Date.now(), type, label, href: href || '#' };
+      state.journal.unshift(entry);
       if (state.journal.length > 200) state.journal.length = 200;
       persist();
+      pushOp('journal', entry.id, 'create', entry);
     },
     journal(limit) { if (!state) loadState(); return state.journal.slice(0, limit || 50); },
 
@@ -378,6 +514,12 @@
     },
 
     exportJSON() { if (!state) loadState(); return JSON.stringify(state, null, 2); },
+    /* Restauration complete depuis une sauvegarde -- reste une operation
+       LOCALE uniquement (pas de re-sync automatique vers Supabase) :
+       pousser potentiellement des centaines d'entites d'un coup meriterait
+       sa propre reflexion (collision d'ids avec l'existant cote serveur,
+       ordre, volumetrie) plutot qu'un simple forEach(pushOp) improvise ici.
+       Perimetre volontairement laisse pour une iteration dediee. */
     importJSON(str) {
       const parsed = JSON.parse(str); // laisse remonter l'erreur si invalide
       if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.clients)) throw new Error('Format de sauvegarde invalide');
@@ -392,7 +534,17 @@
        autorise l'utilisateur à supprimer sa propre ligne) en plus du local.
        Ne supprime PAS l'identité Supabase Auth elle-même (email/mot de
        passe) : ça nécessite la clé service_role côté serveur, hors de
-       portée d'un appel client — seules les données métier sont effacées. */
+       portée d'un appel client — seules les données métier sont effacées.
+
+       GAP CONNU depuis le Palier 1, non traite ici : sync_operations est
+       append-only PAR CONCEPTION (aucune policy delete, voir
+       supabase-schema.sql section 7) et peut contenir des donnees
+       personnelles dans ses colonnes patch (noms/emails de clients). Une
+       vraie conformite Art. 17 demanderait une anonymisation server-side
+       (service_role) de ces lignes, pas une suppression client -- hors
+       perimetre de ce refactor, a traiter dans une iteration dediee avant
+       toute mise en production reelle de la synchro. Idem pour
+       employe_credentials/employe_sessions, non purgees ici. */
     async eraseAllData() {
       if (hasSupabase) {
         const cfg = window.SEBA_CONFIG;
@@ -407,6 +559,10 @@
       state = EMPTY();
     },
 
+    // Local uniquement, aucun pushOp() de suppression en masse : les
+    // donnees de demo effacees ici n'ont jamais ete de vraies donnees
+    // metier a synchroniser. Ce qui est saisi APRES ce reset repasse par
+    // create()/update() normalement et se synchronise comme d'habitude.
     _reset() { state = EMPTY(); persist(); },
   };
 
