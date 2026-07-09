@@ -1,0 +1,68 @@
+{
+  "$comment": "Config des agents COTE PRODUIT, consommee par _shared/conscience-seba.ts. Distincte de /agents_config.json (orchestrateur de developpement interne, tools/orchestrator.js) — ne jamais fusionner les deux (voir ANALYSE-ANGLES-MORTS-IA-TERRAIN.md section 0.3).",
+
+  "costTiers": {
+    "tier0_deterministic": { "description": "Calcul pur Postgres/TS, aucun appel LLM", "maxLatencyMs": 50 },
+    "tier1_cached": { "description": "ai_context_hash consulte avant tout appel LLM (voir supabase-schema.sql section 21)", "cacheTtlHours": 20 },
+    "tier2_llm": { "description": "Reserve au texte libre sans alternative deterministe", "maxTokens": 400 }
+  },
+
+  "sharedProviders": {
+    "conscience": { "order": ["mistral", "groq"], "model_mistral": "mistral-small-latest", "model_groq": "llama-3.1-8b-instant", "temperature": 0.3 },
+    "chat": { "order": ["mistral", "groq", "openrouter", "gemini"], "temperature": 0.4 },
+    "vision": { "order": ["gemini"], "model": "gemini-2.0-flash", "temperature": 0.2 },
+    "embeddings": { "order": ["mistral"], "model": "mistral-embed", "dimensions": 1024 }
+  },
+
+  "agents": {
+    "assistant_conversationnel": {
+      "entrypoint": "ai-relay.ts",
+      "mode": "chat",
+      "costTier": "tier2_llm",
+      "temperature": 0.4
+    },
+    "conscience_predictive": {
+      "entrypoints": ["ai-relay.ts:json", "daily-digest.ts"],
+      "sharedModule": "_shared/conscience-seba.ts",
+      "costTier": "tier0_deterministic puis tier2_llm pour la formulation uniquement",
+      "temperature": 0.3
+    },
+    "qa_visuelle_intervention": {
+      "entrypoint": "vision-qa.ts",
+      "costTier": "tier2_llm",
+      "temperature": 0.2,
+      "blocking": false
+    },
+    "prediction_impayes": {
+      "entrypoint": "vue Postgres client_payment_history (Palier 5, non implemente)",
+      "costTier": "tier0_deterministic",
+      "llm": false
+    },
+    "assistant_technique": {
+      "role": "assistant_technique",
+      "description": "Repond aux questions d'un technicien/patron sur l'historique d'une intervention ou d'un client, en s'appuyant sur memoire_embeddings (recherche semantique) plutot que sur l'historique complet charge en contexte.",
+      "sharedModule": "_shared/conscience-seba.ts",
+      "entrypoint": "a definir (pas encore de route HTTP dediee dans ce palier — infrastructure seule, voir RAPPORT-IMPLEMENTATION-PALIER4.md)",
+      "tools": [
+        {
+          "name": "lookup_history",
+          "description": "Recherche semantique dans memoire_embeddings (match_interventions) pour un compte donne, scopee par account_id resolu serveur — jamais fourni par le client.",
+          "costTier": "tier0_deterministic (recherche vectorielle, pas d'appel LLM)"
+        },
+        {
+          "name": "analyze_compliance",
+          "description": "Analyse un texte/une note technique par rapport aux criteres de conformite du secteur (reutilise le meme principe que qa_criteres_metier du Palier 2, pas encore de table dediee pour du texte).",
+          "costTier": "tier2_llm"
+        },
+        {
+          "name": "summarize_tech_notes",
+          "description": "Resume incremental des notes techniques d'un client/d'une intervention (alimente client_memoire, voir cadrage Palier 4 — table non creee dans cette initialisation, voir rapport).",
+          "costTier": "tier2_llm"
+        }
+      ],
+      "costTier": "tier2_llm",
+      "temperature": 0.3,
+      "maxTokens": 400
+    }
+  }
+}
