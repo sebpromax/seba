@@ -159,3 +159,22 @@ Les deux dernières PR ont été mergées dans `main` (commits `e3acb97` et `f1e
 **Statut des tests** : suite Seba-Core complète (6/6), lint design-system, vérification syntaxique SQL/TS sur l'ensemble des fichiers touchés depuis le Palier 1.
 
 **Déploiement** : mergé et poussé sur `origin/main` en une seule opération (`gh pr merge`), vérifié — `main` à `f4724c2` en local et à distance, aucune branche ni PR résiduelle.
+
+---
+
+## 2026-07-09 — Paliers 4 & 5 + AI Core : mémoire vectorielle, analytique financière, garde-fous LLM (PR #37→#41)
+
+**Contexte** : clôture de la phase Backend/IA cadrée dans `VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md`. Cinq PR successives, chacune mergée dans `main` avant la suivante.
+
+**Séquence** :
+1. PR #37 (`6c71361`) — Palier 4, initialisation vectorielle : extension `pgvector`, table `memoire_embeddings` (`vector(1024)`, alignée sur `mistral-embed` et non `1536`/OpenAI — aucune clé OpenAI dans le projet), fonction `match_interventions()` (+ `REVOKE EXECUTE` dédié), table `ai_context_hash` (cache SHA-256, évite les appels LLM redondants).
+2. PR #38 (`63c448b`) — pipeline d'embedding : `vision-qa.ts` alimente `memoire_embeddings` après chaque analyse QA enregistrée. `storeEmbedding()` extrait dans `_shared/embeddings.ts` (partagé avec `embed-content.ts`, appel in-process, pas de saut HTTP) plutôt que de dupliquer la logique d'embedding.
+3. PR #39 (`44740eb`) — `_shared/memoire-lookup.ts` : `lookupHistory()` (recherche sémantique via `match_interventions`, scopée `account_id` résolu serveur), extrait de l'implémentation déjà présente dans `conscience-seba.ts` plutôt que dupliquée.
+4. PR #40 (`4789590`) — Palier 5, analytique financière : tables `materiaux_couts`/`paiements` (colonne `account` directe + RLS `auth.uid() = user_id`, pas de jointure fictive sur une table `interventions` qui n'existe pas), vue `vue_marge_interventions` (`security_invoker = true`), fonction `get_marge_reelle(p_account text, p_intervention_id text)`, `_shared/finance-analytics.ts` (`calculateProfitability`, `getFinancialSummary` — ne sélectionne jamais `paiements.reference`).
+5. PR #41 (`d5fc885`) — AI Core, finalisation du "cerveau" de l'agent : `product-agents.config.json` — champ `llmDirective` par outil (phrasing impératif pour le tool-routing d'un LLM à function-calling, distinct de `description` qui reste la doc technique) ; `_shared/conscience-seba.ts` — `SEBA_SAFETY_RAILS` (3 garde-fous : anti-hallucination, non-exposition d'identifiants bruts, traçabilité par mémoire vectorielle), `questionConcerneFinance()` (heuristique déterministe, pas d'appel LLM pour ce routage), `formatFinancialContext()` (ne fuit jamais `account`/`interventionId`), `prepareAssistantTechniqueContext()` avec chaque appel outil (`lookupHistory`, `calculateProfitability`, `getFinancialSummary`) protégé par un `.catch()` explicite — un timeout DB ou une erreur RLS se résout en valeur vide/absente, ne fait jamais crasher le pipeline.
+
+**Statut des tests** : suite Seba-Core (6/6) et `check-design-system.js` repassés après chaque PR concernée par un fichier `docs/`. Fichiers `*.test.ts` (Deno) écrits et vérifiés par relecture + équilibrage accolades/parenthèses uniquement — **aucun environnement Deno CLI/CI disponible dans cette session pour les exécuter réellement** (dette technique, voir `PLAN.md`).
+
+**Déploiement** : les 5 PR mergées dans `main`, `main` local et distant synchronisés à `d5fc885`, aucune branche ni PR résiduelle.
+
+**Non fait dans ce chantier** (volontairement hors périmètre, reporté en dette technique dans `PLAN.md`) : aucune route HTTP/Edge Function n'expose encore `assistant_technique` à un client ; `ai-relay.ts`/`daily-digest.ts` n'appellent pas encore `conscience-seba.ts` pour ce nouveau rôle ; pas de table `client_memoire`.
