@@ -1,0 +1,21 @@
+{
+    "sqltools.connections": [
+        {
+            "port": 5432,
+            "name": "Supabase - Seba",
+            "server": "db.ptmudezhxnhhyctowlqp.supabase.co",
+            "driver": "PostgreSQL",
+            "username": "postgres",
+            "askForPassword": true,
+            "database": "postgres"
+        }
+    ],
+    "deno.enable": true,
+    "deno.disablePaths": [
+        "scripts",
+        "tools",
+        "docs"
+    ],
+    "deno.lint": true,
+    "deno.unstable": true
+}
