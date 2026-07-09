@@ -86,3 +86,76 @@ Les deux dernières PR ont été mergées dans `main` (commits `e3acb97` et `f1e
 **Statut des tests** : 0 erreur console sur les 3 pages (vérification Puppeteer ad hoc), `scripts/qa-other-linkcheck.js` → aucun lien cassé, rendu vérifié par screenshot (y compris la section `.reveal` de `confiance.html`, dont l'opacité par défaut à 0 sans scroll a nécessité de forcer `.visible` pour l'inspecter — pas un bug, comportement d'animation existant).
 
 **En attente** : revue humaine (en particulier la section juridique par un professionnel), commit local sur `politique-confidentialite`, pas de push automatique.
+
+---
+
+## 2026-07-09 — Séquence télémétrie Seba-Core (hors PLAN.md, PR #27→#31)
+
+**Tâche** : hors PLAN.md à l'époque (chantier ouvert directement, pas planifié en amont) — cartographie de la télémétrie du dashboard, hotfix XSS, câblage puis activation réelle de `renderTelemetry()`, correction d'une duplication d'émission découverte en activant.
+
+**Séquence** :
+1. PR #27 (`4fcbe9d`) — cartographie de la télémétrie (`telemetry-map.json`) + audit de sécurité.
+2. PR #28 (`104f441`) — hotfix XSS `renderNotifPanel()` (nom client non échappé) + `renderTelemetry()` hybride dans `ui-controller.js`.
+3. PR #29 (`9ae0976`) — câblage de l'écoute `TELEMETRY_READY` dans `dashboard-init.js` (tunnel prêt mais dormant, `TelemetryModule` pas encore instancié).
+4. PR #30 (`9ddb393`) — activation réelle : instanciation `AuthModule`/`DataModule`/`TelemetryModule`, correction d'un mapping erroné (`#notif-badge` aurait dû rester sur `renderNotifPanel()`/créances, pas `facturesRetard`).
+5. PR #31 (`50667a2`) — déduplication : `TelemetryModule` et `DataModule` réagissaient chacun indépendamment à `AUTH_SUCCESS`, doublant chaque calcul `TELEMETRY_READY`. `DataModule` n'écoute plus `AUTH_SUCCESS` directement.
+
+**Statut des tests** : suite Seba-Core complète (`test-auth-migration`, `test-data-migration`, `test-event-bridge`, `test-telemetry`, `test-ui-controller`, `test-dashboard-init`) passante à chaque étape, vérifications additionnelles en navigateur réel (Chrome headless, serveur HTTP local) sur les PR #30/#31.
+
+**Déploiement** : toutes mergées dans `main`, Pages vérifié (voir conversation — pas de rapport dédié).
+
+---
+
+## 2026-07-09 — Palier 1 : Synchronisation par patch + identité PIN terrain (PR #32)
+
+**Contexte** : audit du code réel (pas du brief) révélant 3 écarts majeurs — `seba_state` (blob JSON complet, poussé toutes les 800ms) est la seule voie active, pas les tables normalisées ; aucun employé de terrain n'a d'identité de connexion propre ; `agents_config.json` est la config de l'orchestrateur de dev, pas le moteur IA produit. Documenté dans `ANALYSE-ANGLES-MORTS-IA-TERRAIN.md` puis `VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md`.
+
+**Livré** (commit de merge `2454af4`) :
+- `supabase-schema.sql` : `sync_operations` (journal append-only, idempotent), `entity_versions` (verrouillage optimiste), `sync_conflicts`, `employe_credentials`/`employe_sessions` (PIN, anti brute-force), `apply_entity_patch()`.
+- `supabase-functions/employe-auth.ts`, `supabase-functions/sync-push.ts`.
+- `docs/seba-data.js` refactoré : push de patchs delta au lieu du blob entier, file d'attente locale + worker de synchro. Mode local pur (sans Supabase) vérifié strictement inchangé.
+
+**Statut des tests** : test fonctionnel manuel (mode local vs Supabase, cycle `syncWorker` succès/échec/abandon), `node --check` sur tous les fichiers touchés.
+
+---
+
+## 2026-07-09 — Palier 2 : Photo-First & QA visuelle Gemini (PR #33)
+
+**Livré** (commit de merge `d91d938`) :
+- `supabase-schema.sql` : bucket privé `intervention-photos` (chemin `{account}/{intervention_id}/...`), table `qa_photos`.
+- `supabase-functions/vision-qa.ts` : upload + analyse Gemini Vision (`inlineData` base64, bucket privé donc pas de `fileData`/URL publique). `confidence < 0.6` force systématiquement le verdict à `'incertain'`. Toujours HTTP 200, même en cas d'échec.
+- `docs/photo-manager.js` : capture caméra native, retry simple en mémoire, ne touche jamais le DOM applicatif.
+
+**Écart corrigé par rapport au brief** : `Authorization: Bearer <SUPABASE_ANON_KEY>` (ou `service_role`) proposé initialement pour l'appel client → les deux auraient échoué/été dangereux. Remplacé par le pattern déjà en place (`email-service.js`/`push-init.js`) : `apikey` + JWT de session réel.
+
+**Statut des tests** : `node --check`, vérification syntaxique SQL, `node tools/check-design-system.js`.
+
+---
+
+## 2026-07-09 — Palier 3 : Pipeline d'alerting & exceptions (PR #34)
+
+**Livré** (commit de merge `c71157d`) :
+- `alert_logs` créée/résolue automatiquement par un trigger `AFTER INSERT ON qa_photos` (jamais par le client — RLS limite le patron à l'acquittement, `status → 'acknowledged'`).
+- `derive_type_alerte()` : classification par mots-clés du texte libre de Gemini (`securite`/`proprete`/`materiel`/`autre`).
+- Idempotence des deux côtés : pas de doublon d'alerte active par intervention, résolution automatique dès qu'une photo `conforme` arrive.
+- `supabase-functions/notify-alert.ts` : stub (pas d'envoi réel), appelé via `pg_net` + secret Vault (jamais en dur dans le SQL committé).
+- `docs/dashboard-alerts.js` : lecture REST directe de `alert_logs` (hors périmètre de `SebaDB`), polling léger (pas `syncWorker`, mécanisme sans rapport).
+
+**Non vérifié à cette date** : la portion `pg_net`/Vault du trigger — non testable sans projet Supabase réel. Le reste (création/résolution d'alertes) fonctionne indépendamment de ça.
+
+**Statut des tests** : `node --check`, vérification syntaxique SQL, `node tools/check-design-system.js`.
+
+---
+
+## 2026-07-09 — Audit Go-Live + remédiation (PR #35)
+
+**Audit** (`AUDIT-GO-LIVE-SEBA.md`, relecture ligne à ligne du code sur `main`, pas du brief) : 2 points rouges trouvés — `call_notify_alert()` est la seule fonction `SECURITY DEFINER` du schéma, sans `revoke execute` (exécutable par `PUBLIC` par défaut Postgres) ; fenêtre de course réelle dans l'idempotence de `sync-push.ts` (check-then-insert non atomique). Gap systémique confirmé : zéro timeout sur tout appel réseau sortant, dans toutes les Edge Functions du projet (pas seulement celles de cette session).
+
+**Remédiation livrée** (commit de merge `f4724c2`) :
+- `REVOKE EXECUTE` sur les 4 fonctions internes, **sans** regrant à `authenticated` (aurait rouvert le trou trouvé).
+- `sync-push.ts` refactoré en `upsert(..., { onConflict, ignoreDuplicates: true })` — la contrainte `UNIQUE` devient le seul arbitre. Effet de bord trouvé en implémentant et corrigé dans la foulée : un échec de `apply_entity_patch` après un insert réussi bloquait l'opération indéfiniment — ajout d'un `DELETE` compensatoire.
+- `AbortSignal.timeout(5000)` sur les 12 `fetch()` littéraux (`ai-relay.ts`/`daily-digest.ts`/`vision-qa.ts`) + `.abortSignal()` sur les 6 appels `supabase-js` de `sync-push.ts` (pas de `fetch()` littéral dans ce fichier).
+
+**Statut des tests** : suite Seba-Core complète (6/6), lint design-system, vérification syntaxique SQL/TS sur l'ensemble des fichiers touchés depuis le Palier 1.
+
+**Déploiement** : mergé et poussé sur `origin/main` en une seule opération (`gh pr merge`), vérifié — `main` à `f4724c2` en local et à distance, aucune branche ni PR résiduelle.
