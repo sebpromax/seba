@@ -42,6 +42,7 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { lookupHistory, MemoireMatch } from './memoire-lookup.ts';
 import { calculateProfitability, FinancialSummary, getFinancialSummary, InterventionProfitability } from './finance-analytics.ts';
+import type { LlmProvider } from './llm-providers.ts';
 
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -81,6 +82,14 @@ const CONSCIENCE_SYSTEM =
   'Réponds uniquement en JSON structuré : {"action":"titre court","priority":"high/medium/low","reasoning":"une phrase"}. ' +
   "Analyse le contexte et propose UNE mesure concrète si utile.";
 
+// Agent "assistant_conversationnel" (product-agents.config.json, mode
+// 'chat' de ai-relay.ts) — centralisé ici comme les autres System Prompts
+// pour qu'ai-relay.ts n'ait plus aucun prompt en dur (voir PLAN.md dette
+// technique "Brancher ai-relay.ts ... sur conscience-seba.ts").
+export const ASSISTANT_CONVERSATIONNEL_SYSTEM =
+  "Tu es l'assistant business de Seba, un logiciel de gestion pour entreprises de services. " +
+  "Réponds en français, concis (max 120 mots), concret et actionnable, au patron de l'entreprise. ";
+
 const ASSISTANT_TECHNIQUE_SYSTEM =
   "Tu es l'expert technique et financier du réseau SEBA. Tu assistes les techniciens terrain et les patrons " +
   "d'entreprises de services dans leurs décisions d'intervention et de rentabilité.\n\n" +
@@ -98,16 +107,33 @@ export function decideDeterministe(ctx: { facturesEnRetard: number; devisEnAtten
   return null; // cas intermediaire ou rien a signaler -> tier2 (appelant decide s'il vaut la peine d'appeler le LLM)
 }
 
+// ═══ Dette technique corrigée : l'ancienne signature (callbacks anonymes)
+// avalait silencieusement toute erreur — panne réseau ET JSON malformé
+// indistinctement, aucun log, impossible de diagnostiquer laquelle des
+// deux se produit en prod. Prend maintenant directement LLM_PROVIDERS
+// (_shared/llm-providers.ts) : reseau et parsing JSON sont journalisés
+// séparément, et le nom du provider gagnant est renvoyé (utile pour
+// ai-relay.ts/daily-digest.ts, qui l'exposaient déjà avant ce refactor). ═══
 export async function decideAvecLLM(
   ctx: Record<string, unknown>,
-  providers: Array<(system: string, user: string) => Promise<string>>,
-): Promise<ConscienceVerdict | null> {
-  for (const call of providers) {
+  providers: LlmProvider[],
+): Promise<{ verdict: ConscienceVerdict; provider: string } | null> {
+  const user = JSON.stringify(ctx);
+  for (const p of providers) {
+    let raw: string;
     try {
-      const raw = await call(CONSCIENCE_SYSTEM, JSON.stringify(ctx));
+      raw = await p.call(CONSCIENCE_SYSTEM, user, true);
+    } catch (e) {
+      console.error(`[conscience-seba] decideAvecLLM: provider "${p.name}" indisponible, bascule sur le suivant :`, String((e as Error)?.message || e));
+      continue;
+    }
+    try {
       const parsed = JSON.parse(raw);
-      if (parsed?.action && parsed?.priority) return parsed as ConscienceVerdict;
-    } catch { /* fournisseur suivant */ }
+      if (parsed?.action && parsed?.priority) return { verdict: parsed as ConscienceVerdict, provider: p.name };
+      console.error(`[conscience-seba] decideAvecLLM: réponse JSON du provider "${p.name}" incomplète (action/priority manquants), bascule sur le suivant.`);
+    } catch (e) {
+      console.error(`[conscience-seba] decideAvecLLM: échec de parsing JSON pour le provider "${p.name}" (bascule sur le suivant) :`, String((e as Error)?.message || e));
+    }
   }
   return null;
 }

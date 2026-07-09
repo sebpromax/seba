@@ -15,8 +15,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { assertEquals, assertMatch } from 'https://deno.land/std@0.208.0/assert/mod.ts';
+import type { LlmProvider } from './llm-providers.ts';
 import {
   buildStructuredContext,
+  decideAvecLLM,
   decideDeterministe,
   formatAssistantTechniquePrompt,
   formatFinancialContext,
@@ -263,4 +265,57 @@ Deno.test('prepareAssistantTechniqueContext() intercepte un échec de lookup_his
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+// ═══ 11. decideAvecLLM() — dette technique ai-relay.ts/daily-digest.ts :
+// distinguer une panne de provider d'un JSON malformé, journaliser les
+// deux séparément, ne jamais planter (utilisé par les deux Edge Functions
+// depuis leur migration vers _shared/llm-providers.ts). ═══
+function mockProvider(name: string, respond: () => Promise<string>): LlmProvider {
+  return { name, call: respond };
+}
+
+Deno.test('decideAvecLLM() renvoie le verdict + le nom du premier provider qui répond correctement', async () => {
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'high', reasoning: 'test' }))),
+  ];
+  const result = await decideAvecLLM({ facturesEnRetard: 3 }, providers);
+  assertEquals(result?.provider, 'mistral');
+  assertEquals(result?.verdict.action, 'Relancer');
+});
+
+Deno.test('decideAvecLLM() bascule sur le provider suivant si le premier renvoie un JSON malformé', async () => {
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => Promise.resolve('ceci n\'est pas du JSON')),
+    mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'medium', reasoning: 'depuis groq' }))),
+  ];
+  const result = await decideAvecLLM({ facturesEnRetard: 3 }, providers);
+  assertEquals(result?.provider, 'groq');
+});
+
+Deno.test('decideAvecLLM() bascule sur le provider suivant si le premier lève une exception réseau', async () => {
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => Promise.reject(new Error('MISTRAL_API_KEY absente'))),
+    mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'low', reasoning: 'depuis groq' }))),
+  ];
+  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  assertEquals(result?.provider, 'groq');
+});
+
+Deno.test('decideAvecLLM() retourne null si tous les providers échouent (réseau ou JSON), jamais une exception', async () => {
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => Promise.reject(new Error('panne réseau'))),
+    mockProvider('groq', () => Promise.resolve('toujours pas du JSON valide')),
+  ];
+  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  assertEquals(result, null);
+});
+
+Deno.test('decideAvecLLM() rejette un JSON valide mais incomplet (action/priority manquants) et bascule', async () => {
+  const providers: LlmProvider[] = [
+    mockProvider('mistral', () => Promise.resolve(JSON.stringify({ reasoning: 'sans action ni priority' }))),
+    mockProvider('groq', () => Promise.resolve(JSON.stringify({ action: 'Relancer', priority: 'high', reasoning: 'complet' }))),
+  ];
+  const result = await decideAvecLLM({ facturesEnRetard: 1 }, providers);
+  assertEquals(result?.provider, 'groq');
 });

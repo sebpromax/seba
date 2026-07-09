@@ -6,16 +6,15 @@
 // Elle reçoit la question/contexte du navigateur et essaie les
 // fournisseurs IA gratuits dans l'ordre, jusqu'à ce qu'un réponde
 // (clé absente ou fournisseur en panne = passage silencieux au
-// suivant) :
-//   1. Mistral (mistral-small-latest)
-//   2. Groq (llama-3.1-8b-instant)
-//   3. OpenRouter (modèle :free)
-//   4. Google Gemini (gemini-2.0-flash)
+// suivant) — chaîne de fallback centralisée dans _shared/llm-providers.ts
+// (Mistral → Groq → OpenRouter → Gemini), et non plus dupliquée ici
+// (dette technique PLAN.md "Brancher ai-relay.ts ... sur conscience-seba.ts").
 //
 // Deux modes (body.mode) :
 //   'chat' -> réponse texte libre (assistant conversationnel dashboard)
 //   'json' -> réponse structurée {action, priority, reasoning}
-//             (« Conscience Seba », Bible V.1)
+//             (« Conscience Seba », Bible V.1) — via decideAvecLLM()
+//             (_shared/conscience-seba.ts), System Prompt centralisé.
 //
 // Durcissement sécurité par rapport aux 2 anciennes fonctions
 // (trouvé par l'audit du 2026-07-06 : CORS '*' + aucune vérification
@@ -28,8 +27,19 @@
 //     automatiquement par Supabase dans toute Edge Function, aucun
 //     secret à configurer pour ça)
 //
+// Correction dette technique (PLAN.md) : l'ancien
+// JSON.stringify(body.context).slice(0, 2000|4000) pouvait tronquer un
+// JSON en plein milieu d'un élément, produisant un contexte invalide
+// envoyé au modèle. Remplacé par buildStructuredContext()
+// (_shared/conscience-seba.ts), qui borne le contexte par NOMBRE
+// d'éléments par liste, jamais par caractères — le JSON produit reste
+// toujours syntaxiquement valide.
+//
 // Déploiement : voir MANUEL-SEBA-ADMIN.md section 1b (mise à jour).
 // ═══════════════════════════════════════════════════════════════
+
+import { ASSISTANT_CONVERSATIONNEL_SYSTEM, buildStructuredContext, decideAvecLLM } from './_shared/conscience-seba.ts';
+import { callWithFallback, LLM_PROVIDERS } from './_shared/llm-providers.ts';
 
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const DAILY_LIMIT = 50;
@@ -69,11 +79,36 @@ function verifyUser(req: Request): string | null {
   }
 }
 
+/* Résout le compte métier (seba_state.account) à partir du user_id du JWT
+   — même besoin multi-tenant que vision-qa.ts/assistant-technique.ts.
+   Fail-open vers userId si la résolution échoue (config absente, réseau) :
+   dégrade proprement en rate-limit "par utilisateur" plutôt que de
+   bloquer l'assistant, cohérent avec le fail-open déjà en place plus bas
+   dans checkRateLimit(). Sans cette résolution, deux employés du même
+   compte (voir Pilier 4 : plusieurs user_id peuvent partager un seul
+   account) auraient chacun leur propre quota au lieu d'un quota partagé
+   par entreprise — pas une fuite de données, mais une dérive du plafond
+   voulu par compte (PLAN.md, garde-fou multi-tenant). */
+async function resolveAccount(userId: string, supaUrl?: string, serviceKey?: string): Promise<string> {
+  if (!supaUrl || !serviceKey) return userId;
+  try {
+    const headers = { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'Content-Type': 'application/json' };
+    const res = await fetch(
+      supaUrl + '/rest/v1/seba_state?select=account&user_id=eq.' + encodeURIComponent(userId),
+      { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
+    );
+    const rows = res.ok ? await res.json() : [];
+    return rows[0]?.account || userId;
+  } catch {
+    return userId;
+  }
+}
+
 /* Plafond quotidien par compte (table api_usage, kind='ai'). En cas
    d'erreur réseau/config, on n'empêche jamais la requête de passer
    (fail-open) — mieux vaut un usage non limité temporairement qu'un
    assistant qui plante. */
-async function checkRateLimit(userId: string): Promise<boolean> {
+async function checkRateLimit(account: string): Promise<boolean> {
   const supaUrl = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supaUrl || !serviceKey) return true;
@@ -81,7 +116,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
   const headers = { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'Content-Type': 'application/json' };
   try {
     const res = await fetch(
-      supaUrl + '/rest/v1/api_usage?select=count&account=eq.' + encodeURIComponent(userId) + "&kind=eq.ai&day=eq." + today,
+      supaUrl + '/rest/v1/api_usage?select=count&account=eq.' + encodeURIComponent(account) + "&kind=eq.ai&day=eq." + today,
       { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
     );
     const rows = res.ok ? await res.json() : [];
@@ -90,7 +125,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
     await fetch(supaUrl + '/rest/v1/api_usage?on_conflict=account,kind,day', {
       method: 'POST',
       headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-      body: JSON.stringify({ account: userId, kind: 'ai', day: today, count: count + 1 }),
+      body: JSON.stringify({ account, kind: 'ai', day: today, count: count + 1 }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     return true;
@@ -98,102 +133,6 @@ async function checkRateLimit(userId: string): Promise<boolean> {
     return true;
   }
 }
-
-const CHAT_SYSTEM =
-  "Tu es l'assistant business de Seba, un logiciel de gestion pour entreprises de services. " +
-  'Réponds en français, concis (max 120 mots), concret et actionnable, au patron de l\'entreprise. ';
-
-const JSON_SYSTEM =
-  "Tu es Seba, l'intelligence de pilotage d'un cockpit de gestion. " +
-  'Ton ton est analytique, concis, et tourné vers l\'action. Tu reçois des données JSON de performance. ' +
-  'Tu dois répondre uniquement en JSON structuré : ' +
-  '{ "action": "titre court", "priority": "high/medium/low", "reasoning": "une phrase expliquant pourquoi" }. ' +
-  "Analyse le contexte et propose des mesures de redressement ou d'optimisation.";
-
-type Provider = { name: string; call: (system: string, user: string, jsonMode: boolean) => Promise<string> };
-
-async function callMistral(system: string, user: string, jsonMode: boolean): Promise<string> {
-  const key = Deno.env.get('MISTRAL_API_KEY');
-  if (!key) throw new Error('MISTRAL_API_KEY absente');
-  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({
-      model: 'mistral-small-latest',
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-      max_tokens: 400, temperature: 0.4,
-    }),
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error('Mistral HTTP ' + res.status);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
-}
-
-async function callGroq(system: string, user: string, _jsonMode: boolean): Promise<string> {
-  const key = Deno.env.get('GROQ_API_KEY');
-  if (!key) throw new Error('GROQ_API_KEY absente');
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      max_tokens: 400, temperature: 0.4,
-    }),
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error('Groq HTTP ' + res.status);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
-}
-
-async function callOpenRouter(system: string, user: string, _jsonMode: boolean): Promise<string> {
-  const key = Deno.env.get('OPENROUTER_API_KEY');
-  if (!key) throw new Error('OPENROUTER_API_KEY absente');
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({
-      model: 'meta-llama/llama-3.3-70b-instruct:free',
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      max_tokens: 400, temperature: 0.4,
-    }),
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error('OpenRouter HTTP ' + res.status);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
-}
-
-async function callGemini(system: string, user: string, _jsonMode: boolean): Promise<string> {
-  const key = Deno.env.get('GEMINI_API_KEY');
-  if (!key) throw new Error('GEMINI_API_KEY absente');
-  const res = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ parts: [{ text: user }] }],
-        generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
-      }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    },
-  );
-  if (!res.ok) throw new Error('Gemini HTTP ' + res.status);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-const PROVIDERS: Provider[] = [
-  { name: 'mistral', call: callMistral },
-  { name: 'groq', call: callGroq },
-  { name: 'openrouter', call: callOpenRouter },
-  { name: 'gemini', call: callGemini },
-];
 
 function fallbackJson(reasoning: string) {
   return { action: 'Analyse indisponible', priority: 'low', reasoning };
@@ -206,7 +145,9 @@ Deno.serve(async (req) => {
   const userId = verifyUser(req);
   if (!userId) return jsonResponse(cors, { error: 'Authentification requise' }, 401);
 
-  const allowed = await checkRateLimit(userId);
+  const account = await resolveAccount(userId, Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
+
+  const allowed = await checkRateLimit(account);
   if (!allowed) return jsonResponse(cors, { error: 'Limite quotidienne atteinte, réessayez demain' }, 429);
 
   try {
@@ -218,13 +159,14 @@ Deno.serve(async (req) => {
       if (!question || typeof question !== 'string' || question.length > 500) {
         return jsonResponse(cors, { error: 'Question invalide' }, 400);
       }
-      const system = CHAT_SYSTEM + (body.context ? 'Données réelles actuelles de son entreprise : ' + JSON.stringify(body.context).slice(0, 2000) : 'Aucune donnée disponible pour le moment.');
-      for (const p of PROVIDERS) {
-        try {
-          const answer = await p.call(system, String(question).slice(0, 500), false);
-          if (answer) return jsonResponse(cors, { answer, provider: p.name });
-        } catch { /* fournisseur suivant */ }
-      }
+      const boundedContext = body.context && typeof body.context === 'object'
+        ? buildStructuredContext(body.context as Record<string, unknown>)
+        : null;
+      const system = ASSISTANT_CONVERSATIONNEL_SYSTEM +
+        (boundedContext ? 'Données réelles actuelles de son entreprise : ' + JSON.stringify(boundedContext) : 'Aucune donnée disponible pour le moment.');
+
+      const result = await callWithFallback(system, String(question).slice(0, 500), false);
+      if (result) return jsonResponse(cors, { answer: result.answer, provider: result.provider });
       return jsonResponse(cors, { error: 'Tous les fournisseurs IA sont indisponibles' }, 502);
     }
 
@@ -232,13 +174,9 @@ Deno.serve(async (req) => {
     if (!body.context || typeof body.context !== 'object') {
       return jsonResponse(cors, { error: 'Contexte invalide' }, 400);
     }
-    for (const p of PROVIDERS) {
-      try {
-        const raw = await p.call(JSON_SYSTEM, JSON.stringify(body.context).slice(0, 4000), true);
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.action && parsed.priority) return jsonResponse(cors, { ...parsed, provider: p.name });
-      } catch { /* fournisseur suivant */ }
-    }
+    const boundedContext = buildStructuredContext(body.context as Record<string, unknown>);
+    const decision = await decideAvecLLM(boundedContext, LLM_PROVIDERS);
+    if (decision) return jsonResponse(cors, { ...decision.verdict, provider: decision.provider });
     return jsonResponse(cors, fallbackJson('Tous les fournisseurs IA sont indisponibles.'));
   } catch (e) {
     return jsonResponse(cors, { error: String((e as Error)?.message || e) }, 500);

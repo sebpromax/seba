@@ -78,7 +78,7 @@ async function callOpenRouter(system: string, user: string, _jsonMode: boolean):
   return data.choices?.[0]?.message?.content || '';
 }
 
-async function callGemini(system: string, user: string, _jsonMode: boolean): Promise<string> {
+async function callGemini(system: string, user: string, jsonMode: boolean): Promise<string> {
   const key = Deno.env.get('GEMINI_API_KEY');
   if (!key) throw new Error('GEMINI_API_KEY absente');
   const res = await fetch(
@@ -89,7 +89,13 @@ async function callGemini(system: string, user: string, _jsonMode: boolean): Pro
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ parts: [{ text: user }] }],
-        generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
+        generationConfig: {
+          maxOutputTokens: 400, temperature: 0.4,
+          // Meme pattern que vision-qa.ts (callGeminiVision) : force un JSON
+          // syntaxiquement valide cote provider plutot que de compter
+          // uniquement sur l'instruction textuelle du system prompt.
+          ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
+        },
       }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     },
