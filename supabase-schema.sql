@@ -434,3 +434,133 @@ create policy "qa_photos_select" on qa_photos for select using (auth.uid() = use
 -- Pas de policy insert/update/delete pour authenticated : ecrit exclusivement
 -- par vision-qa.ts (service_role) -- une photo/verdict ne doit jamais pouvoir
 -- etre falsifie depuis le navigateur.
+
+-- ═══════════════════════════════════════════════════════════════
+-- PALIER 3 — Pipeline d'alerting & exceptions
+--
+-- IMPORTANT (verifie en revue, pas teste contre un projet Supabase reel --
+-- pg_net/Vault ne sont pas simulables ici) : le trigger qui suit appelle
+-- l'Edge Function notify-alert.ts via l'extension pg_net, en lisant le
+-- secret service_role depuis Supabase Vault -- JAMAIS en dur dans ce
+-- fichier, qui est commite dans un repo public. Prerequis MANUEL, a faire
+-- une seule fois dans Supabase (SQL Editor), avant que la notification
+-- fonctionne (l'absence de ce prerequis ne fait JAMAIS echouer les
+-- alertes elles-memes, seulement la notification -- voir
+-- call_notify_alert ci-dessous) :
+--   select vault.create_secret('https://TON-PROJET.supabase.co', 'project_url');
+--   select vault.create_secret('TA_CLE_SERVICE_ROLE', 'service_role_key');
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 14. Journal d'alertes (exceptions QA a traiter par le patron) ──
+create table if not exists alert_logs (
+  id uuid primary key default gen_random_uuid(),
+  account text not null references seba_state (account) on delete cascade,
+  intervention_id text not null,              -- format id_xxxxx (Pilier 4), pas de FK
+  qa_photo_id uuid references qa_photos (id) on delete set null,
+  type_alerte text not null,                  -- derive automatiquement de qa_photos.raison, voir derive_type_alerte()
+  raison text,
+  status text not null default 'active' check (status in ('active', 'acknowledged', 'resolved')),
+  created_at timestamptz default now(),
+  acknowledged_at timestamptz,
+  resolved_at timestamptz
+);
+create index if not exists idx_alert_logs_account_status on alert_logs (account, status);
+create index if not exists idx_alert_logs_intervention on alert_logs (account, intervention_id);
+alter table alert_logs enable row level security;
+create policy "alert_logs_select" on alert_logs for select using (
+  exists (select 1 from seba_state s where s.account = alert_logs.account and s.user_id = auth.uid())
+);
+-- Le patron peut acquitter (status -> 'acknowledged'), rien d'autre : pas
+-- de policy insert/delete pour authenticated (cree/resolu exclusivement
+-- par le trigger ci-dessous), et le with check limite strictement la
+-- transition possible -- impossible de forcer 'resolved' ou de modifier
+-- type_alerte/raison depuis le navigateur.
+create policy "alert_logs_acknowledge" on alert_logs for update using (
+  exists (select 1 from seba_state s where s.account = alert_logs.account and s.user_id = auth.uid())
+) with check (status = 'acknowledged');
+
+-- ── 15. Derivation du type d'alerte a partir du texte libre de Gemini ──
+-- Heuristique simple (mots-cles), volontairement pas un appel LLM
+-- supplementaire pour classer un texte deja produit par un LLM -- coherent
+-- avec le principe "tier0 deterministe avant tout appel IA"
+-- (VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md, section Mistral).
+create or replace function derive_type_alerte(p_raison text) returns text as $$
+begin
+  if p_raison is null or btrim(p_raison) = '' then return 'autre'; end if;
+  if p_raison ~* 'danger|risque|s[ée]curit[ée]|[ée]lectri|d[ée]nud[ée]|incendie' then return 'securite';
+  elsif p_raison ~* 'propret[ée]|salet[ée]|sale\b|poussi[èe]re|nettoy' then return 'proprete';
+  elsif p_raison ~* 'manquant|cass[ée]|d[ée]fectueux|absent|non[ -]conforme' then return 'materiel';
+  else return 'autre';
+  end if;
+end;
+$$ language plpgsql immutable;
+
+-- ── 16. Notification best-effort (pg_net + Vault) — ne bloque JAMAIS
+-- l'ecriture de alert_logs qui l'a declenchee, meme si pg_net/Vault ne
+-- sont pas configures (echec silencieux, capture dans le bloc exception).
+create extension if not exists pg_net;
+
+create or replace function call_notify_alert(p_alert_id uuid, p_account text, p_intervention_id text, p_type_alerte text, p_raison text)
+returns void as $$
+declare
+  v_url text;
+  v_key text;
+begin
+  select decrypted_secret into v_url from vault.decrypted_secrets where name = 'project_url';
+  select decrypted_secret into v_key from vault.decrypted_secrets where name = 'service_role_key';
+  if v_url is null or v_key is null then
+    return; -- Vault non configure (voir prerequis manuel en tete de section) : pas d'echec, juste pas de notification
+  end if;
+  perform net.http_post(
+    url := v_url || '/functions/v1/notify-alert',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || v_key),
+    body := jsonb_build_object('alert_id', p_alert_id, 'account', p_account, 'intervention_id', p_intervention_id, 'type_alerte', p_type_alerte, 'raison', p_raison)
+  );
+exception when others then
+  -- best-effort : reseau/config en echec ne doit jamais faire echouer
+  -- l'insert/update de alert_logs qui a declenche cet appel.
+  null;
+end;
+$$ language plpgsql security definer set search_path = public, vault, net;
+
+-- ── 17. Trigger : qa_photos -> alert_logs ──
+-- Se declenche uniquement AFTER INSERT sur qa_photos (chaque analyse cree
+-- une NOUVELLE ligne, vision-qa.ts ne fait jamais d'update -- voir
+-- supabase-functions/vision-qa.ts) et n'ecrit QUE dans alert_logs, jamais
+-- dans qa_photos elle-meme : aucune boucle possible, ce trigger ne peut
+-- pas se re-declencher lui-meme.
+--
+-- Idempotence des DEUX cotes : une alerte n'est creee que s'il n'en
+-- existe pas deja une active/acknowledged pour cette intervention (evite
+-- des doublons si plusieurs photos non_conforme/incertain s'enchainent
+-- avant resolution) ; la resolution marque 'resolved' toute alerte
+-- active/acknowledged existante des qu'une photo 'conforme' arrive pour
+-- la meme intervention, sans erreur si aucune alerte n'existait deja.
+create or replace function trigger_qa_alert() returns trigger as $$
+declare
+  v_type text;
+  v_alert_id uuid;
+begin
+  if new.verdict in ('non_conforme', 'incertain') then
+    if not exists (
+      select 1 from alert_logs
+      where account = new.account and intervention_id = new.intervention_id and status in ('active', 'acknowledged')
+    ) then
+      v_type := derive_type_alerte(new.raison);
+      insert into alert_logs (account, intervention_id, qa_photo_id, type_alerte, raison, status)
+      values (new.account, new.intervention_id, new.id, v_type, new.raison, 'active')
+      returning id into v_alert_id;
+      perform call_notify_alert(v_alert_id, new.account, new.intervention_id, v_type, new.raison);
+    end if;
+  elsif new.verdict = 'conforme' then
+    update alert_logs
+    set status = 'resolved', resolved_at = now()
+    where account = new.account and intervention_id = new.intervention_id and status in ('active', 'acknowledged');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger qa_photos_alert_trigger
+after insert on qa_photos
+for each row execute function trigger_qa_alert();
