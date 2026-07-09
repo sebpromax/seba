@@ -694,3 +694,118 @@ alter table ai_context_hash enable row level security;
 -- peut contenir des extraits de donnees metier, jamais expose en lecture
 -- publique meme au proprietaire du compte (il n'a aucun besoin d'y
 -- acceder directement, seul conscience-seba.ts le consulte).
+
+-- ═══════════════════════════════════════════════════════════════
+-- PALIER 5 — Analytique financière
+--
+-- 3 ecarts assumes par rapport au brief initial, meme raisonnement que
+-- tous les paliers precedents (Pilier 4 : intervention_id/client_id sont
+-- des TEXT generes cote client, format id_xxxxx, jamais des UUID -- aucune
+-- ligne reelle a referencer par FK) :
+-- 1. account_id -> `account text` directement sur les deux tables : la
+--    "jointure sur intervention_id" demandee par le brief n'a rien vers
+--    quoi joindre (pas de table interventions peuplee). Meme constat que
+--    sync_operations/qa_photos/alert_logs/memoire_embeddings.
+-- 2. get_marge_reelle(intervention_id UUID) -> (p_account text,
+--    p_intervention_id text) : un intervention_id de ce systeme n'est
+--    jamais un UUID valide, la fonction telle que specifiee ne pourrait
+--    litteralement jamais etre appelee avec un vrai id. p_account ajoute
+--    en plus, meme raisonnement de securite que match_interventions/
+--    call_notify_alert (Paliers 3/4) : sans lui, un appel service_role
+--    pourrait remonter la marge de n'importe quel compte.
+-- 3. vue_marge_interventions calcule le revenu a partir de la table
+--    paiements (statut='recu'), PAS d'une table "interventions" qui
+--    n'existe pas -- jointure entre les deux tables reelles de ce palier
+--    uniquement, pas besoin de toucher au blob seba_state.
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 22. Coûts matériaux par intervention ──
+create table if not exists materiaux_couts (
+  id uuid primary key default gen_random_uuid(),
+  account text not null references seba_state (account) on delete cascade,
+  user_id uuid not null default auth.uid(),
+  intervention_id text not null,              -- format id_xxxxx (Pilier 4), pas de FK -- voir note ci-dessus
+  type_materiau text not null,
+  quantite numeric(10,2) not null default 1,
+  cout_unitaire numeric(10,2) not null,
+  devise text not null default 'EUR',
+  created_at timestamptz default now()
+);
+create index if not exists idx_materiaux_couts_intervention on materiaux_couts (account, intervention_id);
+alter table materiaux_couts enable row level security;
+-- CRUD complet pour le proprietaire : donnee metier saisie par le patron
+-- (comme clients/devis/factures), pas un artefact genere par un systeme
+-- (contrairement a qa_photos/alert_logs qui sont ecriture service_role
+-- uniquement).
+create policy "materiaux_couts_select" on materiaux_couts for select using (auth.uid() = user_id);
+create policy "materiaux_couts_insert" on materiaux_couts for insert with check (auth.uid() = user_id);
+create policy "materiaux_couts_update" on materiaux_couts for update using (auth.uid() = user_id);
+create policy "materiaux_couts_delete" on materiaux_couts for delete using (auth.uid() = user_id);
+
+-- ── 23. Paiements ──
+create table if not exists paiements (
+  id uuid primary key default gen_random_uuid(),
+  account text not null references seba_state (account) on delete cascade,
+  user_id uuid not null default auth.uid(),
+  client_id text,                             -- format id_xxxxx, nullable (paiement pas toujours rattache a un client precis), pas de FK
+  intervention_id text,                       -- idem, nullable (ex. acompte global)
+  montant numeric(10,2) not null,
+  date_paiement date not null default current_date,
+  statut text not null default 'recu' check (statut in ('recu', 'en_attente', 'rembourse')),
+  reference text,                             -- reference bancaire/transaction -- JAMAIS exposee a l'agent, voir _shared/finance-analytics.ts (masquage par omission de colonne, pas par filtrage a posteriori)
+  created_at timestamptz default now()
+);
+create index if not exists idx_paiements_intervention on paiements (account, intervention_id);
+create index if not exists idx_paiements_client on paiements (account, client_id);
+alter table paiements enable row level security;
+create policy "paiements_select" on paiements for select using (auth.uid() = user_id);
+create policy "paiements_insert" on paiements for insert with check (auth.uid() = user_id);
+create policy "paiements_update" on paiements for update using (auth.uid() = user_id);
+create policy "paiements_delete" on paiements for delete using (auth.uid() = user_id);
+
+-- ── 24. Vue de marge par intervention ──
+-- security_invoker=true (Postgres 15+) : sans cette option, une vue
+-- s'execute par defaut avec les privileges de son CREATEUR, pas de
+-- l'appelant -- la RLS de materiaux_couts/paiements ne s'appliquerait
+-- alors JAMAIS a un client authentifie qui interrogerait cette vue
+-- directement. Avec security_invoker=true, la RLS des tables sous-
+-- jacentes s'applique correctement a l'appelant reel.
+create or replace view vue_marge_interventions
+with (security_invoker = true) as
+select
+  m.account,
+  m.intervention_id,
+  coalesce(p.revenu, 0) as revenu,
+  coalesce(m.cout_materiaux, 0) as cout_materiaux,
+  coalesce(p.revenu, 0) - coalesce(m.cout_materiaux, 0) as marge
+from (
+  select account, intervention_id, sum(quantite * cout_unitaire) as cout_materiaux
+  from materiaux_couts
+  group by account, intervention_id
+) m
+full outer join (
+  select account, intervention_id, sum(montant) as revenu
+  from paiements
+  where statut = 'recu' and intervention_id is not null
+  group by account, intervention_id
+) p on p.account = m.account and p.intervention_id = m.intervention_id;
+
+-- ── 25. Marge d'une intervention spécifique ──
+-- p_account explicite : seule frontiere reelle sous un appel service_role
+-- (voir note en tete de section) -- security_invoker sur la vue protege
+-- deja un appel direct par un client authentifie, mais pas un appel
+-- interne via _shared/finance-analytics.ts qui contourne RLS par nature.
+-- Volontairement PAS de revoke execute ici (contrairement a
+-- match_interventions/call_notify_alert) : cette fonction reste sure a
+-- appeler directement par un client authentifie (security_invoker de la
+-- vue fait deja le travail), un futur bouton dashboard "voir la marge de
+-- cette intervention" pourrait l'appeler telle quelle sans detour serveur.
+create or replace function get_marge_reelle(p_account text, p_intervention_id text)
+returns table (revenu numeric, cout_materiaux numeric, marge numeric)
+language sql
+stable
+as $$
+  select revenu, cout_materiaux, marge
+  from vue_marge_interventions
+  where account = p_account and intervention_id = p_intervention_id;
+$$;

@@ -59,6 +59,18 @@
           "name": "summarize_tech_notes",
           "description": "Resume incremental des notes techniques d'un client/d'une intervention (alimente client_memoire, voir cadrage Palier 4 — table non creee dans cette initialisation, voir rapport).",
           "costTier": "tier2_llm"
+        },
+        {
+          "name": "get_financial_summary",
+          "description": "Resume financier agrege sur tout le compte (revenu total, cout materiaux total, marge totale/moyenne) via vue_marge_interventions, scope par account resolu serveur. Ne renvoie jamais paiements.reference (masquage par omission de colonne, pas par filtrage a posteriori).",
+          "implementation": "_shared/finance-analytics.ts (getFinancialSummary)",
+          "costTier": "tier0_deterministic (agregation SQL/TS, pas d'appel LLM)"
+        },
+        {
+          "name": "calculate_profitability",
+          "description": "Marge reelle d'une intervention specifique (get_marge_reelle : revenu - cout materiaux), scopee par account ET intervention_id resolus serveur.",
+          "implementation": "_shared/finance-analytics.ts (calculateProfitability)",
+          "costTier": "tier0_deterministic (calcul SQL, pas d'appel LLM)"
         }
       ],
       "costTier": "tier2_llm",
