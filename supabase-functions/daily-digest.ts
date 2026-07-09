@@ -104,7 +104,22 @@ Deno.serve(async (req) => {
         montantEnRetardEUR: retard.reduce((s: number, f: { amount?: number }) => s + (f.amount || 0), 0),
         devisEnAttente: attente.length,
       };
-      const decision = await decideAvecLLM(context, LLM_PROVIDERS);
+      let decision: Awaited<ReturnType<typeof decideAvecLLM>>;
+      try {
+        decision = await decideAvecLLM(context, LLM_PROVIDERS);
+      } catch (e) {
+        if (String((e as Error)?.message) === 'DAILY_LIMIT_REACHED') {
+          // Disjoncteur global ouvert (voir _shared/llm-providers.ts) :
+          // arrete les recommandations IA pour le RESTE de ce cycle plutot
+          // que de continuer a re-declencher le disjoncteur pour chaque
+          // compte restant en pure perte -- les comptes deja traites
+          // gardent leur resultat, ceux qui restent recoivent action:null.
+          console.error('[daily-digest] quota global quotidien de requetes LLM atteint, arrêt des recommandations IA pour le reste de ce cycle.');
+          results.push({ account: row.account, action: null });
+          break;
+        }
+        throw e; // toute autre erreur inattendue remonte normalement (comportement inchangé)
+      }
       const reco = decision?.verdict ?? null;
       results.push({ account: row.account, action: reco?.action || null });
       if (!reco || reco.priority === 'low') continue;

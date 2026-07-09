@@ -42,7 +42,7 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { lookupHistory, MemoireMatch } from './memoire-lookup.ts';
 import { calculateProfitability, FinancialSummary, getFinancialSummary, InterventionProfitability } from './finance-analytics.ts';
-import type { LlmProvider } from './llm-providers.ts';
+import { enforceUsageGuardrail, LlmProvider } from './llm-providers.ts';
 
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -118,6 +118,16 @@ export async function decideAvecLLM(
   ctx: Record<string, unknown>,
   providers: LlmProvider[],
 ): Promise<{ verdict: ConscienceVerdict; provider: string } | null> {
+  // Disjoncteur global de coût (voir _shared/llm-providers.ts) : appelée
+  // ici aussi, pas seulement dans callWithFallback(), car cette fonction
+  // contacte directement les mêmes providers payants sans passer par
+  // callWithFallback (ai-relay.ts mode 'json' et daily-digest.ts).
+  // Volontairement PAS de try/catch ici : DAILY_LIMIT_REACHED doit
+  // remonter tel quel jusqu'à l'appelant (ex. daily-digest.ts, qui doit
+  // pouvoir distinguer "disjoncteur ouvert" d'un simple échec de
+  // provider pour arrêter sa boucle proprement plutôt que de continuer à
+  // tester 40+ comptes en pure perte).
+  await enforceUsageGuardrail();
   const user = JSON.stringify(ctx);
   for (const p of providers) {
     let raw: string;

@@ -85,6 +85,14 @@ This is an interactive prototype built to validate the product concept with real
 
 > An excellent AI built on software nobody uses serves no purpose. We validate usage before adding intelligence.
 
+## Environment Variables
+
+The backend (`supabase-functions/`, Supabase Edge Functions) reads its configuration from environment variables set as Supabase Secrets — never hardcoded, never committed. Full setup steps for every key: `MANUEL-SEBA-ADMIN.md` section 1.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `MAX_DAILY_REQUESTS` | `50` | Global daily cap (all accounts combined) on outbound requests to the shared LLM providers (Mistral/Groq/OpenRouter/Gemini), enforced in `supabase-functions/_shared/llm-providers.ts` (`enforceUsageGuardrail()`). This is a cost circuit breaker, separate from the per-account quota (`api_usage` table) — it protects the app's shared provider API keys from an unexpected aggregate cost spike even if every individual account stays within its own limit. Raise it as real usage grows; it fails **closed** (blocks the call) if the check itself cannot be performed. |
+
 ---
 
 *Seba is built with the conviction that simple, reliable tools beat complex ones — and that the best product is the one professionals open every morning out of habit.*
