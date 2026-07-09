@@ -590,3 +590,107 @@ revoke execute on function call_notify_alert(uuid, text, text, text, text) from 
 revoke execute on function apply_entity_patch(text, text, text, jsonb) from public, anon, authenticated;
 revoke execute on function trigger_qa_alert() from public, anon, authenticated;
 revoke execute on function derive_type_alerte(text) from public, anon, authenticated;
+
+-- ═══════════════════════════════════════════════════════════════
+-- PALIER 4 — Agents intelligents & mémoire vectorielle
+-- (supabase-functions/_shared/conscience-seba.ts)
+--
+-- 2 ecarts assumes par rapport au brief initial, corriges ici :
+-- 1. embedding vector(1024), pas vector(1536) : 1536 est la dimension
+--    d'OpenAI (text-embedding-3-small/ada-002) -- aucune cle OpenAI
+--    n'existe nulle part dans ce projet (verifie). mistral-embed (1024
+--    dimensions) est deja le choix documente dans
+--    VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md, et MISTRAL_API_KEY est deja
+--    provisionnee (ai-relay.ts/daily-digest.ts) -- pas de nouveau
+--    fournisseur non configure a introduire pour ce palier.
+-- 2. Colonne `account` ajoutee : le brief demandait une RLS "par
+--    account_id (jointure necessaire)", mais memoire_embeddings
+--    (id, intervention_id, content, embedding, metadata, created_at) n'a
+--    aucune colonne vers laquelle joindre -- intervention_id (format
+--    id_xxxxx, Pilier 4) vit dans le blob seba_state, ce n'est pas une
+--    ligne reelle d'une table interventions permettant une jointure. Sans
+--    colonne account directe, aucune policy RLS n'est ecrivable. Ajoutee
+--    ici, exactement comme sync_operations/qa_photos/alert_logs.
+-- ═══════════════════════════════════════════════════════════════
+create extension if not exists vector;
+
+-- ── 19. Mémoire vectorielle (embeddings) ──
+create table if not exists memoire_embeddings (
+  id uuid primary key default gen_random_uuid(),
+  account text not null references seba_state (account) on delete cascade,
+  intervention_id text,                       -- format id_xxxxx (Pilier 4), nullable : un embedding peut ne pas etre lie a une intervention precise (ex. note generale client)
+  content text not null,
+  embedding vector(1024) not null,            -- mistral-embed, voir note ci-dessus
+  metadata jsonb not null default '{}',
+  created_at timestamptz default now()
+);
+create index if not exists idx_memoire_embeddings_account on memoire_embeddings (account);
+create index if not exists idx_memoire_embeddings_intervention on memoire_embeddings (account, intervention_id);
+create index if not exists idx_memoire_embeddings_vector on memoire_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+alter table memoire_embeddings enable row level security;
+create policy "memoire_embeddings_select" on memoire_embeddings for select using (
+  exists (select 1 from seba_state s where s.account = memoire_embeddings.account and s.user_id = auth.uid())
+);
+-- Pas de policy insert/update/delete pour authenticated : ecrit
+-- exclusivement par embed-content.ts (service_role) -- un embedding ne
+-- doit jamais pouvoir etre injecte/falsifie depuis le navigateur (il
+-- alimente directement le contexte envoye au LLM).
+
+-- ── 20. Recherche de similarité, scopée par compte ──
+-- p_account est un parametre EXPLICITE, pas une deduction via RLS : cette
+-- fonction est appelee par _shared/conscience-seba.ts via le client
+-- service_role (bypass RLS par nature) -- sans filtre explicite ici,
+-- N'IMPORTE QUEL compte pourrait faire remonter les embeddings de
+-- N'IMPORTE QUEL AUTRE compte par similarite, une fuite multi-tenant
+-- totale. p_account doit TOUJOURS etre resolu cote serveur a partir du
+-- JWT de l'appelant (voir conscience-seba.ts), jamais accepte tel quel
+-- depuis le corps d'une requete client.
+create or replace function match_interventions(
+  p_account text,
+  query_embedding vector(1024),
+  match_threshold float,
+  match_count int
+)
+returns table (id uuid, intervention_id text, content text, metadata jsonb, similarity float)
+language sql
+stable
+as $$
+  select
+    memoire_embeddings.id,
+    memoire_embeddings.intervention_id,
+    memoire_embeddings.content,
+    memoire_embeddings.metadata,
+    1 - (memoire_embeddings.embedding <=> query_embedding) as similarity
+  from memoire_embeddings
+  where memoire_embeddings.account = p_account
+    and 1 - (memoire_embeddings.embedding <=> query_embedding) >= match_threshold
+  order by memoire_embeddings.embedding <=> query_embedding
+  limit match_count;
+$$;
+-- Meme defense en profondeur que la section 18 : appelee exclusivement
+-- par conscience-seba.ts (service_role), jamais directement par un
+-- client. La RLS de memoire_embeddings resterait un second filtre si
+-- jamais appelee sous un contexte authenticated, mais p_account est deja
+-- l'unique frontiere reelle sous service_role.
+revoke execute on function match_interventions(text, vector, float, int) from public, anon, authenticated;
+
+-- ── 21. Cache de contexte IA (deduplique les appels LLM identiques) ──
+-- Meme design que documente dans VISION-TECHNIQUE-SEBA-PHASE2-CADRAGE.md
+-- section Mistral : hash SHA256 du contexte CONSTRUIT (jamais du texte
+-- brut tronque) comme cle. Si le hash n'a pas change depuis le dernier
+-- appel pour ce compte/cet agent, la reponse en cache est reutilisee sans
+-- appeler le LLM.
+create table if not exists ai_context_hash (
+  account text not null references seba_state (account) on delete cascade,
+  agent text not null,                        -- 'conscience_predictive' | 'assistant_technique' | ...
+  context_hash text not null,                 -- sha256(JSON.stringify(contexte construit))
+  response jsonb not null,
+  created_at timestamptz default now(),
+  primary key (account, agent, context_hash)
+);
+alter table ai_context_hash enable row level security;
+-- RLS actif SANS AUCUNE policy = bloque tout sauf service_role, meme
+-- pattern que api_usage/employe_credentials/employe_sessions : le cache
+-- peut contenir des extraits de donnees metier, jamais expose en lecture
+-- publique meme au proprietaire du compte (il n'a aucun besoin d'y
+-- acceder directement, seul conscience-seba.ts le consulte).
