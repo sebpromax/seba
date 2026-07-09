@@ -43,31 +43,37 @@
       "description": "Repond aux questions d'un technicien/patron sur l'historique d'une intervention ou d'un client, en s'appuyant sur memoire_embeddings (recherche semantique) plutot que sur l'historique complet charge en contexte.",
       "sharedModule": "_shared/conscience-seba.ts (orchestration RAG : prepareAssistantTechniqueContext)",
       "entrypoint": "a definir (pas encore de route HTTP dediee dans ce palier — infrastructure seule, voir RAPPORT-IMPLEMENTATION-PALIER4.md)",
+      "$comment_tools": "Deux champs distincts par outil, volontairement pas fusionnes : `description` = documentation technique precise (implementation, securite) pour les developpeurs/la revue de code ; `llmDirective` = texte imperatif optimise pour qu'un modele avec function-calling choisisse le bon outil (voir la reserve en tete de conscience-seba.ts : ce mecanisme n'est pas encore cable a un appel LLM reel dans ce projet, ces directives sont ecrites pour etre pretes le jour ou il le sera).",
       "tools": [
         {
           "name": "lookup_history",
+          "llmDirective": "Déclenche cet outil OBLIGATOIREMENT pour trouver des solutions techniques aux problèmes similaires passés, avant de répondre à toute question sur l'historique d'une intervention ou d'un client. Ne réponds jamais de mémoire générale sur un cas passé sans avoir appelé cet outil.",
           "description": "Recherche semantique dans memoire_embeddings (match_interventions) pour un compte donne, scopee par account_id resolu serveur — jamais fourni par le client.",
           "implementation": "_shared/memoire-lookup.ts (lookupHistory)",
           "costTier": "tier0_deterministic (recherche vectorielle, pas d'appel LLM)"
         },
         {
           "name": "analyze_compliance",
+          "llmDirective": "Déclenche cet outil pour vérifier qu'une intervention respecte les normes du secteur AVANT de valider ou d'infirmer sa conformité — ne te prononce jamais sur une conformité réglementaire sans ce contrôle.",
           "description": "Analyse un texte/une note technique par rapport aux criteres de conformite du secteur (reutilise le meme principe que qa_criteres_metier du Palier 2, pas encore de table dediee pour du texte).",
           "costTier": "tier2_llm"
         },
         {
           "name": "summarize_tech_notes",
+          "llmDirective": "Utilise cet outil pour condenser un historique technique long avant de le présenter au technicien, plutôt que de citer l'intégralité des notes brutes dans ta réponse.",
           "description": "Resume incremental des notes techniques d'un client/d'une intervention (alimente client_memoire, voir cadrage Palier 4 — table non creee dans cette initialisation, voir rapport).",
           "costTier": "tier2_llm"
         },
         {
           "name": "get_financial_summary",
+          "llmDirective": "Utilise cet outil pour donner une vision d'ensemble de la rentabilité du compte avant de répondre à une question générale sur les finances ou la santé économique de l'entreprise.",
           "description": "Resume financier agrege sur tout le compte (revenu total, cout materiaux total, marge totale/moyenne) via vue_marge_interventions, scope par account resolu serveur. Ne renvoie jamais paiements.reference (masquage par omission de colonne, pas par filtrage a posteriori).",
           "implementation": "_shared/finance-analytics.ts (getFinancialSummary)",
           "costTier": "tier0_deterministic (agregation SQL/TS, pas d'appel LLM)"
         },
         {
           "name": "calculate_profitability",
+          "llmDirective": "Utilise cet outil pour vérifier l'impact financier AVANT de recommander le remplacement d'une pièce coûteuse ou toute décision d'intervention ayant un coût significatif. Ne recommande jamais une dépense importante sans avoir vérifié la marge réelle disponible.",
           "description": "Marge reelle d'une intervention specifique (get_marge_reelle : revenu - cout materiaux), scopee par account ET intervention_id resolus serveur.",
           "implementation": "_shared/finance-analytics.ts (calculateProfitability)",
           "costTier": "tier0_deterministic (calcul SQL, pas d'appel LLM)"
