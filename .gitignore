@@ -2,3 +2,4 @@ node_modules/
 docs/config.js
 docs/audit-screenshots/
 .env
+.vscode/mcp.json
