@@ -101,6 +101,8 @@ a{color:inherit;text-decoration:none;}
 .btn-primary:hover{opacity:.9;}
 .btn-primary:active{transform:scale(.98);}
 .reassurance{margin-top:var(--spacing-4);text-align:center;font-size:var(--font-size-sm);color:var(--t2);}
+.demo-link{color:var(--t2);text-decoration:underline;text-underline-offset:3px;transition:color .2s;}
+.demo-link:hover{color:var(--em);}
 
 /* Ecran 2 — cartes de secteur (spec Mistral) */
 .sectors-grid{display:grid;grid-template-columns:1fr;gap:var(--spacing-4);margin-top:var(--spacing-6);}
@@ -180,6 +182,8 @@ a{color:inherit;text-decoration:none;}
         <div class="err" id="err-capture"></div>
         <button type="submit" class="btn-primary" id="capture-submit">Créer mon espace →</button>
         <p class="reassurance">✓ Sans carte bancaire — Configuration en 30s</p>
+        <!-- Guest access : bypass demo deja gere par guard.js (?demo, sessionStorage) -->
+        <p class="reassurance"><a class="demo-link" href="dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
       </form>
     </section>
 
