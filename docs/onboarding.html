@@ -96,6 +96,7 @@ a{color:inherit;text-decoration:none;}
 .pwd-toggle{position:absolute;right:6px;top:6px;width:36px;height:36px;border:none;background:transparent;color:var(--t2);cursor:pointer;font-size:1rem;border-radius:var(--rs);}
 .pwd-toggle:hover{color:var(--white);}
 .err{min-height:18px;font-size:var(--font-size-xs);color:var(--err);margin-top:var(--spacing-1);}
+.label-hint{color:var(--t3);font-weight:400;}
 
 .btn-primary{width:100%;height:52px;background:var(--em);color:var(--ink);border:none;border-radius:var(--r);font-size:var(--font-size-lg);font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .15s;}
 .btn-primary:hover{opacity:.9;}
@@ -191,7 +192,7 @@ a{color:inherit;text-decoration:none;}
     <section class="flash-step hidden" id="fstep-2">
       <h1 class="step-title">Parlez-nous de votre entreprise</h1>
       <div class="field">
-        <label for="inp-nom">Nom de l'entreprise</label>
+        <label for="inp-nom">Nom de l'entreprise <span class="label-hint">— facultatif, modifiable ensuite</span></label>
         <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60">
       </div>
       <div class="sectors-grid" id="sectors-grid">
@@ -206,6 +207,10 @@ a{color:inherit;text-decoration:none;}
         <button type="button" class="sector-card" data-sector="Artisans &amp; Maintenance">
           <span class="sector-icon">🔧</span>
           <span class="sector-name">Artisans &amp; Maintenance</span>
+        </button>
+        <button type="button" class="sector-card" data-sector="Autre activité">
+          <span class="sector-icon">✨</span>
+          <span class="sector-name">Autre activité</span>
         </button>
       </div>
     </section>
