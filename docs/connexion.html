@@ -242,6 +242,7 @@ async function handleLogin(){
   btn.disabled=true;
   const res=await sebaAuth.signIn(email,password);
   if(res.ok){
+    await completePendingProfile();
     window.location.href='dashboard.html';
   }else{
     err.textContent=res.error==='Invalid login credentials'?'Identifiants incorrects.':(res.error||'Connexion impossible — réessayez.');
@@ -249,6 +250,23 @@ async function handleLogin(){
     btn.textContent='Se connecter';
     btn.disabled=false;
   }
+}
+/* Profil laisse "en attente" par onboarding.html quand la confirmation email
+   etait requise (pas de session au moment du signUp -> la RPC SECURITY INVOKER
+   aurait ete rejetee par RLS). Au premier login reussi, une session existe :
+   on rejoue create_profile_and_company avec les donnees cachees localement. */
+async function completePendingProfile(){
+  try{
+    if(localStorage.getItem('seba_profile_pending')!=='1')return;
+    if(!window.sebaAuth||!window.sebaAuth.isConfigured)return;
+    const session=await sebaAuth.getSession();
+    const userId=session&&session.user&&session.user.id;
+    const biz=JSON.parse(localStorage.getItem('sebaEntreprise')||'{}');
+    if(!userId||!biz.secteur)return;
+    const{error}=await sebaAuth.rpc('create_profile_and_company',{_user_id:userId,_sector:biz.secteur,_company_name:biz.nom||'Mon entreprise'});
+    if(!error)localStorage.removeItem('seba_profile_pending');
+    else console.error('[connexion] echec rejeu create_profile_and_company:',error.message||error);
+  }catch(e){}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleLogin();});
 if(new URLSearchParams(location.search).get('confirm')==='1'){document.getElementById('success-msg').classList.add('visible');}

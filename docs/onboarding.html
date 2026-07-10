@@ -118,6 +118,8 @@ a{color:inherit;text-decoration:none;}
 .progress-bar{width:100%;height:4px;background:var(--t3);border-radius:var(--rs);overflow:hidden;}
 .progress-fill{height:100%;width:0%;background:var(--em);border-radius:var(--rs);transition:width .5s cubic-bezier(.4,0,.2,1);}
 .propulsion-msg{font-size:var(--font-size-base);color:var(--t2);text-align:center;transition:opacity .3s ease;}
+.propulsion-cta{display:flex;align-items:center;justify-content:center;width:100%;}
+.propulsion-cta.is-hidden{display:none;}
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
@@ -222,13 +224,14 @@ a{color:inherit;text-decoration:none;}
   <div class="propulsion-center">
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     <p class="propulsion-msg" id="propulsion-msg">Initialisation de votre espace...</p>
+    <a href="connexion.html" class="btn-primary propulsion-cta is-hidden" id="propulsion-cta">J'ai confirmé mon email — Se connecter →</a>
   </div>
 </div>
 
 <script>
   // ── Moteur du tunnel Flash & Drop — 3 ecrans, JS vanilla, aucune dependance externe ──
   let _currentStep = 1;
-  const S = { email: '', sector: '', nom: '', userId: null };
+  const S = { email: '', sector: '', nom: '', userId: null, needsConfirm: false };
 
   function goStep(toIdx) {
     document.getElementById('fstep-' + _currentStep).classList.add('hidden');
@@ -277,6 +280,10 @@ a{color:inherit;text-decoration:none;}
     // pas un id tire d'une session qui pourrait ne pas exister a ce stade.
     S.email = email;
     S.userId = (result.user && result.user.id) || null;
+    // needsConfirm = confirmation email requise, pas encore de session active :
+    // toute la suite du tunnel (propulsion, RPC, redirection) doit en tenir compte,
+    // sinon guard.js ejecte l'utilisateur du dashboard sans explication.
+    S.needsConfirm = !!result.needsConfirm;
     goStep(2);
   });
 
@@ -292,13 +299,16 @@ a{color:inherit;text-decoration:none;}
     });
   });
 
-  // ── Écran 3 : propulsion — messages toutes les 800ms, redirection a 2400ms ──
+  // ── Écran 3 : propulsion — messages toutes les 550ms, sortie a 1650ms ──
   function startPropulsion() {
-    const messages = [
-      'Initialisation de votre espace...',
-      "Vos modules clients, devis & planning s'activent...",
-      'Tableau de bord prêt !',
-    ];
+    // RPC lancee EN PARALLELE de l'animation (elle etait sequentielle apres
+    // 2400ms : l'attente fictive s'ADDITIONNAIT a la latence reseau au lieu
+    // de la masquer). L'await avant la redirection reste indispensable :
+    // naviguer annulerait une requete encore en vol.
+    const savePromise = saveProfile();
+    const messages = S.needsConfirm
+      ? ['Initialisation de votre espace...', 'Espace créé — dernière étape :', 'Confirmez votre email (lien envoyé), puis connectez-vous.']
+      : ['Initialisation de votre espace...', "Vos modules clients, devis & planning s'activent...", 'Tableau de bord prêt !'];
     const msgEl = document.getElementById('propulsion-msg');
     const fillEl = document.getElementById('progress-fill');
     let i = 0;
@@ -310,15 +320,19 @@ a{color:inherit;text-decoration:none;}
         msgEl.textContent = messages[i];
         fillEl.style.width = ((i + 1) / messages.length * 100) + '%';
       }
-    }, 800);
-    // async + await sur saveProfile() avant la redirection : sans ca, la
-    // navigation vers dashboard.html annulerait la requete RPC en plein vol
-    // (fire-and-forget qui n'aurait jamais le temps d'aboutir).
+    }, 550);
     setTimeout(async function () {
       clearInterval(interval);
-      await saveProfile();
+      await savePromise;
+      if (S.needsConfirm) {
+        // Pas de session tant que l'email n'est pas confirme : rediriger vers
+        // dashboard.html ferait ejecter l'utilisateur par guard.js sans message.
+        // On affiche le CTA vers connexion.html et on reste sur place.
+        document.getElementById('propulsion-cta').classList.remove('is-hidden');
+        return;
+      }
       window.location.href = 'dashboard.html';
-    }, 2400);
+    }, 1650);
   }
 
   let isSaving = false;
@@ -333,6 +347,14 @@ a{color:inherit;text-decoration:none;}
       try { localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email })); } catch (e) {}
 
       if (!window.sebaAuth || !window.sebaAuth.isConfigured) return; // mode demo : rien de plus a faire
+      if (S.needsConfirm) {
+        // Pas de session avant confirmation email : la RPC SECURITY INVOKER
+        // serait rejetee par RLS (auth.uid() null, policy profiles_insert).
+        // On marque le profil "en attente" -- connexion.html rejoue la RPC
+        // au premier login reussi (completePendingProfile).
+        try { localStorage.setItem('seba_profile_pending', '1'); } catch (e) {}
+        return;
+      }
       if (!S.sector) { console.error('[onboarding] secteur manquant, RPC annulee.'); return; }
       if (!S.userId) { console.error("[onboarding] userId manquant (l'inscription a-t-elle abouti ?), RPC annulee."); return; }
 
