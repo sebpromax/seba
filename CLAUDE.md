@@ -25,6 +25,17 @@ Script QA existant : `node scripts/qa-dashboard-full.js --target=local --viewpor
 
 D'autres garde-fous existent : `node scripts/qa-visual-regression.js` (diff pixel vs baselines dans `docs/visual-baselines/`, seuil 0.5%), `node tools/check-design-system.js` (aucune couleur hex/rgb en dur hors `:root`, mode diff par défaut), `node tools/chaos-monkey.js` (audit red-team de `docs-backend.md`/`supabase-schema.sql`, mode local par défaut — `--allow-external` désactivé sauf accord explicite, voir le fichier).
 
+## Outils de conception assistée (dev uniquement)
+
+- **`ui-ux-pro-max-skill`** (https://github.com/nextlevelbuilder/ui-ux-pro-max-skill, MIT) — skill Claude Code d'assistance UI/UX (67 styles, 161 palettes, 57 pairings de polices, 161 règles par secteur, checklists a11y). Installation dev : `npm i -g ui-ux-pro-max-cli && uipro init --ai claude`, ou `/plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill`.
+- **`@21st-dev/magic-mcp`** (https://github.com/21st-dev/magic-mcp, MIT) — serveur MCP "Magic" qui génère des composants via `/ui <description>` dans Cursor/Windsurf/VSCode+Cline/Claude. Installation dev : `npx @21st-dev/cli@latest install <client> --api-key <clé>`. ⚠️ **Sortie React + TypeScript** (réécriture vanilla intégrale obligatoire, voir garde-fous) et **clé API + compte 21st.dev requis** (quota mensuel) — la clé ne va **JAMAIS** dans le repo (même règle que `docs/config.js`, gitignoré).
+- **Usage autorisé : idéation et prototypage rapide UNIQUEMENT** — explorer des directions visuelles, des structures de page, des checklists d'accessibilité. Ce n'est **jamais** "la façon de construire l'UI de SEBA".
+- **Garde-fous impératifs avant d'intégrer une seule ligne issue de ces outils :**
+  - **Jamais de dépendance runtime.** SEBA est "zéro bundler, zéro framework, CDN only" (voir en-tête). Toute sortie React/Vue/Tailwind/Next doit être réécrite en HTML/CSS/JS vanilla + tokens SEBA avant d'entrer dans `docs/`.
+  - **Réconciliation obligatoire avec le design system existant.** La sortie du skill doit être remappée sur les tokens SEBA — `pro-global.css` (pages app) ou "Tactical Dark Absolu" scopé `dashboard.html`/`widgets.js` — jamais ses propres palettes/hex. Ne pas fusionner les deux thèmes SEBA sans autorisation (voir section thème).
+  - **`node tools/check-design-system.js` doit passer** (aucune couleur hex/rgb en dur hors `:root`) avant tout commit d'une page touchée par ce skill.
+  - Outil **de dev**, il ne va jamais dans `docs/config.*`, `package.json` runtime, ni dans une page servie.
+
 ## Leçons apprises et anti-patterns
 
 - **`grid-template-columns: 1fr` (seul) garde un `min-width:auto` implicite = min-content de son contenu.** Sur une page avec un tableau responsive (`table{min-width:560px}`), la piste de grille grandit jusqu'à cette largeur au lieu de tenir dans le viewport — tout le contenu (et un bouton hamburger mobile) se retrouve poussé hors écran, sans que `position:fixed` sur la sidebar ne soit en cause. Toujours écrire `minmax(0,1fr)` pour une colonne de grille censée occuper l'espace restant. (Trouvé 2026-07-08, `pro-global.css`.)
