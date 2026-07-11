@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activez votre espace — Seba</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Gabarit carte identique à reset-password.html (tokenisé intégralement). */
+:root{
+  --em:#00ff88;--ink:#0a0a0c;--btn-ink:#050508;--err:#ff8080;
+  --autofill-bg:#18181B;--autofill-ink:#EDEDED;--white:#FFFFFF;
+  --nav-bg:rgba(10,10,12,.88);--line:rgba(255,255,255,.05);
+  --em-glow:rgba(0,255,136,.7);--em-halo:rgba(0,255,136,.08);--em-focus:rgba(0,255,136,.5);
+  --em-tint:rgba(0,255,136,.04);--em-shadow:rgba(0,255,136,.45);
+  --em-msg-bg:rgba(0,255,136,.07);--em-msg-bd:rgba(0,255,136,.18);
+  --err-bg:rgba(255,100,100,.07);--err-bd:rgba(255,100,100,.18);
+  --t1:rgba(255,255,255,.6);--t2:rgba(255,255,255,.5);--t2b:rgba(255,255,255,.55);
+  --t3:rgba(255,255,255,.35);--t4:rgba(255,255,255,.2);
+  --card-bg:rgba(255,255,255,.03);--card-bd:rgba(255,255,255,.08);--card-shadow:rgba(0,0,0,.4);
+  --input-bg:rgba(255,255,255,.05);--input-bd:rgba(255,255,255,.1);
+  --fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--white);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;margin:0;}
+a{color:inherit;text-decoration:none;}
+input,button{font-family:'Inter',sans-serif;}
+:focus-visible{outline:2px solid var(--em);outline-offset:3px;}
+#gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
+.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em-glow);}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
+.card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:20px;padding:40px;width:100%;max-width:400px;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);position:relative;overflow:hidden;box-shadow:0 32px 80px var(--card-shadow);}
+.card::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:280px;height:180px;background:radial-gradient(ellipse,var(--em-halo) 0%,transparent 70%);pointer-events:none;}
+.card-head{margin-bottom:28px;}
+.card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--white);margin:0 0 6px;}
+.card-head p{font-size:.88rem;color:var(--t2b);margin:0;}
+.card-head strong{color:var(--em);font-weight:700;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field label{font-size:.78rem;font-weight:600;color:var(--t1);letter-spacing:.02em;text-transform:uppercase;}
+.field input{padding:12px 14px;background:var(--input-bg);border:1px solid var(--input-bd);border-radius:10px;font-size:.9rem;color:var(--white);transition:border-color .2s,background .2s;}
+.field input::placeholder{color:var(--t4);}
+.field input:focus{border-color:var(--em-focus);background:var(--em-tint);outline:none;}
+input::-ms-reveal,input::-ms-clear{display:none!important;}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 30px var(--autofill-bg) inset!important;-webkit-text-fill-color:var(--autofill-ink)!important;transition:background-color 5000s ease-in-out 0s;}
+.btn-connect{width:100%;padding:13px;border:none;border-radius:12px;background:var(--em);color:var(--btn-ink);font-weight:700;font-size:.95rem;cursor:pointer;transition:box-shadow .25s,transform .2s;}
+.btn-connect:hover{box-shadow:0 0 28px var(--em-shadow);transform:translateY(-2px);}
+.btn-connect:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.error-msg{font-size:.82rem;color:var(--err);background:var(--err-bg);border:1px solid var(--err-bd);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg.visible{display:block;}
+.success-msg{font-size:.82rem;color:var(--em);background:var(--em-msg-bg);border:1px solid var(--em-msg-bd);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.success-msg.visible{display:block;}
+.foot{text-align:center;font-size:.84rem;color:var(--t3);margin-top:22px;}
+.foot a{color:var(--em);font-weight:600;}
+.hidden{display:none;}
+</style>
+<meta name="theme-color" content="#0a0a0c">
+<script src="auth.js"></script>
+</head>
+<body>
+<canvas id="gl-canvas" data-fx="tunnel" aria-hidden="true"></canvas>
+
+<nav class="nav-wrap">
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
+</nav>
+
+<div class="page">
+  <div class="card">
+
+    <!-- État 1 : session détectée (arrivée depuis le lien d'activation) -->
+    <div id="pane-activate">
+      <div class="card-head">
+        <h1>Bienvenue ! Dernière étape</h1>
+        <p id="activate-sub">Votre adresse est confirmée. Choisissez votre mot de passe pour sécuriser votre espace<strong id="activate-sector"></strong>.</p>
+      </div>
+      <div class="success-msg" id="act-success">Espace activé — propulsion vers votre tableau de bord…</div>
+      <div class="error-msg" id="act-error"></div>
+      <div class="field">
+        <label for="new-password">Votre mot de passe</label>
+        <input type="password" id="new-password" placeholder="8 caractères minimum" autocomplete="new-password" minlength="8">
+      </div>
+      <button class="btn-connect" id="btn-activate" onclick="handleActivate()">Activer mon espace →</button>
+    </div>
+
+    <!-- État 2 : pas de session (lien expiré, déjà utilisé, ou visite directe) -->
+    <div id="pane-invalid" class="hidden">
+      <div class="card-head">
+        <h1>Lien expiré ou déjà utilisé</h1>
+        <p>Ce lien d'activation n'est plus valide. Redemandez-en un depuis l'inscription, ou connectez-vous si votre espace est déjà activé.</p>
+      </div>
+      <a href="onboarding.html" class="btn-connect" style="display:flex;align-items:center;justify-content:center;">Recommencer l'inscription →</a>
+      <p class="foot">Espace déjà activé ? <a href="connexion.html">Se connecter</a></p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* Le lien d'activation Supabase (signInWithOtp) redirige ici avec le token
+   dans l'URL ; le SDK le consomme à l'initialisation (detectSessionInUrl) et
+   ouvre une VRAIE session — c'est ce qui permet, dans le même geste :
+   1. updatePassword (le compte n'en avait pas encore) ;
+   2. la RPC create_profile_and_company (SECURITY INVOKER, auth.uid() valide)
+      avec le métier/nom mis en cache par le tunnel — plus de needsConfirm. */
+function show(id, on) { document.getElementById(id).classList.toggle('visible', !!on); }
+
+let _session = null;
+
+(async function initActivation() {
+  if (!window.sebaAuth || !window.sebaAuth.isConfigured) {
+    // Mode démo : cette page n'a pas de sens sans Supabase.
+    document.getElementById('pane-activate').classList.add('hidden');
+    document.getElementById('pane-invalid').classList.remove('hidden');
+    return;
+  }
+  // Laisse au SDK le temps de consommer le token de l'URL.
+  _session = await window.sebaAuth.getSession();
+  if (!_session) { await new Promise(function (r) { setTimeout(r, 900); }); _session = await window.sebaAuth.getSession(); }
+  if (!_session) {
+    document.getElementById('pane-activate').classList.add('hidden');
+    document.getElementById('pane-invalid').classList.remove('hidden');
+    return;
+  }
+  // Personnalisation : le métier choisi dans le tunnel (si même appareil).
+  try {
+    const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
+    if (biz.secteur) document.getElementById('activate-sector').textContent = ' « ' + biz.secteur + ' »';
+  } catch (e) {}
+  document.getElementById('new-password').focus();
+})();
+
+async function handleActivate() {
+  const pwd = document.getElementById('new-password').value;
+  const err = document.getElementById('act-error');
+  show('act-error', false);
+  if (pwd.length < 8) { err.textContent = 'Le mot de passe doit contenir au moins 8 caractères.'; show('act-error', true); return; }
+  const btn = document.getElementById('btn-activate');
+  btn.disabled = true; btn.textContent = 'Activation…';
+
+  const res = await window.sebaAuth.updatePassword(pwd);
+  if (!res.ok) {
+    err.textContent = res.error || 'Une erreur est survenue, réessayez.';
+    show('act-error', true);
+    btn.disabled = false; btn.textContent = 'Activer mon espace →';
+    return;
+  }
+
+  // Profil serveur : la session existe, la RPC passe RLS normalement.
+  try {
+    const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
+    const userId = _session && _session.user && _session.user.id;
+    if (userId && biz.secteur && localStorage.getItem('seba_profile_pending') === '1') {
+      const { error } = await window.sebaAuth.rpc('create_profile_and_company', {
+        _user_id: userId, _sector: biz.secteur, _company_name: biz.nom || 'Mon entreprise',
+      });
+      if (!error) localStorage.removeItem('seba_profile_pending');
+      else console.error('[bienvenue] echec RPC create_profile_and_company:', error.message || error);
+    }
+  } catch (e) {}
+
+  show('act-success', true);
+  // Propulsion : l'acte 3 du tunnel vit ici désormais.
+  if (window.SebaFX && window.SebaFX.enabled) {
+    SebaFX.pulse(); SebaFX.setAct(3);
+    await new Promise(function (r) { setTimeout(r, 1200); });
+    SebaFX.fadeOut();
+    await new Promise(function (r) { setTimeout(r, 350); });
+  }
+  window.location.href = 'dashboard.html';
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !document.getElementById('pane-activate').classList.contains('hidden')) handleActivate();
+});
+</script>
+<!-- Encre Vivante : preset tunnel (la propulsion finale vit sur cette page). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="bg-shader.js"></script>
+</body>
+</html>

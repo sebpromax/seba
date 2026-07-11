@@ -138,8 +138,9 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
 .progress-bar{width:100%;height:4px;background:var(--t3);border-radius:var(--rs);overflow:hidden;}
 .progress-fill{height:100%;width:0%;background:var(--em);border-radius:var(--rs);transition:width .5s cubic-bezier(.4,0,.2,1);}
 .propulsion-msg{font-size:var(--font-size-base);color:var(--t2);text-align:center;transition:opacity .3s ease;}
-.propulsion-cta{display:flex;align-items:center;justify-content:center;width:100%;}
-.propulsion-cta.is-hidden{display:none;}
+.propulsion-center.is-hidden{display:none;}
+.checkmail-title{font-size:var(--font-size-xl);font-weight:800;letter-spacing:-.02em;color:var(--white);text-align:center;}
+.checkmail-hint{font-size:var(--font-size-xs);color:var(--t3);}
 .resend-link{background:none;border:none;font-family:inherit;font-size:var(--font-size-sm);color:var(--t2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:color .2s;}
 .resend-link:hover{color:var(--em);}
 .resend-link.is-hidden{display:none;}
@@ -187,36 +188,11 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
 <div class="ob-layout">
   <div class="ob-left">
 
-    <!-- ÉCRAN 1 : CAPTURE -->
+    <!-- ÉCRAN 1 : MÉTIER — zéro saisie, un clic (parcours « valeur d'abord »,
+         validé fondateur 2026-07-11 : on s'intéresse à lui avant de demander
+         quoi que ce soit). -->
     <section class="flash-step" id="fstep-1">
-      <h1 class="step-title">Créez votre espace de gestion Seba</h1>
-      <form id="capture-form" novalidate>
-        <div class="field">
-          <label for="inp-email">Email professionnel</label>
-          <input type="email" id="inp-email" required autocomplete="email" placeholder="vous@entreprise.fr">
-        </div>
-        <div class="field">
-          <label for="inp-pwd">Mot de passe</label>
-          <div class="pwd-wrap">
-            <input type="password" id="inp-pwd" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 caractères">
-            <button type="button" class="pwd-toggle" id="pwd-toggle" aria-label="Afficher le mot de passe">👁</button>
-          </div>
-        </div>
-        <div class="err" id="err-capture"></div>
-        <button type="submit" class="btn-primary" id="capture-submit">Créer mon espace →</button>
-        <p class="reassurance">✓ Sans carte bancaire — Configuration en 30s</p>
-        <!-- Guest access : bypass demo deja gere par guard.js (?demo, sessionStorage) -->
-        <p class="reassurance"><a class="demo-link" href="dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
-      </form>
-    </section>
-
-    <!-- ÉCRAN 2 : SEGMENTATION -->
-    <section class="flash-step hidden" id="fstep-2">
-      <h1 class="step-title">Parlez-nous de votre entreprise</h1>
-      <div class="field">
-        <label for="inp-nom">Nom de l'entreprise <span class="label-hint">— facultatif, modifiable ensuite</span></label>
-        <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60">
-      </div>
+      <h1 class="step-title">Quel est votre métier ?</h1>
       <div class="sectors-grid" id="sectors-grid">
         <button type="button" class="sector-card" data-sector="Nettoyage &amp; Entretien">
           <span class="sector-icon">🧹</span>
@@ -235,6 +211,29 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
           <span class="sector-name">Autre activité</span>
         </button>
       </div>
+      <p class="reassurance">✓ Gratuit — Sans carte bancaire</p>
+      <!-- Guest access : bypass demo deja gere par guard.js (?demo, sessionStorage) -->
+      <p class="reassurance"><a class="demo-link" href="dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
+    </section>
+
+    <!-- ÉCRAN 2 : EMAIL — la demande est justifiée par le métier choisi ;
+         AUCUN mot de passe dans le tunnel : il sera choisi depuis l'email
+         d'activation (bienvenue.html). -->
+    <section class="flash-step hidden" id="fstep-2">
+      <h1 class="step-title">Créez votre espace <span id="title-sector">Seba</span></h1>
+      <form id="capture-form" novalidate>
+        <div class="field">
+          <label for="inp-email">Email professionnel</label>
+          <input type="email" id="inp-email" required autocomplete="email" placeholder="vous@entreprise.fr">
+        </div>
+        <div class="field">
+          <label for="inp-nom">Nom de l'entreprise <span class="label-hint">— facultatif, modifiable ensuite</span></label>
+          <input type="text" id="inp-nom" placeholder="ex. Services Martin" maxlength="60">
+        </div>
+        <div class="err" id="err-capture"></div>
+        <button type="submit" class="btn-primary" id="capture-submit">Recevoir mon lien d'activation →</button>
+        <p class="reassurance">✓ Vous choisirez votre mot de passe depuis l'email — Données hébergées en UE</p>
+      </form>
     </section>
 
   </div>
@@ -252,18 +251,25 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
 <!-- ÉCRAN 3 : PROPULSION (plein ecran, hors du layout 2 colonnes) -->
 <div class="flash-step hidden" id="fstep-3">
   <div class="skeleton-bg"></div>
-  <div class="propulsion-center">
+  <!-- État A (mode démo, pas de Supabase) : propulsion directe vers le dashboard. -->
+  <div class="propulsion-center" id="pane-propulsion">
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     <p class="propulsion-msg" id="propulsion-msg">Initialisation de votre espace...</p>
-    <a href="connexion.html" class="btn-primary propulsion-cta is-hidden" id="propulsion-cta">J'ai confirmé mon email — Se connecter →</a>
-    <button type="button" class="resend-link is-hidden" id="resend-link" onclick="resendConfirmEmail()">Email jamais reçu ? Renvoyer le lien</button>
+  </div>
+  <!-- État B (Supabase configuré) : le lien d'activation est parti,
+       l'utilisateur choisira son mot de passe depuis l'email (bienvenue.html). -->
+  <div class="propulsion-center is-hidden" id="pane-checkmail">
+    <h2 class="checkmail-title">Vérifiez votre boîte mail</h2>
+    <p class="propulsion-msg">Votre lien d'activation vient d'être envoyé à <strong id="checkmail-addr"></strong>.<br>Cliquez-le pour confirmer votre adresse et choisir votre mot de passe.</p>
+    <button type="button" class="resend-link" id="resend-link" onclick="resendActivation()">Email jamais reçu ? Renvoyer le lien</button>
+    <p class="propulsion-msg checkmail-hint">Pensez à vérifier vos indésirables.</p>
   </div>
 </div>
 
 <script>
   // ── Moteur du tunnel Flash & Drop — 3 ecrans, JS vanilla, aucune dependance externe ──
   let _currentStep = 1;
-  const S = { email: '', sector: '', nom: '', userId: null, needsConfirm: false };
+  const S = { email: '', sector: '', nom: '' };
 
   function goStep(toIdx) {
     document.getElementById('fstep-' + _currentStep).classList.add('hidden');
@@ -271,67 +277,73 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
     _currentStep = toIdx;
   }
 
-  // ── Écran 1 : capture ──
-  document.getElementById('pwd-toggle').addEventListener('click', function () {
-    const inp = document.getElementById('inp-pwd');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-  });
-
-  document.getElementById('capture-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const email = document.getElementById('inp-email').value.trim();
-    const pwd = document.getElementById('inp-pwd').value;
-    const errEl = document.getElementById('err-capture');
-    const btn = document.getElementById('capture-submit');
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = 'Adresse email invalide.'; return; }
-    if (pwd.length < 8) { errEl.textContent = 'Le mot de passe doit contenir au moins 8 caractères.'; return; }
-    errEl.textContent = '';
-
-    // Vraie creation de compte via sebaAuth (auth.js, deja charge dans <head>) :
-    // bascule automatiquement en mode demo (localStorage) si Supabase n'est pas
-    // configure -- meme convention que le reste du site, plus une simulation
-    // muette comme avant (retour Gemini/Groq : la promesse "espace cree" doit
-    // etre tenue au-dela du simple passage a l'ecran suivant).
-    btn.disabled = true;
-    btn.textContent = 'Création en cours...';
-    const result = (window.sebaAuth && typeof window.sebaAuth.signUp === 'function')
-      ? await window.sebaAuth.signUp(email, pwd)
-      : { ok: true, demo: true };
-
-    if (!result.ok) {
-      errEl.textContent = result.error || 'Une erreur est survenue, réessayez.';
-      btn.disabled = false;
-      btn.textContent = 'Créer mon espace →';
-      return;
-    }
-
-    // data.user existe des la reponse signUp, meme si la confirmation email
-    // est requise et qu'aucune session active n'existe encore (result.session
-    // serait null dans ce cas) -- c'est cet id qu'on chaine vers saveProfile(),
-    // pas un id tire d'une session qui pourrait ne pas exister a ce stade.
-    S.email = email;
-    S.userId = (result.user && result.user.id) || null;
-    // needsConfirm = confirmation email requise, pas encore de session active :
-    // toute la suite du tunnel (propulsion, RPC, redirection) doit en tenir compte,
-    // sinon guard.js ejecte l'utilisateur du dashboard sans explication.
-    S.needsConfirm = !!result.needsConfirm;
-    if (window.SebaFX) SebaFX.pulse(); // recompense : l'espace est cree
-    goStep(2);
-  });
-
-  // ── Écran 2 : segmentation — clic sur une carte = pas de bouton "Continuer" ──
+  // ── Écran 1 : métier — un clic, zéro saisie (parcours « valeur d'abord ») ──
   document.querySelectorAll('.sector-card').forEach(function (card) {
     card.addEventListener('click', function () {
       document.querySelectorAll('.sector-card').forEach(function (c) { c.classList.remove('selected'); });
       card.classList.add('selected');
       S.sector = card.dataset.sector;
-      S.nom = document.getElementById('inp-nom').value.trim() || 'Mon entreprise';
-      if (window.SebaFX) { SebaFX.pulse(); SebaFX.setAct(2); } // le chaos s'ordonne
-      goStep(3);
-      startPropulsion();
+      // Le titre de l'écran 2 reprend le métier : la demande d'email est
+      // justifiée par le contexte ("où crée-t-on TON espace ?").
+      document.getElementById('title-sector').textContent =
+        S.sector === 'Autre activité' ? 'Seba' : '« ' + S.sector + ' »';
+      if (window.SebaFX) { SebaFX.pulse(); SebaFX.setAct(2); } // premier engagement : le chaos s'ordonne
+      goStep(2);
+      document.getElementById('inp-email').focus();
     });
   });
+
+  // ── Écran 2 : email — AUCUN mot de passe dans le tunnel (décision fondateur
+  // 2026-07-11). Supabase envoie un lien d'activation (signInWithOtp) ;
+  // l'utilisateur confirme son adresse ET choisit son mot de passe sur
+  // bienvenue.html, avec une vraie session — la gymnastique needsConfirm
+  // disparaît entièrement. ──
+  document.getElementById('capture-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const email = document.getElementById('inp-email').value.trim();
+    const errEl = document.getElementById('err-capture');
+    const btn = document.getElementById('capture-submit');
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = 'Adresse email invalide.'; return; }
+    errEl.textContent = '';
+
+    S.email = email;
+    S.nom = document.getElementById('inp-nom').value.trim() || 'Mon entreprise';
+    // Cache local immédiat : repris par bienvenue.html (RPC profil avec une
+    // vraie session) et par le dashboard. Pending = filet de sécurité, rejoué
+    // au premier login par connexion.html si le lien est ouvert ailleurs.
+    try {
+      localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email }));
+      localStorage.setItem('seba_profile_pending', '1');
+    } catch (err) {}
+
+    btn.disabled = true;
+    btn.textContent = 'Envoi du lien...';
+    const result = (window.sebaAuth && typeof window.sebaAuth.signUpEmailOnly === 'function')
+      ? await window.sebaAuth.signUpEmailOnly(email)
+      : { ok: true, demo: true };
+
+    if (!result.ok) {
+      errEl.textContent = result.error || 'Une erreur est survenue, réessayez.';
+      btn.disabled = false;
+      btn.textContent = "Recevoir mon lien d'activation →";
+      return;
+    }
+
+    if (window.SebaFX) SebaFX.pulse();
+    goStep(3);
+    if (result.demo) {
+      startPropulsion(); // pas de Supabase : aucun email possible, parcours démo intégral
+    } else {
+      showCheckMail();
+    }
+  });
+
+  function showCheckMail() {
+    document.getElementById('pane-propulsion').classList.add('is-hidden');
+    document.getElementById('pane-checkmail').classList.remove('is-hidden');
+    document.getElementById('checkmail-addr').textContent = S.email;
+  }
 
   // ── Écran 3 : propulsion — messages toutes les 550ms, sortie a 1650ms ──
   function startPropulsion() {
@@ -343,10 +355,7 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
     // 2400ms : l'attente fictive s'ADDITIONNAIT a la latence reseau au lieu
     // de la masquer). L'await avant la redirection reste indispensable :
     // naviguer annulerait une requete encore en vol.
-    const savePromise = saveProfile();
-    const messages = S.needsConfirm
-      ? ['Initialisation de votre espace...', 'Espace créé — dernière étape :', 'Confirmez votre email (lien envoyé), puis connectez-vous.']
-      : ['Initialisation de votre espace...', "Vos modules clients, devis & planning s'activent...", 'Tableau de bord prêt !'];
+    const messages = ['Initialisation de votre espace...', "Vos modules clients, devis & planning s'activent...", 'Tableau de bord prêt !'];
     const msgEl = document.getElementById('propulsion-msg');
     const fillEl = document.getElementById('progress-fill');
     let i = 0;
@@ -361,77 +370,30 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
     }, 550);
     setTimeout(async function () {
       clearInterval(interval);
-      await savePromise;
-      if (S.needsConfirm) {
-        // Pas de session tant que l'email n'est pas confirme : rediriger vers
-        // dashboard.html ferait ejecter l'utilisateur par guard.js sans message.
-        // On affiche le CTA vers connexion.html et on reste sur place —
-        // retour au calme du fluide (acte 1), l'attente n'est pas un decollage.
-        if (window.SebaFX) SebaFX.setAct(1);
-        document.getElementById('propulsion-cta').classList.remove('is-hidden');
-        document.getElementById('resend-link').classList.remove('is-hidden');
-        return;
-      }
       // Fondu de sortie : le vortex s'eteint, le dashboard (Tactical Dark)
-      // prend le relais sans couture ni flash.
+      // prend le relais sans couture ni flash. (Parcours démo uniquement :
+      // en mode configuré, l'écran 3 est "vérifiez votre boîte mail" et la
+      // propulsion vit sur bienvenue.html, après le choix du mot de passe.)
       if (window.SebaFX) { SebaFX.fadeOut(); await new Promise(function (r) { setTimeout(r, 350); }); }
       window.location.href = 'dashboard.html';
     }, 1650);
   }
 
-  // Renvoi du lien de confirmation (ecran needsConfirm) — anti-spam simple :
-  // bouton desactive 60s apres chaque envoi.
-  async function resendConfirmEmail() {
+  // Renvoi du lien d'activation — anti-spam simple : bouton désactivé 60s
+  // (Supabase limite déjà l'envoi OTP par adresse côté serveur).
+  async function resendActivation() {
     const btn = document.getElementById('resend-link');
     if (!S.email || btn.disabled) return;
     btn.disabled = true;
     btn.textContent = 'Envoi en cours…';
-    const res = (window.sebaAuth && typeof window.sebaAuth.resendConfirmation === 'function')
-      ? await window.sebaAuth.resendConfirmation(S.email)
+    const res = (window.sebaAuth && typeof window.sebaAuth.signUpEmailOnly === 'function')
+      ? await window.sebaAuth.signUpEmailOnly(S.email)
       : { ok: true, demo: true };
     btn.textContent = res.ok ? 'Lien renvoyé — vérifiez vos indésirables' : (res.error || 'Échec — réessayez plus tard');
     setTimeout(function () {
       btn.disabled = false;
       btn.textContent = 'Email jamais reçu ? Renvoyer le lien';
     }, 60000);
-  }
-
-  let isSaving = false;
-
-  async function saveProfile() {
-    if (isSaving) return; // protection double-appel (impatience utilisateur, etc.)
-    isSaving = true;
-    try {
-      // Cache local immediat dans tous les cas, comme le reste du site
-      // (SebaDB) -- la RPC est un enrichissement serveur, pas la seule
-      // source de verite locale.
-      try { localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email })); } catch (e) {}
-
-      if (!window.sebaAuth || !window.sebaAuth.isConfigured) return; // mode demo : rien de plus a faire
-      if (S.needsConfirm) {
-        // Pas de session avant confirmation email : la RPC SECURITY INVOKER
-        // serait rejetee par RLS (auth.uid() null, policy profiles_insert).
-        // On marque le profil "en attente" -- connexion.html rejoue la RPC
-        // au premier login reussi (completePendingProfile).
-        try { localStorage.setItem('seba_profile_pending', '1'); } catch (e) {}
-        return;
-      }
-      if (!S.sector) { console.error('[onboarding] secteur manquant, RPC annulee.'); return; }
-      if (!S.userId) { console.error("[onboarding] userId manquant (l'inscription a-t-elle abouti ?), RPC annulee."); return; }
-
-      // 3 parametres exacts de create_profile_and_company() (supabase-schema.sql) --
-      // pas de 4e parametre _name separe, la fonction reutilise _company_name
-      // pour les deux tables (profiles n'a pas de colonne nom, companies si).
-      const payload = { _user_id: S.userId, _sector: S.sector, _company_name: S.nom };
-      if (location.hostname === 'localhost' || location.protocol === 'file:') {
-        console.log('[onboarding][dev] payload RPC create_profile_and_company:', payload);
-      }
-
-      const { error } = await window.sebaAuth.rpc('create_profile_and_company', payload);
-      if (error) console.error('[onboarding] echec RPC create_profile_and_company:', error.message || error);
-    } finally {
-      isSaving = false;
-    }
   }
 </script>
 
