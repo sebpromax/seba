@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;}
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
@@ -206,7 +206,7 @@ a{color:inherit;text-decoration:none;}
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--fx-halo:rgba(0,255,136,.05);--fx-em:#00ff88;--fx-card-glow:rgba(0,255,136,.10);--fx-pick:rgba(0,255,136,.35);}
+:root{--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}

@@ -23,7 +23,7 @@
 <style>
   :root{
     /* ── Design system : couleurs ── */
-    --em:#00ff88; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
+    --em:#0D9488; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
     /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
        actions utilisateur allument --em ── */
     --fx-deep:#050507; --fx-deep2:#0b0f19; --fx-glint:#00C896; --fx-mist:#94A3B8;
@@ -51,8 +51,8 @@
     --shadow-sm:0 1px 4px rgba(0,0,0,.2);
     --shadow-md:0 4px 16px rgba(0,0,0,.3);
     --shadow-lg:0 16px 48px rgba(0,0,0,.45);
-    --shadow-glow:0 0 28px rgba(0,255,136,.45),0 0 60px rgba(0,255,136,.18);
-  }
+    --shadow-glow:0 0 28px rgba(13,148,136,.45),0 0 60px rgba(13,148,136,.18);
+  --dt-a00:rgba(13,148,136,0);--dt-a03:rgba(13,148,136,0.03);--dt-a05:rgba(13,148,136,0.05);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a22:rgba(13,148,136,0.22);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a40:rgba(13,148,136,0.4);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--mist:#94A3B8;--blk-a20:rgba(0,0,0,.2);--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--w-a40:rgba(255,255,255,.4);--dt-deep:#12332E;--dt-glass:rgba(4,47,42,.4);--surface-2:#111115;--nav-bg:rgba(10,10,12,.88);--blk-a35:rgba(0,0,0,.35);--blk-a40:rgba(0,0,0,.4);--w-a025:rgba(255,255,255,.025);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a16:rgba(255,255,255,.16);--w-a35:rgba(255,255,255,.35);--deep-2:#0d0f12;--dt-tint:#CCFBF1;--blk-a06:rgba(0,0,0,.06);--slate-200:#E2E8F0;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;}
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   /* ── Grille cinétique (kinetic-grid.js, spec Dual-Tone) : remplace le
@@ -67,32 +67,32 @@
       radial-gradient(circle at 80% 70%, var(--atmo-teal) 0%, transparent 50%);
     will-change:transform;transform:translateZ(0);
   }
-  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0c;color:#fff;-webkit-font-smoothing:antialiased;}
+  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;}
   a{color:inherit;text-decoration:none;}
 
   .btn-seba{
     display:inline-flex;align-items:center;gap:8px;
-    background:#00ff88;color:#050508;
+    background:var(--db-teal);color:var(--btn-ink);
     font-weight:700;letter-spacing:-0.01em;
     border-radius:12px;
     transition:box-shadow .25s,transform .2s;
-    box-shadow:0 0 0 0 rgba(0,255,136,0);
+    box-shadow:0 0 0 0 var(--dt-a00);
   }
   .btn-seba:hover{
-    box-shadow:0 0 28px rgba(0,255,136,.45),0 0 60px rgba(0,255,136,.18);
+    box-shadow:0 0 28px var(--dt-a45),0 0 60px var(--dt-a18);
     transform:translateY(-2px);
   }
   .btn-seba-outline{
     display:inline-flex;align-items:center;gap:8px;
-    background:transparent;color:#00ff88;
-    border:1px solid rgba(0,255,136,.3);
+    background:transparent;color:var(--db-teal);
+    border:1px solid var(--dt-a30);
     font-weight:600;letter-spacing:-0.01em;
     border-radius:12px;
     transition:border-color .2s,background .2s,box-shadow .25s,transform .2s;
   }
   .btn-seba-outline:hover{
-    border-color:#00ff88;background:rgba(0,255,136,.06);
-    box-shadow:0 0 18px rgba(0,255,136,.18);
+    border-color:var(--db-teal);background:var(--dt-a06);
+    box-shadow:0 0 18px var(--dt-a18);
     transform:translateY(-2px);
   }
 
@@ -149,47 +149,47 @@
   .headline-gradient{
     /* Degrade retire (audit 2026-07-08) : le vert doit rester reserve aux
        statuts/CTA, pas decorer le texte de titre. Blanc plein a la place. */
-    color:#fff;
+    color:var(--pure-white);
   }
 
   .badge-glow{
     display:inline-flex;align-items:center;gap:6px;
-    background:rgba(0,255,136,.07);
-    border:1px solid rgba(0,255,136,.2);
-    color:rgba(0,255,136,.85);
+    background:var(--dt-a07);
+    border:1px solid var(--dt-a20);
+    color:var(--dt-a85);
     border-radius:100px;
     font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
     padding:5px 14px;
-    box-shadow:0 0 16px rgba(0,255,136,.1);
+    box-shadow:0 0 16px var(--dt-a10);
   }
-  .badge-dot{width:6px;height:6px;border-radius:50%;background:#00ff88;}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);}
   @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
 
   .glass{
-    background:rgba(255,255,255,.03);
+    background:var(--w-a03);
     backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-    border:1px solid rgba(255,255,255,.07);
+    border:1px solid var(--w-a07);
     border-radius:20px;
   }
 
   .feat-card{
-    background:rgba(255,255,255,.025);
-    border:1px solid rgba(255,255,255,.06);
+    background:var(--w-a025);
+    border:1px solid var(--zinc-800); /* spec Dual-Tone : bordure fine zinc */
     border-radius:16px;
     padding:28px 24px;
     transition:border-color .25s,transform .25s;
   }
-  .feat-card:hover{border-color:rgba(0,255,136,.25);transform:translateY(-3px);}
+  .feat-card:hover{border-color:var(--db-blue);transform:translateY(-3px);} /* illumination Bleu Abyssal */
   .feat-icon{
     width:44px;height:44px;border-radius:10px;
-    background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.15);
+    background:var(--dt-a08);border:1px solid var(--dt-a15);
     display:flex;align-items:center;justify-content:center;font-size:1.2rem;
     margin-bottom:16px;
   }
 
   .glow-sep{
     height:1px;
-    background:linear-gradient(90deg,transparent 0%,rgba(0,255,136,.25) 40%,rgba(0,255,136,.25) 60%,transparent 100%);
+    background:linear-gradient(90deg,transparent 0%,var(--dt-a25) 40%,var(--dt-a25) 60%,transparent 100%);
   }
 
   .noise::after{
@@ -199,34 +199,34 @@
   }
 
   .db-sidebar{
-    background:#111115;border-right:1px solid rgba(255,255,255,.06);
+    background:var(--surface-2);border-right:1px solid var(--w-a06);
     width:52px;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:12px;
     border-radius:20px 0 0 20px;
   }
-  .db-dot{width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px rgba(0,255,136,.6);}
+  .db-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 8px var(--dt-a60);}
   .db-nav-item{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:rgba(255,255,255,.25);transition:background .2s;}
-  .db-nav-item.act{background:rgba(0,255,136,.1);color:#00ff88;}
+  .db-nav-item.act{background:var(--dt-a10);color:var(--db-teal);}
   .db-main{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
-  .db-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;flex:1;}
-  .db-stat-val{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em;color:#fff;}
-  .db-stat-lbl{font-size:.6rem;color:rgba(255,255,255,.35);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
+  .db-stat{background:var(--w-a03);border:1px solid var(--w-a06);border-radius:10px;padding:12px;flex:1;}
+  .db-stat-val{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em;color:var(--pure-white);}
+  .db-stat-lbl{font-size:.6rem;color:var(--w-a35);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
   .db-row{display:flex;gap:8px;}
-  .db-bar{height:4px;border-radius:2px;background:#00ff88;box-shadow:0 0 6px rgba(0,255,136,.5);}
-  .db-bar-bg{height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:8px;}
+  .db-bar{height:4px;border-radius:2px;background:var(--db-teal);box-shadow:0 0 6px var(--dt-a50);}
+  .db-bar-bg{height:4px;border-radius:2px;background:var(--w-a06);overflow:hidden;margin-top:8px;}
   .db-chip{display:inline-flex;align-items:center;gap:4px;font-size:.58rem;padding:3px 8px;border-radius:100px;font-weight:600;}
-  .db-chip.green{background:rgba(0,255,136,.1);color:#00ff88;}
+  .db-chip.green{background:var(--dt-a10);color:var(--db-teal);}
   .db-chip.orange{background:rgba(255,165,0,.1);color:rgba(255,165,0,.8);}
-  .db-invoice{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;}
-  .db-invoice-name{font-size:.62rem;color:rgba(255,255,255,.7);font-weight:600;}
-  .db-invoice-amt{font-size:.68rem;font-weight:700;color:#fff;}
+  .db-invoice{background:var(--w-a025);border:1px solid var(--w-a05);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;}
+  .db-invoice-name{font-size:.62rem;color:var(--w-a70);font-weight:600;}
+  .db-invoice-amt{font-size:.68rem;font-weight:700;color:var(--pure-white);}
 
   .nav-wrap{
     position:fixed;top:0;left:0;right:0;z-index:200;
     padding:0 max(24px,calc((100vw - 1140px)/2));
     height:64px;
     display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-    background:rgba(10,10,12,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-    border-bottom:1px solid rgba(255,255,255,.05);
+    background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--w-a05);
   }
   .nav-logo{font-family:'Geist',Inter,system-ui,sans-serif;font-size:20px;letter-spacing:-0.03em;display:flex;align-items:center;gap:6px;justify-self:start;}
   .nav-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);animation:pulse-glow 4s cubic-bezier(0.4,0,0.6,1) infinite;}
@@ -256,7 +256,7 @@
   }
 
   .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;z-index:201;justify-self:end;}
-  .hamburger span{width:22px;height:2px;background:rgba(255,255,255,.7);border-radius:2px;transition:transform .3s,opacity .3s;display:block;}
+  .hamburger span{width:22px;height:2px;background:var(--w-a70);border-radius:2px;transition:transform .3s,opacity .3s;display:block;}
   .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
   .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
   .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
@@ -273,24 +273,24 @@
     color:rgba(255,255,255,.85);padding:10px 24px;transition:color .2s;
     width:100%;text-align:center;display:block;
   }
-  .mob-link:hover,.mob-link:active{color:#00ff88;}
-  .mob-sep{width:48px;height:1px;background:rgba(255,255,255,.1);margin:16px 0;}
+  .mob-link:hover,.mob-link:active{color:var(--db-teal);}
+  .mob-sep{width:48px;height:1px;background:var(--w-a10);margin:16px 0;}
   .mob-conn{
-    font-size:1rem;color:rgba(255,255,255,.7);padding:10px 24px;transition:color .2s;
+    font-size:1rem;color:var(--w-a70);padding:10px 24px;transition:color .2s;
     display:block;text-align:center;
   }
-  .mob-conn:hover,.mob-conn:active{color:#fff;}
+  .mob-conn:hover,.mob-conn:active{color:var(--pure-white);}
   .mob-close{
     position:absolute;top:24px;right:24px;
-    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:50%;
-    width:48px;height:48px;font-size:1.2rem;color:rgba(255,255,255,.8);
+    background:var(--w-a08);border:1px solid var(--w-a12);border-radius:50%;
+    width:48px;height:48px;font-size:1.2rem;color:var(--w-a80);
     cursor:pointer;display:flex;align-items:center;justify-content:center;
     transition:background .2s,color .2s,transform .2s;z-index:1;
   }
-  .mob-close:hover{background:rgba(255,255,255,.16);color:#fff;transform:rotate(90deg);}
+  .mob-close:hover{background:var(--w-a16);color:var(--pure-white);transform:rotate(90deg);}
   .mob-close:active{transform:scale(.9);}
 
-  #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:rgba(0,255,136,.35);box-shadow:0 0 14px rgba(0,255,136,.5);will-change:transform;transition:opacity .3s;}
+  #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a30);box-shadow:0 0 14px var(--dt-a30);will-change:transform;transition:opacity .3s;}
   @media(hover:none){#cursor-trail{display:none;}}
 
   .can-animate body{animation:pgFadeIn .35s ease both;}
@@ -323,14 +323,14 @@
   }
 
   .stat-item{text-align:center;}
-  .stat-val{font-size:clamp(2rem,4vw,2.8rem);font-weight:800;letter-spacing:-0.04em;color:#fff;}
-  .stat-unit{color:#00ff88;}
-  .stat-lbl{font-size:.78rem;color:#94A3B8;margin-top:4px;}
+  .stat-val{font-size:clamp(2rem,4vw,2.8rem);font-weight:800;letter-spacing:-0.04em;color:var(--pure-white);}
+  .stat-unit{color:var(--db-teal);}
+  .stat-lbl{font-size:.78rem;color:var(--mist);margin-top:4px;}
 
   .proc-num{
     width:36px;height:36px;border-radius:10px;
-    background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);
-    color:#00ff88;font-weight:700;font-size:.85rem;
+    background:var(--dt-a08);border:1px solid var(--dt-a20);
+    color:var(--db-teal);font-weight:700;font-size:.85rem;
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;
   }
@@ -346,15 +346,15 @@
   }
 
   .bento-white{
-    background:#fff;border-radius:20px;overflow:hidden;
-    box-shadow:0 24px 64px rgba(0,0,0,.35),0 4px 16px rgba(0,0,0,.2);
+    background:var(--pure-white);border-radius:20px;overflow:hidden;
+    box-shadow:0 24px 64px var(--blk-a35),0 4px 16px var(--blk-a20);
     display:flex;flex-direction:column;
   }
   .can-animate .bento-white{transition:transform .3s,box-shadow .3s;}
-  .can-animate .bento-white:hover{transform:translateY(-6px);box-shadow:0 32px 80px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.2);}
+  .can-animate .bento-white:hover{transform:translateY(-6px);box-shadow:0 32px 80px var(--blk-a40),0 4px 16px var(--blk-a20);}
   .bento-mock{background:#F8FAFC;border-bottom:1px solid #E8EEF4;padding:20px;position:relative;flex-shrink:0;}
-  .bento-foot{padding:16px 20px 20px;background:#fff;}
-  .bento-lbl{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0a0a0c;margin-bottom:6px;}
+  .bento-foot{padding:16px 20px 20px;background:var(--pure-white);}
+  .bento-lbl{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:6px;}
   .bento-desc{font-size:.82rem;color:#64748B;line-height:1.6;margin:0;}
 
   /* ── Smart Header ────────────────────────────────────────────────────── */
@@ -368,19 +368,19 @@
     margin-top:48px;width:100%;max-width:960px;text-align:left;
   }
   .hero-feat{
-    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+    background:var(--w-a03);border:1px solid var(--w-a07);
     border-radius:14px;padding:18px 20px;
     display:flex;align-items:flex-start;gap:14px;
     transition:border-color .2s;
   }
-  .hero-feat:hover{border-color:rgba(0,255,136,.2);}
+  .hero-feat:hover{border-color:var(--dt-a20);}
   .hero-feat-icon{
     width:36px;height:36px;border-radius:9px;
-    background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.15);
+    background:var(--dt-a08);border:1px solid var(--dt-a15);
     display:flex;align-items:center;justify-content:center;flex-shrink:0;
   }
-  .hero-feat-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-0.01em;margin-bottom:4px;}
-  .hero-feat-desc{font-size:.75rem;color:#94A3B8;line-height:1.5;}
+  .hero-feat-name{font-size:.88rem;font-weight:700;color:var(--pure-white);letter-spacing:-0.01em;margin-bottom:4px;}
+  .hero-feat-desc{font-size:.75rem;color:var(--mist);line-height:1.5;}
   @media(max-width:768px){
     .hero-feats{grid-template-columns:1fr;margin-top:32px;}
   }
@@ -390,16 +390,16 @@
 
   /* ── Feature cards — refined hover ── */
   .feat-card{position:relative;overflow:hidden;}
-  .feat-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--fcx,50%) var(--fcy,50%),rgba(0,255,136,.05) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
+  .feat-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--fcx,50%) var(--fcy,50%),var(--dt-a05) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
   .can-animate .feat-card:hover::before{opacity:1;}
-  .can-animate .feat-card:hover{border-color:rgba(0,255,136,.3);transform:translateY(-4px);}
+  .can-animate .feat-card:hover{border-color:var(--db-blue);transform:translateY(-4px);}
 
   /* ── Hero stats row — count-up shimmer ── */
   @keyframes shimmer{0%,100%{opacity:.8}50%{opacity:1}}
   .can-animate .stat-val{animation:shimmer 3s ease-in-out infinite;}
 
   /* ── Section badge glow pulse ── */
-  @keyframes badgeGlow{0%,100%{box-shadow:0 0 16px rgba(0,255,136,.1);}50%{box-shadow:0 0 28px rgba(0,255,136,.22),0 0 50px rgba(0,255,136,.08);}}
+  @keyframes badgeGlow{0%,100%{box-shadow:0 0 16px var(--dt-a10);}50%{box-shadow:0 0 28px var(--dt-a22),0 0 50px var(--dt-a08);}}
   .can-animate .badge-glow{animation:badgeGlow 3s ease-in-out infinite;}
 </style>
 <script>
@@ -473,41 +473,41 @@
     </h2>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;position:relative;">
-    <div style="position:absolute;top:18px;left:calc(100%/8);right:calc(100%/8);height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,136,.2),rgba(0,255,136,.2),transparent);pointer-events:none;"></div>
+    <div style="position:absolute;top:18px;left:calc(100%/8);right:calc(100%/8);height:1px;background:linear-gradient(90deg,transparent,var(--dt-a20),var(--dt-a20),transparent);pointer-events:none;"></div>
 
     <div style="padding:0 24px 0 0;position:relative;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <div class="proc-num">1</div>
-        <div style="flex:1;height:1px;background:rgba(0,255,136,.15);"></div>
+        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
       </div>
       <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Configurez votre espace</div>
-      <div style="color:#94A3B8;font-size:.83rem;line-height:1.6;">Vos infos, votre image de marque. En 2 minutes, sans engagement.</div>
+      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Vos infos, votre image de marque. En 2 minutes, sans engagement.</div>
     </div>
 
     <div style="padding:0 24px;position:relative;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <div class="proc-num">2</div>
-        <div style="flex:1;height:1px;background:rgba(0,255,136,.15);"></div>
+        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
       </div>
       <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Ajoutez vos services</div>
-      <div style="color:#94A3B8;font-size:.83rem;line-height:1.6;">Définissez vos offres, tarifs et disponibilités en quelques clics.</div>
+      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Définissez vos offres, tarifs et disponibilités en quelques clics.</div>
     </div>
 
     <div style="padding:0 24px;position:relative;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <div class="proc-num">3</div>
-        <div style="flex:1;height:1px;background:rgba(0,255,136,.15);"></div>
+        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
       </div>
       <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Partagez votre lien</div>
-      <div style="color:#94A3B8;font-size:.83rem;line-height:1.6;">Un lien universel — vos clients accèdent à tout, sans application à installer.</div>
+      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Un lien universel — vos clients accèdent à tout, sans application à installer.</div>
     </div>
 
     <div style="padding:0 0 0 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num" style="background:rgba(0,255,136,.15);border-color:#00ff88;">⚡</div>
+        <div class="proc-num" style="background:var(--dt-a15);border-color:var(--db-teal);">⚡</div>
       </div>
       <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;color:var(--em);">Opérationnel.</div>
-      <div style="color:#94A3B8;font-size:.83rem;line-height:1.6;">Vos processus tournent en arrière-plan. Concentrez-vous sur votre métier.</div>
+      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Vos processus tournent en arrière-plan. Concentrez-vous sur votre métier.</div>
     </div>
   </div>
 </section>
@@ -525,7 +525,7 @@
       <h2 style="font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:20px;">
         Vos outils dispersés<br>vous coûtent cher.
       </h2>
-      <p style="color:#94A3B8;line-height:1.75;margin-bottom:32px;font-size:.95rem;">
+      <p style="color:var(--mist);line-height:1.75;margin-bottom:32px;font-size:.95rem;">
         Relances manuelles, données dupliquées, facturation en retard — chaque semaine, des heures perdues sur de l'administratif qui devrait tourner seul.
       </p>
       <div style="display:flex;flex-direction:column;gap:12px;">
@@ -549,19 +549,19 @@
       <div style="font-size:.7rem;color:#718096;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Sans Seba — Une journée ordinaire</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:rgba(255,255,255,.7);">💬 "Vous avez reçu mon devis ?" (3ème relance)</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">💬 "Vous avez reçu mon devis ?" (3ème relance)</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−25 min</span>
         </div>
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:rgba(255,255,255,.7);">📋 Facture ressaisie à la main</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">📋 Facture ressaisie à la main</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−40 min</span>
         </div>
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:rgba(255,255,255,.7);">📅 Créneau raté → client mécontent</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">📅 Créneau raté → client mécontent</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−60 min</span>
         </div>
-        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.78rem;color:rgba(255,255,255,.4);">Temps perdu par semaine</span>
+        <div style="border-top:1px solid var(--w-a06);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:.78rem;color:var(--w-a40);">Temps perdu par semaine</span>
           <span style="font-size:1rem;font-weight:700;color:rgba(239,68,68,.8);">+8h</span>
         </div>
       </div>
@@ -581,30 +581,30 @@
     <h2 style="font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:16px;">
       Un seul espace pour tout piloter.
     </h2>
-    <p style="color:#94A3B8;font-size:.95rem;max-width:480px;margin:0 auto;">
+    <p style="color:var(--mist);font-size:.95rem;max-width:480px;margin:0 auto;">
       Devis, factures, planning, relation client — centralisés dans un espace de travail unique et fluide.
     </p>
   </div>
 
   <div style="position:relative;max-width:900px;margin:0 auto;">
 
-    <div style="position:absolute;top:50%;left:20%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
+    <div style="position:absolute;top:50%;left:20%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,var(--dt-a07) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
     <div style="position:absolute;top:30%;right:10%;transform:translate(50%,-50%);width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,100,255,.05) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
 
-    <div style="position:relative;z-index:1;border-radius:24px;padding:1px;background:linear-gradient(135deg,rgba(0,255,136,.2) 0%,rgba(255,255,255,.05) 50%,rgba(0,255,136,.08) 100%);">
-      <div style="border-radius:23px;overflow:hidden;background:#111115;">
+    <div style="position:relative;z-index:1;border-radius:24px;padding:1px;background:linear-gradient(135deg,var(--dt-a20) 0%,var(--w-a05) 50%,var(--dt-a08) 100%);">
+      <div style="border-radius:23px;overflow:hidden;background:var(--surface-2);">
 
-        <div style="background:#0d0f12;border-bottom:1px solid rgba(255,255,255,.05);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="background:var(--deep-2);border-bottom:1px solid var(--w-a05);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
             <div style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></div>
             <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
-            <div style="width:1px;height:16px;background:rgba(255,255,255,.08);margin:0 8px;"></div>
+            <div style="width:1px;height:16px;background:var(--w-a08);margin:0 8px;"></div>
             <div style="font-size:.7rem;color:rgba(255,255,255,.2);font-weight:500;">seba.app/dashboard</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#1a3a2a,#00ff88);font-size:.6rem;font-weight:700;color:#050508;display:flex;align-items:center;justify-content:center;">A</div>
-            <span style="font-size:.7rem;color:rgba(255,255,255,.35);">Alex D.</span>
+            <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--dt-deep),var(--db-teal));font-size:.6rem;font-weight:700;color:var(--btn-ink);display:flex;align-items:center;justify-content:center;">A</div>
+            <span style="font-size:.7rem;color:var(--w-a35);">Alex D.</span>
           </div>
         </div>
 
@@ -628,7 +628,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                   <div>
                     <div class="db-stat-lbl">Revenu ce mois</div>
-                    <div class="db-stat-val">14 280 <span style="font-size:.65rem;color:rgba(255,255,255,.35);">€</span></div>
+                    <div class="db-stat-val">14 280 <span style="font-size:.65rem;color:var(--w-a35);">€</span></div>
                   </div>
                   <span class="db-chip green">+12%</span>
                 </div>
@@ -681,15 +681,15 @@
             </div>
 
             <div class="db-row" style="margin-top:auto;gap:6px;">
-              <div style="flex:1;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.15);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <div style="flex:1;background:var(--dt-a07);border:1px solid var(--dt-a15);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
                 <span style="font-size:.75rem;">⚡</span>
-                <span style="font-size:.62rem;font-weight:600;color:#00ff88;">Nouveau Devis</span>
+                <span style="font-size:.62rem;font-weight:600;color:var(--db-teal);">Nouveau Devis</span>
               </div>
-              <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
                 <span style="font-size:.75rem;">📅</span>
                 <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Planning</span>
               </div>
-              <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
                 <span style="font-size:.75rem;">👥</span>
                 <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Clients</span>
 
@@ -703,10 +703,10 @@
     </div>
 
     <div class="glass" style="position:absolute;bottom:-20px;right:40px;padding:12px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 20px 48px rgba(0,0,0,.5);">
-      <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⚡</div>
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--dt-a10);border:1px solid var(--dt-a20);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⚡</div>
       <div>
-        <div style="font-size:.78rem;font-weight:700;color:#fff;">Du devis au paiement</div>
-        <div style="font-size:.68rem;color:rgba(0,255,136,.7);font-weight:600;">en quelques minutes</div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--pure-white);">Du devis au paiement</div>
+        <div style="font-size:.68rem;color:var(--dt-a70);font-weight:600;">en quelques minutes</div>
       </div>
     </div>
 
@@ -720,28 +720,28 @@
 
     <!-- Card 1: Team & Resource Scheduling -->
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:#fff;margin:0;">Planning Intelligent</h3>
+      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Planning Intelligent</h3>
       <div class="bento-white">
       <div class="bento-mock">
         <div style="display:flex;gap:3px;margin-bottom:8px;">
           <div style="width:36px;"></div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:#94A3B8;font-weight:600;padding:2px 0;">LUN</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:#94A3B8;font-weight:600;padding:2px 0;">MAR</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:#fff;font-weight:700;background:#00ff88;border-radius:4px;padding:2px 0;">MER</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:#94A3B8;font-weight:600;padding:2px 0;">JEU</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:#94A3B8;font-weight:600;padding:2px 0;">VEN</div>
+          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">LUN</div>
+          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">MAR</div>
+          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--pure-white);font-weight:700;background:var(--db-teal);border-radius:4px;padding:2px 0;">MER</div>
+          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">JEU</div>
+          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">VEN</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:#94A3B8;font-weight:600;">Alex</div>
-            <div style="flex:1;height:20px;background:#dcfce7;border-radius:4px;border-left:3px solid #16a34a;display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:#15803d;font-weight:600;white-space:nowrap;overflow:hidden;">Client A</span></div>
+            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Alex</div>
+            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:var(--dt-strong);font-weight:600;white-space:nowrap;overflow:hidden;">Client A</span></div>
             <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;background:#dcfce7;border-radius:4px;border-left:3px solid #16a34a;"></div>
-            <div style="flex:1;height:20px;background:#dcfce7;border-radius:4px;border-left:3px solid #16a34a;"></div>
+            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
+            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
             <div style="flex:1;height:20px;"></div>
           </div>
           <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:#94A3B8;font-weight:600;">Sara</div>
+            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Sara</div>
             <div style="flex:1;height:20px;"></div>
             <div style="flex:1;height:20px;background:#dbeafe;border-radius:4px;border-left:3px solid #3b82f6;display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:#1d4ed8;font-weight:600;white-space:nowrap;overflow:hidden;">Client B</span></div>
             <div style="flex:1;height:20px;background:#dbeafe;border-radius:4px;border-left:3px solid #3b82f6;"></div>
@@ -749,7 +749,7 @@
             <div style="flex:1;height:20px;background:#dbeafe;border-radius:4px;border-left:3px solid #3b82f6;"></div>
           </div>
           <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:#94A3B8;font-weight:600;">Jade</div>
+            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Jade</div>
             <div style="flex:1;height:20px;background:#fff7ed;border-radius:4px;border-left:3px solid #f97316;display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:#c2410c;font-weight:600;white-space:nowrap;overflow:hidden;">Client C</span></div>
             <div style="flex:1;height:20px;"></div>
             <div style="flex:1;height:20px;"></div>
@@ -767,24 +767,24 @@
 
     <!-- Card 2: Proposals & Billing (Featured) -->
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:#fff;margin:0;">Devis &amp; Facturation</h3>
-      <div class="bento-white" style="box-shadow:0 24px 64px rgba(0,255,136,.15),0 4px 16px rgba(0,0,0,.2);">
+      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Devis &amp; Facturation</h3>
+      <div class="bento-white" style="box-shadow:0 24px 64px var(--dt-a15),0 4px 16px var(--blk-a20);">
       <div class="bento-mock" style="background:#F0FDF4;">
-        <div style="position:absolute;top:-1px;right:16px;background:#00ff88;color:#050508;font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:0 0 10px 10px;box-shadow:0 4px 12px rgba(0,255,136,.35);">Signé en quelques min</div>
-        <div style="background:#fff;border:1px solid #D1FAE5;border-radius:10px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="position:absolute;top:-1px;right:16px;background:var(--db-teal);color:var(--btn-ink);font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:0 0 10px 10px;box-shadow:0 4px 12px var(--dt-a35);">Signé en quelques min</div>
+        <div style="background:var(--pure-white);border:1px solid var(--dt-tint);border-radius:10px;padding:12px;box-shadow:0 2px 8px var(--blk-a06);">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
             <div>
-              <div style="font-size:.72rem;font-weight:900;color:#0a0a0c;letter-spacing:.04em;">SEBA</div>
-              <div style="font-size:.5rem;color:#94A3B8;margin-top:1px;">Devis n°2048</div>
+              <div style="font-size:.72rem;font-weight:900;color:var(--ink);letter-spacing:.04em;">SEBA</div>
+              <div style="font-size:.5rem;color:var(--mist);margin-top:1px;">Devis n°2048</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:.5rem;color:#94A3B8;">James M.</div>
-              <div style="font-size:.78rem;font-weight:800;color:#0a0a0c;letter-spacing:-0.02em;">320,00 €</div>
+              <div style="font-size:.5rem;color:var(--mist);">James M.</div>
+              <div style="font-size:.78rem;font-weight:800;color:var(--ink);letter-spacing:-0.02em;">320,00 €</div>
             </div>
           </div>
           <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <div style="width:18px;height:18px;border-radius:50%;background:#16a34a;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:700;">✓</div>
-            <span style="font-size:.62rem;font-weight:700;color:#15803d;">Signé</span>
+            <div style="width:18px;height:18px;border-radius:50%;background:var(--db-teal);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--pure-white);font-weight:700;">✓</div>
+            <span style="font-size:.62rem;font-weight:700;color:var(--dt-strong);">Signé</span>
           </div>
         </div>
       </div>
@@ -797,26 +797,26 @@
 
     <!-- Card 3: Financial Performance Dashboard -->
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:#fff;margin:0;">Performance Financière</h3>
+      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Performance Financière</h3>
       <div class="bento-white">
       <div class="bento-mock">
         <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <div style="flex:1;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;">
-            <div style="font-size:.46rem;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Revenu ce mois</div>
-            <div style="font-size:.88rem;font-weight:800;color:#0a0a0c;letter-spacing:-0.03em;">14 280 €</div>
+          <div style="flex:1;background:var(--pure-white);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:.46rem;color:var(--mist);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Revenu ce mois</div>
+            <div style="font-size:.88rem;font-weight:800;color:var(--ink);letter-spacing:-0.03em;">14 280 €</div>
           </div>
-          <div style="flex:1;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;">
-            <div style="font-size:.46rem;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Marge nette</div>
-            <div style="font-size:.88rem;font-weight:800;color:#16a34a;letter-spacing:-0.03em;">+34%</div>
+          <div style="flex:1;background:var(--pure-white);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:.46rem;color:var(--mist);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Marge nette</div>
+            <div style="font-size:.88rem;font-weight:800;color:var(--db-teal);letter-spacing:-0.03em;">+34%</div>
           </div>
         </div>
         <div style="display:flex;align-items:flex-end;gap:4px;height:52px;padding:0 2px;">
-          <div style="flex:1;background:#DCFCE7;border-radius:3px 3px 0 0;height:32%;"></div>
-          <div style="flex:1;background:#DCFCE7;border-radius:3px 3px 0 0;height:54%;"></div>
+          <div style="flex:1;background:var(--dt-tint);border-radius:3px 3px 0 0;height:32%;"></div>
+          <div style="flex:1;background:var(--dt-tint);border-radius:3px 3px 0 0;height:54%;"></div>
           <div style="flex:1;background:#BBF7D0;border-radius:3px 3px 0 0;height:42%;"></div>
           <div style="flex:1;background:#86EFAC;border-radius:3px 3px 0 0;height:68%;"></div>
           <div style="flex:1;background:#4ADE80;border-radius:3px 3px 0 0;height:55%;"></div>
-          <div style="flex:1;background:#00ff88;border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 8px rgba(0,255,136,.4);"></div>
+          <div style="flex:1;background:var(--db-teal);border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 8px var(--dt-a40);"></div>
         </div>
       </div>
       <div class="bento-foot">
@@ -832,13 +832,13 @@
 
 <!-- ══ CTA FINAL ══ -->
 <section class="section">
-  <div style="position:relative;border-radius:24px;overflow:hidden;padding:72px 48px;text-align:center;background:linear-gradient(135deg,rgba(0,255,136,.05) 0%,rgba(0,50,25,.4) 50%,rgba(0,255,136,.03) 100%);border:1px solid rgba(0,255,136,.12);">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:300px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,255,136,.08) 0%,transparent 70%);pointer-events:none;"></div>
+  <div style="position:relative;border-radius:24px;overflow:hidden;padding:72px 48px;text-align:center;background:linear-gradient(135deg,var(--dt-a05) 0%,var(--dt-glass) 50%,var(--dt-a03) 100%);border:1px solid var(--dt-a12);">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:300px;border-radius:50%;background:radial-gradient(ellipse,var(--dt-a08) 0%,transparent 70%);pointer-events:none;"></div>
     <div style="position:relative;z-index:1;">
       <h2 style="font-size:clamp(1.8rem,4vw,3.2rem);font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:16px;">
         <span class="headline-gradient">Votre activité mérite<br>mieux que des rustines.</span>
       </h2>
-      <p style="color:#94A3B8;font-size:.95rem;margin-bottom:40px;max-width:440px;margin-left:auto;margin-right:auto;">
+      <p style="color:var(--mist);font-size:.95rem;margin-bottom:40px;max-width:440px;margin-left:auto;margin-right:auto;">
         Rejoignez les professionnels qui ont repris le contrôle de leur business.
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:28px;">
@@ -852,7 +852,7 @@
 
 
 <!-- ══ FOOTER ══ -->
-<footer style="border-top:1px solid rgba(255,255,255,.05);padding:28px max(24px,calc((100vw - 1140px)/2));">
+<footer style="background:var(--zinc-950);border-top:1px solid var(--w-a05);padding:28px max(24px,calc((100vw - 1140px)/2));">
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="nav-logo-dot"></div>
@@ -1036,10 +1036,10 @@ document.querySelectorAll('.feat-card,.hero-feat').forEach(card=>{
   const el=document.getElementById('cursor-trail');
   if(!el) return;
   /* Make it larger and add a ring */
-  el.style.cssText='position:fixed;pointer-events:none;z-index:9999;width:8px;height:8px;border-radius:50%;background:rgba(0,255,136,.5);box-shadow:0 0 12px rgba(0,255,136,.6),0 0 24px rgba(0,255,136,.15);will-change:transform;mix-blend-mode:screen;';
+  el.style.cssText='position:fixed;pointer-events:none;z-index:9999;width:8px;height:8px;border-radius:50%;background:var(--dt-a50);box-shadow:0 0 12px var(--dt-a60),0 0 24px var(--dt-a15);will-change:transform;mix-blend-mode:screen;';
   /* ring follower */
   const ring=document.createElement('div');
-  ring.style.cssText='position:fixed;pointer-events:none;z-index:9998;width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,255,136,.25);will-change:transform;transition:none;';
+  ring.style.cssText='position:fixed;pointer-events:none;z-index:9998;width:28px;height:28px;border-radius:50%;border:1px solid var(--dt-a25);will-change:transform;transition:none;';
   document.body.appendChild(ring);
   let mx=0,my=0,tx=0,ty=0,rx=0,ry=0;
   document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
@@ -1054,7 +1054,7 @@ document.querySelectorAll('.feat-card,.hero-feat').forEach(card=>{
   document.addEventListener('mouseover',e=>{
     if(e.target.closest('a,button')){
       el.style.transform+=' scale(1.6)';
-      ring.style.borderColor='rgba(0,255,136,.5)';
+      ring.style.borderColor='var(--dt-a50)';
     }
   });
 })();
