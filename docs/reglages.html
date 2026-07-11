@@ -9,6 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
+<!-- Page privée : même verrou que dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
@@ -218,9 +221,9 @@
         <div class="panel tab-content" id="tab-compte" style="display:none;">
           <h3>Compte</h3>
           <p class="desc">Gestion de votre accès et de votre abonnement Seba.</p>
-          <div class="field-group"><label>Email de connexion</label><input type="email" value="contact@menageexpress.fr"></div>
-          <div class="field-group"><label>Mot de passe</label><input type="password" value="••••••••"></div>
-          <button class="btn-em" onclick="showReglToast('Mot de passe mis à jour')">Mettre à jour</button>
+          <div class="field-group"><label>Email de connexion</label><input type="email" id="compte-email" placeholder="vous@entreprise.fr" autocomplete="email"></div>
+          <div class="field-group"><label>Nouveau mot de passe (laisser vide pour ne pas changer)</label><input type="password" id="compte-pwd" placeholder="••••••••" autocomplete="new-password" minlength="8"></div>
+          <button class="btn-em" onclick="updateCompte()">Mettre à jour</button>
 
           <h3 style="margin-top:32px;">Données & sauvegarde</h3>
           <p class="desc">Vos données (clients, devis, factures, planning, équipe) sont stockées sur cet appareil. Exportez-les régulièrement, ou pour les transférer sur un autre appareil.</p>
@@ -350,6 +353,45 @@
     clearTimeout(_reglToastT);
     _reglToastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
   }
+  /* ── Onglet Compte : email/mot de passe RÉELS (Supabase via sebaAuth).
+     Avant ce correctif, le champ email était codé en dur
+     ('contact@menageexpress.fr') et le bouton n'affichait qu'un toast. ── */
+  let _compteEmailInitial = '';
+  (async function initCompte() {
+    try {
+      if (!window.sebaAuth || !window.sebaAuth.isConfigured) return; // démo : champs libres, updateCompte explique
+      const session = await sebaAuth.getSession();
+      const email = session && session.user && session.user.email;
+      if (email) {
+        _compteEmailInitial = email;
+        document.getElementById('compte-email').value = email;
+      }
+    } catch (e) {}
+  })();
+
+  async function updateCompte() {
+    const email = document.getElementById('compte-email').value.trim();
+    const pwdInp = document.getElementById('compte-pwd');
+    const pwd = pwdInp.value;
+    if (!window.sebaAuth || !window.sebaAuth.isConfigured) { showReglToast('Mode démo — aucun compte réel à modifier'); return; }
+    if (pwd && pwd.length < 8) { showReglToast('Mot de passe : 8 caractères minimum'); return; }
+    let changed = false;
+    if (email && email !== _compteEmailInitial) {
+      const r = await sebaAuth.updateEmail(email);
+      if (!r.ok) { showReglToast(r.error || "Échec du changement d'email"); return; }
+      showReglToast('Lien de confirmation envoyé à ' + email);
+      changed = true;
+    }
+    if (pwd) {
+      const r = await sebaAuth.updatePassword(pwd);
+      if (!r.ok) { showReglToast(r.error || 'Échec du changement de mot de passe'); return; }
+      pwdInp.value = '';
+      showReglToast('Mot de passe mis à jour');
+      changed = true;
+    }
+    if (!changed) showReglToast('Aucun changement à enregistrer');
+  }
+
   async function confirmDelete() {
     if (confirm('Êtes-vous sûr(e) de vouloir supprimer votre entreprise ? Cette action est irréversible.')) {
       // Efface d'abord les données réelles (local + ligne cloud Supabase si connecté) —

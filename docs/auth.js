@@ -138,6 +138,19 @@
       } catch (e) { return { ok: false, error: e.message }; }
     },
 
+    /* Changement d'email de connexion — Supabase envoie un lien de
+       confirmation à la nouvelle adresse (et à l'ancienne si le "secure
+       email change" est activé) ; le changement n'est effectif qu'après clic. */
+    async updateEmail(newEmail) {
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        const { error } = await sb.auth.updateUser({ email: newEmail });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
     /* Renvoi de l'email de confirmation d'inscription — pour l'utilisateur
        dont le lien n'est jamais arrivé (spam, faute de frappe corrigée…).
        Sans ça, il est bloqué sans recours devant l'écran needsConfirm. */
