@@ -9,20 +9,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Même gabarit documentaire que politique-confidentialite.html */
-:root{--ink:#14161A;--emerald:#00C896;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--warn-bg:#FFF4D6;--warn-bd:#F0DDA0;}
+:root{--ink:#14161A;--emerald:#00C896;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--warn-bg:#FFF4D6;--warn-bd:#F0DDA0;--hd-bg:rgba(8,9,11,.96);--hd-bd:rgba(255,255,255,.05);--hd-muted:rgba(255,255,255,.5);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;}
 a{color:var(--emerald);}
 .wrap{max-width:760px;margin:0 auto;padding:0 24px;}
 :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
-.sh{position:sticky;top:0;z-index:200;background:rgba(8,9,11,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05);}
+.sh{position:sticky;top:0;z-index:200;background:var(--hd-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--hd-bd);}
 .sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
-.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#fff;display:flex;align-items:center;gap:1px;text-decoration:none;}
+.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:var(--white);display:flex;align-items:center;gap:1px;text-decoration:none;}
 .sh-dot{color:var(--emerald);}
-.sh-back{color:rgba(255,255,255,.5);font-size:.85rem;text-decoration:none;}
+.sh-back{color:var(--hd-muted);font-size:.85rem;text-decoration:none;}
 .page-hero{background:var(--ink);padding:56px 0 48px;}
-.page-hero h1{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;line-height:1.15;letter-spacing:-.03em;color:#fff;margin-bottom:10px;}
-.page-hero p{font-size:.92rem;color:rgba(255,255,255,.5);}
+.page-hero h1{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;line-height:1.15;letter-spacing:-.03em;color:var(--white);margin-bottom:10px;}
+.page-hero p{font-size:.92rem;color:var(--hd-muted);}
 .doc{padding:56px 0 88px;}
 .doc h2{font-size:1.25rem;font-weight:700;margin:36px 0 12px;letter-spacing:-.01em;}
 .doc h2:first-child{margin-top:0;}
