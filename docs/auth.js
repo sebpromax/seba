@@ -111,6 +111,33 @@
       } catch (e) { return { ok: false, error: e.message }; }
     },
 
+    /* Réinitialisation de mot de passe — 2 temps, tout côté client (le SDK
+       Supabase gère l'email + le lien de récupération, aucune Edge Function) :
+       1. resetPassword(email) → Supabase envoie le lien, qui redirige vers
+          reset-password.html (redirectTo absolu, valable en local et en prod).
+       2. Sur cette page, le SDK consomme le token du lien (detectSessionInUrl)
+          et updatePassword(nouveau) → auth.updateUser. */
+    async resetPassword(email) {
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        const redirectTo = new URL('reset-password.html', location.href).href;
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    async updatePassword(newPassword) {
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        const { error } = await sb.auth.updateUser({ password: newPassword });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
     async getSession() {
       if (!configured) {
         try {
