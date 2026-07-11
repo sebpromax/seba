@@ -19,9 +19,13 @@ p{color:var(--t2);font-size:.95rem;max-width:420px;line-height:1.6;margin-bottom
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 28px;border-radius:10px;font-size:.92rem;font-weight:700;border:none;cursor:pointer;background:var(--em);color:var(--ink);font-family:inherit;transition:opacity .15s;}
 .btn:hover{opacity:.85;}
 .hint{margin-top:22px;font-size:.8rem;color:var(--t3);}
+/* Encre Vivante : respiration lente du point — la solitude, pas la panne. */
+html.fx-on .dot{animation:fxDotBreathe 4s ease-in-out infinite;}
+@keyframes fxDotBreathe{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.25);}}
 </style>
 </head>
 <body>
+<script>if(!navigator.webdriver&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.classList.add('fx-on');</script>
 <div class="dot" aria-hidden="true"></div>
 <h1>Vous êtes hors ligne</h1>
 <p>Impossible de joindre le réseau pour le moment. Les pages déjà visitées restent consultables ; celle-ci n'était pas encore dans le cache.</p>

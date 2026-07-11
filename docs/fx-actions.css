@@ -1,0 +1,41 @@
+/* ═══════════════════════════════════════════════════════════════
+   FX-ACTIONS — signatures de mouvement du cockpit (Encre Vivante, phase 3).
+   Le motion suit la donnée : une ligne créée glisse en place, un statut
+   qui change flashe une fois. Tout est gate par html.fx-on (posée par
+   fx-actions.js hors webdriver/reduced-motion) : les captures QA et les
+   utilisateurs en motion réduit voient l'interface exactement comme avant.
+   Couleurs : tokens définis ici même (:root), alignés sur l'émeraude app.
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --fx-flash: rgba(0, 255, 157, .22);
+  --fx-breathe-halo: rgba(0, 255, 157, .04);
+}
+
+/* Nouvelle entrée (ligne, carte) : glisse en place — appliquée par le
+   MutationObserver de fx-actions.js, retirée à la fin de l'animation. */
+html.fx-on .fx-new { animation: fxSlideIn .35s cubic-bezier(.22, 1, .36, 1) 1; }
+@keyframes fxSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Flash d'accomplissement (facture payée, devis envoyé…) : une seule
+   impulsion émeraude, déclenchée via SebaFXApp.flash(element). */
+html.fx-on .fx-flash { animation: fxFlash .55s ease-out 1; }
+@keyframes fxFlash {
+  0%   { background-color: var(--fx-flash); }
+  100% { background-color: transparent; }
+}
+
+/* Respiration très basse du fond de page : le cockpit reste sobre,
+   mais plus jamais figé. */
+html.fx-on body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 55% 38% at 50% 0%, var(--fx-breathe-halo), transparent 70%);
+  animation: fxAppBreathe 12s ease-in-out infinite;
+}
+@keyframes fxAppBreathe {
+  0%, 100% { opacity: .4; }
+  50%      { opacity: 1; }
+}
