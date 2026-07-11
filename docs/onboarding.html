@@ -123,6 +123,10 @@ a{color:inherit;text-decoration:none;}
 .propulsion-msg{font-size:var(--font-size-base);color:var(--t2);text-align:center;transition:opacity .3s ease;}
 .propulsion-cta{display:flex;align-items:center;justify-content:center;width:100%;}
 .propulsion-cta.is-hidden{display:none;}
+.resend-link{background:none;border:none;font-family:inherit;font-size:var(--font-size-sm);color:var(--t2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:color .2s;}
+.resend-link:hover{color:var(--em);}
+.resend-link.is-hidden{display:none;}
+.resend-link:disabled{color:var(--t3);cursor:default;text-decoration:none;}
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
@@ -234,6 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     <p class="propulsion-msg" id="propulsion-msg">Initialisation de votre espace...</p>
     <a href="connexion.html" class="btn-primary propulsion-cta is-hidden" id="propulsion-cta">J'ai confirmé mon email — Se connecter →</a>
+    <button type="button" class="resend-link is-hidden" id="resend-link" onclick="resendConfirmEmail()">Email jamais reçu ? Renvoyer le lien</button>
   </div>
 </div>
 
@@ -338,10 +343,28 @@ a{color:inherit;text-decoration:none;}
         // dashboard.html ferait ejecter l'utilisateur par guard.js sans message.
         // On affiche le CTA vers connexion.html et on reste sur place.
         document.getElementById('propulsion-cta').classList.remove('is-hidden');
+        document.getElementById('resend-link').classList.remove('is-hidden');
         return;
       }
       window.location.href = 'dashboard.html';
     }, 1650);
+  }
+
+  // Renvoi du lien de confirmation (ecran needsConfirm) — anti-spam simple :
+  // bouton desactive 60s apres chaque envoi.
+  async function resendConfirmEmail() {
+    const btn = document.getElementById('resend-link');
+    if (!S.email || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours…';
+    const res = (window.sebaAuth && typeof window.sebaAuth.resendConfirmation === 'function')
+      ? await window.sebaAuth.resendConfirmation(S.email)
+      : { ok: true, demo: true };
+    btn.textContent = res.ok ? 'Lien renvoyé — vérifiez vos indésirables' : (res.error || 'Échec — réessayez plus tard');
+    setTimeout(function () {
+      btn.disabled = false;
+      btn.textContent = 'Email jamais reçu ? Renvoyer le lien';
+    }, 60000);
   }
 
   let isSaving = false;
