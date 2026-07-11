@@ -327,9 +327,9 @@ function buildActivityHTML(activity) {
 function buildRecoItemHTML(r) {
   return '<a href="' + r.href + '" class="reco-item">' +
     '<div class="reco-bar ' + r.cls + '"></div>' +
-    '<div class="reco-content"><div class="reco-title">' + r.title + '</div>' +
-    '<div class="reco-desc">' + r.desc + '</div>' +
-    '<div class="reco-cta">' + r.cta + ' →</div></div></a>';
+    '<div class="reco-content"><div class="reco-title">' + esc(r.title) + '</div>' +
+    '<div class="reco-desc">' + esc(r.desc) + '</div>' +
+    '<div class="reco-cta">' + esc(r.cta) + ' →</div></div></a>';
 }
 
 function buildTeamItemEl(t, couleur) {
@@ -1233,10 +1233,10 @@ window.WIDGET_CATALOG = {
     render(ctx, el) {
       const sc = ctx.services.length;
       el.innerHTML =
-        '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + ctx.sectorLabel + '</span></div>' +
+        '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + esc(ctx.sectorLabel) + '</span></div>' +
         '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
         '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#00FF9D">Actif</span></div>' +
-        '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + (ctx.biz.pays || 'Non renseigné') + ' · ' + ctx.sym + '</span></div>';
+        '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + esc(ctx.biz.pays || 'Non renseigné') + ' · ' + esc(ctx.sym) + '</span></div>';
     } },
 
   'portal': { id: 'portal', title: 'Portail client', size: 'L', category: 'core', source: 'demo',
@@ -1247,9 +1247,9 @@ window.WIDGET_CATALOG = {
       const portalUrl = 'seba.app/p/' + ctx.slug;
       const portalCode = 'SEBA-' + ctx.slug.substring(0, 4).toUpperCase();
       el.innerHTML = '<div class="portal-block">' +
-        '<div class="portal-name">' + publicName + '</div>' +
-        '<div class="portal-url-txt" id="portal-url">' + portalUrl + '</div>' +
-        '<div class="portal-code-row"><span class="portal-code-lbl">Code d\'accès</span><span class="code-chip">' + portalCode + '</span></div>' +
+        '<div class="portal-name">' + esc(publicName) + '</div>' +
+        '<div class="portal-url-txt" id="portal-url">' + esc(portalUrl) + '</div>' +
+        '<div class="portal-code-row"><span class="portal-code-lbl">Code d\'accès</span><span class="code-chip">' + esc(portalCode) + '</span></div>' +
         '<div class="portal-actions">' +
         '<button class="portal-btn" id="copy-btn" onclick="copyLink(this)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>Copier le lien</button>' +
         '<a href="client.html" class="portal-btn primary" target="_blank">Voir l\'aperçu</a></div></div>';
