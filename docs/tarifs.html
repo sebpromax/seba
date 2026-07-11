@@ -16,6 +16,7 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -71,8 +72,8 @@ a{color:inherit;text-decoration:none;}
 }
 .btn-outline-price{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--w-a70);border:1px solid var(--w-a15);font-weight:600;border-radius:12px;transition:border-color .2s,color .2s;}
 .btn-outline-price:hover{border-color:var(--w-a40);color:var(--pure-white);}
-.price-card{border-radius:20px;padding:32px 28px;background:var(--w-a025);border:1px solid var(--w-a07);display:flex;flex-direction:column;transition:border-color .3s,box-shadow .3s,transform .3s;position:relative;overflow:hidden;}
-.price-card:hover{transform:translateY(-4px);}
+.price-card{border-radius:20px;padding:32px 28px;background:var(--w-a025);border:1px solid var(--zinc-800);display:flex;flex-direction:column;transition:border-color .3s,box-shadow .3s,transform .3s;position:relative;overflow:hidden;}
+.price-card:hover{transform:translateY(-4px);border-color:var(--db-blue);}
 /* Carte populaire (spec Dual-Tone) : bordure en dégradé bi-ton — double fond
    padding-box/border-box, bordure transparente. Plus de flash vert. */
 .price-card.recommended{
@@ -105,15 +106,22 @@ a{color:inherit;text-decoration:none;}
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
   <script src="auth.js"></script>
   <script src="stripe-service.js"></script>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link">Produit</a>
+    <a href="product.html" class="nav-link">Fonctionnalités</a>
     <a href="tarifs.html"    class="nav-link active">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
@@ -139,7 +147,7 @@ a{color:inherit;text-decoration:none;}
     <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:900;letter-spacing:-0.04em;line-height:1.06;margin-bottom:16px;"><span class="headline-gradient">Des tarifs simples.<br>Sans surprise.</span></h1>
     <p style="font-size:1.05rem;color:var(--mist);line-height:1.65;max-width:480px;margin:0 auto 28px;">Pas de frais cachés, pas d'options payantes. Tout est inclus dès le premier jour.</p>
     <div class="trial-banner">
-      <span>✦</span> Essai gratuit de 15 jours sur toutes les offres. <span>Aucune carte bancaire requise.</span>
+      Essai gratuit de 15 jours sur toutes les offres. <span>Aucune carte bancaire requise.</span>
     </div>
     <br>
     <div class="toggle-wrap">
@@ -246,10 +254,10 @@ a{color:inherit;text-decoration:none;}
 
   <!-- Guarantees -->
   <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:32px;margin-top:48px;">
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🔒 Données chiffrées AES-256</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">↩️ Annulation à tout moment</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">🌍 Conforme RGPD</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:rgba(255,255,255,.5);">💬 Support humain inclus</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:var(--w-a50);">Données chiffrées AES-256</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:var(--w-a50);">Annulation à tout moment</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:var(--w-a50);">Conforme RGPD</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:.83rem;color:var(--w-a50);">Support humain inclus</div>
   </div>
 </section>
 
@@ -353,7 +361,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a03:rgba(13,148,136,0.03);--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a09:rgba(13,148,136,0.09);--dt-a12:rgba(13,148,136,0.12);--dt-a14:rgba(13,148,136,0.14);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a55:rgba(13,148,136,0.55);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a15:rgba(255,255,255,.15);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a025:rgba(255,255,255,.025);--w-a04:rgba(255,255,255,.04);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a02:rgba(255,255,255,.02);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--rec-surface:#0e1014;--cta-inset:rgba(255,255,255,.2);--cta-inset-h:rgba(255,255,255,.25);--cta-sh-dark:rgba(0,0,0,.5);--cta-sh-blue:rgba(29,78,216,.15);--cta-sh-blue-h:rgba(29,78,216,.4);--cta-sh-teal-h:rgba(13,148,136,.3);--cta-act-in:rgba(0,0,0,.6);--cta-act-in2:rgba(0,0,0,.2);}
+:root{--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a03:rgba(13,148,136,0.03);--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a09:rgba(13,148,136,0.09);--dt-a12:rgba(13,148,136,0.12);--dt-a14:rgba(13,148,136,0.14);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a55:rgba(13,148,136,0.55);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a15:rgba(255,255,255,.15);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a025:rgba(255,255,255,.025);--w-a04:rgba(255,255,255,.04);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a02:rgba(255,255,255,.02);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--rec-surface:#0e1014;--cta-inset:rgba(255,255,255,.2);--cta-inset-h:rgba(255,255,255,.25);--cta-sh-dark:rgba(0,0,0,.5);--cta-sh-blue:rgba(29,78,216,.15);--cta-sh-blue-h:rgba(29,78,216,.4);--cta-sh-teal-h:rgba(13,148,136,.3);--cta-act-in:rgba(0,0,0,.6);--cta-act-in2:rgba(0,0,0,.2);--w-a50:rgba(255,255,255,.5);--zinc-800:#27272A;}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}

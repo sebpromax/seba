@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hors ligne — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="robots" content="noindex">
 <style>
 /* Page servie par le service worker SANS réseau : autonome par construction —
@@ -22,6 +25,14 @@ p{color:var(--t2);font-size:.95rem;max-width:420px;line-height:1.6;margin-bottom
 /* Encre Vivante : respiration lente du point — la solitude, pas la panne. */
 html.fx-on .dot{animation:fxDotBreathe 4s ease-in-out infinite;}
 @keyframes fxDotBreathe{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.25);}}
+</style>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>

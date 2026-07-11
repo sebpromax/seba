@@ -113,6 +113,7 @@
     margin:0 auto 20px;text-wrap:balance;max-width:950px;
     color:var(--pure-white);
   }
+  .hero-line{display:block;} /* rupture physique en 2 lignes : le dégradé ne bave jamais sur la ligne 1 */
   .hero-title-grad{color:var(--pure-white);} /* fallback moteurs sans clip:text */
   @supports((-webkit-background-clip:text) or (background-clip:text)){
     .hero-title-grad{
@@ -230,7 +231,7 @@
   }
   .nav-logo{font-family:'Geist',Inter,system-ui,sans-serif;font-size:20px;letter-spacing:-0.03em;display:flex;align-items:center;gap:6px;justify-self:start;}
   .nav-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);animation:pulse-glow 4s cubic-bezier(0.4,0,0.6,1) infinite;}
-  .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
+  .nav-center{justify-self:center;display:flex;align-items:center;gap:40px;} /* respiration (spec : 2 liens seulement) */
   .nav-link{position:relative;font-size:14px;color:var(--zinc-500);font-weight:500;transition:color .2s cubic-bezier(0.16,1,0.3,1);}
   .nav-link::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:0;height:1px;background:var(--pure-white);transition:width .25s cubic-bezier(0.16,1,0.3,1);}
   .nav-link:hover{color:var(--pure-white);}
@@ -415,6 +416,14 @@
   <meta name="theme-color" content="#0a0a0c">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 <canvas id="kinetic-grid" aria-hidden="true"></canvas>
@@ -425,9 +434,8 @@
     <span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span>
   </a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link">Produit</a>
+    <a href="product.html" class="nav-link">Fonctionnalités</a>
     <a href="tarifs.html"  class="nav-link">Tarifs</a>
-    <a href="faq.html"     class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html"  class="nav-connexion">Connexion</a>
@@ -453,13 +461,13 @@
 <section class="hero-section">
   <div class="hero-glow"></div>
   <div style="position:relative;z-index:1;text-align:center;width:min(950px,90%);margin:0 auto;">
-    <div class="hero-badge">✨ Seba OS — Le poste de pilotage des entreprises de services</div>
-    <h1 class="hero-title">Clients. Plannings. Factures. <span class="hero-title-grad">Maîtrisez tout votre écosystème</span></h1>
+    <div class="hero-badge">Seba OS — Le poste de pilotage des entreprises de services</div>
+    <h1 class="hero-title"><span class="hero-line">Clients. Plannings. Factures.</span><span class="hero-title-grad hero-line">Pilotez tout votre écosystème.</span></h1>
     <p class="hero-subtitle">
-      Fini l'enfer des tableurs éparpillés et des agendas papier. Centralisez vos interventions, automatisez vos relances et pilotez votre rentabilité depuis une interface unique, chirurgicale et assistée par IA.
+      Le compagnon unique qui centralise l'intégralité de votre activité. Libérez votre esprit du stress administratif : plus un seul oubli, plus aucun retard, tout est sous contrôle au même endroit.
     </p>
     <a href="onboarding.html" class="cta-main">Créer mon espace gratuit</a>
-    <span class="cta-subtext">Gratuit · 2 minutes · sans carte bancaire</span>
+    <span class="cta-subtext">Essai gratuit 14 jours · Sans carte bancaire · Conforme Facturation 2026</span>
   </div>
 </section>
 
@@ -504,7 +512,7 @@
 
     <div style="padding:0 0 0 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num" style="background:var(--dt-a15);border-color:var(--db-teal);">⚡</div>
+        <div class="proc-num" style="background:var(--dt-a15);border-color:var(--db-teal);">4</div>
       </div>
       <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;color:var(--em);">Opérationnel.</div>
       <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Vos processus tournent en arrière-plan. Concentrez-vous sur votre métier.</div>
@@ -530,16 +538,16 @@
       </p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          <span style="font-size:1rem;">❌</span> Devis perdus dans les fils de mails
+          Devis perdus dans les fils de mails
         </div>
         <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          <span style="font-size:1rem;">❌</span> Relances manuelles qui épuisent votre temps
+          Relances manuelles qui épuisent votre temps
         </div>
         <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          <span style="font-size:1rem;">❌</span> Planning d'équipe ingérable
+          Planning d'équipe ingérable
         </div>
         <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          <span style="font-size:1rem;">❌</span> Facturation accumulée chaque soir
+          Facturation accumulée chaque soir
         </div>
       </div>
     </div>
@@ -549,15 +557,15 @@
       <div style="font-size:.7rem;color:#718096;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Sans Seba — Une journée ordinaire</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">💬 "Vous avez reçu mon devis ?" (3ème relance)</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">"Vous avez reçu mon devis ?" (3ème relance)</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−25 min</span>
         </div>
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">📋 Facture ressaisie à la main</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">Facture ressaisie à la main</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−40 min</span>
         </div>
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">📅 Créneau raté → client mécontent</span>
+          <span style="font-size:.82rem;color:var(--w-a70);">Créneau raté → client mécontent</span>
           <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−60 min</span>
         </div>
         <div style="border-top:1px solid var(--w-a06);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
@@ -612,13 +620,13 @@
 
           <div class="db-sidebar">
             <div class="db-dot" style="margin-bottom:8px;"></div>
-            <div class="db-nav-item act" title="Tableau de bord">🏠</div>
-            <div class="db-nav-item" title="Clients">👥</div>
-            <div class="db-nav-item" title="Planning">📅</div>
-            <div class="db-nav-item" title="Devis">📄</div>
-            <div class="db-nav-item" title="Factures">💶</div>
+            <div class="db-nav-item act" title="Tableau de bord">T</div>
+            <div class="db-nav-item" title="Clients">C</div>
+            <div class="db-nav-item" title="Planning">P</div>
+            <div class="db-nav-item" title="Devis">D</div>
+            <div class="db-nav-item" title="Factures">F</div>
             <div style="flex:1;"></div>
-            <div class="db-nav-item" title="Réglages">⚙️</div>
+            <div class="db-nav-item" title="Réglages">R</div>
           </div>
 
           <div class="db-main">
@@ -682,15 +690,15 @@
 
             <div class="db-row" style="margin-top:auto;gap:6px;">
               <div style="flex:1;background:var(--dt-a07);border:1px solid var(--dt-a15);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">⚡</span>
+                <span style="font-size:.75rem;">S</span>
                 <span style="font-size:.62rem;font-weight:600;color:var(--db-teal);">Nouveau Devis</span>
               </div>
               <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">📅</span>
+                <span style="font-size:.75rem;">P</span>
                 <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Planning</span>
               </div>
               <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">👥</span>
+                <span style="font-size:.75rem;">E</span>
                 <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Clients</span>
 
               </div>
@@ -703,7 +711,7 @@
     </div>
 
     <div class="glass" style="position:absolute;bottom:-20px;right:40px;padding:12px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 20px 48px rgba(0,0,0,.5);">
-      <div style="width:36px;height:36px;border-radius:10px;background:var(--dt-a10);border:1px solid var(--dt-a20);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⚡</div>
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--dt-a10);border:1px solid var(--dt-a20);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">S</div>
       <div>
         <div style="font-size:.78rem;font-weight:700;color:var(--pure-white);">Du devis au paiement</div>
         <div style="font-size:.68rem;color:var(--dt-a70);font-weight:600;">en quelques minutes</div>

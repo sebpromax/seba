@@ -15,6 +15,7 @@
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -90,6 +91,14 @@ a{color:inherit;text-decoration:none;}
   <meta name="theme-color" content="#0a0a0c">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 <div class="accent-line"></div>

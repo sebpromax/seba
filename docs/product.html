@@ -16,6 +16,7 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Load GSAP + ScrollTrigger dynamically to avoid mobile overfetch -->
 <script>
   (function(){
@@ -94,6 +95,14 @@ a{color:inherit;text-decoration:none;}
   <meta name="theme-color" content="#0a0a0c">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 <canvas id="gl-canvas" data-fx="landing" data-intensity="0.3" aria-hidden="true"></canvas>
@@ -104,7 +113,6 @@ a{color:inherit;text-decoration:none;}
   <div class="nav-center">
     <a href="product.html" class="nav-link active">Produit</a>
     <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
