@@ -138,6 +138,25 @@
       } catch (e) { return { ok: false, error: e.message }; }
     },
 
+    /* Inscription SANS mot de passe (parcours « valeur d'abord », décision
+       fondateur 2026-07-11) : signInWithOtp crée le compte et envoie un lien
+       d'activation. Le clic ouvre bienvenue.html AVEC une session — c'est là
+       que l'utilisateur confirme son adresse et choisit son mot de passe
+       (updatePassword) et que le profil est créé (RPC, auth.uid() valide). */
+    async signUpEmailOnly(email) {
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        const emailRedirectTo = new URL('bienvenue.html', location.href).href;
+        const { error } = await sb.auth.signInWithOtp({
+          email: email,
+          options: { shouldCreateUser: true, emailRedirectTo: emailRedirectTo },
+        });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
     /* Changement d'email de connexion — Supabase envoie un lien de
        confirmation à la nouvelle adresse (et à l'ancienne si le "secure
        email change" est activé) ; le changement n'est effectif qu'après clic. */
