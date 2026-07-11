@@ -17,8 +17,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+/* Premier :root de cette page (dette historique : tout etait en dur) —
+   n'accueille pour l'instant que les tokens Encre Vivante (SebaFX). */
+:root{--em:#00ff88;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+#gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
 body{font-family:'Inter',sans-serif;background:#0a0a0c;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;animation:pgFadeIn .35s ease both;}
 @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 a{color:inherit;text-decoration:none;}
@@ -158,6 +162,7 @@ input:-webkit-autofill:active {
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
+<canvas id="gl-canvas" data-fx="calm" aria-hidden="true"></canvas>
 
 <!-- ── Navigation ── -->
 <nav class="nav-wrap">
@@ -235,6 +240,9 @@ input:-webkit-autofill:active {
 <script src="auth.js"></script>
 <script src="sentry-init.js" defer></script>
 <script src="analytics-init.js" defer></script>
+<!-- Encre Vivante : preset calm (fluide gelé + battement 2s). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="bg-shader.js"></script>
 <script>
 async function handleLogin(){
   const email=document.getElementById('email').value.trim();
@@ -252,6 +260,8 @@ async function handleLogin(){
   const res=await sebaAuth.signIn(email,password);
   if(res.ok){
     await completePendingProfile();
+    // La porte s'ouvre : une onde unique traverse l'ecran avant la redirection.
+    if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
     window.location.href='dashboard.html';
   }else{
     err.textContent=res.error==='Invalid login credentials'?'Identifiants incorrects.':(res.error||'Connexion impossible — réessayez.');
