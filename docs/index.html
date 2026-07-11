@@ -19,6 +19,9 @@
   :root{
     /* ── Design system : couleurs ── */
     --em:#00ff88; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
+    /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
+       actions utilisateur allument --em ── */
+    --fx-deep:#050507; --fx-deep2:#0b0f19; --fx-glint:#00C896; --fx-mist:#94A3B8;
     /* ── Échelle d'espacement (base 4px) ── */
     --spacing-1:4px; --spacing-2:8px; --spacing-3:12px; --spacing-4:16px; --spacing-5:20px;
     --spacing-6:24px; --spacing-7:32px; --spacing-8:40px; --spacing-9:48px; --spacing-10:64px;
@@ -328,7 +331,7 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
-<canvas id="gl-canvas" aria-hidden="true"></canvas>
+<canvas id="gl-canvas" data-fx="landing" aria-hidden="true"></canvas>
 
 <!-- ══ NAVIGATION ══ -->
 <nav class="nav-wrap">

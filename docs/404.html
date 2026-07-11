@@ -23,11 +23,16 @@ p{color:var(--t2);font-size:.95rem;max-width:420px;line-height:1.6;margin-bottom
 .btn-primary:hover{opacity:.85;}
 .btn-ghost{color:var(--t1);border:1px solid var(--bd);}
 .btn-ghost:hover{border-color:var(--em);color:var(--em);}
+/* Encre Vivante : le zero emeraude cligne en morse — le systeme vit, meme ici.
+   Gate html.fx-on (hors QA / reduced-motion). */
+html.fx-on .code em{color:var(--em);animation:fxMorse 3.5s steps(1) infinite;}
+@keyframes fxMorse{0%,8%{opacity:1;}9%,14%{opacity:.25;}15%,22%{opacity:1;}23%,28%{opacity:.25;}29%,38%{opacity:1;}39%,50%{opacity:.25;}51%,100%{opacity:1;}}
 </style>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <meta name="theme-color" content="#0a0a0c">
 </head>
 <body>
+<script>if(!navigator.webdriver&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.classList.add('fx-on');</script>
 <div class="code">4<em>0</em>4</div>
 <h1>Cette page n'existe pas (ou plus)</h1>
 <p>Le lien que vous avez suivi est peut-être cassé, ou la page a été déplacée. Rien de grave — tout le reste est à sa place.</p>

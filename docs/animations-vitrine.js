@@ -2,6 +2,12 @@
 function __av_init() {
   'use strict';
 
+  // Meme guard QA que bg-shader.js : sous webdriver (Puppeteer), l'etat
+  // aleatoire des particules rendait chaque capture differente -> baselines
+  // de qa-visual-regression non deterministes. Trou detecte par l'audit
+  // Encre Vivante.
+  if (navigator.webdriver) return;
+
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ── Détection de page ─────────────────────────────────────────────────── */

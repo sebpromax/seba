@@ -297,5 +297,25 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();})
 (function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
 document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
+
+<!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
+<style>
+:root{--fx-halo:rgba(0,255,136,.05);--fx-em:#00ff88;--fx-card-glow:rgba(0,255,136,.10);--fx-pick:rgba(0,255,136,.35);}
+/* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
+html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
+@keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}
+html.fx-on .faq-body{position:relative;}
+html.fx-on .faq-answer{padding-left:14px;}
+html.fx-on .faq-item.open .faq-body::before{content:'';position:absolute;left:0;top:4px;bottom:16px;width:2px;background:linear-gradient(180deg,var(--fx-em),transparent);transform-origin:top;animation:fxTrace .45s ease both;}
+@keyframes fxTrace{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+</style>
+<div class="fx-breathe" aria-hidden="true"></div>
+<script>
+(function(){
+  if(navigator.webdriver)return;
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  document.documentElement.classList.add('fx-on');
+})();
+</script>
 </body>
 </html>

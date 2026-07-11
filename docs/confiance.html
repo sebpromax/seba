@@ -130,6 +130,7 @@ footer .wrap{display:flex;justify-content:space-between;align-items:center;color
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
+<canvas id="gl-canvas" data-fx="aurora" data-intensity="0.3" aria-hidden="true"></canvas>
 
 <div class="accent-line"></div>
 
@@ -305,6 +306,13 @@ footer .wrap{display:flex;justify-content:space-between;align-items:center;color
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close_();});
 })();
 </script>
+
+<!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
+<style>
+:root{--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;}
+#gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
+</style>
+<script src="bg-shader.js" defer></script>
 </body>
 </html>
 
