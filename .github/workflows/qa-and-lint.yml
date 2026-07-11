@@ -1,0 +1,28 @@
+# Garde-fous automatiques en pull request — avant ce workflow, tous les
+# checks du repo (check-design-system, qa-visual-regression, eslint) ne
+# tournaient qu'à la main : une couleur en dur pouvait atteindre main sans
+# que personne ne la voie.
+#
+# Périmètre volontairement limité à check-design-system : les scripts
+# scripts/qa-*.js utilisent un chemin Chrome Windows codé en dur et des
+# baselines pixel dépendantes de la machine — les porter en CI est un
+# chantier séparé (décision fondateur, règle CLAUDE.md sur les scripts QA).
+name: Garde-fous (design system)
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['docs/**']
+
+jobs:
+  design-system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # le mode diff compare vs la branche cible
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Aucune couleur en dur hors :root (mode diff vs base)
+        run: node tools/check-design-system.js --base=origin/${{ github.base_ref }}
