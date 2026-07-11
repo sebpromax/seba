@@ -108,7 +108,7 @@
       cDeep2:    { value: new THREE.Color(token(['--fx-deep2', '--ink-r'], '#0b0f19')) },
       cGlint:    { value: new THREE.Color(token(['--fx-glint'], '#00C896')) },
       cMist:     { value: new THREE.Color(token(['--fx-mist', '--t2'], '#94A3B8')) },
-      cSignal:   { value: new THREE.Color(token(['--em', '--emerald'], '#00ff88')) },
+      cSignal:   { value: new THREE.Color(token(['--em', '--emerald'], '#0D9488')) },
       uAct:      { value: 1.0 },   // tunnel : 1 calme, 2 anneaux, 3 vortex
       uPulse:    { value: 0.0 },   // flash radial --em (décroît seul)
       uWave:     { value: 0.0 },   // onde unique 0→1 (login)
