@@ -356,6 +356,19 @@
       // avant ce correctif, seul le localStorage était vidé et les données restaient
       // sur Supabase pour tout compte connecté au cloud (faille Art. 17 RGPD).
       try { await SebaDB.eraseAllData(); } catch (e) {}
+      // Suppression COMPLÈTE côté serveur (Art. 17) : la RPC SECURITY DEFINER
+      // purge ce que les policies RLS client ne peuvent pas atteindre
+      // (profiles/companies, api_usage) puis supprime le compte auth.users
+      // lui-même. Voir migrations/2026-07-11-rgpd-suppression-compte.sql —
+      // best-effort tant que la migration n'est pas appliquée (l'erreur
+      // "function not found" est loggée, le reste de la suppression tient).
+      try {
+        if (window.sebaAuth && window.sebaAuth.isConfigured) {
+          const { error } = await window.sebaAuth.rpc('erase_account_completely', {});
+          if (error) console.error('[reglages] erase_account_completely:', error.message || error);
+          await window.sebaAuth.signOut();
+        }
+      } catch (e) {}
       try {
         localStorage.removeItem('sebaEntreprise');
         localStorage.removeItem('seba_dashboard_layout');
