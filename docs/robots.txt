@@ -1,0 +1,21 @@
+# Seba — sebpromax.github.io/seba
+# Les pages vitrine sont indexables ; l'application connectée et les
+# prototypes internes n'ont rien à faire dans un moteur de recherche.
+User-agent: *
+Allow: /
+
+# Application connectée (données derrière auth, aucun intérêt SEO)
+Disallow: /seba/dashboard.html
+Disallow: /seba/clients.html
+Disallow: /seba/client-fiche.html
+Disallow: /seba/client.html
+Disallow: /seba/devis.html
+Disallow: /seba/devis-nouveau.html
+Disallow: /seba/factures.html
+Disallow: /seba/planning.html
+Disallow: /seba/equipe.html
+Disallow: /seba/employe-fiche.html
+Disallow: /seba/historique.html
+Disallow: /seba/reglages.html
+
+Sitemap: https://sebpromax.github.io/seba/sitemap.xml
