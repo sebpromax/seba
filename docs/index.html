@@ -15,6 +15,11 @@
 <meta name="twitter:card" content="summary">
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <meta name="description" content="Seba centralise la planification, les devis, la facturation et le suivi financier des entreprises de services, en un seul espace de travail.">
+<!-- Geist Sans (spec Dual-Tone) : logotype + accroche hero. display=swap,
+     poids limités à ceux réellement utilisés (300/500/600/800). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
 <style>
   :root{
     /* ── Design system : couleurs ── */
@@ -22,6 +27,19 @@
     /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
        actions utilisateur allument --em ── */
     --fx-deep:#050507; --fx-deep2:#0b0f19; --fx-glint:#00C896; --fx-mist:#94A3B8;
+    /* ── Dual-Tone Spectrum (spec fondateur 2026-07-11) : Bleu Abyssal /
+       Cyan Émeraude — scopé hero + navigation + fond cinétique ── */
+    --db-blue:#1D4ED8; --db-teal:#0D9488; --pure-white:#FFFFFF;
+    --zinc-400:#A1A1AA; --zinc-500:#71717A; --zinc-600:#52525B;
+    --zinc-700:#3F3F46; --zinc-800:#27272A; --zinc-900:#18181B; --zinc-950:#09090B;
+    --badge-bg:rgba(255,255,255,.02); --badge-bd:rgba(255,255,255,.08); --badge-bd-hover:rgba(16,185,129,.3);
+    --grid-node:rgba(63,63,70,.4);
+    --atmo-blue:rgba(29,78,216,.04); --atmo-teal:rgba(13,148,136,.04);
+    --cta-inset:rgba(255,255,255,.2); --cta-inset-h:rgba(255,255,255,.25);
+    --cta-sh-dark:rgba(0,0,0,.5); --cta-sh-blue:rgba(29,78,216,.15);
+    --cta-sh-blue-h:rgba(29,78,216,.4); --cta-sh-teal-h:rgba(13,148,136,.3);
+    --cta-act-in:rgba(0,0,0,.6); --cta-act-in2:rgba(0,0,0,.2);
+    --pulse-from:rgba(13,148,136,.7); --pulse-to:rgba(13,148,136,0);
     /* ── Échelle d'espacement (base 4px) ── */
     --spacing-1:4px; --spacing-2:8px; --spacing-3:12px; --spacing-4:16px; --spacing-5:20px;
     --spacing-6:24px; --spacing-7:32px; --spacing-8:40px; --spacing-9:48px; --spacing-10:64px;
@@ -37,9 +55,18 @@
   }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  /* Fond shader ambiant (bg-shader.js) : plein écran sous tout le contenu,
-     pointer-events:none pour ne jamais bloquer un clic (CTA, nav). */
-  #gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
+  /* ── Grille cinétique (kinetic-grid.js, spec Dual-Tone) : remplace le
+     shader fluide sur CETTE page. contain:strict isole le layout/paint. ── */
+  #kinetic-grid{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;contain:strict;background:var(--zinc-950);}
+  /* Chrominance des profondeurs : deux halos radiaux au-dessus de la grille
+     (body::after paint APRES le canvas enfant — un seul pseudo, deux fonds). */
+  body::after{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(circle at 20% 30%, var(--atmo-blue) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, var(--atmo-teal) 0%, transparent 50%);
+    will-change:transform;transform:translateZ(0);
+  }
   body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0c;color:#fff;-webkit-font-smoothing:antialiased;}
   a{color:inherit;text-decoration:none;}
 
@@ -68,6 +95,56 @@
     box-shadow:0 0 18px rgba(0,255,136,.18);
     transform:translateY(-2px);
   }
+
+  /* ── Hero Dual-Tone (spec fondateur 2026-07-11) ── */
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;font-weight:500;color:var(--zinc-400);
+    background:var(--badge-bg);border:1px solid var(--badge-bd);
+    padding:6px 14px;border-radius:9999px;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    margin-bottom:24px;transition:border-color 0.3s ease;
+  }
+  .hero-badge:hover{border-color:var(--badge-bd-hover);}
+  .hero-title{
+    font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;
+    font-weight:800;font-size:clamp(2.5rem,5vw,4.5rem);
+    line-height:1.05;letter-spacing:-0.05em;
+    margin:0 auto 20px;text-wrap:balance;max-width:950px;
+    color:var(--pure-white);
+  }
+  .hero-title-grad{color:var(--pure-white);} /* fallback moteurs sans clip:text */
+  @supports((-webkit-background-clip:text) or (background-clip:text)){
+    .hero-title-grad{
+      background:linear-gradient(135deg,var(--db-blue) 0%,var(--db-teal) 100%);
+      -webkit-background-clip:text;background-clip:text;
+      -webkit-text-fill-color:transparent;color:transparent;
+    }
+  }
+  .hero-subtitle{
+    font-size:clamp(1.1rem,2vw,1.25rem);line-height:1.6;
+    color:var(--zinc-500);max-width:720px;margin:0 auto 40px;text-wrap:pretty;
+  }
+  .cta-main{
+    padding:16px 32px;font-size:16px;font-weight:600;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:none;cursor:pointer;position:relative;isolation:isolate;overflow:hidden;
+    background:linear-gradient(135deg,var(--db-blue) 0%,var(--db-teal) 100%);
+    color:var(--pure-white);
+    box-shadow:inset 0 1px 0 var(--cta-inset),0 1px 3px var(--cta-sh-dark),0 4px 12px var(--cta-sh-blue);
+    transition:transform 0.4s cubic-bezier(0.16,1,0.3,1),box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .cta-main:hover{
+    transform:translateY(-2px) scale(1.01);
+    box-shadow:inset 0 1px 0 var(--cta-inset-h),0 12px 24px var(--cta-sh-blue-h),0 0 30px var(--cta-sh-teal-h);
+  }
+  .cta-main:active{
+    transform:translateY(1px) scale(0.97);
+    box-shadow:inset 0 3px 8px var(--cta-act-in),inset 0 1px 0 var(--cta-act-in2);
+    filter:brightness(0.85);
+    transition:transform 0.05s linear,filter 0.05s linear,box-shadow 0.05s linear;
+  }
+  .cta-subtext{margin-top:24px;font-size:13px;color:var(--zinc-600);letter-spacing:0.02em;display:block;}
 
   .headline-gradient{
     /* Degrade retire (audit 2026-07-08) : le vert doit rester reserve aux
@@ -151,23 +228,32 @@
     background:rgba(10,10,12,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
     border-bottom:1px solid rgba(255,255,255,.05);
   }
-  .nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;justify-self:start;}
-  .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 10px rgba(0,255,136,.7);}
+  .nav-logo{font-family:'Geist',Inter,system-ui,sans-serif;font-size:20px;letter-spacing:-0.03em;display:flex;align-items:center;gap:6px;justify-self:start;}
+  .nav-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);animation:pulse-glow 4s cubic-bezier(0.4,0,0.6,1) infinite;}
   .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
-  .nav-link{font-size:.88rem;color:rgba(255,255,255,.5);font-weight:500;letter-spacing:-0.01em;transition:color .2s,opacity .2s;}
-  .nav-link:hover{color:#fff;}
+  .nav-link{position:relative;font-size:14px;color:var(--zinc-500);font-weight:500;transition:color .2s cubic-bezier(0.16,1,0.3,1);}
+  .nav-link::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:0;height:1px;background:var(--pure-white);transition:width .25s cubic-bezier(0.16,1,0.3,1);}
+  .nav-link:hover{color:var(--pure-white);}
+  .nav-link:hover::after{width:100%;}
   .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
-  .nav-connexion{font-size:.85rem;color:rgba(255,255,255,.5);font-weight:500;transition:color .2s;}
-  .nav-connexion:hover{color:#fff;}
-  .btn-ghost-nav{
-    display:inline-flex;align-items:center;gap:6px;
-    background:transparent;color:rgba(255,255,255,.85);
-    border:1px solid rgba(255,255,255,.18);
-    font-weight:600;font-size:.84rem;letter-spacing:-0.01em;
-    border-radius:10px;padding:8px 18px;
-    transition:border-color .2s,color .2s,background .2s;
+  /* ── Header Dual-Tone (spec fondateur) ── */
+  .nav-connexion{font-size:14px;color:var(--zinc-500);font-weight:500;padding:8px 16px;transition:color .2s;}
+  .nav-connexion:hover{color:var(--pure-white);}
+  .btn-header-cta{
+    display:inline-flex;align-items:center;
+    background:var(--zinc-900);color:var(--pure-white);
+    border:1px solid var(--zinc-800);
+    font-weight:500;font-size:14px;
+    border-radius:8px;padding:8px 16px;
+    transition:all .2s;
   }
-  .btn-ghost-nav:hover{border-color:rgba(0,255,136,.5);color:#00ff88;background:rgba(0,255,136,.04);}
+  .btn-header-cta:hover{background:var(--zinc-800);border-color:var(--zinc-700);}
+  .logo-se{font-weight:800;color:var(--pure-white);}
+  .logo-ba{font-weight:300;color:var(--zinc-400);}
+  @keyframes pulse-glow{
+    0%{box-shadow:0 0 0 0 var(--pulse-from);}
+    100%{box-shadow:0 0 0 8px var(--pulse-to);}
+  }
 
   .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;z-index:201;justify-self:end;}
   .hamburger span{width:22px;height:2px;background:rgba(255,255,255,.7);border-radius:2px;transition:transform .3s,opacity .3s;display:block;}
@@ -331,12 +417,12 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
-<canvas id="gl-canvas" data-fx="landing" aria-hidden="true"></canvas>
+<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <!-- ══ NAVIGATION ══ -->
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo">
-    <span class="nav-logo-dot"></span>Seba
+    <span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span>
   </a>
   <div class="nav-center">
     <a href="product.html" class="nav-link">Produit</a>
@@ -345,7 +431,7 @@
   </div>
   <div class="nav-right">
     <a href="connexion.html"  class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Créer mon espace</a>
+    <a href="onboarding.html" class="btn-header-cta">Créer mon espace</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">
     <span></span><span></span><span></span>
@@ -366,17 +452,14 @@
 <!-- ══ 1. HERO ══ -->
 <section class="hero-section">
   <div class="hero-glow"></div>
-  <div style="position:relative;z-index:1;text-align:center;width:min(760px,90%);margin:0 auto;">
-    <h1 style="font-size:clamp(2.4rem,6.5vw,4.6rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px;">
-      <span class="headline-gradient">Devis, factures, planning, clients.<br>Toute votre activité au même endroit.</span>
-    </h1>
-    <p style="font-size:1.1rem;color:#94A3B8;font-weight:400;line-height:1.65;letter-spacing:-0.01em;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto;">
-      Seba remplace vos tableurs, votre agenda et vos relances par un seul outil. Créez un devis, planifiez une intervention, encaissez — sans jamais ressaisir.
+  <div style="position:relative;z-index:1;text-align:center;width:min(950px,90%);margin:0 auto;">
+    <div class="hero-badge">✨ Seba OS — Le poste de pilotage des entreprises de services</div>
+    <h1 class="hero-title">Clients. Plannings. Factures. <span class="hero-title-grad">Maîtrisez tout votre écosystème</span></h1>
+    <p class="hero-subtitle">
+      Fini l'enfer des tableurs éparpillés et des agendas papier. Centralisez vos interventions, automatisez vos relances et pilotez votre rentabilité depuis une interface unique, chirurgicale et assistée par IA.
     </p>
-    <a href="onboarding.html" class="btn-seba" style="padding:18px 52px;font-size:1rem;font-weight:700;">
-      Créer mon espace gratuit
-    </a>
-    <div style="margin-top:14px;font-size:.8rem;color:var(--t3);">Gratuit · 2 minutes · sans carte bancaire</div>
+    <a href="onboarding.html" class="cta-main">Créer mon espace gratuit</a>
+    <span class="cta-subtext">Gratuit · 2 minutes · sans carte bancaire</span>
   </div>
 </section>
 
@@ -976,10 +1059,8 @@ document.querySelectorAll('.feat-card,.hero-feat').forEach(card=>{
   });
 })();
 </script>
-<!-- Fond shader ambiant : Three.js via CDN (Constitution : zéro npm).
-     bg-shader.js lit les tokens de CETTE page (--ink/--em, palette marketing)
-     et dégrade silencieusement sans CDN/WebGL ou en reduced-motion. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="bg-shader.js"></script>
+<!-- Grille cinétique (spec Dual-Tone) : Canvas 2D vanilla, zéro dépendance —
+     remplace le shader Three.js sur cette page (-~150 Ko CDN). -->
+<script src="kinetic-grid.js"></script>
 </body>
 </html>
