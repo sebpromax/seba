@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Thème marketing sombre (même palette que index.html / onboarding.html) */
 :root{--em:#0D9488;--ink:#0a0a0c;--white:#FFFFFF;--t1:rgba(255,255,255,.85);--t2:rgba(255,255,255,.5);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;}
@@ -30,6 +31,14 @@ html.fx-on .code em{color:var(--em);animation:fxMorse 3.5s steps(1) infinite;}
 </style>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <meta name="theme-color" content="#0a0a0c">
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 <script>if(!navigator.webdriver&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.classList.add('fx-on');</script>

@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --em:#0D9488;--ink:#0a0a0c;--ink-r:#0b0f19;--t2:rgba(255,255,255,.45);--t3:rgba(255,255,255,.22);--bd:rgba(255,255,255,.1);--r:10px;--rs:8px;
@@ -125,7 +126,7 @@ a{color:inherit;text-decoration:none;}
 /* Ecran 2 — cartes de secteur (spec Mistral) */
 .sectors-grid{display:grid;grid-template-columns:1fr;gap:var(--spacing-4);margin-top:var(--spacing-6);}
 .sector-card{background:var(--ink);border:1px solid var(--bd);border-radius:var(--r);padding:var(--spacing-6);text-align:center;cursor:pointer;transition:all .3s cubic-bezier(.25,.8,.25,1);display:flex;flex-direction:column;align-items:center;gap:var(--spacing-2);font-family:inherit;}
-.sector-card .sector-icon{font-size:1.8rem;}
+.sector-card .sector-icon{font-size:var(--font-size-sm);font-weight:600;letter-spacing:.12em;color:var(--db-teal);}
 .sector-card .sector-name{font-size:var(--font-size-base);font-weight:600;color:var(--white);}
 .sector-card:hover{background:var(--hover-bg);border-color:var(--hover-border);}
 .sector-card:active{transform:scale(.98);}
@@ -157,6 +158,14 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
   <script src="auth.js" defer></script>
   <script src="sentry-init.js" defer></script>
   <script src="analytics-init.js" defer></script>
+<style>
+/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
+   pour gagner la cascade sur les styles de page. ── */
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h2,h3{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
+</style>
 </head>
 <body>
 <canvas id="gl-canvas" data-fx="tunnel" aria-hidden="true"></canvas>
@@ -165,9 +174,8 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
   <div class="sh-inner">
     <a href="index.html" class="sh-logo"><span class="sh-logo-dot"></span>Seba</a>
     <div class="sh-center">
-      <a href="product.html" class="sh-link-inline">Produit</a>
+      <a href="product.html" class="sh-link-inline">Fonctionnalités</a>
       <a href="tarifs.html" class="sh-link-inline">Tarifs</a>
-      <a href="faq.html" class="sh-link-inline">FAQ</a>
     </div>
     <div class="sh-right">
       <a href="connexion.html" class="sh-connexion">Connexion</a>
@@ -198,19 +206,19 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
       <h1 class="step-title">Quel est votre métier ?</h1>
       <div class="sectors-grid" id="sectors-grid">
         <button type="button" class="sector-card" data-sector="Nettoyage &amp; Entretien">
-          <span class="sector-icon">🧹</span>
+          <span class="sector-icon">01</span>
           <span class="sector-name">Nettoyage &amp; Entretien</span>
         </button>
         <button type="button" class="sector-card" data-sector="Conciergerie &amp; Accueil">
-          <span class="sector-icon">🔑</span>
+          <span class="sector-icon">02</span>
           <span class="sector-name">Conciergerie &amp; Accueil</span>
         </button>
         <button type="button" class="sector-card" data-sector="Artisans &amp; Maintenance">
-          <span class="sector-icon">🔧</span>
+          <span class="sector-icon">03</span>
           <span class="sector-name">Artisans &amp; Maintenance</span>
         </button>
         <button type="button" class="sector-card" data-sector="Autre activité">
-          <span class="sector-icon">✨</span>
+          <span class="sector-icon">04</span>
           <span class="sector-name">Autre activité</span>
         </button>
       </div>
