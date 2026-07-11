@@ -6,13 +6,14 @@
    - Assets statiques : Cache First, repli réseau + mise en cache.
    - Cross-origin (CDN fonts/D3/GSAP…) : passthrough réseau.
 ═══════════════════════════════════════════════════════════════ */
-const VERSION = 'seba-v1';
+const VERSION = 'seba-v2'; // v2 : page offline dediee + auth/guard/theme precaches
 const CORE = [
   './',
-  'index.html', 'connexion.html', 'onboarding.html',
+  'index.html', 'connexion.html', 'onboarding.html', 'offline.html',
   'dashboard.html', 'clients.html', 'planning.html', 'devis.html',
   'devis-nouveau.html', 'factures.html', 'equipe.html', 'reglages.html', 'historique.html',
   'pro-global.css', 'sidebar.js', 'businessTypes.js', 'widgets.js', 'seba-data.js',
+  'auth.js', 'guard.js', 'theme.js',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'favicon.jpg',
 ];
 
@@ -50,7 +51,10 @@ self.addEventListener('fetch', (e) => {
           return res;
         })
         .catch(() =>
-          caches.match(req).then((hit) => hit || caches.match('dashboard.html'))
+          // Repli : la page demandee si deja cachee, sinon la page offline
+          // dediee (servir dashboard.html a la place d'une page inconnue
+          // etait trompeur : l'utilisateur ne savait pas qu'il etait hors ligne).
+          caches.match(req).then((hit) => hit || caches.match('offline.html'))
         )
     );
     return;
