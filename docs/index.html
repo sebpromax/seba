@@ -34,6 +34,9 @@
   }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
+  /* Fond shader ambiant (bg-shader.js) : plein écran sous tout le contenu,
+     pointer-events:none pour ne jamais bloquer un clic (CTA, nav). */
+  #gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
   body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0c;color:#fff;-webkit-font-smoothing:antialiased;}
   a{color:inherit;text-decoration:none;}
 
@@ -325,6 +328,7 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
+<canvas id="gl-canvas" aria-hidden="true"></canvas>
 
 <!-- ══ NAVIGATION ══ -->
 <nav class="nav-wrap">
@@ -969,5 +973,10 @@ document.querySelectorAll('.feat-card,.hero-feat').forEach(card=>{
   });
 })();
 </script>
+<!-- Fond shader ambiant : Three.js via CDN (Constitution : zéro npm).
+     bg-shader.js lit les tokens de CETTE page (--ink/--em, palette marketing)
+     et dégrade silencieusement sans CDN/WebGL ou en reduced-motion. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="bg-shader.js"></script>
 </body>
 </html>

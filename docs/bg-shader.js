@@ -1,14 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════
-   BG-SHADER — fond ambiant WebGL du Cockpit (dashboard.html UNIQUEMENT,
-   thème Tactical Dark).
+   BG-SHADER — fond ambiant WebGL partagé.
+   - dashboard.html (Cockpit, Tactical Dark) : canvas #bg-shader,
+     tokens --bg / --emerald.
+   - index.html (landing, palette marketing) : canvas #gl-canvas,
+     tokens --ink / --em (#00ff88).
+   Le script lit les tokens de LA page hôte (chaîne de repli ci-dessous) :
+   chaque thème garde sa propre palette, jamais de fusion (charte SEBA).
 
    Vanilla JS + Three.js r128 chargé via CDN (global window.THREE) juste
    avant ce fichier — zéro npm, zéro bundler (Constitution SEBA).
 
    Couleurs : AUCUNE valeur en dur ici. Les deux teintes sont lues dans
-   les tokens :root à l'exécution (--bg, --emerald), donc l'accent
-   personnalisé (user_theme_color, appliqué par le script inline en tête
-   de <body> avant ce fichier) est automatiquement respecté.
+   les tokens :root à l'exécution, donc l'accent personnalisé
+   (user_theme_color sur le dashboard) est automatiquement respecté.
 
    Dégradation silencieuse — le fond reste simplement var(--bg) si :
    - le CDN Three.js n'a pas chargé (offline, QA en file://) ;
@@ -21,7 +25,7 @@
 (function () {
   'use strict';
 
-  var canvas = document.getElementById('bg-shader');
+  var canvas = document.getElementById('bg-shader') || document.getElementById('gl-canvas');
   if (!canvas || !window.THREE) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (navigator.webdriver) return;
@@ -38,9 +42,13 @@
   renderer.setClearColor(0x000000, 0);
 
   var styles = getComputedStyle(document.documentElement);
-  function token(name, fallback) {
-    var v = styles.getPropertyValue(name).trim();
-    return v || fallback;
+  // Chaîne de repli : premier token défini par la page hôte, sinon fallback.
+  function token(names, fallback) {
+    for (var i = 0; i < names.length; i++) {
+      var v = styles.getPropertyValue(names[i]).trim();
+      if (v) return v;
+    }
+    return fallback;
   }
 
   var uniforms = {
@@ -48,8 +56,8 @@
     // Volontairement bas : le fond ne doit jamais gêner la lecture des
     // métriques et des logs système du cockpit.
     intensity: { value: 0.3 },
-    color1:    { value: new THREE.Color(token('--bg', '#09090B')) },
-    color2:    { value: new THREE.Color(token('--emerald', '#10B981')) },
+    color1:    { value: new THREE.Color(token(['--bg', '--ink'], '#09090B')) },
+    color2:    { value: new THREE.Color(token(['--emerald', '--em'], '#10B981')) },
   };
 
   var material = new THREE.ShaderMaterial({
