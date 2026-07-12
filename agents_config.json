@@ -65,7 +65,6 @@
       "role": "Messages de commit, mise a jour de PROGRESS.md, case a cocher dans PLAN.md",
       "provider": "mistral",
       "model": "mistral-small-latest",
-      "$note_model": "Alternative : Haiku via l'API Anthropic (ANTHROPIC_API_KEY) si preferable pour la coherence avec le reste de la stack Claude.",
       "apiKeyEnvVar": "MISTRAL_API_KEY",
       "endpoint": "https://api.mistral.ai/v1/chat/completions"
     }
