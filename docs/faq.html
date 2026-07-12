@@ -96,7 +96,7 @@ p{letter-spacing:-0.02em;}
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
-  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
   <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
   <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
@@ -288,8 +288,8 @@ p{letter-spacing:-0.02em;}
 <footer style="border-top:1px solid var(--w-a05);padding:28px max(24px,calc((100vw - 1140px)/2));">
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
     <div style="display:flex;align-items:center;gap:8px;"><div class="nav-logo-dot"></div><span style="font-weight:700;letter-spacing:-0.02em;">Seba</span></div>
-    <p style="color:#4B5563;font-size:.78rem;flex:1;text-align:center;">© 2026 Seba — Propulsé pour la performance terrain.</p>
-    <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;"><a href="product.html">Produit</a><a href="tarifs.html">Tarifs</a><a href="connexion.html">Connexion</a><a href="politique-confidentialite.html">Confidentialité</a></div>
+    <p style="color:var(--footer-mute);font-size:.78rem;flex:1;text-align:center;">© 2026 Seba — Propulsé pour la performance terrain.</p>
+    <div style="display:flex;gap:20px;font-size:.78rem;color:var(--footer-mute);"><a href="product.html">Fonctionnalités</a><a href="tarifs.html">Tarifs</a><a href="connexion.html">Connexion</a><a href="politique-confidentialite.html">Confidentialité</a></div>
     <div style="display:flex;gap:20px;font-size:.78rem;opacity:.55;flex-wrap:wrap;"><a href="mentions-legales.html">Mentions légales</a><a href="cgu.html">CGU</a></div>
   </div>
 </footer>
@@ -309,7 +309,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a35:rgba(255,255,255,.35);}
+:root{--footer-mute:#4B5563;--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a35:rgba(255,255,255,.35);}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}

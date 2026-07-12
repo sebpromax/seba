@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
 <style>
-  :root{
+  :root{--em-bright:#14B8A6;
     /* ── Design system : couleurs ── */
     --em:#0D9488; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
     /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
@@ -29,15 +29,15 @@
     --fx-deep:#050507; --fx-deep2:#0b0f19; --fx-glint:#00C896; --fx-mist:#94A3B8;
     /* ── Dual-Tone Spectrum (spec fondateur 2026-07-11) : Bleu Abyssal /
        Cyan Émeraude — scopé hero + navigation + fond cinétique ── */
-    --db-blue:#1D4ED8; --db-teal:#0D9488; --pure-white:#FFFFFF;
+    --db-teal:#0D9488; --pure-white:#FFFFFF;
     --zinc-400:#A1A1AA; --zinc-500:#71717A; --zinc-600:#52525B;
     --zinc-700:#3F3F46; --zinc-800:#27272A; --zinc-900:#18181B; --zinc-950:#09090B;
     --badge-bg:rgba(255,255,255,.02); --badge-bd:rgba(255,255,255,.08); --badge-bd-hover:rgba(16,185,129,.3);
     --grid-node:rgba(63,63,70,.4);
-    --atmo-blue:rgba(29,78,216,.04); --atmo-teal:rgba(13,148,136,.04);
+    --atmo-glint:rgba(255,255,255,.03); --atmo-teal:rgba(13,148,136,.04);
     --cta-inset:rgba(255,255,255,.2); --cta-inset-h:rgba(255,255,255,.25);
-    --cta-sh-dark:rgba(0,0,0,.5); --cta-sh-blue:rgba(29,78,216,.15);
-    --cta-sh-blue-h:rgba(29,78,216,.4); --cta-sh-teal-h:rgba(13,148,136,.3);
+    --cta-sh-dark:rgba(0,0,0,.5); --cta-glow:rgba(13,148,136,.18);
+    --cta-glow-h:rgba(13,148,136,.4); --cta-sh-teal-h:rgba(13,148,136,.3);
     --cta-act-in:rgba(0,0,0,.6); --cta-act-in2:rgba(0,0,0,.2);
     --pulse-from:rgba(13,148,136,.7); --pulse-to:rgba(13,148,136,0);
     /* ── Échelle d'espacement (base 4px) ── */
@@ -63,7 +63,7 @@
   body::after{
     content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
     background:
-      radial-gradient(circle at 20% 30%, var(--atmo-blue) 0%, transparent 50%),
+      radial-gradient(circle at 20% 30%, var(--atmo-glint) 0%, transparent 50%),
       radial-gradient(circle at 80% 70%, var(--atmo-teal) 0%, transparent 50%);
     will-change:transform;transform:translateZ(0);
   }
@@ -117,7 +117,8 @@
   .hero-title-grad{color:var(--pure-white);} /* fallback moteurs sans clip:text */
   @supports((-webkit-background-clip:text) or (background-clip:text)){
     .hero-title-grad{
-      background:linear-gradient(135deg,var(--db-blue) 0%,var(--db-teal) 100%);
+      /* Spec pivot émeraude : Blanc Pur 30% -> Vert Émeraude 100% */
+      background:linear-gradient(to right,var(--pure-white) 30%,var(--db-teal) 100%);
       -webkit-background-clip:text;background-clip:text;
       -webkit-text-fill-color:transparent;color:transparent;
     }
@@ -130,14 +131,14 @@
     padding:16px 32px;font-size:16px;font-weight:600;border-radius:8px;
     display:inline-flex;align-items:center;justify-content:center;
     border:none;cursor:pointer;position:relative;isolation:isolate;overflow:hidden;
-    background:linear-gradient(135deg,var(--db-blue) 0%,var(--db-teal) 100%);
+    background:linear-gradient(135deg,var(--em-bright) 0%,var(--db-teal) 100%);
     color:var(--pure-white);
-    box-shadow:inset 0 1px 0 var(--cta-inset),0 1px 3px var(--cta-sh-dark),0 4px 12px var(--cta-sh-blue);
+    box-shadow:inset 0 1px 0 var(--cta-inset),0 1px 3px var(--cta-sh-dark),0 4px 12px var(--cta-glow);
     transition:transform 0.4s cubic-bezier(0.16,1,0.3,1),box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
   }
   .cta-main:hover{
     transform:translateY(-2px) scale(1.01);
-    box-shadow:inset 0 1px 0 var(--cta-inset-h),0 12px 24px var(--cta-sh-blue-h),0 0 30px var(--cta-sh-teal-h);
+    box-shadow:inset 0 1px 0 var(--cta-inset-h),0 12px 24px var(--cta-glow-h),0 0 30px var(--cta-sh-teal-h);
   }
   .cta-main:active{
     transform:translateY(1px) scale(0.97);
@@ -180,7 +181,7 @@
     padding:28px 24px;
     transition:border-color .25s,transform .25s;
   }
-  .feat-card:hover{border-color:var(--db-blue);transform:translateY(-3px);} /* illumination Bleu Abyssal */
+  .feat-card:hover{border-color:var(--db-teal);transform:translateY(-3px);} /* illumination Bleu Abyssal */
   .feat-icon{
     width:44px;height:44px;border-radius:10px;
     background:var(--dt-a08);border:1px solid var(--dt-a15);
@@ -393,7 +394,7 @@
   .feat-card{position:relative;overflow:hidden;}
   .feat-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--fcx,50%) var(--fcy,50%),var(--dt-a05) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
   .can-animate .feat-card:hover::before{opacity:1;}
-  .can-animate .feat-card:hover{border-color:var(--db-blue);transform:translateY(-4px);}
+  .can-animate .feat-card:hover{border-color:var(--db-teal);transform:translateY(-4px);}
 
   /* ── Hero stats row — count-up shimmer ── */
   @keyframes shimmer{0%,100%{opacity:.8}50%{opacity:1}}
@@ -870,7 +871,7 @@ p{letter-spacing:-0.02em;}
       © 2026 Seba — Conçu pour les entreprises de services.
     </p>
     <div style="display:flex;gap:20px;font-size:.78rem;color:#718096;">
-      <a href="product.html">Produit</a>
+      <a href="product.html">Fonctionnalités</a>
       <a href="tarifs.html">Tarifs</a>
       <a href="faq.html">FAQ</a>
       <a href="connexion.html">Connexion</a>
