@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solutions — Seba</title>
+<title>Fonctionnalités — Seba</title>
 <meta name="description" content="Découvrez les modules Seba : clients, devis, factures, planning et équipe — tout le quotidien d'une entreprise de services dans un seul outil.">
 <link rel="canonical" href="https://sebpromax.github.io/seba/product.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Seba">
-<meta property="og:title" content="Solutions — Seba">
+<meta property="og:title" content="Fonctionnalités — Seba">
 <meta property="og:description" content="Découvrez les modules Seba : clients, devis, factures, planning et équipe — tout le quotidien d'une entreprise de services dans un seul outil.">
 <meta property="og:url" content="https://sebpromax.github.io/seba/product.html">
 <meta property="og:image" content="https://sebpromax.github.io/seba/icon-512.png">
@@ -111,7 +111,7 @@ p{letter-spacing:-0.02em;}
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link active">Produit</a>
+    <a href="product.html" class="nav-link active">Fonctionnalités</a>
     <a href="tarifs.html"    class="nav-link">Tarifs</a>
   </div>
   <div class="nav-right">
@@ -121,7 +121,7 @@ p{letter-spacing:-0.02em;}
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
-  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
   <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
   <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
@@ -133,7 +133,7 @@ p{letter-spacing:-0.02em;}
 <section style="position:relative;overflow:hidden;padding-top:160px;padding-bottom:80px;padding-left:max(24px,calc((100vw - 1140px)/2));padding-right:max(24px,calc((100vw - 1140px)/2));text-align:center;">
   <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:min(800px,100vw);height:500px;pointer-events:none;background:radial-gradient(ellipse at 50% -20%,var(--dt-a10) 0%,transparent 70%);"></div>
   <div style="position:relative;z-index:1;max-width:700px;margin:0 auto;">
-    <div class="badge-glow reveal" style="margin-bottom:24px;">L'Approche Seba</div>
+    <div class="badge-glow reveal" style="margin-bottom:24px;">Fonctionnalités</div>
     <h1 class="reveal" style="font-size:clamp(2.4rem,6vw,4.5rem);font-weight:900;letter-spacing:-0.04em;line-height:1.06;margin-bottom:20px;">
       <span class="headline-gradient">Reprenez le contrôle<br>de votre activité.</span>
     </h1>
@@ -338,8 +338,8 @@ p{letter-spacing:-0.02em;}
 <footer style="border-top:1px solid var(--w-a05);padding:28px max(24px,calc((100vw - 1140px)/2));">
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
     <div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);"></div><span style="font-weight:700;letter-spacing:-0.02em;">Seba</span></div>
-    <p style="color:#4B5563;font-size:.78rem;text-align:center;flex:1;">© 2026 Seba — Propulsé pour la performance terrain.</p>
-    <div style="display:flex;gap:20px;font-size:.78rem;color:#4B5563;">
+    <p style="color:var(--footer-mute);font-size:.78rem;text-align:center;flex:1;">© 2026 Seba — Propulsé pour la performance terrain.</p>
+    <div style="display:flex;gap:20px;font-size:.78rem;color:var(--footer-mute);">
       <a href="tarifs.html">Tarifs</a>
       <a href="faq.html">FAQ</a>
       <a href="connexion.html">Connexion</a>
@@ -398,7 +398,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 
 <!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
 <style>
-:root{--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;--db-blue:#1D4ED8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a80:rgba(13,148,136,0.8);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
+:root{--footer-mute:#4B5563;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a80:rgba(13,148,136,0.8);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
 #gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
