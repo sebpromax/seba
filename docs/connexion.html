@@ -77,8 +77,8 @@ input,button{font-family:'Inter',sans-serif;}
 /* Lave : trois nappes emeraude floutees qui derivent lentement, clippees
    par overflow:hidden du parent. mix-blend-mode:screen additionne les
    teintes aux croisements (effet magma) sans jamais eclaircir vers le blanc. */
-.card-lava{position:absolute;inset:-60px;z-index:0;filter:blur(46px);pointer-events:none;}
-.card-lava span{position:absolute;border-radius:50%;opacity:.65;mix-blend-mode:screen;}
+.card-lava{position:absolute;inset:-60px;z-index:0;pointer-events:none;}
+.card-lava span{position:absolute;border-radius:50%;opacity:.65;mix-blend-mode:screen;filter:blur(40px);will-change:transform;}
 .card-lava span:nth-child(1){width:220px;height:220px;left:-50px;top:-40px;background:var(--lava-1);animation:lavaDrift1 9s ease-in-out infinite;}
 .card-lava span:nth-child(2){width:190px;height:190px;right:-60px;top:80px;background:var(--lava-2);animation:lavaDrift2 11s ease-in-out infinite;}
 .card-lava span:nth-child(3){width:210px;height:210px;left:25%;bottom:-90px;background:var(--lava-3);animation:lavaDrift3 13s ease-in-out infinite;}
