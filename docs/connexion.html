@@ -20,7 +20,7 @@
 <style>
 /* Premier :root de cette page (dette historique : tout etait en dur) —
    n'accueille pour l'instant que les tokens Encre Vivante (SebaFX). */
-:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);}
+:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 #gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
@@ -57,15 +57,14 @@ input,button{font-family:'Inter',sans-serif;}
 /* ── Page layout ── */
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
 
-/* ── Carte glassmorphism dark ── */
+/* ── Carte opaque (isole le fluide de fond) + lave interne ── */
 .card{
-  background:var(--w-a03);
+  background:var(--card-base);
   border:1px solid var(--w-a08);
   border-radius:20px;
   padding:40px;
   width:100%;max-width:400px;
-  backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
-  position:relative;overflow:hidden;
+  position:relative;overflow:hidden;isolation:isolate;
   box-shadow:0 32px 80px var(--blk-a40);
 }
 .card::before{
@@ -73,7 +72,23 @@ input,button{font-family:'Inter',sans-serif;}
   width:280px;height:180px;
   background:radial-gradient(ellipse,var(--dt-a08) 0%,transparent 70%);
   pointer-events:none;
+  z-index:1;
 }
+/* Lave : trois nappes emeraude floutees qui derivent lentement, clippees
+   par overflow:hidden du parent. mix-blend-mode:screen additionne les
+   teintes aux croisements (effet magma) sans jamais eclaircir vers le blanc. */
+.card-lava{position:absolute;inset:-60px;z-index:0;filter:blur(46px);pointer-events:none;}
+.card-lava span{position:absolute;border-radius:50%;opacity:.6;mix-blend-mode:screen;}
+.card-lava span:nth-child(1){width:220px;height:220px;left:-50px;top:-40px;background:var(--lava-1);animation:lavaDrift1 18s ease-in-out infinite;}
+.card-lava span:nth-child(2){width:190px;height:190px;right:-60px;top:80px;background:var(--lava-2);animation:lavaDrift2 22s ease-in-out infinite;}
+.card-lava span:nth-child(3){width:210px;height:210px;left:25%;bottom:-90px;background:var(--lava-3);animation:lavaDrift3 26s ease-in-out infinite;}
+@keyframes lavaDrift1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(50px,35px) scale(1.15);}66%{transform:translate(-15px,55px) scale(.9);}}
+@keyframes lavaDrift2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-55px,-30px) scale(1.2);}}
+@keyframes lavaDrift3{0%,100%{transform:translate(0,0) scale(1);}40%{transform:translate(35px,-45px) scale(1.1);}80%{transform:translate(-30px,-10px) scale(.95);}}
+@media (prefers-reduced-motion: reduce){
+  .card-lava span{animation:none;}
+}
+.card>*:not(.card-lava){position:relative;z-index:1;}
 
 .card-logo{display:flex;align-items:center;gap:8px;margin-bottom:28px;}
 .card-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
@@ -202,6 +217,7 @@ p{letter-spacing:-0.02em;}
 <!-- ── Formulaire ── -->
 <div class="page">
   <div class="card" style="position:relative;z-index:1;">
+    <div class="card-lava" aria-hidden="true"><span></span><span></span><span></span></div>
 
     <div class="card-logo">
       <div class="card-logo-dot"></div>
