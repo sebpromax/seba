@@ -52,7 +52,7 @@
     --shadow-md:0 4px 16px rgba(0,0,0,.3);
     --shadow-lg:0 16px 48px rgba(0,0,0,.45);
     --shadow-glow:0 0 28px rgba(13,148,136,.45),0 0 60px rgba(13,148,136,.18);
-  --dt-a00:rgba(13,148,136,0);--dt-a03:rgba(13,148,136,0.03);--dt-a05:rgba(13,148,136,0.05);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a22:rgba(13,148,136,0.22);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a40:rgba(13,148,136,0.4);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--mist:#94A3B8;--blk-a20:rgba(0,0,0,.2);--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--w-a40:rgba(255,255,255,.4);--dt-deep:#12332E;--dt-glass:rgba(4,47,42,.4);--surface-2:#111115;--nav-bg:rgba(10,10,12,.88);--blk-a35:rgba(0,0,0,.35);--blk-a40:rgba(0,0,0,.4);--w-a025:rgba(255,255,255,.025);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a16:rgba(255,255,255,.16);--w-a35:rgba(255,255,255,.35);--deep-2:#0d0f12;--dt-tint:#CCFBF1;--blk-a06:rgba(0,0,0,.06);--slate-200:#E2E8F0;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;}
+  --dt-a00:rgba(13,148,136,0);--dt-a03:rgba(13,148,136,0.03);--dt-a05:rgba(13,148,136,0.05);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a22:rgba(13,148,136,0.22);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a40:rgba(13,148,136,0.4);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--mist:#94A3B8;--blk-a20:rgba(0,0,0,.2);--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--w-a40:rgba(255,255,255,.4);--dt-deep:#12332E;--dt-glass:rgba(4,47,42,.4);--surface-2:#111115;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--blk-a35:rgba(0,0,0,.35);--blk-a40:rgba(0,0,0,.4);--w-a025:rgba(255,255,255,.025);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a16:rgba(255,255,255,.16);--w-a35:rgba(255,255,255,.35);--deep-2:#0d0f12;--dt-tint:#CCFBF1;--blk-a06:rgba(0,0,0,.06);--slate-200:#E2E8F0;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;}
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   /* ── Grille cinétique (kinetic-grid.js, spec Dual-Tone) : remplace le
@@ -265,23 +265,27 @@
 
   .mobile-menu{
     position:fixed;inset:0;z-index:202;
-    background:rgba(10,10,12,.98);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    background:var(--mob-overlay-bg);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+    padding:32px 24px;
     opacity:0;pointer-events:none;transition:opacity .3s ease;
   }
   .mobile-menu.open{opacity:1;pointer-events:auto;}
+  .mob-brand{display:flex;align-items:center;gap:8px;font-size:1.35rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:8px;}
+  .mob-brand-dot{width:9px;height:9px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
   .mob-link{
-    font-size:clamp(2rem,8vw,3rem);font-weight:900;letter-spacing:-0.04em;
-    color:rgba(255,255,255,.85);padding:10px 24px;transition:color .2s;
+    font-size:clamp(1.7rem,7vw,2.3rem);font-weight:800;letter-spacing:-0.03em;
+    color:var(--w-a85);padding:6px 24px;transition:color .2s;
     width:100%;text-align:center;display:block;
   }
   .mob-link:hover,.mob-link:active{color:var(--db-teal);}
-  .mob-sep{width:48px;height:1px;background:var(--w-a10);margin:16px 0;}
+  .mob-sep{width:48px;height:1px;background:var(--w-a10);margin:4px 0;}
   .mob-conn{
-    font-size:1rem;color:var(--w-a70);padding:10px 24px;transition:color .2s;
+    font-size:1.05rem;font-weight:600;color:var(--w-a85);padding:6px 24px;transition:color .2s;
     display:block;text-align:center;
   }
-  .mob-conn:hover,.mob-conn:active{color:var(--pure-white);}
+  .mob-conn:hover,.mob-conn:active{color:var(--db-teal);}
+  .mob-cta{width:100%;max-width:280px;padding:14px 24px !important;font-size:1rem;margin-top:4px;justify-content:center;text-align:center;}
   .mob-close{
     position:absolute;top:24px;right:24px;
     background:var(--w-a08);border:1px solid var(--w-a12);border-radius:50%;
@@ -295,7 +299,7 @@
   #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a30);box-shadow:0 0 14px var(--dt-a30);will-change:transform;transition:opacity .3s;}
   @media(hover:none){#cursor-trail{display:none;}}
 
-  .can-animate body{animation:pgFadeIn .35s ease both;}
+  .can-animate body{animation:pgFadeIn .35s ease;}
   @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
   /* Conteneur fluide — utilisé dans toutes les sections */
@@ -449,12 +453,12 @@ p{letter-spacing:-0.02em;}
 
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
-  <a href="index.html"   class="mob-link" onclick="closeMobileMenu()">Accueil</a>
+  <div class="mob-brand"><span class="mob-brand-dot"></span>Seba</div>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
   <a href="tarifs.html"  class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"     class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba" style="margin-top:20px;padding:14px 40px;font-size:1rem;" onclick="closeMobileMenu()">Créer mon espace gratuit</a>
+  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Créer mon espace</a>
 </div>
 
 
