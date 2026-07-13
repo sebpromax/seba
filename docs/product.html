@@ -27,6 +27,7 @@
   })();
 </script>
 <style>
+#kinetic-grid{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;contain:strict;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;animation:pgFadeIn .35s ease both;}
@@ -105,7 +106,7 @@ p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
-<canvas id="gl-canvas" data-fx="landing" data-intensity="0.3" aria-hidden="true"></canvas>
+<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <!-- Nav -->
 <nav class="nav-wrap">
@@ -399,9 +400,8 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 <!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
 <style>
 :root{--em-bright:#14B8A6;--footer-mute:#4B5563;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a80:rgba(13,148,136,0.8);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
-#gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="bg-shader.js"></script>
+<!-- Grille cinétique (kinetic-grid.js) : Canvas 2D vanilla, zéro dépendance. -->
+<script src="kinetic-grid.js"></script>
 </body>
 </html>

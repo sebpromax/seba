@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+#kinetic-grid{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;contain:strict;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;animation:pgFadeIn .35s ease both;}
@@ -116,6 +117,7 @@ p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
+<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
@@ -384,5 +386,7 @@ html.fx-on .price-card.fx-picked{animation:fxPick .7s ease-out 1;}
   });
 })();
 </script>
+<!-- Grille cinétique (kinetic-grid.js) : Canvas 2D vanilla, zéro dépendance. -->
+<script src="kinetic-grid.js"></script>
 </body>
 </html>
