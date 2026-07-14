@@ -67,6 +67,9 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   background: var(--emerald);
   flex-shrink: 0;
 }
+/* "Se" gras / "ba" fin -- meme traitement que le logo marketing (PR #74). */
+.logo-se { font-weight: 800; color: var(--ink); }
+.logo-ba { font-weight: 300; color: var(--text-2); }
 
 /* ── Reset d'état du menu (Design System, IV) ────────────────────────────────
    Une seule source de vérité pour le box model du menu : repos, survol,
