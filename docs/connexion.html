@@ -20,7 +20,7 @@
 <style>
 /* Premier :root de cette page (dette historique : tout etait en dur) —
    n'accueille pour l'instant que les tokens Encre Vivante (SebaFX). */
-:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;}
+:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a08:rgba(255,100,100,.08);--btn-ink-a30:rgba(5,5,8,.3);}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 #gl-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block;}
@@ -121,6 +121,18 @@ input,button{font-family:'Inter',sans-serif;}
 .field input::placeholder{color:rgba(255,255,255,.2);}
 .field input:focus{border-color:var(--dt-a50);background:var(--dt-a04);outline:none;}
 
+/* Validation temps reel : bordure rouge + message inline, sans toucher
+   au flux Supabase (handleLogin reste seul responsable de la soumission). */
+.field.has-error input{border-color:var(--err) !important;box-shadow:0 0 0 3px var(--err-a08);}
+.field-error{font-size:.76rem;color:var(--err);margin-top:2px;display:none;}
+.field.has-error .field-error{display:block;}
+@keyframes cardShake{
+  0%,100%{transform:translateX(0);}
+  25%{transform:translateX(-6px);}
+  75%{transform:translateX(6px);}
+}
+.card.shake{animation:cardShake .32s ease;}
+
 .field-pw-wrap{position:relative;}
 .field-pw-wrap input{width:100%;padding-right:42px;}
 .toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:10;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--w-a40);transition:color .2s;}
@@ -158,6 +170,9 @@ input:-webkit-autofill:active {
 .btn-connect:hover{box-shadow:0 0 28px var(--dt-a45);transform:translateY(-2px);}
 .btn-connect:active{transform:none;}
 .btn-connect:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-spinner{width:15px;height:15px;border:2px solid var(--btn-ink-a30);border-top-color:var(--btn-ink);border-radius:50%;animation:btnSpin .7s linear infinite;display:none;flex-shrink:0;}
+.btn-connect.loading .btn-spinner{display:block;}
+@keyframes btnSpin{to{transform:rotate(360deg);}}
 
 .divider{border:none;border-top:1px solid rgba(255,255,255,.07);margin:22px 0;}
 
@@ -244,12 +259,13 @@ p{letter-spacing:-0.02em;}
     <div class="success-msg" id="success-msg">Compte créé — vérifiez vos e-mails et cliquez sur le lien de confirmation avant de vous connecter.</div>
     <div class="error-msg" id="error-msg">Adresse e-mail ou mot de passe incorrect.</div>
 
-    <div class="field">
+    <div class="field" id="email-field">
       <label for="email">Adresse e-mail</label>
       <input type="email" id="email" placeholder="vous@entreprise.com" autocomplete="email">
+      <div class="field-error" id="email-field-error">Format d'adresse e-mail invalide.</div>
     </div>
 
-    <div class="field">
+    <div class="field" id="password-field">
       <label for="password">Mot de passe</label>
       <div class="field-pw-wrap">
         <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
@@ -258,11 +274,15 @@ p{letter-spacing:-0.02em;}
           <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
         </button>
       </div>
+      <div class="field-error" id="password-field-error">Le mot de passe doit faire au moins 6 caractères.</div>
     </div>
 
     <div class="forgot"><a href="reset-password.html">Mot de passe oublié ?</a></div>
 
-    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">Se connecter</button>
+    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">
+      <span class="btn-spinner" id="btn-spinner"></span>
+      <span id="btn-connect-text">Se connecter</span>
+    </button>
 
     <hr class="divider">
 
@@ -280,18 +300,50 @@ p{letter-spacing:-0.02em;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="bg-shader.js"></script>
 <script>
+/* Validation temps reel : purement visuelle (bordure + message inline),
+   n'intervient jamais dans l'appel Supabase -- handleLogin() reste seul
+   juge de ce qui part vers sebaAuth.signIn(). */
+function isValidEmailFormat(v){return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);}
+function isValidPasswordLength(v){return v.length>=6;}
+function setFieldError(fieldId,valid){document.getElementById(fieldId).classList.toggle('has-error',!valid);}
+
+document.getElementById('email').addEventListener('input',function(){
+  if(isValidEmailFormat(this.value.trim())||this.value===''){setFieldError('email-field',true);}
+});
+document.getElementById('password').addEventListener('input',function(){
+  if(isValidPasswordLength(this.value)||this.value===''){setFieldError('password-field',true);}
+});
+
+function shakeCard(){
+  const card=document.querySelector('.card');
+  card.classList.remove('shake');
+  void card.offsetWidth; // relance l'animation meme si deja jouee
+  card.classList.add('shake');
+}
+
 async function handleLogin(){
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
   const err=document.getElementById('error-msg');
-  if(!email||!password){
-    err.textContent='Merci de renseigner votre e-mail et votre mot de passe.';
-    err.classList.add('visible');
+
+  const emailOk=email!==''&&isValidEmailFormat(email);
+  const passwordOk=password!==''&&isValidPasswordLength(password);
+  setFieldError('email-field',emailOk);
+  setFieldError('password-field',passwordOk);
+  if(!emailOk||!passwordOk){
+    shakeCard();
+    if(!email||!password){
+      err.textContent='Merci de renseigner votre e-mail et votre mot de passe.';
+      err.classList.add('visible');
+    }
     return;
   }
   err.classList.remove('visible');
+
   const btn=document.getElementById('btn-connect');
-  btn.textContent='Connexion…';
+  const btnText=document.getElementById('btn-connect-text');
+  btn.classList.add('loading');
+  btnText.textContent='Connexion…';
   btn.disabled=true;
   const res=await sebaAuth.signIn(email,password);
   if(res.ok){
@@ -302,7 +354,9 @@ async function handleLogin(){
   }else{
     err.textContent=res.error==='Invalid login credentials'?'Identifiants incorrects.':(res.error||'Connexion impossible — réessayez.');
     err.classList.add('visible');
-    btn.textContent='Se connecter';
+    shakeCard();
+    btn.classList.remove('loading');
+    btnText.textContent='Se connecter';
     btn.disabled=false;
   }
 }
