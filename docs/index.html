@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
 <style>
-  :root{--em-bright:#14B8A6;
+  :root{--em-bright:#14B8A6;--footer-mute:#718096;
     /* ── Design system : couleurs ── */
     --em:#0D9488; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
     /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
@@ -57,7 +57,7 @@
   html{scroll-behavior:smooth;}
   /* ── Grille cinétique (kinetic-grid.js, spec Dual-Tone) : remplace le
      shader fluide sur CETTE page. contain:strict isole le layout/paint. ── */
-  #kinetic-grid{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;contain:strict;background:var(--zinc-950);}
+  #kinetic-grid{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;contain:strict;background:var(--zinc-950);}
   /* Chrominance des profondeurs : deux halos radiaux au-dessus de la grille
      (body::after paint APRES le canvas enfant — un seul pseudo, deux fonds). */
   body::after{
@@ -561,7 +561,7 @@ p{letter-spacing:-0.02em;}
 
     <div class="glass" style="padding:28px;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.08) 0%,transparent 70%);pointer-events:none;"></div>
-      <div style="font-size:.7rem;color:#718096;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Sans Seba — Une journée ordinaire</div>
+      <div style="font-size:.7rem;color:var(--footer-mute);margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Sans Seba — Une journée ordinaire</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:.82rem;color:var(--w-a70);">"Vous avez reçu mon devis ?" (3ème relance)</span>
@@ -873,10 +873,10 @@ p{letter-spacing:-0.02em;}
       <div class="nav-logo-dot"></div>
       <span style="font-weight:700;letter-spacing:-0.02em;"><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></span>
     </div>
-    <p style="color:#718096;font-size:.78rem;text-align:center;flex:1;">
+    <p style="color:var(--footer-mute);font-size:.78rem;text-align:center;flex:1;">
       © 2026 Seba — Conçu pour les entreprises de services.
     </p>
-    <div style="display:flex;gap:20px;font-size:.78rem;color:#718096;">
+    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:.78rem;color:var(--footer-mute);">
       <a href="product.html">Fonctionnalités</a>
       <a href="tarifs.html">Tarifs</a>
       <a href="faq.html">FAQ</a>
