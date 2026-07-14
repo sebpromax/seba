@@ -105,7 +105,7 @@ function saveSig(){
 function renderSigs(){
   document.getElementById('sig-saved-list').innerHTML=sigs.slice(-3).reverse().map(s=>`
     <div class="flex items-center gap-4 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3">
-      <img src="${s.img}" class="h-10 bg-slate-800 rounded" style="max-width:120px;filter:invert(1) hue-rotate(120deg);">
+      <img src="${s.img}" alt="Signature de ${String(s.client||'').replace(/"/g,'&quot;')}" class="h-10 bg-slate-800 rounded" style="max-width:120px;filter:invert(1) hue-rotate(120deg);">
       <div><div class="text-xs font-bold text-slate-200">${s.client}</div><div class="text-3xs text-slate-500 font-mono">${s.date} · ${s.context||'—'}</div></div>
       <span class="ml-auto text-emerald-400 text-2xs font-bold font-mono">✓ SIGNÉ</span>
     </div>`).join('');

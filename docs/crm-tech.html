@@ -158,7 +158,7 @@ function selectClient(id){
       <div>
         <div class="text-2xs font-bold text-slate-400 uppercase font-mono mb-2">Photos Chantier</div>
         <div class="flex gap-2 flex-wrap" id="photos-${c.id}">
-          ${c.photos.map(p=>`<div class="h-16 w-16 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden"><img src="${p}" class="w-full h-full object-cover"></div>`).join('')}
+          ${c.photos.map(p=>`<div class="h-16 w-16 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden"><img src="${p}" alt="Photo chantier - ${esc(c.nom)}" class="w-full h-full object-cover"></div>`).join('')}
           <label class="h-16 w-16 bg-slate-900 border border-dashed border-slate-700 rounded-lg flex items-center justify-center cursor-pointer text-slate-600 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors text-xl">
             📷<input type="file" accept="image/*" class="hidden" onchange="addPhoto('${c.id}',this)">
           </label>
@@ -207,7 +207,7 @@ function addPhoto(id,input){
     SebaStorage.write('crm_clients',clients);
     const zone=document.getElementById('photos-'+id);
     const img=document.createElement('div');img.className='h-16 w-16 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden';
-    img.innerHTML=`<img src="${e.target.result}" class="w-full h-full object-cover">`;
+    img.innerHTML=`<img src="${e.target.result}" alt="Photo chantier - ${esc(c.nom)}" class="w-full h-full object-cover">`;
     zone.insertBefore(img,zone.lastElementChild);
   };
   reader.readAsDataURL(file);
