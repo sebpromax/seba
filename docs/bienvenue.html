@@ -34,6 +34,7 @@ input,button{font-family:'Inter',sans-serif;}
 .nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
 .nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em-glow);}
+.logo-se{font-weight:800;color:var(--white);}.logo-ba{font-weight:300;color:var(--t2);}
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
 .card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:20px;padding:40px;width:100%;max-width:400px;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);position:relative;overflow:hidden;box-shadow:0 32px 80px var(--card-shadow);}
 .card::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:280px;height:180px;background:radial-gradient(ellipse,var(--em-halo) 0%,transparent 70%);pointer-events:none;}
@@ -74,7 +75,7 @@ p{letter-spacing:-0.02em;}
 <canvas id="gl-canvas" data-fx="tunnel" aria-hidden="true"></canvas>
 
 <nav class="nav-wrap">
-  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span class="logo-se">Se</span><span class="logo-ba">ba</span></a>
 </nav>
 
 <div class="page">
