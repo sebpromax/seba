@@ -33,6 +33,7 @@ input,button{font-family:'Inter',sans-serif;}
 .nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
 .nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;justify-self:start;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
+.logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
 .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
 .nav-link{font-size:.88rem;color:rgba(255,255,255,.5);font-weight:500;transition:color .2s;}
 .nav-link:hover{color:var(--pure-white);}
@@ -214,7 +215,7 @@ p{letter-spacing:-0.02em;}
 
 <!-- ── Navigation ── -->
 <nav class="nav-wrap">
-  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span class="logo-se">Se</span><span class="logo-ba">ba</span></a>
   <div class="nav-center">
     <a href="product.html" class="nav-link">Fonctionnalités</a>
     <a href="tarifs.html"    class="nav-link">Tarifs</a>
@@ -229,7 +230,7 @@ p{letter-spacing:-0.02em;}
 
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
-  <div class="mob-brand"><span class="mob-brand-dot"></span>Seba</div>
+  <div class="mob-brand"><span class="mob-brand-dot"></span><span class="logo-se">Se</span><span class="logo-ba">ba</span></div>
   <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
   <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
   <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
