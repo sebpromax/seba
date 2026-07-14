@@ -61,12 +61,6 @@ input,button{font-family:'Inter',sans-serif;}
 .btn-seba{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--db-teal);color:var(--btn-ink);font-weight:700;border-radius:12px;transition:box-shadow .25s,transform .2s;}
 .btn-seba:hover{box-shadow:0 0 28px var(--dt-a45);transform:translateY(-2px);}
 
-/* Fermeture de la carte -> retour accueil (meme style que .mob-close). */
-.card-close{position:absolute;top:16px;right:16px;background:var(--w-a08);border:1px solid var(--w-a08);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--w-a70);cursor:pointer;transition:background .2s,color .2s,transform .2s;z-index:2;}
-.card-close:hover{background:var(--w-a35);color:var(--pure-white);transform:rotate(90deg);}
-.card-close:active{transform:scale(.9);}
-.card-close svg{width:16px;height:16px;}
-
 /* ── Page layout ── */
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
 
@@ -251,14 +245,6 @@ p{letter-spacing:-0.02em;}
 <div class="page">
   <div class="card" style="position:relative;z-index:1;">
     <div class="card-lava" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-    <a href="index.html" class="card-close" aria-label="Retour à l'accueil" title="Retour à l'accueil">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </a>
-
-    <div class="card-logo">
-      <div class="card-logo-dot"></div>
-      <div class="card-logo-text">Seba</div>
-    </div>
 
     <div class="card-head">
       <h1>Connexion</h1>
