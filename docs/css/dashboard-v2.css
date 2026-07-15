@@ -1,0 +1,76 @@
+/* dashboard-v2.css — Seba
+ * Squelette layout du dashboard "cockpit" V2 (voir
+ * _architecture/DASHBOARD_V2_MASTER_PLAN.md, Phase 1).
+ *
+ * Isolation stricte : uniquement des sélecteurs de classe préfixés .v2-,
+ * jamais de sélecteur d'élément nu ni d'id partagé avec pro-global.css.
+ * Ce fichier peut être retiré du <head> sans effet sur le dashboard V1 —
+ * le squelette V2 vit dans un bloc DOM séparé (#v2-dashboard-skeleton),
+ * masqué par défaut via un style inline indépendant de ce fichier.
+ *
+ * Palette : neutre/provisoire tant que la décision de charte (violet V2 vs
+ * Tactical Dark Absolu) n'est pas tranchée par le fondateur — voir §0 du
+ * master plan. Ne pas coder en dur la palette violette avant cet arbitrage.
+ */
+
+:root {
+  /* Tokens de squelette V2 — placeholders uniquement (Phase 1). Palette
+   * provisoire, distincte de --bg/--emerald (Tactical Dark Absolu) et de
+   * pro-global.css : la charte V2 définitive (violet #7C5CFC vs existant)
+   * est un arbitrage fondateur en attente (voir master plan §0). */
+  --v2-placeholder-bg: #181A20;
+  --v2-placeholder-border: rgba(255, 255, 255, 0.24);
+  --v2-placeholder-text: rgba(255, 255, 255, 0.4);
+}
+
+.v2-dashboard-wrapper {
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.v2-grid-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.v2-grid-container * {
+  box-sizing: border-box;
+}
+
+/* Placeholder de zone — fond très sombre, bordure en pointillé, label
+ * centré et discret. Chaque zone occupe la largeur totale de la grille
+ * (12/12) au stade squelette ; le partage en sous-colonnes (ex. Aujourd'hui
+ * en blocs 5/4/3) arrive en Phase 2 avec le contenu réel. */
+.v2-zone {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v2-placeholder-bg);
+  border: 1px dashed var(--v2-placeholder-border);
+  border-radius: 14px;
+  color: var(--v2-placeholder-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.v2-header {
+  min-height: 72px;
+}
+
+.v2-bandeau-priorite {
+  min-height: 72px;
+}
+
+.v2-zone-traitement {
+  min-height: 160px;
+}
+
+.v2-zone-activite {
+  min-height: 240px;
+}

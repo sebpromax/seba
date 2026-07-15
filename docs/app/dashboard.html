@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../pro-global.css">
+<!-- Squelette V2 (Phase 1) — scopé .v2-*, ne modifie aucun style pro-global.css.
+     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md. -->
+<link rel="stylesheet" href="../css/dashboard-v2.css">
 <script src="../theme.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -701,6 +704,30 @@
 })();
 </script>
 <canvas id="bg-shader" aria-hidden="true"></canvas>
+
+<!-- ═══════ DASHBOARD V2 — SQUELETTE LAYOUT (Phase 1) ═══════
+     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md. Bloc isolé, masqué par
+     défaut via style inline (indépendant de dashboard-v2.css) — retirer ce
+     fichier CSS n'a donc aucun effet sur le rendu V1 ci-dessous.
+     Vérification visuelle : ajouter ?v2=1 à l'URL. Aucune donnée, aucun
+     script partagé avec #dash-content / .app. -->
+<div id="v2-dashboard-skeleton" class="v2-dashboard-wrapper" style="display:none;">
+  <div class="v2-grid-container">
+    <div class="v2-zone v2-header">header-v2</div>
+    <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
+    <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
+    <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
+  </div>
+</div>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('v2') === '1') {
+    document.getElementById('v2-dashboard-skeleton').style.display = 'block';
+  }
+})();
+</script>
+
 <div class="app">
 
   <!-- ═══════ SIDEBAR ═══════ -->
