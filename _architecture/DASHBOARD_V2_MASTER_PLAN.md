@@ -1,7 +1,8 @@
 ---
 name: dashboard-v2-master-plan
-status: draft
-version: 1
+status: maintenance
+version: 2
+project_phase: Maintenance/Optimisation (planification close, 9 widgets restants au backlog d'exécution — voir "Clôture Qualité/Stock")
 scope: docs/app/dashboard.html, docs/widgets.js, docs/services/config-dashboard.js, docs/services/widget-data-api.js
 depends_on: _architecture/WIDGET_MASTER_PLAN.md, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md
 ---
@@ -11,9 +12,15 @@ depends_on: _architecture/WIDGET_MASTER_PLAN.md, _architecture/WIDGET_DEVELOPMEN
 ## 0. Objectif et statut
 
 Ce document planifie la transition du dashboard "grille de widgets" (V1, livré) vers le
-dashboard "cockpit de décision" (V2, vision produit reçue le 2026-07-15). **Aucun code
-n'est modifié par ce document.** C'est une réconciliation entre la vision et l'état réel
-du code (26 widgets, moteur de compatibilité par secteur, contrat "Widget Pur").
+dashboard "cockpit de décision" (V2, vision produit reçue le 2026-07-15). C'est une
+réconciliation entre la vision et l'état réel du code (26 widgets, moteur de
+compatibilité par secteur, contrat "Widget Pur").
+
+*Mise à jour de statut (v2 du document) : la phrase d'origine "aucun code n'est modifié
+par ce document" ne reflète plus l'état du projet — les §§3bis à 4quinquies documentent
+des passes d'exécution réelles (squelette, migrations de widgets, décommission, header
+V2, responsive mobile), toutes commitées sur `main`. Voir "Clôture Qualité/Stock" en fin
+de document pour le statut global actuel (Maintenance/Optimisation).*
 
 **Décision en attente (bloquante avant Phase 1) :** la charte visuelle V2 (violet
 `#7C5CFC` / fond `#0E0F12` / Inter) remplace ou coexiste avec "Tactical Dark Absolu"
@@ -61,7 +68,7 @@ code (id / titre / catégorie / source). Statuts :
 | `lot-tournee` | Tournée du jour | Zone 2 Bloc C — Carte et déplacements | Migré* |
 | `lot-carte` | Carte des interventions | Zone 2 Bloc C — Carte et déplacements | Migré |
 | `lot-treso` | Position de trésorerie | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis (source `lot:treso` inchangée, dette de données) |
-| `generic-media-report` | Rapport photo | Zone 5 — Qualité ("Photos manquantes") | Migré |
+| `generic-media-report` | Rapport photo | Zone cible à réassigner (Zone 5 "Qualité" retirée du backlog — voir "Clôture Qualité/Stock" ; widget lui-même non concerné, données réelles via `SebaWidgetAPI.getMediaReport`) | Migré |
 | `marge-reelle` | Marge réelle | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis. Zone 4 (Rentabilité par intervention) reste sans widget : nécessite `dureeEstimee`/`dureeReelle`, voir §2 |
 | `ext-chart` | Nouveau Graphique | — (widget d'extension générique, catalogue seulement) | Orphelin |
 | `ext-notes` | Bloc-notes | — (widget d'extension générique, catalogue seulement) | Orphelin |
@@ -100,8 +107,8 @@ employes, journal` — aucune entité coût/photo/contrat/stock/équipement/inci
 | `marge-reelle` (Marge réelle) | `interventions[].coutReel` | Manquant — champ absent de SebaDB ; `SebaWidgetAPI.getMargeReelle()` renvoie honnêtement `null` (voir `docs/services/widget-data-api.js:78-88`) |
 | Zone 3 Carte 5 (Dépenses, vision §7) | `depenses[].montant` par catégorie (personnel/produits/déplacements) | À implémenter — aucun widget existant, aucune collection SebaDB |
 | Zone 4 (Rentabilité par intervention, temps prévu vs réel) | `interventions[].dureeEstimee`, `interventions[].dureeReelle` | Manquant — aucun des deux champs n'existe dans SebaDB aujourd'hui |
-| Zone 6 (Stock/matériel, vision §10) | `stock[]`, `equipements[]` | Manquant — aucune collection |
-| Zone 5 (Qualité, contrôles/réclamations, vision §9) | `controlesQualite[]`, `reclamations[]` | Manquant — aucune collection |
+| Zone 6 (Stock/matériel, vision §10) | `stock[]`, `equipements[]` | Manquant — aucune collection. **[DÉFINITIF] Re-vérifié, toujours aucune — voir "Clôture Qualité/Stock" en fin de document.** |
+| Zone 5 (Qualité, contrôles/réclamations, vision §9) | `controlesQualite[]`, `reclamations[]` | Manquant — aucune collection. **[DÉFINITIF] Re-vérifié, toujours aucune — voir "Clôture Qualité/Stock" en fin de document.** |
 
 **Conséquence directe pour le phasage :** la Phase 2 (migration de zone) peut afficher
 les widgets `lot-*` et `marge-reelle` dans leur nouvel emplacement visuel immédiatement
@@ -163,9 +170,11 @@ visible pendant toute la Phase 2).
   4. Rebranchement `lot-impayes`/`lot-pipeline`/`lot-treso` sur SebaDB réelle au lieu de
      leur source `lot:*` — supprime la dépendance résiduelle au cluster "Lot" (déjà
      `noindex` via `robots.txt`, WM-007).
-  5. Nouveaux widgets métier "purs" pour Zone 5 (Qualité) et Zone 6 (Stock) — nécessite
-     de nouvelles collections SebaDB (`controlesQualite`, `reclamations`, `stock`,
-     `equipements`) : hors périmètre de ce document, à cadrer séparément.
+  5. ~~Nouveaux widgets métier "purs" pour Zone 5 (Qualité) et Zone 6 (Stock)~~ —
+     **[DÉFINITIF] retiré du backlog V2, voir "Clôture Qualité/Stock" en fin de
+     document.** Ne plus lister comme travail actif ; à rouvrir uniquement si une
+     source de données réelle apparaît un jour (nouveau chantier, pas une reprise
+     de celui-ci).
 - Nettoyage effectif du code archivé (§4 Liste noire) une fois la Phase 2 validée en
   production sans régression mesurée (script QA `qa-dashboard-full.js` vert sur au
   moins un cycle complet).
@@ -259,8 +268,21 @@ notés ici plutôt que forcés, conformément à la note de conduite du chantier
 | Terme demandé | Widget catalogue le plus proche | Blocage | Décision |
 |---|---|---|---|
 | `planning` (Priorité 1) | Aucun — ni `lot-tournee` ni `lot-carte` ne correspondent sans ambiguïté | Nom ne désigne aucun id réel des 26 widgets | Ignoré pour cette vague (confirmé avec le fondateur) — `lot-tournee`/`lot-carte` restent "Migré*" (dette `lot:*`, voir §2), non traités ici |
-| `quality-check` (Priorité 3) | `generic-media-report` (« Rapport photo ») | Aucune collection SebaDB de contrôles qualité (`controlesQualite`, `reclamations`) — déjà noté Manquant au §2 | Traité comme dette de données (confirmé avec le fondateur) — `generic-media-report` reste "Migré" au §1 mais non exécuté cette vague ; à faire dans une passe Priorité 3 dédiée |
-| `stock-alerts` (Priorité 3) | Aucun | Aucune collection SebaDB (`stock`, `equipements`) ni widget existant — déjà noté Manquant au §2 (Zone 6) | Reporté entièrement : ni zone DOM ni widget à créer avant que la donnée existe |
+| `quality-check` (Priorité 3) | `generic-media-report` (« Rapport photo ») | Aucune collection SebaDB de contrôles qualité (`controlesQualite`, `reclamations`) | **[DÉFINITIF] Fermé** — re-diagnostiqué, toujours aucune source. Retiré du backlog V2 (voir "Clôture Qualité/Stock"). `generic-media-report` (widget réel et distinct, données via `SebaWidgetAPI.getMediaReport`) n'est PAS concerné par cette fermeture — reste "Migré" au §1, zone cible à réassigner puisque "Zone 5 Qualité" n'existe plus comme cible active. |
+| `stock-alerts` (Priorité 3) | Aucun | Aucune collection SebaDB (`stock`, `equipements`) ni widget existant | **[DÉFINITIF] Fermé** — re-diagnostiqué, toujours aucune source, aucun widget. Retiré du backlog V2 (voir "Clôture Qualité/Stock"). |
+
+**[DÉFINITIF] Suppression des widgets « Qualité » et « Stock » du backlog V2 par absence
+de source de données.** Diagnostic final (re-exécuté avant cette clôture, pas supposé) :
+recherche `stock|equipement|qualit|controle|reclamation|inventaire` sur `docs/seba-data.js`,
+`docs/widgets.js` et `supabase-schema.sql` — zéro résultat pertinent (uniquement des faux
+positifs, "stockage"/"stocké" au sens générique de stockage de photos/JWT, sans rapport
+avec un inventaire de stock ou des contrôles qualité). Aucune table, vue, colonne, ni
+champ ne porte cette donnée nulle part dans le projet. Un widget "Qualité" ou "Stock" migré
+maintenant serait un widget fantôme — affichant un état vide permanent sans date de
+déblocage crédible, contrairement à `marge-reelle` (champ identifié, juste absent) ou aux
+widgets `lot-*` (données démo réelles, juste pas encore rebranchées). Ce backlog est donc
+clos, pas reporté : voir la section "Clôture Qualité/Stock" en fin de document pour le
+critère de réouverture.
 
 ## 4. Liste noire (nettoyage)
 
@@ -563,3 +585,68 @@ fait cette passe (solution correcte pour 1 élément masqué, pas une stratégie
 terme). Déclencheur suggéré pour rouvrir ce chantier : le jour où un nouvel élément doit
 être ajouté à `.v2-header-left`/`.header-status-group`/`.v2-header-right` et qu'il n'y a
 plus de place sur un viewport ≤768px sans revoir la structure.
+
+---
+
+## Clôture Qualité/Stock — arbitrage définitif
+
+**[DÉFINITIF] Suppression des widgets « Qualité » et « Stock » du backlog V2 par absence
+de source de données.**
+
+### Diagnostic final (re-vérifié, pas supposé)
+
+Recherche ciblée sur l'ensemble du projet avant cette clôture, pas une reprise du
+diagnostic du §2 :
+
+- `docs/seba-data.js` : recherche `stock|equipement|qualit|controle|reclamation|inventaire`
+  (insensible à la casse) — zéro résultat pertinent.
+- `docs/widgets.js` : même recherche — zéro résultat pertinent (uniquement "stockage" au
+  sens générique de mécanisme de persistance, `SebaLayoutStore`).
+- `supabase-schema.sql` : même recherche — zéro résultat pertinent (uniquement "bucket de
+  stockage des photos d'intervention", sans rapport avec un inventaire de stock).
+
+**Conclusion : aucune table, vue, colonne, champ ou widget existant, à quelque niveau que
+ce soit du projet, ne porte de donnée de contrôle qualité ou de stock/matériel.**
+Contrairement à `marge-reelle` (champ `coutReel` identifié, juste absent de SebaDB) ou aux
+widgets `lot-*` (données démo réelles, source `lot:*` juste pas encore rebranchée), il n'y
+a ici ni champ nommé, ni vue Supabase, ni structure de données quelconque à rebrancher un
+jour prochain — juste une absence totale, à n'importe quelle profondeur du projet.
+
+### Décision
+
+Backlog fermé, pas reporté. Zone 5 ("Qualité") et Zone 6 ("Stock") du blueprint original
+(§24 de la vision produit) ne sont **plus** des cibles actives de la migration V2 :
+
+- Aucune zone DOM (`.v2-zone-qualite`/`.v2-zone-stock`) ne sera créée tant que ce critère
+  de réouverture n'est pas atteint.
+- Aucun widget "purs" Qualité/Stock ne sera développé (contrat Widget Pur inapplicable
+  sans source `SebaWidgetAPI` à appeler).
+- `generic-media-report` (widget réel et distinct, non concerné par cette clôture — voir
+  §1) reste au backlog, zone cible à réassigner séparément.
+
+**Critère de réouverture** (pas "quand on aura le temps", un fait vérifiable) : ce chantier
+ne rouvre que le jour où une collection SebaDB réelle (`controlesQualite`, `reclamations`,
+`stock`, ou `equipements`) apparaît dans `docs/seba-data.js` — c'est-à-dire qu'une
+fonctionnalité produit distincte (saisie de contrôle qualité, gestion de stock) aura été
+construite en amont. Ce sera alors un **nouveau chantier**, pas une reprise de celui-ci.
+
+### Statut du projet — de "Migration active" à "Maintenance/Optimisation"
+
+Avec cette clôture, **la phase de planification/arbitrage de la migration V2 est
+terminée** : les 23 widgets restants du catalogue (26 moins `serenity-score`/
+`bento-actions`/`quick-actions`, décommissionnés) ont chacun un verdict définitif
+(Migré-exécuté, Migré-planifié, Orphelin, ou Supprimé-exécuté) — plus aucun widget n'est
+dans un état "à trancher" ou "en attente de décision". C'est ce changement précis (fin
+des zones de flou, pas fin du travail de code) qui justifie de qualifier le projet de
+"Maintenance/Optimisation" plutôt que "Migration active" à partir de maintenant.
+
+**Ce que "Maintenance/Optimisation" ne veut PAS dire ici — distinction nécessaire pour ne
+pas transformer une clôture honnête en fausse promesse inversée :** l'exécution n'est pas
+terminée. 9 widgets restent marqués "Migré" sans exécution physique (pas de flou sur leur
+destination, juste pas encore codés) : `metric-1`, `metric-3`, `recos`, `goal`,
+`lot-impayes`, `lot-pipeline`, `lot-tournee`, `lot-carte`, `generic-media-report`. Ce sont
+désormais les 9 seules entrées du backlog de maintenance — une liste fermée et connue,
+plus une liste ouverte à explorer. C'est cette fermeture-là (zéro ambiguïté restante, pas
+zéro ligne de code restante) qui distingue "Maintenance/Optimisation" de "Migration
+active" : le projet n'est plus en train de *découvrir* ce qu'il doit migrer, seulement
+d'*exécuter* une liste déjà entièrement connue.
