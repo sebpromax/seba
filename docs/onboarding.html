@@ -167,6 +167,7 @@ body.fx-propulsion .ob-layout,body.fx-propulsion .sh{visibility:hidden;}
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
   <script src="auth.js" defer></script>
+  <script src="services/config-dashboard.js"></script>
   <script src="sentry-init.js" defer></script>
   <script src="analytics-init.js" defer></script>
 <style>
@@ -362,8 +363,15 @@ p{letter-spacing:-0.02em;}
     // Cache local immédiat : repris par bienvenue.html (RPC profil avec une
     // vraie session) et par le dashboard. Pending = filet de sécurité, rejoué
     // au premier login par connexion.html si le lien est ouvert ailleurs.
+    // WM-001 (_architecture/WIDGET_MASTER_PLAN.md) : S.sector est le LIBELLÉ
+    // affiché du bouton cliqué ("Nettoyage & Entretien"), pas une clé interne
+    // valide pour businessTypes.js/seba-data.js/config-dashboard.js. Sans ce
+    // pont, tout lookup par secteur en aval retombait silencieusement sur
+    // 'autre' pour 100% des inscriptions réelles — la personnalisation par
+    // secteur (services, widgets par défaut) n'avait jamais d'effet.
+    const secteurKey = (window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.resolveSector(S.sector)) || 'autre';
     try {
-      localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: S.sector, email: S.email }));
+      localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: S.nom, secteur: secteurKey, email: S.email }));
       localStorage.setItem('seba_profile_pending', '1');
     } catch (err) {}
 

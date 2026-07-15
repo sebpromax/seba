@@ -20,7 +20,7 @@ Deux fichiers différents, deux responsabilités différentes — à ne pas conf
 
 Concrètement : un `render(ctx, el)` n'écrit jamais `window.SebaDB.xxx` ni `localStorage.getItem/setItem` lui-même. Il appelle une fonction exposée par un service dédié (ex. `window.SebaWidgetAPI.getXxx(ctx)`), qui est seule autorisée à parler à SebaDB pour le compte des widgets. Ça permet de faire évoluer la source de données (schéma SebaDB, futur backend) sans toucher au rendu, et de tester/mocker un widget sans dépendre de localStorage.
 
-**Statut au 2026-07-15 : cette règle s'applique aux widgets créés à partir de maintenant** (premier exemple : `cleaning-photo-report`, via `docs/services/widget-data-api.js`). Les widgets antérieurs à cette règle (`chart-donut`, `lot-carte`, `lot-treso`, etc., voir §3) appellent encore `window.SebaDB` directement dans leur `render()` — c'est de la dette technique documentée, pas une exception silencieuse. Ils ne sont pas rétro-migrés dans ce changement ; à faire opportunément, pas en bloquant tout nouveau widget dessus.
+**Statut au 2026-07-15 : cette règle s'applique aux widgets créés à partir de maintenant** (premier exemple : `generic-media-report`, via `docs/services/widget-data-api.js` — renommé depuis `cleaning-photo-report` le même jour pour être généralisé par secteur, voir `_architecture/WIDGET_MASTER_PLAN.md` WM-004). Les widgets antérieurs à cette règle (`chart-donut`, `lot-carte`, `lot-treso`, etc., voir §3) appellent encore `window.SebaDB` directement dans leur `render()` — c'est de la dette technique documentée, pas une exception silencieuse. Ils ne sont pas rétro-migrés dans ce changement ; à faire opportunément, pas en bloquant tout nouveau widget dessus.
 
 ---
 
@@ -95,7 +95,7 @@ C'est un merge **par widget**, pas par disposition entière : `getEffectiveLayou
 
 `docs/seba-data.js` (SebaDB) reste la source de vérité unique — jamais de données métier codées en dur dans un widget (règle CLAUDE.md, sans exception). Depuis la règle d'or ci-dessus, un widget n'y accède plus directement : il passe par un service dédié.
 
-Pattern à suivre pour tout nouveau widget (ex. `cleaning-photo-report` / `docs/services/widget-data-api.js`) :
+Pattern à suivre pour tout nouveau widget (ex. `generic-media-report` / `docs/services/widget-data-api.js`) :
 
 ```js
 // docs/services/widget-data-api.js — seul fichier autorisé à lire SebaDB pour les widgets
@@ -122,7 +122,8 @@ render(ctx, el) {
 Règles :
 - La fonction de service vérifie `window.SebaDB && SebaDB.hasData()`, jamais le widget lui-même.
 - Utilise l'état vide riche (`buildRichEmptyHTML`, déjà générique) plutôt qu'une ligne `.tl-empty` pauvre — c'est souvent le premier contact d'un utilisateur avec le widget.
-- Si la donnée n'existe pas encore réellement dans SebaDB (fonctionnalité produit pas encore construite), le service renvoie honnêtement `null`/vide plutôt que d'inventer un chiffre — le widget affiche alors son état vide jusqu'à ce que la vraie donnée existe (voir `getCleaningPhotoReport`, qui attend un futur champ `photos` sur les interventions).
+- Si la donnée n'existe pas encore réellement dans SebaDB (fonctionnalité produit pas encore construite), le service renvoie honnêtement `null`/vide plutôt que d'inventer un chiffre — le widget affiche alors son état vide jusqu'à ce que la vraie donnée existe (voir `getMediaReport`, qui attend un futur champ `photos` sur les interventions).
+- Si la copie affichée (titre, icône, texte d'état vide) varie par secteur, résous-la via `SEBA_DASHBOARD_CONFIG.widgetExtensionFor(widgetId, ctx.secteur)` (`docs/services/config-dashboard.js`, registre `WIDGET_EXTENSIONS`) plutôt que du texte codé en dur ou un `if (secteur === ...)` dans le widget — voir `generic-media-report` pour l'exemple de référence, y compris `titleFor(ctx)` pour un titre de module dynamique.
 - `ctx` (construit par `buildWidgetCtx()`) porte déjà `biz`, `demo`, `secteur`, `sectorLabel`, `nom`, `couleur`, `services`, `slug`, `sym` — n'ajoute pas un second mécanisme de contexte, étends `buildWidgetCtx()` si un widget a besoin d'une donnée qui n'y est pas encore.
 - Si le widget n'a pas encore de vraies données à afficher (prototype), utilise `source: 'demo'` et lis dans `ctx.demo` (alimenté par `DEMO[secteur]` ou par `buildLiveData()` une fois SebaDB peuplé) — jamais un tableau écrit en dur dans le widget lui-même.
 

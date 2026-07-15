@@ -1443,13 +1443,26 @@ window.WIDGET_CATALOG = {
   /* ── Widget "pur" (règle d'or, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) :
      ne lit jamais window.SebaDB/localStorage directement, passe uniquement par
      window.SebaWidgetAPI (docs/services/widget-data-api.js). ── */
-  'cleaning-photo-report': { id: 'cleaning-photo-report', title: 'Rapport photo de ménage', size: 'M', category: 'companion', source: 'live',
-    keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'ménage'],
+  /* Généralisé depuis cleaning-photo-report (WM-004, WIDGET_MASTER_PLAN.md) :
+     le widget lui-même ne connaît plus aucun secteur — sa copie (titre, icône,
+     état vide) est résolue via SEBA_DASHBOARD_CONFIG.widgetExtensionFor(),
+     contrat d'extension sectorielle défini dans config-dashboard.js. */
+  'generic-media-report': { id: 'generic-media-report', title: 'Rapport photo', size: 'M', category: 'companion', source: 'live',
+    keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'média', 'documents intervention'],
     defaultVisible: false, defaultOrder: 25, link: { href: 'planning.html', label: 'Voir les interventions →' },
+    titleFor(ctx) {
+      const ext = window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur);
+      return (ext && ext.title) || this.title;
+    },
     render(ctx, el) {
-      const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getCleaningPhotoReport(ctx) : null;
+      const ext = (window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur)) || {};
+      const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getMediaReport(ctx) : null;
       if (!report) {
-        el.innerHTML = buildRichEmptyHTML('📷', 'Aucun rapport photo', 'Ajoutez des photos avant/après à vos interventions de ménage pour rassurer vos clients.', 'Voir les interventions', 'planning.html');
+        el.innerHTML = buildRichEmptyHTML(
+          ext.emptyIcon || '📷',
+          ext.emptyTitle || 'Aucun rapport photo',
+          ext.emptySub || 'Ajoutez des photos avant/après à vos interventions pour rassurer vos clients.',
+          'Voir les interventions', 'planning.html');
         return;
       }
       el.innerHTML = '<div class="bc-pad">' +
@@ -1711,7 +1724,7 @@ function renderGrid(gridEl, ctx, customizeMode) {
     shell.innerHTML =
       '<div class="module-head">' +
       (customizeMode ? '<span class="widget-drag-handle" title="Déplacer">⠿</span>' : '') +
-      '<span class="module-title">' + def.title + '</span>' +
+      '<span class="module-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span>' +
       (def.link ? '<a href="' + def.link.href + '" class="module-link">' + def.link.label + '</a>' : '') +
       (customizeMode ? '<button class="widget-remove-btn" title="Retirer" onclick="onWidgetRemove(\'' + w.id + '\')">✕</button>' : '') +
       '</div><div class="widget-body"></div>';
@@ -1736,7 +1749,7 @@ function renderCockpitTelemetry(ctx) {
     shell.className = 'widget-shell cockpit-pinned';
     shell.dataset.size = def.size;
     shell.dataset.widgetId = id;
-    shell.innerHTML = '<div class="module-head"><span class="module-title">' + def.title + '</span></div><div class="widget-body"></div>';
+    shell.innerHTML = '<div class="module-head"><span class="module-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span></div><div class="widget-body"></div>';
     container.appendChild(shell);
     def.render(ctx, shell.querySelector('.widget-body'));
   });
@@ -1802,7 +1815,8 @@ function buildLibraryPanelHTML() {
     return '<div class="pal-section"><div class="pal-section-lbl">' + CATEGORY_LABEL[cat] + '</div>' +
       groups[cat].map(w => {
         const visible = byId[w.id] ? byId[w.id].visible : w.defaultVisible;
-        return '<label class="widget-lib-row"><span>' + w.title + '</span>' +
+        const title = (w.titleFor && window._ctx) ? w.titleFor(window._ctx) : w.title;
+        return '<label class="widget-lib-row"><span>' + title + '</span>' +
           '<input type="checkbox" ' + (visible ? 'checked' : '') + ' onchange="onWidgetToggle(\'' + w.id + '\', this.checked)"></label>';
       }).join('') + '</div>';
   }).join('');

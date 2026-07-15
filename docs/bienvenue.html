@@ -62,6 +62,7 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 </style>
 <meta name="theme-color" content="#0a0a0c">
 <script src="auth.js"></script>
+<script src="businessTypes.js"></script>
 <style>
 /* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
    partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
@@ -136,9 +137,14 @@ let _session = null;
     return;
   }
   // Personnalisation : le métier choisi dans le tunnel (si même appareil).
+  // biz.secteur est désormais une clé interne ('menage', pas "Nettoyage &
+  // Entretien" — voir WM-001, _architecture/WIDGET_MASTER_PLAN.md) : on
+  // affiche le libellé résolu via businessTypes.js, jamais la clé brute.
   try {
     const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-    if (biz.secteur) document.getElementById('activate-sector').textContent = ' « ' + biz.secteur + ' »';
+    const bt = window.businessTypes || {};
+    const sectorLabel = (bt[biz.secteur] || {}).label || biz.secteur;
+    if (biz.secteur) document.getElementById('activate-sector').textContent = ' « ' + sectorLabel + ' »';
   } catch (e) {}
   document.getElementById('new-password').focus();
 })();

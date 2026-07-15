@@ -11,14 +11,16 @@
   'use strict';
 
   window.SebaWidgetAPI = {
-    /* Rapport photo des interventions de ménage (widget cleaning-photo-report).
-     * SebaDB n'a pas encore de champ "photos" sur les interventions — aucune
-     * fonctionnalité d'upload n'existe côté produit. Plutôt que d'inventer des
-     * chiffres, cette fonction renvoie honnêtement null tant que ce champ
-     * n'existe pas : le widget affichera son état vide jusqu'à ce que la
-     * vraie fonctionnalité (photos avant/après sur une intervention) existe
-     * dans SebaDB. */
-    getCleaningPhotoReport: function (ctx) {
+    /* Rapport média (photos) des interventions, tous secteurs confondus
+     * (widget generic-media-report, généralisé depuis cleaning-photo-report —
+     * voir WM-004, _architecture/WIDGET_MASTER_PLAN.md). SebaDB n'a pas
+     * encore de champ "photos" sur les interventions — aucune fonctionnalité
+     * d'upload n'existe côté produit. Plutôt que d'inventer des chiffres,
+     * cette fonction renvoie honnêtement null tant que ce champ n'existe
+     * pas : le widget affichera son état vide jusqu'à ce que la vraie
+     * fonctionnalité (photos avant/après sur une intervention) existe dans
+     * SebaDB. */
+    getMediaReport: function (ctx) {
       if (!window.SebaDB || !SebaDB.hasData()) return null;
       var interventions = SebaDB.list('interventions') || [];
       var withPhotos = interventions.filter(function (i) { return Array.isArray(i.photos) && i.photos.length > 0; });
