@@ -56,7 +56,7 @@ Toute création ou modification de widget doit être répercutée ici (inventair
 | `_architecture/WIDGET_DEVELOPMENT_PROTOCOL.md` | Documentation | Protocole "Widget Pur", merge secteur | Confirmé | Rédigé dans cette même session de travail |
 | `docs/businessTypes.js` | Code métier | Secteurs, services, champs | Confirmé | 11 clés de secteur, lu intégralement |
 | `docs/seba-data.js` | Code métier | SebaDB (API données), seed par secteur | Confirmé | `SebaDB.list/get/create/update/remove/hasData/metrics`, `SEED_SERVICES`/`SEED_EMPLOYES` |
-| `docs/widgets.js` | Code métier | `WIDGET_CATALOG`, moteur de rendu, merge | Confirmé | 25 widgets recensés, lu intégralement sur les sections pertinentes |
+| `docs/widgets.js` | Code métier | `WIDGET_CATALOG`, moteur de rendu, merge | Confirmé | 26 widgets recensés (2026-07-15, après ajout de `marge-reelle`), lu intégralement sur les sections pertinentes |
 | `docs/services/config-dashboard.js` | Code métier | Attribution widgets par secteur | Confirmé | Écrit dans cette session, `CORE` + `BY_SECTEUR` |
 | `docs/services/widget-data-api.js` | Code métier | `SebaWidgetAPI` (façade Widget Pur) | Confirmé | Écrit dans cette session |
 | `docs/app/dashboard.html` | Code UI | Rendu dashboard, init, palette, tiroir | Confirmé | Script d'init (`renderDashboard`), `buildLibraryPanelHTML` |
@@ -137,7 +137,7 @@ Second écart, indépendant du premier : même corrigé, l'onboarding n'offre qu
 
 ## 5. Inventaire des widgets
 
-**Confirmé par le code** — `window.WIDGET_CATALOG` (`docs/widgets.js`, ~l.1138-1500) contient exactement **25 widgets**.
+**Confirmé par le code** — `window.WIDGET_CATALOG` (`docs/widgets.js`, ~l.1138-1550) contient exactement **26 widgets** (25 + `marge-reelle`, ajouté le 2026-07-15 après la première rédaction de cette section — voir §17 WM-005).
 
 **Règle de distinction retenue** (widget vs. autre chose) : est un *widget* toute entrée de `WIDGET_CATALOG` avec `id`/`render()`/`size`/`category`. N'est **pas** un widget : un conteneur de mise en page (`.cockpit-telemetry`), un mécanisme de gestion des widgets eux-mêmes (tiroir d'extensions, panneau "Personnaliser", palette de commande), une section de fiche (champs de `client-fiche.html`/`employe-fiche.html`, pilotés par `businessTypes.js.clientFields`, pas par `WIDGET_CATALOG`), ou une page entière (`planning.html`, `factures.html` — des pages, pas des widgets, même si des widgets y renvoient via leur champ `link`).
 
