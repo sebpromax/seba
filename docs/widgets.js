@@ -370,6 +370,167 @@ class LotCarteWidgetV2 extends WidgetV2 {
   }
 }
 
+/* ── WidgetV2 : batch de bascule (DASHBOARD_V2_MASTER_PLAN.md §6bis) — les 8
+   widgets restants du catalogue. Même patron que LotCarteWidgetV2, répété
+   volontairement (consigne d'exécution : "le but est la répétition") :
+   load() prépare this._data à partir de ctx (jamais lu depuis render()),
+   render() ne fait que du templating à partir de this._data. onMount()/
+   onResize()/onDestroy() existent sur les 8, même vides, pour une API
+   uniforme (le ResizeObserver est attaché par WidgetV2.mount() sur TOUS les
+   widgets, qu'ils en aient l'usage ou non). Aucun n'a besoin d'un
+   rafraîchissement périodique (vérifié : zéro setInterval dans le V1 de ces
+   8 widgets avant migration) — onMount()/onResize() restent donc des no-op
+   hérités de la classe de base là où rien ne les surcharge. */
+
+class Metric1Widget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.demo.metrics[1]; }
+  render() {
+    this.container.innerHTML = '';
+    if (this._data) this.container.appendChild(buildMetricCardEl(this._data, this.ctx.secteur, 1));
+  }
+}
+
+class Metric3Widget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.demo.metrics[3]; }
+  render() {
+    this.container.innerHTML = '';
+    if (this._data) this.container.appendChild(buildMetricCardEl(this._data, this.ctx.secteur, 3));
+  }
+}
+
+class GoalWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() {
+    const g = this.ctx.demo.goal;
+    const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
+    const remaining = g.target - g.current;
+    const sub = g.target > 0
+      ? (pct >= 100 ? 'Objectif atteint ce mois !' : fmtNum(remaining, g.unit) + " restants pour atteindre l'objectif")
+      : 'Configurez votre objectif mensuel dans les réglages.';
+    this._data = { g, pct, sub };
+  }
+  render() {
+    const { g, sub } = this._data;
+    this.container.innerHTML = '<div class="goal-block">' +
+      '<div class="goal-head"><span class="goal-current">' + (g.current > 0 ? fmtNum(g.current, g.unit) : '—') + '</span>' +
+      '<span class="goal-target-txt">' + (g.target > 0 ? '/ ' + fmtNum(g.target, g.unit) + ' objectif' : 'Définir un objectif') + '</span></div>' +
+      '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:0"></div></div>' +
+      '<div class="goal-sub">' + sub + '</div></div>';
+  }
+  onMount() {
+    const bar = this.container.querySelector('.goal-bar-fill');
+    if (!bar) return;
+    const pct = this._data.pct;
+    // Double rAF (pas le setTimeout(...,400) de l'ancienne version) : garantit
+    // que le navigateur a peint width:0 avant de déclencher la transition CSS
+    // vers pct% — même effet visuel, plus de délai arbitraire "sauvage".
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!this._destroyed) bar.style.width = pct + '%';
+    }));
+  }
+}
+
+class LotImpayesWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = (this.ctx.creances || []).slice().sort((a, b) => b.relanceStep - a.relanceStep); }
+  render() {
+    const RELANCE_LABELS = ['Amiable J+8', 'Relance 1 J+30', 'Relance 2 J+60', 'Mise en demeure J+90', 'Huissier / LRE'];
+    const list = this._data;
+    if (!list.length) {
+      this.container.innerHTML = buildRichEmptyHTML(
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+        'Rien en retard',
+        'Toutes vos factures sont à jour — aucune relance nécessaire pour le moment.'
+      );
+      return;
+    }
+    const total = list.reduce((s, c) => s + c.montant, 0);
+    this.container.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
+      list.slice(0, 3).map(c =>
+        '<div class="ws-row"><span class="ws-label">' + esc(c.client) + '</span><span class="ws-val" style="color:#FFB800">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
+      ).join('');
+  }
+}
+
+class LotPipelineWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.mutationDocs || []; }
+  render() {
+    const docs = this._data;
+    if (!docs.length) {
+      this.container.innerHTML = buildRichEmptyHTML(
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8L4 4z"/></svg>',
+        'Aucun dossier en cours',
+        'Suivez vos devis jusqu\'à l\'encaissement, du premier RDV au paiement.',
+        'Créer un RDV', 'mutation-contextuelle.html'
+      );
+      return;
+    }
+    // .v2-pipeline-stages (dashboard-v2.css) remplace l'ancien wrapper .qa-grid :
+    // ce nom a été retiré du CSS lors de la décommission bento-actions/
+    // quick-actions (§4quater) sans qu'on remarque alors que lot-pipeline le
+    // réutilisait aussi pour sa propre grille — le widget rendait donc sans
+    // display:grid depuis cette date (bug pré-existant, corrigé ici).
+    const STAGES = [['rdv', 'RDV'], ['devis', 'Devis'], ['facture', 'Facture'], ['encaisse', 'Encaissé']];
+    this.container.innerHTML = '<div class="v2-pipeline-stages">' +
+      STAGES.map(([key, label]) => {
+        const n = docs.filter(d => d.stage === key).length;
+        return '<div class="ws-row" style="flex-direction:column;align-items:flex-start;gap:2px;"><span class="ws-label">' + label + '</span><span class="ws-val" style="font-size:1.1rem;font-weight:700;">' + n + '</span></div>';
+      }).join('') + '</div>';
+  }
+}
+
+class LotTourneeWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.haversinePts || []; }
+  render() {
+    const pts = this._data;
+    if (!pts.length) {
+      this.container.innerHTML = buildRichEmptyHTML(
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
+        'Optimisez vos trajets du jour',
+        'Ajoutez vos arrêts et Seba calcule l\'ordre le plus rapide.',
+        'Ajouter des points', 'haversine-engine.html'
+      );
+      return;
+    }
+    this.container.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
+      pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + esc(p.nom) + '</span></div>').join('');
+  }
+}
+
+class RecosWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = evaluateRules(this.ctx); }
+  render() { this.container.innerHTML = this._data.map(buildRecoItemHTML).join(''); }
+}
+
+class GenericMediaReportWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() {
+    const ext = (window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', this.ctx.secteur)) || {};
+    const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getMediaReport(this.ctx) : null;
+    this._data = { ext, report };
+  }
+  render() {
+    const { ext, report } = this._data;
+    if (!report) {
+      this.container.innerHTML = buildRichEmptyHTML(
+        ext.emptyIcon || '📷',
+        ext.emptyTitle || 'Aucun rapport photo',
+        ext.emptySub || 'Ajoutez des photos avant/après à vos interventions pour rassurer vos clients.',
+        'Voir les interventions', 'planning.html');
+      return;
+    }
+    this.container.innerHTML = '<div class="bc-pad">' +
+      '<div class="metric-value mono-num">' + report.count + '</div>' +
+      '<div class="metric-label">rapport(s) photo cette semaine</div>' +
+      '</div>';
+  }
+}
+
 const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
 
 // Echappe le texte libre (noms clients/employes, notes, reponses IA) avant
@@ -1183,18 +1344,22 @@ window.WIDGET_CATALOG = {
     keywords: ['ca', "chiffre d'affaires", 'revenu', 'argent gagné', 'encaissé', 'combien j\'ai gagné'],
     defaultVisible: true, defaultOrder: 0,
     render(ctx, el) { const m = ctx.demo.metrics[0]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 0)); } },
+  /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     Metric1Widget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur) :
+     buildMetricCardEl() reste utilisée par metric-0 (télémétrie v2-header) et
+     metric-2 (toujours V1, orphelin) ci-dessous, donc conservée telle quelle. */
   'metric-1': { id: 'metric-1', title: 'Métrique activité', size: 'S', category: 'core', source: 'demo',
     keywords: ['interventions', 'activité', 'volume'],
-    defaultVisible: true, defaultOrder: 1,
-    render(ctx, el) { const m = ctx.demo.metrics[1]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 1)); } },
+    defaultVisible: true, defaultOrder: 1 },
   'metric-2': { id: 'metric-2', title: 'Métrique clients', size: 'S', category: 'core', source: 'demo',
     keywords: ['clients', 'clientèle'],
     defaultVisible: true, defaultOrder: 2,
     render(ctx, el) { const m = ctx.demo.metrics[2]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 2)); } },
+  /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
+     Metric3Widget/V2_CLASS_WIDGETS ci-dessus). Même remarque que metric-1. */
   'metric-3': { id: 'metric-3', title: 'Métrique devis', size: 'S', category: 'core', source: 'demo',
     keywords: ['devis en attente', 'devis'],
-    defaultVisible: true, defaultOrder: 3,
-    render(ctx, el) { const m = ctx.demo.metrics[3]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 3)); } },
+    defaultVisible: true, defaultOrder: 3 },
 
   /* Migré vers le squelette V2 (.v2-zone-finance) — voir V2_ZONE_FINANCE_IDS
      et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. switchChartPeriod() (plus haut
@@ -1253,10 +1418,13 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 7, link: { href: '../historique.html', label: 'Tout voir →' },
     render(ctx, el) { el.innerHTML = buildActivityHTML(ctx.demo.activity); } },
 
+  /* Migré vers le squelette V2 (.v2-zone-traitement, montage par classe — voir
+     RecosWidget/V2_CLASS_WIDGETS ci-dessus). Premier widget à occuper cette
+     zone (placeholder vide depuis le Phase 1 squelette) : bon fit conceptuel
+     ("bandeau de traitement" ~ recommandations proactives à traiter). */
   'recos': { id: 'recos', title: 'Recommandations Seba', size: 'L', category: 'core', source: 'demo',
     keywords: ['recommandations', 'conseils', 'suggestions', 'alertes'],
-    defaultVisible: true, defaultOrder: 8,
-    render(ctx, el) { el.innerHTML = evaluateRules(ctx).map(buildRecoItemHTML).join(''); } },
+    defaultVisible: true, defaultOrder: 8 },
 
   /* quick-actions décommissionné en faveur de v2-header (bouton "+ Créer",
      voir DASHBOARD_V2_MASTER_PLAN.md §4quater) — "+ Facture" n'a pas
@@ -1264,21 +1432,11 @@ window.WIDGET_CATALOG = {
      intervention seulement) ; dette fonctionnelle à noter si ce raccourci
      manque au fondateur. */
 
+  /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
+     GoalWidget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur). */
   'goal': { id: 'goal', title: 'Objectif du mois', size: 'M', category: 'core', source: 'demo',
     keywords: ['objectif', 'objectif du mois', 'progression'],
-    defaultVisible: true, defaultOrder: 10, link: { href: 'factures.html', label: 'Factures →' },
-    render(ctx, el) {
-      const g = ctx.demo.goal;
-      const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
-      const remaining = g.target - g.current;
-      const sub = g.target > 0 ? (pct >= 100 ? 'Objectif atteint ce mois !' : fmtNum(remaining, g.unit) + " restants pour atteindre l'objectif") : 'Configurez votre objectif mensuel dans les réglages.';
-      el.innerHTML = '<div class="goal-block">' +
-        '<div class="goal-head"><span class="goal-current">' + (g.current > 0 ? fmtNum(g.current, g.unit) : '—') + '</span>' +
-        '<span class="goal-target-txt">' + (g.target > 0 ? '/ ' + fmtNum(g.target, g.unit) + ' objectif' : 'Définir un objectif') + '</span></div>' +
-        '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:0"></div></div>' +
-        '<div class="goal-sub">' + sub + '</div></div>';
-      setTimeout(() => { const bar = el.querySelector('.goal-bar-fill'); if (bar) bar.style.width = pct + '%'; }, 400);
-    } },
+    defaultVisible: true, defaultOrder: 10, link: { href: 'factures.html', label: 'Factures →' } },
 
   'workspace': { id: 'workspace', title: 'Votre espace', size: 'L', category: 'core', source: 'demo',
     keywords: ['espace', 'mon entreprise', 'profil'],
@@ -1333,66 +1491,26 @@ window.WIDGET_CATALOG = {
      relie plus depuis le dashboard tant que leur sort n'est pas tranché,
      plutôt que de réparer un lien vers une page non fiable. Voir aussi le
      Disallow ajouté dans robots.txt pour ce même cluster. */
+  /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
+     LotImpayesWidget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur). */
   'lot-impayes': { id: 'lot-impayes', title: 'Factures en retard', size: 'M', category: 'companion', source: 'lot:contentieux',
     keywords: ['factures en retard', 'impayés', 'relances', 'créances', 'factures impayées'],
-    defaultVisible: false, defaultOrder: 20, link: { href: '#', label: 'Recouvrement →' },
-    render(ctx, el) {
-      const RELANCE_LABELS = ['Amiable J+8', 'Relance 1 J+30', 'Relance 2 J+60', 'Mise en demeure J+90', 'Huissier / LRE'];
-      const list = (ctx.creances || []).slice().sort((a, b) => b.relanceStep - a.relanceStep);
-      if (!list.length) {
-        el.innerHTML = buildRichEmptyHTML(
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
-          'Rien en retard',
-          'Toutes vos factures sont à jour — aucune relance nécessaire pour le moment.'
-        );
-        return;
-      }
-      const total = list.reduce((s, c) => s + c.montant, 0);
-      el.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
-        list.slice(0, 3).map(c =>
-          '<div class="ws-row"><span class="ws-label">' + esc(c.client) + '</span><span class="ws-val" style="color:' + (c.relanceStep >= 2 ? '#FFB800' : '#FFB800') + '">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
-        ).join('');
-    } },
+    defaultVisible: false, defaultOrder: 20, link: { href: '#', label: 'Recouvrement →' } },
 
+  /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
+     LotPipelineWidget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait
+     pur) ; au passage, LotPipelineWidget corrige un bug pré-existant (wrapper
+     .qa-grid orphelin depuis la décommission bento-actions/quick-actions,
+     §4quater — voir commentaire dans la classe). */
   'lot-pipeline': { id: 'lot-pipeline', title: 'Pipeline devis → facture → encaissé', size: 'XL', category: 'companion', source: 'lot:mutation',
     keywords: ['pipeline', 'devis facture encaissé', 'kanban commercial', 'suivi commercial'],
-    defaultVisible: false, defaultOrder: 21, link: { href: '#', label: 'Pipeline complet →' },
-    render(ctx, el) {
-      const docs = ctx.mutationDocs || [];
-      if (!docs.length) {
-        el.innerHTML = buildRichEmptyHTML(
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8L4 4z"/></svg>',
-          'Aucun dossier en cours',
-          'Suivez vos devis jusqu\'à l\'encaissement, du premier RDV au paiement.',
-          'Créer un RDV', 'mutation-contextuelle.html'
-        );
-        return;
-      }
-      const STAGES = [['rdv', 'RDV'], ['devis', 'Devis'], ['facture', 'Facture'], ['encaisse', 'Encaissé']];
-      el.innerHTML = '<div class="qa-grid" style="grid-template-columns:repeat(4,1fr);">' +
-        STAGES.map(([key, label]) => {
-          const n = docs.filter(d => d.stage === key).length;
-          return '<div class="ws-row" style="flex-direction:column;align-items:flex-start;gap:2px;"><span class="ws-label">' + label + '</span><span class="ws-val" style="font-size:1.1rem;font-weight:700;">' + n + '</span></div>';
-        }).join('') + '</div>';
-    } },
+    defaultVisible: false, defaultOrder: 21, link: { href: '#', label: 'Pipeline complet →' } },
 
+  /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     LotTourneeWidget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur). */
   'lot-tournee': { id: 'lot-tournee', title: 'Tournée du jour', size: 'L', category: 'companion', source: 'lot:haversine',
     keywords: ['tournée', 'tournée du jour', 'itinéraire', 'déplacements', 'route', 'optimiser tournée'],
-    defaultVisible: false, defaultOrder: 22, link: { href: '#', label: 'Optimiser →' },
-    render(ctx, el) {
-      const pts = ctx.haversinePts || [];
-      if (!pts.length) {
-        el.innerHTML = buildRichEmptyHTML(
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
-          'Optimisez vos trajets du jour',
-          'Ajoutez vos arrêts et Seba calcule l\'ordre le plus rapide.',
-          'Ajouter des points', 'haversine-engine.html'
-        );
-        return;
-      }
-      el.innerHTML = '<div class="ws-row"><span class="ws-label">' + pts.length + ' arrêt(s) programmé(s)</span></div>' +
-        pts.slice(0, 5).map(p => '<div class="ws-row"><span class="ws-label">' + esc(p.nom) + '</span></div>').join('');
-    } },
+    defaultVisible: false, defaultOrder: 22, link: { href: '#', label: 'Optimiser →' } },
 
   'chart-donut': { id: 'chart-donut', title: 'Répartition des interventions', size: 'L', category: 'core', source: 'live',
     keywords: ['répartition', 'donut', 'camembert', 'statuts interventions', 'anneau'],
@@ -1487,30 +1605,14 @@ window.WIDGET_CATALOG = {
   /* Généralisé depuis cleaning-photo-report (WM-004, WIDGET_MASTER_PLAN.md) :
      le widget lui-même ne connaît plus aucun secteur — sa copie (titre, icône,
      état vide) est résolue via SEBA_DASHBOARD_CONFIG.widgetExtensionFor(),
-     contrat d'extension sectorielle défini dans config-dashboard.js. */
+     contrat d'extension sectorielle défini dans config-dashboard.js.
+     Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     GenericMediaReportWidget/V2_CLASS_WIDGETS ci-dessus). render()/titleFor()
+     retirés d'ici (retrait pur) : la même logique de résolution sectorielle
+     vit désormais uniquement sur l'entrée V2_CLASS_WIDGETS correspondante. */
   'generic-media-report': { id: 'generic-media-report', title: 'Rapport photo', size: 'M', category: 'companion', source: 'live',
     keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'média', 'documents intervention'],
-    defaultVisible: false, defaultOrder: 25, link: { href: '../planning.html', label: 'Voir les interventions →' },
-    titleFor(ctx) {
-      const ext = window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur);
-      return (ext && ext.title) || this.title;
-    },
-    render(ctx, el) {
-      const ext = (window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur)) || {};
-      const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getMediaReport(ctx) : null;
-      if (!report) {
-        el.innerHTML = buildRichEmptyHTML(
-          ext.emptyIcon || '📷',
-          ext.emptyTitle || 'Aucun rapport photo',
-          ext.emptySub || 'Ajoutez des photos avant/après à vos interventions pour rassurer vos clients.',
-          'Voir les interventions', 'planning.html');
-        return;
-      }
-      el.innerHTML = '<div class="bc-pad">' +
-        '<div class="metric-value mono-num">' + report.count + '</div>' +
-        '<div class="metric-label">rapport(s) photo cette semaine</div>' +
-        '</div>';
-    } },
+    defaultVisible: false, defaultOrder: 25, link: { href: '../planning.html', label: 'Voir les interventions →' } },
 
   /* ── Widget "pur" (règle d'or, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) :
      ne lit jamais window.SebaDB directement, passe uniquement par
@@ -1796,16 +1898,37 @@ const V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso'];
 
 /* Widgets migrés en tant qu'instances WidgetV2 (classe, cycle de vie
    load/render/onMount/onResize/onDestroy — voir widget-v2-framework.js) au
-   lieu du patron def.render(ctx, el) synchrone de mountV2Widgets(). Montés
-   dans .v2-zone-activite comme le reste du bloc "Aujourd'hui" (même zone
-   cible que dans DASHBOARD_V2_MASTER_PLAN.md §1 : "Carte et déplacements").
-   defaultVisible étant false pour ces widgets (compagnons sectoriels), leur
-   affichage en V2 reste conditionné à getEffectiveLayout() exactement comme
-   en V1 — voir mountV2ClassWidgets(), pas un mount inconditionnel. */
+   lieu du patron def.render(ctx, el) synchrone de mountV2Widgets(). Une liste
+   par zone V2 cible, même logique que les listes fonctionnelles ci-dessus :
+   "quoi exclure en V1" (agrégées dans MIGRATED_TO_V2_IDS via V2_CLASS_WIDGET_IDS)
+   et "quoi monter, et où" (consommées par mountV2ClassWidgets ci-dessous).
+   defaultVisible étant false pour la plupart de ces widgets (compagnons
+   sectoriels), leur affichage en V2 reste conditionné à getEffectiveLayout()
+   exactement comme en V1 — voir mountV2ClassWidgets(), pas un mount
+   inconditionnel qui les ferait apparaître pour tous les secteurs. */
+const V2_ZONE_ACTIVITE_CLASS_IDS = ['lot-carte', 'metric-1', 'lot-tournee', 'generic-media-report'];
+const V2_ZONE_FINANCE_CLASS_IDS = ['metric-3', 'goal', 'lot-impayes', 'lot-pipeline'];
+const V2_ZONE_TRAITEMENT_CLASS_IDS = ['recos'];
+
 const V2_CLASS_WIDGETS = {
-  'lot-carte': { title: 'Carte des interventions', link: { href: '../planning.html', label: 'Planning →' }, WidgetClass: (typeof LotCarteWidgetV2 !== 'undefined') ? LotCarteWidgetV2 : null },
+  'lot-carte': { title: 'Carte des interventions', link: { href: '../planning.html', label: 'Planning →' }, WidgetClass: LotCarteWidgetV2 },
+  'metric-1': { title: 'Métrique activité', WidgetClass: Metric1Widget },
+  'metric-3': { title: 'Métrique devis', WidgetClass: Metric3Widget },
+  'goal': { title: 'Objectif du mois', link: { href: 'factures.html', label: 'Factures →' }, WidgetClass: GoalWidget },
+  'lot-impayes': { title: 'Factures en retard', link: { href: '#', label: 'Recouvrement →' }, WidgetClass: LotImpayesWidget },
+  'lot-pipeline': { title: 'Pipeline devis → facture → encaissé', link: { href: '#', label: 'Pipeline complet →' }, WidgetClass: LotPipelineWidget },
+  'lot-tournee': { title: 'Tournée du jour', link: { href: '#', label: 'Optimiser →' }, WidgetClass: LotTourneeWidget },
+  'recos': { title: 'Recommandations Seba', WidgetClass: RecosWidget },
+  'generic-media-report': {
+    title: 'Rapport photo', link: { href: '../planning.html', label: 'Voir les interventions →' },
+    titleFor(ctx) {
+      const ext = window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur);
+      return (ext && ext.title) || this.title;
+    },
+    WidgetClass: GenericMediaReportWidget,
+  },
 };
-const V2_CLASS_WIDGET_IDS = Object.keys(V2_CLASS_WIDGETS);
+const V2_CLASS_WIDGET_IDS = V2_ZONE_ACTIVITE_CLASS_IDS.concat(V2_ZONE_FINANCE_CLASS_IDS, V2_ZONE_TRAITEMENT_CLASS_IDS);
 
 const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS, V2_CLASS_WIDGET_IDS);
 
@@ -1828,7 +1951,8 @@ const DECOMMISSIONED_GRID_IDS = ['quick-actions', 'bento-actions'];
 /* Widget id -> sélecteur de la zone V2 où il a été remonté, pour que le
    commentaire de traçabilité laissé en V1 pointe la bonne zone. */
 function v2ZoneSelectorFor(id) {
-  if (V2_ZONE_FINANCE_IDS.includes(id)) return '.v2-zone-finance';
+  if (V2_ZONE_FINANCE_IDS.includes(id) || V2_ZONE_FINANCE_CLASS_IDS.includes(id)) return '.v2-zone-finance';
+  if (V2_ZONE_TRAITEMENT_CLASS_IDS.includes(id)) return '.v2-zone-traitement';
   return '.v2-zone-activite';
 }
 
@@ -1890,7 +2014,11 @@ function mountV2Widgets(zoneSelector, ids, ctx) {
   const zone = document.querySelector(zoneSelector);
   if (!zone) return;
   zone.classList.add('v2-zone--has-widget');
-  zone.innerHTML = '';
+  // Le nettoyage de la zone (zone.innerHTML = '') est centralisé dans les
+  // orchestrateurs renderV2Zone*() ci-dessous : une même zone peut recevoir
+  // à la fois des widgets fonctionnels (ici) et des widgets à base de classe
+  // (mountV2ClassWidgets) — un clear() local ici effacerait ce que l'autre
+  // vient d'ajouter selon l'ordre d'appel.
   ids.forEach(id => {
     const def = window.WIDGET_CATALOG[id];
     if (!def) return;
@@ -1935,9 +2063,10 @@ function mountV2ClassWidgets(zoneSelector, ids, ctx) {
     const container = document.createElement('div');
     container.className = 'v2-widget-container';
     container.dataset.widgetId = id;
+    const title = entry.titleFor ? entry.titleFor(ctx) : entry.title;
     container.innerHTML =
       '<div class="v2-widget-head">' +
-      '<span class="v2-widget-title">' + entry.title + '</span>' +
+      '<span class="v2-widget-title">' + title + '</span>' +
       (entry.link ? '<a href="' + entry.link.href + '" class="v2-widget-link">' + entry.link.label + '</a>' : '') +
       '</div><div class="v2-widget-content"></div>';
     zone.appendChild(container);
@@ -1946,14 +2075,32 @@ function mountV2ClassWidgets(zoneSelector, ids, ctx) {
     instance.mount();
   });
 }
-function renderV2ZoneActivite(ctx) {
-  destroyV2ClassWidgets();
-  mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx);
-  mountV2ClassWidgets('.v2-zone-activite', V2_CLASS_WIDGET_IDS, ctx);
+/* Nettoie une zone V2 avant repeuplement — appelé une seule fois par zone,
+   avant les mounts fonctionnel (mountV2Widgets) ET classe (mountV2ClassWidgets)
+   qui peuvent tous deux y contribuer, pour éviter qu'un clear() interne à
+   l'un efface ce que l'autre vient d'ajouter. */
+function clearV2Zone(zoneSelector) {
+  const zone = document.querySelector(zoneSelector);
+  if (zone) zone.innerHTML = '';
 }
-function renderV2ZoneFinance(ctx) { mountV2Widgets('.v2-zone-finance', V2_ZONE_FINANCE_IDS, ctx); }
+function renderV2ZoneActivite(ctx) {
+  clearV2Zone('.v2-zone-activite');
+  mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx);
+  mountV2ClassWidgets('.v2-zone-activite', V2_ZONE_ACTIVITE_CLASS_IDS, ctx);
+}
+function renderV2ZoneFinance(ctx) {
+  clearV2Zone('.v2-zone-finance');
+  mountV2Widgets('.v2-zone-finance', V2_ZONE_FINANCE_IDS, ctx);
+  mountV2ClassWidgets('.v2-zone-finance', V2_ZONE_FINANCE_CLASS_IDS, ctx);
+}
+function renderV2ZoneTraitement(ctx) {
+  clearV2Zone('.v2-zone-traitement');
+  mountV2ClassWidgets('.v2-zone-traitement', V2_ZONE_TRAITEMENT_CLASS_IDS, ctx);
+}
 window.renderV2ZoneActivite = renderV2ZoneActivite;
 window.renderV2ZoneFinance = renderV2ZoneFinance;
+window.renderV2ZoneTraitement = renderV2ZoneTraitement;
+window.destroyV2ClassWidgets = destroyV2ClassWidgets;
 
 /* ═══════════════════════════════════════════════════════════════
    V2 — HEADER (Phase 2, DASHBOARD_V2_MASTER_PLAN.md)

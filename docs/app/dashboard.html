@@ -27,9 +27,11 @@
        nulle part — seul le CA pinné en télémétrie avait sa propre règle locale
        dupliquée. Applique désormais "chiffres en monospace façon terminal
        financier" (charte Tactical Dark) à toute donnée numérique principale. */
-    .metric-value, .bc-amount, .goal-current, .focus-score-num {
+    .metric-value, .bc-amount, .focus-score-num {
       font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;
     }
+    /* .goal-current retiré de cette liste (règle dupliquée dans
+       dashboard-v2.css, widget 'goal' migré en V2 — voir §6bis). */
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
     /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
     body::before {
@@ -213,31 +215,17 @@
     .tl-sub { font-size: .76rem; color: var(--text-2); line-height: 1.4; }
     .tl-empty { padding: 24px 16px; font-size: .85rem; color: var(--text-2); text-align: center; }
 
-    /* ── Recommendations ── */
-    .reco-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
-    .reco-item:last-child { border-bottom: none; }
-    .reco-item:hover { background: var(--bg); }
-    .reco-bar { width: 3px; min-width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
-    .reco-bar.em { background: var(--emerald); }
-    .reco-bar.am { background: var(--amber); }
-    .reco-bar.pl { background: var(--plum); box-shadow: 0 0 6px rgba(201,169,218,.4); }
-    .reco-content { flex: 1; min-width: 0; }
-    .reco-title { font-size: .83rem; font-weight: 600; margin-bottom: 2px; }
-    .reco-desc { font-size: .75rem; color: var(--text-2); line-height: 1.45; margin-bottom: 5px; }
-    .reco-cta { font-size: .71rem; font-weight: 600; color: var(--emerald); }
+    /* .reco-* migré vers dashboard-v2.css (widget 'recos' migré en V2 — voir
+       DASHBOARD_V2_MASTER_PLAN.md §6bis) : exclusif à ce widget, aucun
+       consommateur V1 restant. */
 
     /* quick-actions décommissionné en faveur de v2-header — voir
        DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .qa-grid/.qa-btn retiré
        (exclusif à ce widget). */
 
-    /* ── Monthly goal ── */
-    .goal-block { padding: 14px 16px; }
-    .goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-    .goal-current { font-size: 1.35rem; font-weight: 700; }
-    .goal-target-txt { font-size: .76rem; color: var(--text-2); }
-    .goal-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 8px 0 6px; }
-    .goal-bar-fill { height: 100%; border-radius: 3px; background: var(--emerald); transition: width 1.2s cubic-bezier(.22,1,.36,1); width: 0; }
-    .goal-sub { font-size: .72rem; color: var(--text-2); }
+    /* .goal-* migré vers dashboard-v2.css (widget 'goal' migré en V2 — voir
+       DASHBOARD_V2_MASTER_PLAN.md §6bis) : exclusif à ce widget, aucun
+       consommateur V1 restant. */
 
     /* ── Activity ── */
     .activity-item { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
@@ -385,7 +373,8 @@
     .bc-period-btn{padding:4px 10px;border-radius:20px;background:var(--bg);border:1.5px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .15s,color .15s,background .15s;}
     .bc-period-btn:hover{border-color:var(--emerald);color:var(--emerald);}
     .bc-period-btn.active{background:rgba(0,255,157,.12);border-color:var(--emerald);color:var(--emerald);}
-    .bc-pad{padding:16px 18px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+    /* .bc-pad migré vers dashboard-v2.css (voir plus bas) : aucun consommateur
+       V1 restant (bento-chart/marge-reelle/generic-media-report sont V2). */
     .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
     .bc-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
     .bc-amount{font-size:2.1rem;font-weight:800;letter-spacing:-.045em;line-height:1;}
@@ -408,13 +397,8 @@
        Correctifs : height:100% (fonctionne que le parent soit flex ou non, tant
        qu'il a une hauteur définie — .widget-body en a toujours une via son propre
        flex:1) + gabarit sensiblement plus compact pour tenir dans les tailles M/L. */
-    .bc-empty-body{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px 0 0;}
-    .bc-empty-ico{width:34px;height:34px;border-radius:9px;background:rgba(0,255,157,.08);border:1.5px solid rgba(0,255,157,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
-    .bc-empty-ico svg{width:16px;height:16px;}
-    .bc-empty-title{font-size:.88rem;font-weight:700;margin-bottom:4px;}
-    .bc-empty-sub{font-size:.78rem;color:var(--text-2);line-height:1.4;margin-bottom:10px;max-width:360px;}
-    .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
-    .bc-empty-btn:hover{opacity:.88;}
+    /* .bc-empty-* migré vers dashboard-v2.css (voir plus bas) : même raison
+       que .bc-pad — aucun consommateur V1 restant. */
     /* bento-actions décommissionné en faveur de v2-header — voir
        DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .bento-flash/.flash-*
        retiré (exclusif à ce widget). */
@@ -1436,9 +1420,15 @@
        montés ici avec le même _ctx, uniquement quand le squelette V2 est
        actif. */
     if (window.__SEBA_V2_ENABLED__) {
+      // Détruit TOUTES les instances WidgetV2 encore vivantes (ResizeObserver,
+      // instances Leaflet, etc.) avant que les 3 zones ne soient repeuplées —
+      // une seule passe, avant les 3 renderV2Zone*() qui suivent (voir
+      // destroyV2ClassWidgets() dans docs/widgets.js).
+      if (typeof destroyV2ClassWidgets === 'function') destroyV2ClassWidgets();
       if (typeof renderV2Header === 'function') renderV2Header(_ctx);
       if (typeof renderV2ZoneActivite === 'function') renderV2ZoneActivite(_ctx);
       if (typeof renderV2ZoneFinance === 'function') renderV2ZoneFinance(_ctx);
+      if (typeof renderV2ZoneTraitement === 'function') renderV2ZoneTraitement(_ctx);
     }
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);

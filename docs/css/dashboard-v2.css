@@ -39,6 +39,15 @@
   --v2-header-badge-text: rgba(245, 247, 250, 0.85);
   --v2-header-cta-bg: #2A2D36;
   --v2-header-cta-text: #F5F7FA;
+
+  /* Tokens pour le contenu de widgets migrés en bloc (batch DASHBOARD_V2_MASTER_PLAN.md
+   * §6bis : goal/recos/lot-*/generic-media-report) — valeurs identiques à
+   * celles qui vivaient en dur dans dashboard.html (.reco-bar.pl, .bc-empty-ico),
+   * simplement nommées pour respecter la règle "aucune couleur hors :root"
+   * (tools/check-design-system.js) sur ce fichier. */
+  --v2-content-plum-glow: rgba(201, 169, 218, 0.4);
+  --v2-content-accent-tint: rgba(0, 255, 157, 0.08);
+  --v2-content-accent-border: rgba(0, 255, 157, 0.2);
 }
 
 .v2-dashboard-wrapper {
@@ -305,3 +314,50 @@
     padding: 8px 14px;
   }
 }
+
+/* ── Contenu de widgets migrés (batch DASHBOARD_V2_MASTER_PLAN.md §6bis) ──
+ * Exception délibérée à la règle "uniquement des sélecteurs .v2-" du haut de
+ * ce fichier : ces classes (.reco-*, .goal-*, .bc-pad, .bc-empty-*) sont des
+ * noms HÉRITÉS du V1 — les templates HTML des classes WidgetV2 (widgets.js)
+ * les émettent tels quels, les renommer exigerait de toucher chaque template
+ * pour un gain nul. Elles ne sont déplacées ici QUE parce que plus aucun
+ * widget resté en V1 ne les utilise (vérifié par grep avant migration) :
+ * .metric-*/.ws-row/.ws-label/.ws-val restent volontairement dans le <style>
+ * de dashboard.html (partagés avec metric-0/metric-2/workspace, qui restent
+ * en V1) — les y déplacer casserait ces widgets dès ce commit. */
+
+.reco-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
+.reco-item:last-child { border-bottom: none; }
+.reco-item:hover { background: var(--bg); }
+.reco-bar { width: 3px; min-width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+.reco-bar.em { background: var(--emerald); }
+.reco-bar.am { background: var(--amber); }
+.reco-bar.pl { background: var(--plum); box-shadow: 0 0 6px var(--v2-content-plum-glow); }
+.reco-content { flex: 1; min-width: 0; }
+.reco-title { font-size: .83rem; font-weight: 600; margin-bottom: 2px; }
+.reco-desc { font-size: .75rem; color: var(--text-2); line-height: 1.45; margin-bottom: 5px; }
+.reco-cta { font-size: .71rem; font-weight: 600; color: var(--emerald); }
+
+.goal-block { padding: 14px 16px; }
+.goal-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.goal-current { font-size: 1.35rem; font-weight: 700; font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.goal-target-txt { font-size: .76rem; color: var(--text-2); }
+.goal-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 8px 0 6px; }
+.goal-bar-fill { height: 100%; border-radius: 3px; background: var(--emerald); transition: width 1.2s cubic-bezier(.22,1,.36,1); width: 0; }
+.goal-sub { font-size: .72rem; color: var(--text-2); }
+
+.bc-pad { padding: 16px 18px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.bc-empty-body { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4px 0 0; }
+.bc-empty-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--v2-content-accent-tint); border: 1.5px solid var(--v2-content-accent-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
+.bc-empty-ico svg { width: 16px; height: 16px; }
+.bc-empty-title { font-size: .88rem; font-weight: 700; margin-bottom: 4px; }
+.bc-empty-sub { font-size: .78rem; color: var(--text-2); line-height: 1.4; margin-bottom: 10px; max-width: 360px; }
+.bc-empty-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px; background: var(--emerald); color: var(--on-emerald); border: none; border-radius: var(--rs); font-family: 'Inter', sans-serif; font-size: .78rem; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+.bc-empty-btn:hover { opacity: .88; }
+
+/* Grille des 4 étapes du pipeline (widget 'lot-pipeline') — remplace l'ancien
+ * wrapper .qa-grid, retiré du CSS lors de la décommission bento-actions/
+ * quick-actions (§4quater) sans qu'on remarque alors que lot-pipeline le
+ * réutilisait aussi : le widget rendait sans display:grid depuis cette date
+ * (bug pré-existant, corrigé par ce nom dédié — voir LotPipelineWidget). */
+.v2-pipeline-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }

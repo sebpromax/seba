@@ -49,26 +49,26 @@ code (id / titre / catégorie / source). Statuts :
 |---|---|---|---|
 | `serenity-score` | Indice de santé du compte | `header-status-group` (`#v2-header`) | **Supprimé*** — exécuté, voir §4quater |
 | `metric-0` | Métrique principale | Zone 3 — Santé financière (à réassigner : CA/Marge/Encaissements) | Orphelin |
-| `metric-1` | Métrique activité | Zone 2 Bloc A — Interventions (compteur) | Migré |
+| `metric-1` | Métrique activité | Zone 2 Bloc A — Interventions (compteur) (`.v2-zone-activite`, montage par classe) | **Migré-exécuté** — voir §6bis |
 | `metric-2` | Métrique clients | — (aucune zone V2 dans le MVP 12 widgets ; futur module "Commercial") | Orphelin |
-| `metric-3` | Métrique devis | Zone 3 Carte 4 — Devis | Migré |
+| `metric-3` | Métrique devis | Zone 3 Carte 4 — Devis (`.v2-zone-finance`, montage par classe) | **Migré-exécuté** — voir §6bis |
 | `bento-chart` | Suivi des encaissements | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis |
 | `bento-actions` | Actions flash | Bouton `+ Créer` (`#v2-header`) — partiel | **Supprimé*** — exécuté, voir §4quater (dette : lien paiement/intervention non couverts) |
 | `timeline` | Journée d'aujourd'hui | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — exécuté, voir §3bis (retiré de PINNED_TELEMETRY_IDS) |
 | `activity` | Activité récente | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — pilote exécuté, voir §3bis |
-| `recos` | Recommandations Seba | Zone "Seba IA" (§21 vision, position 14 dans l'ordre §24) | Migré |
+| `recos` | Recommandations Seba | Zone "Seba IA" (§21 vision, position 14 dans l'ordre §24) — `.v2-zone-traitement`, montage par classe | **Migré-exécuté** — voir §6bis |
 | `quick-actions` | Actions rapides | Bouton `+ Créer` (`#v2-header`) — partiel | **Supprimé*** — exécuté, voir §4quater (dette : "+ Facture" non couvert) |
-| `goal` | Objectif du mois | Zone 3 Carte 1 — CA (fusionné : barre d'objectif) | Migré |
+| `goal` | Objectif du mois | Zone 3 Carte 1 — CA (fusionné : barre d'objectif — fusion visuelle non faite, voir §6bis) (`.v2-zone-finance`, montage par classe) | **Migré-exécuté** — voir §6bis |
 | `workspace` | Votre espace | — (explicitement listé §26 de la vision) | Supprimé |
 | `portal` | Portail client | — (retiré du dashboard, relocalisé en item de sidebar "Configuration", §2 vision) | Supprimé |
 | `team` | Équipe aujourd'hui | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — exécuté, voir §3bis |
 | `chart-donut` | Répartition des interventions | — (graphique décoratif sans action, contraire à §13/§26 vision) | Orphelin |
-| `lot-impayes` | Factures en retard | "À traiter maintenant" (facture échue) + Zone 3 Encaissements | Migré* |
-| `lot-pipeline` | Pipeline devis → facture → encaissé | Zone 3 (Devis/Encaissements) ou Analyse détaillée | Migré* |
-| `lot-tournee` | Tournée du jour | Zone 2 Bloc C — Carte et déplacements | Migré* |
+| `lot-impayes` | Factures en retard | "À traiter maintenant" (facture échue) + Zone 3 Encaissements (`.v2-zone-finance`, montage par classe) | **Migré-exécuté*** — voir §6bis (source `lot:contentieux` inchangée, dette de données) |
+| `lot-pipeline` | Pipeline devis → facture → encaissé | Zone 3 (Devis/Encaissements) ou Analyse détaillée (`.v2-zone-finance`, montage par classe) | **Migré-exécuté*** — voir §6bis (source `lot:mutation` inchangée, dette de données ; bug `.qa-grid` corrigé au passage) |
+| `lot-tournee` | Tournée du jour | Zone 2 Bloc C — Carte et déplacements (`.v2-zone-activite`, montage par classe) | **Migré-exécuté*** — voir §6bis (source `lot:haversine` inchangée, dette de données) |
 | `lot-carte` | Carte des interventions | Zone 2 Bloc C — Carte et déplacements (`.v2-zone-activite`, montage par classe) | **Migré-exécuté** — voir §6, stress test du framework `WidgetV2` |
 | `lot-treso` | Position de trésorerie | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis (source `lot:treso` inchangée, dette de données) |
-| `generic-media-report` | Rapport photo | Zone cible à réassigner (Zone 5 "Qualité" retirée du backlog — voir "Clôture Qualité/Stock" ; widget lui-même non concerné, données réelles via `SebaWidgetAPI.getMediaReport`) | Migré |
+| `generic-media-report` | Rapport photo | `.v2-zone-activite` (réassigné ici, montage par classe — Zone 5 "Qualité" d'origine retirée du backlog, voir "Clôture Qualité/Stock" ; widget lui-même non concerné, données réelles via `SebaWidgetAPI.getMediaReport`) | **Migré-exécuté** — voir §6bis |
 | `marge-reelle` | Marge réelle | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis. Zone 4 (Rentabilité par intervention) reste sans widget : nécessite `dureeEstimee`/`dureeReelle`, voir §2 |
 | `ext-chart` | Nouveau Graphique | — (widget d'extension générique, catalogue seulement) | Orphelin |
 | `ext-notes` | Bloc-notes | — (widget d'extension générique, catalogue seulement) | Orphelin |
@@ -640,17 +640,16 @@ dans un état "à trancher" ou "en attente de décision". C'est ce changement pr
 des zones de flou, pas fin du travail de code) qui justifie de qualifier le projet de
 "Maintenance/Optimisation" plutôt que "Migration active" à partir de maintenant.
 
-**Ce que "Maintenance/Optimisation" ne veut PAS dire ici — distinction nécessaire pour ne
-pas transformer une clôture honnête en fausse promesse inversée :** l'exécution n'est pas
-terminée. 8 widgets restent marqués "Migré" sans exécution physique (pas de flou sur leur
-destination, juste pas encore codés) : `metric-1`, `metric-3`, `recos`, `goal`,
-`lot-impayes`, `lot-pipeline`, `lot-tournee`, `generic-media-report` (`lot-carte`, 9ème de
-cette liste, exécuté depuis — voir §6). Ce sont désormais les 8 seules entrées du backlog de
-maintenance — une liste fermée et connue,
-plus une liste ouverte à explorer. C'est cette fermeture-là (zéro ambiguïté restante, pas
-zéro ligne de code restante) qui distingue "Maintenance/Optimisation" de "Migration
-active" : le projet n'est plus en train de *découvrir* ce qu'il doit migrer, seulement
-d'*exécuter* une liste déjà entièrement connue.
+**Mise à jour (§6/§6bis) — exécution désormais terminée pour les 9 widgets identifiés :**
+les 9 widgets qui restaient marqués "Migré" sans exécution physique (`lot-carte`, `metric-1`,
+`metric-3`, `recos`, `goal`, `lot-impayes`, `lot-pipeline`, `lot-tournee`,
+`generic-media-report`) sont désormais tous "Migré-exécuté", en tant qu'instances `WidgetV2`
+(voir §6/§6bis). Ce que "exécution terminée" ne veut PAS dire ici : le dashboard n'est pas
+"tout V2" pour autant — 8 widgets restent en V1 sans changement, par choix déjà documenté
+(Orphelins/hors périmètre de toute bascule planifiée) : `metric-0` (télémétrie v2-header),
+`metric-2`, `workspace`, `portal`, `chart-donut`, `ext-chart`, `ext-notes`, `ext-rss`. Le
+"Shadow Backlog" (`session-manager.js`, routage par hash, audit `pro-global.css`) et le
+Batch 3 (retrait total du V1, renommage de fichier) restent non commencés — voir §6bis.
 
 ## 6. Framework `WidgetV2` — standard pour le backlog des 9 widgets restants
 
@@ -707,3 +706,99 @@ migration des 8 autres widgets en sous-classes `WidgetV2` (la plupart n'ont pas 
 cycle de vie réel — `render()` synchrone suffira, `load()`/`onMount()`/`onResize()` resteront
 vides), audit du "Shadow Backlog" (`session-manager.js`, routage par hash `#widget-id`, audit
 complet de `pro-global.css`), et le retrait total du V1 (Batch 3).
+
+## 6bis. Batch de bascule — les 8 widgets restants (Groupes A/B/C)
+
+Les 8 widgets qui restaient marqués "Migré" sans exécution physique sont désormais des
+sous-classes `WidgetV2`, suivant strictement le patron `LotCarteWidgetV2` (répétition
+volontaire, pas de variation créative par widget — consigne d'exécution) : `Metric1Widget`,
+`Metric3Widget`, `GoalWidget`, `LotImpayesWidget`, `LotPipelineWidget`, `LotTourneeWidget`,
+`RecosWidget`, `GenericMediaReportWidget` (toutes dans `docs/widgets.js`, juste après
+`LotCarteWidgetV2`). `load()` prépare `this._data` depuis `ctx` ; `render()` ne fait que du
+templating à partir de `this._data` (séparation stricte donnée/template demandée) ;
+`onMount()`/`onResize()`/`onDestroy()` existent sur les 8 (API uniforme), même vides —
+aucun n'a besoin d'un cycle de vie réel (voir "Points non applicables" ci-dessous).
+
+**Répartition par zone** (suit la colonne "Zone V2 Cible" du §1) :
+- `.v2-zone-activite` : + `metric-1`, `lot-tournee`, `generic-media-report` (rejoint
+  `activity`/`timeline`/`team`/`lot-carte`).
+- `.v2-zone-finance` : + `metric-3`, `goal`, `lot-impayes`, `lot-pipeline` (rejoint
+  `bento-chart`/`marge-reelle`/`lot-treso`).
+- `.v2-zone-traitement` : `recos` — premier occupant de cette zone, placeholder vide depuis
+  la Phase 1 (bon fit conceptuel : recommandations proactives ~ "bandeau de traitement").
+
+**Orchestration** (`docs/widgets.js`) : `V2_ZONE_ACTIVITE_CLASS_IDS`/`V2_ZONE_FINANCE_CLASS_IDS`/
+`V2_ZONE_TRAITEMENT_CLASS_IDS` (nouvelles listes par zone, agrégées dans `V2_CLASS_WIDGET_IDS`
+puis dans `MIGRATED_TO_V2_IDS` pour l'exclusion V1, comme d'habitude). `V2_CLASS_WIDGETS`
+étendu aux 8 nouvelles entrées (avec `titleFor` pour `generic-media-report`, seul widget à
+copie dynamique par secteur). Le nettoyage de zone (`zone.innerHTML = ''`) a été **centralisé**
+dans une nouvelle fonction `clearV2Zone()`, appelée une fois par `renderV2ZoneActivite()`/
+`renderV2ZoneFinance()`/`renderV2ZoneTraitement()` avant les deux mounts (fonctionnel +
+classe) qui partagent désormais certaines zones — l'ancien `zone.innerHTML = ''` interne à
+`mountV2Widgets()` aurait effacé les widgets-classe déjà montés selon l'ordre d'appel.
+`destroyV2ClassWidgets()` (détruit toutes les instances vivantes, ResizeObserver compris) est
+maintenant appelé **une seule fois** depuis `docs/app/dashboard.html`, avant les 3 zones
+(et non plus depuis l'intérieur de `renderV2ZoneActivite`, insuffisant dès que des widgets-classe
+existent dans plusieurs zones).
+
+**Bug pré-existant corrigé en chemin** : `lot-pipeline` utilisait `class="qa-grid"` pour sa
+grille à 4 étapes — cette classe CSS a été supprimée du `<style>` de `dashboard.html` lors de
+la décommission `bento-actions`/`quick-actions` (§4quater) sans qu'on remarque alors que
+`lot-pipeline` la réutilisait aussi. Le widget rendait donc sans `display:grid` depuis cette
+date (seul `grid-template-columns` inline survivait, sans effet sans `display:grid`). Corrigé
+par une classe dédiée `.v2-pipeline-stages` (nouvelle, `dashboard-v2.css`), vérifiée en
+Puppeteer (`getComputedStyle` → `display:grid`, 4 colonnes égales).
+
+**CSS — décision et écart assumé par rapport à la consigne littérale** : la consigne demandait
+de migrer "les styles V1 de ces widgets" vers `dashboard-v2.css` et de les supprimer de
+`dashboard.html`. Vérifié par grep AVANT toute suppression : `.reco-*` (exclusif à `recos`),
+`.goal-*` (exclusif à `goal`) et `.bc-pad`/`.bc-empty-*` (utilisés uniquement par
+`bento-chart`/`marge-reelle`, déjà V2, et `generic-media-report`, migré ici) n'ont **aucun**
+consommateur restant en V1 — déplacés tels quels (mêmes noms de classe, gérés par `render()`/
+templates, pas renommés en `.v2-*` : renommer exigerait de toucher chaque template pour un
+gain nul). En revanche `.metric-card`/`.metric-value`/`.metric-label`/`.metric-unit`/
+`.metric-delta`/`.metric-spark` (partagés avec `metric-0`, toujours en télémétrie v2-header, et
+`metric-2`, toujours orphelin V1) et `.ws-row`/`.ws-label`/`.ws-val` (partagés avec `workspace`,
+toujours orphelin V1) **restent volontairement** dans le `<style>` de `dashboard.html` : les
+déplacer aurait cassé ces 3 widgets dès ce commit — un déplacement littéral aurait donc
+introduit une régression hors du périmètre demandé. `.goal-current` a été retiré de la règle
+police partagée (`.metric-value, .bc-amount, .goal-current, .focus-score-num`) et redéfini
+seul dans `dashboard-v2.css` (`goal` migre entièrement, plus besoin de rester dans la règle
+partagée). Deux couleurs littérales déplacées (`rgba(201,169,218,.4)` du glow `.reco-bar.pl`,
+`rgba(0,255,157,.08)`/`.2` de `.bc-empty-ico`) ont été reformulées en tokens
+`--v2-content-plum-glow`/`--v2-content-accent-tint`/`--v2-content-accent-border` (`:root` de
+`dashboard-v2.css`) pour rester conformes à `tools/check-design-system.js` (aucune couleur en
+dur hors `:root`) — mêmes valeurs, rendu identique au pixel près.
+
+**Points de la consigne vérifiés non applicables (pas ignorés, vérifiés)** :
+- **`onInterval()`/auto-refresh périodique** : zéro `setInterval` trouvé dans le V1 de ces 8
+  widgets avant migration (grep sur tout `widgets.js`) — aucun n'a donc de rafraîchissement
+  périodique à préserver. Pas de mécanisme d'auto-refresh ajouté à la classe de base pour ne
+  pas construire une API inutilisée par tous les widgets actuels (à ajouter le jour où un
+  widget réel en aura besoin).
+- **Routage par hash (`#recos` etc.)** : zéro `location.hash`/`hashchange` trouvé dans
+  `dashboard.html` — aucun widget de ce dashboard n'utilise de routage par hash aujourd'hui,
+  rien à préserver ni migrer sur ce point.
+
+**Vérification (Puppeteer, `?demo&v2=1`)** : secteur `maintenance` → `metric-1`/`metric-3`/
+`goal`/`lot-tournee`/`recos`/`lot-carte` présents et corrects par zone (activite:6, finance:5,
+traitement:1) ; secteur `coiffure` (aucune promotion compagnon) → seuls les widgets `core`
+présents (`metric-1`/`metric-3`/`goal`/`recos`), `lot-carte`/`lot-tournee` absents comme en V1 ;
+`lot-impayes`/`lot-pipeline`/`generic-media-report` (defaultVisible:false, non promus par
+AUCUN secteur — vrai déjà en V1, pas une régression) vérifiés séparément via un layout forcé
+(simulation d'un ajout manuel réel via `seba_dashboard_layout`) : les 3 montent et rendent
+correctement (états vides `buildRichEmptyHTML`, cohérent avec l'absence de données `lot:*` en
+démo). `goal-bar-fill` anime bien vers son pourcentage cible (double `requestAnimationFrame`,
+plus de `setTimeout(400)`). Zéro widget rendu dans `#widget-grid` (V1) pour les 8 ids. Zéro
+erreur console dans les deux secteurs testés. `node tools/check-design-system.js` (mode diff) :
+0 violation. `node scripts/qa-dashboard-full.js --target=local` (desktop + mobile) : aucune
+régression (seul finding pré-existant : `serenity-score` absent, déjà accepté depuis §4quater).
+
+**Statut catalogue** : les 9 widgets du backlog "Migré-planifié" sont désormais tous
+"Migré-exécuté" (`lot-carte` en §6, ces 8 ici). Restent en V1 sans changement, par choix
+déjà documenté (Orphelins/non concernés par cette bascule) : `metric-0` (télémétrie
+v2-header), `metric-2`, `workspace`, `portal`, `chart-donut`, `ext-chart`, `ext-notes`,
+`ext-rss` — 8 entrées de catalogue, donc `docs/widgets.js` n'est **pas** devenu une coquille
+vide (attendu : ces 8 sont hors périmètre de toute bascule V2 planifiée à ce jour, voir §1).
+Le "Shadow Backlog" (`session-manager.js`, routage hash, audit `pro-global.css`) et le Batch 3
+(retrait total du V1) restent non commencés.
