@@ -1,0 +1,55 @@
+/* widget-data-api.js — Seba
+ * Interface d'API centralisée pour les widgets "purs" (voir la règle d'or
+ * dans _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) : un widget ne lit
+ * JAMAIS window.SebaDB ou localStorage lui-même. Il appelle une fonction
+ * de ce fichier, qui est le seul autorisé à parler à SebaDB pour le compte
+ * des widgets.
+ *
+ * Chargé après seba-data.js, avant widgets.js.
+ */
+(function () {
+  'use strict';
+
+  window.SebaWidgetAPI = {
+    /* Rapport photo des interventions de ménage (widget cleaning-photo-report).
+     * SebaDB n'a pas encore de champ "photos" sur les interventions — aucune
+     * fonctionnalité d'upload n'existe côté produit. Plutôt que d'inventer des
+     * chiffres, cette fonction renvoie honnêtement null tant que ce champ
+     * n'existe pas : le widget affichera son état vide jusqu'à ce que la
+     * vraie fonctionnalité (photos avant/après sur une intervention) existe
+     * dans SebaDB. */
+    getCleaningPhotoReport: function (ctx) {
+      if (!window.SebaDB || !SebaDB.hasData()) return null;
+      var interventions = SebaDB.list('interventions') || [];
+      var withPhotos = interventions.filter(function (i) { return Array.isArray(i.photos) && i.photos.length > 0; });
+      if (!withPhotos.length) return null;
+      return {
+        count: withPhotos.length,
+        latest: withPhotos[withPhotos.length - 1],
+      };
+    },
+
+    /* ── Dashboard Adaptatif — persistance des préférences de disposition ──
+     * Seul point autorisé à lire/écrire la disposition personnalisée par
+     * l'utilisateur (widgets supprimés/ajoutés/réordonnés). Utilise la même
+     * clé que le moteur de layout déjà en place avant cette règle
+     * ('seba_dashboard_layout', via SebaLayoutStore dans docs/widgets.js) —
+     * pas de renommage cosmétique en 'user-dashboard-prefs' : ça aurait
+     * silencieusement fait perdre sa disposition à tout utilisateur ayant
+     * déjà personnalisé son dashboard. SebaLayoutStore délègue maintenant
+     * ici plutôt que d'écrire dans localStorage lui-même. */
+    LAYOUT_KEY: 'seba_dashboard_layout',
+    saveUserPreference: function (layoutConfig) {
+      try {
+        layoutConfig.updatedAt = new Date().toISOString();
+        localStorage.setItem(this.LAYOUT_KEY, JSON.stringify(layoutConfig));
+      } catch (e) { /* quota/navigation privée : on abandonne silencieusement, comme writeSeba() */ }
+    },
+    getUserPreference: function () {
+      try {
+        const raw = localStorage.getItem(this.LAYOUT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    },
+  };
+})();

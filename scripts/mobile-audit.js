@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer-core';
 const pages = [
   'index.html',
   'onboarding.html',
-  'dashboard.html',
+  'app/dashboard.html',
   'clients.html',
   'product.html',
   'solution.html',

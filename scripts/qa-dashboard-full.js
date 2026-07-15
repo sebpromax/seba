@@ -13,8 +13,8 @@ const vp = args.viewport || 'desktop';
 const outDir = path.resolve('docs', 'audit-screenshots', `qa-full-${target}-${vp}`);
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-const localUrl = 'file://' + path.resolve('docs', 'dashboard.html').replace(/\\/g, '/') + '?demo';
-const liveUrl = 'https://sebpromax.github.io/seba/dashboard.html?demo';
+const localUrl = 'file://' + path.resolve('docs', 'app', 'dashboard.html').replace(/\\/g, '/') + '?demo';
+const liveUrl = 'https://sebpromax.github.io/seba/app/dashboard.html?demo';
 const url = target === 'live' ? liveUrl : localUrl;
 
 const IGNORE = [/manifest\.json/i, /ERR_FAILED/i, /ERR_NAME_NOT_RESOLVED/i];
@@ -78,9 +78,9 @@ function finding(text) { results.findings.push(text); console.log('FINDING: ' + 
 try {
   mark('0-empty-state-load');
   if (target === 'local') {
-    await page.goto('file://' + path.resolve('docs', 'dashboard.html').replace(/\\/g, '/'), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto('file://' + path.resolve('docs', 'app', 'dashboard.html').replace(/\\/g, '/'), { waitUntil: 'domcontentloaded', timeout: 30000 });
   } else {
-    await page.goto('https://sebpromax.github.io/seba/dashboard.html', { waitUntil: 'networkidle2', timeout: 45000 });
+    await page.goto('https://sebpromax.github.io/seba/app/dashboard.html', { waitUntil: 'networkidle2', timeout: 45000 });
   }
   await new Promise(r => setTimeout(r, 1000));
   if (vp === 'mobile') {

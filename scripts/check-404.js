@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer-core';
 
 const BASE = 'https://sebpromax.github.io/seba/';
-const pages = ['onboarding.html', 'dashboard.html?demo', 'tarifs.html'];
+const pages = ['onboarding.html', 'app/dashboard.html?demo', 'tarifs.html'];
 
 const browser = await puppeteer.launch({
   headless: true,

@@ -18,7 +18,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a) => {
 }));
 const updateBaseline = !!args['update-baseline'];
 
-const PAGES = ['dashboard.html', 'onboarding.html', 'tarifs.html'];
+const PAGES = ['app/dashboard.html', 'onboarding.html', 'tarifs.html'];
 const VIEWPORTS = {
   desktop: { width: 1440, height: 900 },
   mobile: { width: 375, height: 812, isMobile: true, hasTouch: true },
@@ -74,7 +74,9 @@ async function main() {
 
   for (const pageName of PAGES) {
     for (const viewportName of Object.keys(VIEWPORTS)) {
-      const label = `${pageName.replace('.html', '')}-${viewportName}`;
+      // basename (pas pageName brut) : garde des libellés de baseline stables
+      // même si une page vit dans un sous-dossier (docs/app/dashboard.html).
+      const label = `${path.basename(pageName, '.html')}-${viewportName}`;
       const baselinePath = path.join(BASELINE_DIR, `${label}.png`);
       const buf = await screenshotPage(browser, pageName, viewportName);
 

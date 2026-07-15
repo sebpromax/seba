@@ -343,7 +343,7 @@ async function handleLogin(){
     await completePendingProfile();
     // La porte s'ouvre : une onde unique traverse l'ecran avant la redirection.
     if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
-    window.location.href='dashboard.html';
+    window.location.href='app/dashboard.html';
   }else{
     err.textContent=res.error==='Invalid login credentials'?'Identifiants incorrects.':(res.error||'Connexion impossible — réessayez.');
     err.classList.add('visible');

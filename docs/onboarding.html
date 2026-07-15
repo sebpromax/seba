@@ -236,7 +236,7 @@ p{letter-spacing:-0.02em;}
       </div>
       <p class="reassurance">✓ Gratuit — Sans carte bancaire</p>
       <!-- Guest access : bypass demo deja gere par guard.js (?demo, sessionStorage) -->
-      <p class="reassurance"><a class="demo-link" href="dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
+      <p class="reassurance"><a class="demo-link" href="app/dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
     </section>
 
     <!-- ÉCRAN 2 : EMAIL — la demande est justifiée par le métier choisi ;
@@ -425,7 +425,7 @@ p{letter-spacing:-0.02em;}
       // en mode configuré, l'écran 3 est "vérifiez votre boîte mail" et la
       // propulsion vit sur bienvenue.html, après le choix du mot de passe.)
       if (window.SebaFX) { SebaFX.fadeOut(); await new Promise(function (r) { setTimeout(r, 350); }); }
-      window.location.href = 'dashboard.html';
+      window.location.href = 'app/dashboard.html';
     }, 1650);
   }
 

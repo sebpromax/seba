@@ -17,10 +17,16 @@ function writeSeba(key, val) {
   try { localStorage.setItem('seba_' + key, JSON.stringify(val)); } catch (e) {}
 }
 
+/* Règle "Widget Pur" (_architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) : la
+   disposition personnalisée par l'utilisateur (Dashboard Adaptatif) n'est
+   plus lue/écrite ici directement — délègue à SebaWidgetAPI.getUserPreference/
+   saveUserPreference (docs/services/widget-data-api.js), seul point
+   autorisé à toucher localStorage pour ce besoin. SebaLayoutStore reste un
+   alias de compatibilité pour les appelants existants (addWidgetToLayout,
+   removeWidgetFromLayout, persistOrder, saveLayout, ci-dessous). */
 const SebaLayoutStore = {
-  KEY: 'dashboard_layout',
-  read() { return readSeba(this.KEY, null); },
-  write(layout) { layout.updatedAt = new Date().toISOString(); writeSeba(this.KEY, layout); },
+  read() { return window.SebaWidgetAPI ? window.SebaWidgetAPI.getUserPreference() : null; },
+  write(layout) { if (window.SebaWidgetAPI) window.SebaWidgetAPI.saveUserPreference(layout); },
 };
 
 function parseFrDate(str) {
@@ -1434,6 +1440,24 @@ window.WIDGET_CATALOG = {
         '<div class="ws-row"><span class="ws-label">Estimation précise</span><span class="ws-val link">Ouvrir le simulateur →</span></div>';
     } },
 
+  /* ── Widget "pur" (règle d'or, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) :
+     ne lit jamais window.SebaDB/localStorage directement, passe uniquement par
+     window.SebaWidgetAPI (docs/services/widget-data-api.js). ── */
+  'cleaning-photo-report': { id: 'cleaning-photo-report', title: 'Rapport photo de ménage', size: 'M', category: 'companion', source: 'live',
+    keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'ménage'],
+    defaultVisible: false, defaultOrder: 25, link: { href: 'planning.html', label: 'Voir les interventions →' },
+    render(ctx, el) {
+      const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getCleaningPhotoReport(ctx) : null;
+      if (!report) {
+        el.innerHTML = buildRichEmptyHTML('📷', 'Aucun rapport photo', 'Ajoutez des photos avant/après à vos interventions de ménage pour rassurer vos clients.', 'Voir les interventions', 'planning.html');
+        return;
+      }
+      el.innerHTML = '<div class="bc-pad">' +
+        '<div class="metric-value mono-num">' + report.count + '</div>' +
+        '<div class="metric-label">rapport(s) photo cette semaine</div>' +
+        '</div>';
+    } },
+
   /* ── Bibliothèque d'Extensions (Bible IV.9) — mini-modules ajoutables par
      glisser-déposer depuis le tiroir. defaultVisible:false : n'apparaissent
      que si l'utilisateur les fait glisser dans la grille (ou les coche
@@ -1593,32 +1617,69 @@ function getEffectiveLayout() {
   const stored = SebaLayoutStore.read();
   const storedById = {};
   if (stored && Array.isArray(stored.widgets)) stored.widgets.forEach(w => { storedById[w.id] = w; });
+
+  /* Merge PAR WIDGET, pas par disposition entière (test de stress "changement
+     de secteur", _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md §2bis) :
+     - un widget que l'utilisateur a explicitement touché (supprimé, ajouté,
+       déplacé — présent dans storedById) garde ce choix POUR TOUJOURS, quel
+       que soit le secteur courant. Un changement de métier n'écrase jamais
+       une action manuelle.
+     - un widget que l'utilisateur n'a jamais touché suit la config du secteur
+       COURANT (window._ctx.secteur, relu à chaque appel — pas figé à la
+       première visite) : si l'utilisateur change de secteur, les widgets
+       "compagnon" du nouveau métier s'injectent, ceux de l'ancien métier
+       redeviennent masqués — mais seulement pour les widgets jamais touchés
+       manuellement. */
+  const domainOrder = (window.SEBA_DASHBOARD_CONFIG && window._ctx)
+    ? window.SEBA_DASHBOARD_CONFIG.widgetsFor(window._ctx.secteur)
+    : null;
+
   return Object.values(window.WIDGET_CATALOG).map(w => {
     const o = storedById[w.id];
-    return { id: w.id, visible: o ? o.visible : w.defaultVisible, order: o && typeof o.order === 'number' ? o.order : w.defaultOrder, size: (o && o.size) || w.size };
+    if (o) return { id: w.id, visible: o.visible, order: typeof o.order === 'number' ? o.order : w.defaultOrder, size: o.size || w.size };
+    if (domainOrder) {
+      const idx = domainOrder.indexOf(w.id);
+      return { id: w.id, visible: idx !== -1, order: idx !== -1 ? idx : w.defaultOrder, size: w.size };
+    }
+    return { id: w.id, visible: w.defaultVisible, order: w.defaultOrder, size: w.size };
   }).sort((a, b) => a.order - b.order);
 }
 
 function saveLayout(layout) { SebaLayoutStore.write({ v: 1, widgets: layout }); }
 
+/* Fusionne UNIQUEMENT les widgets explicitement patchés dans la disposition
+   déjà stockée — ne réécrit jamais un instantané complet de getEffectiveLayout()
+   (tout WIDGET_CATALOG). Sinon la moindre suppression/ajout gèlerait
+   silencieusement TOUS les widgets (y compris ceux jamais touchés par
+   l'utilisateur) dans le stockage, empêchant un futur changement de secteur
+   d'injecter les widgets "compagnon" du nouveau métier ou de masquer ceux de
+   l'ancien (test de stress "changement de secteur",
+   _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md §2bis). */
+function patchStoredWidgets(patches) {
+  const stored = SebaLayoutStore.read();
+  const widgets = (stored && Array.isArray(stored.widgets)) ? stored.widgets.slice() : [];
+  const byId = {}; widgets.forEach(w => { byId[w.id] = w; });
+  patches.forEach(p => { byId[p.id] = Object.assign({}, byId[p.id], p); });
+  saveLayout(Object.values(byId));
+}
+
 function addWidgetToLayout(id) {
-  const layout = getEffectiveLayout();
-  const entry = layout.find(w => w.id === id);
-  if (entry) entry.visible = true;
-  saveLayout(layout);
+  const entry = getEffectiveLayout().find(w => w.id === id);
+  if (!entry) return null;
+  patchStoredWidgets([{ id, visible: true, order: entry.order, size: entry.size }]);
   return entry;
 }
 function removeWidgetFromLayout(id) {
-  const layout = getEffectiveLayout();
-  const entry = layout.find(w => w.id === id);
-  if (entry) entry.visible = false;
-  saveLayout(layout);
+  const entry = getEffectiveLayout().find(w => w.id === id);
+  if (!entry) return;
+  patchStoredWidgets([{ id, visible: false, order: entry.order, size: entry.size }]);
 }
 function persistOrder(orderedIds) {
-  const layout = getEffectiveLayout();
-  const byId = {}; layout.forEach(w => byId[w.id] = w);
-  orderedIds.forEach((id, i) => { if (byId[id]) byId[id].order = i; });
-  saveLayout(Object.values(byId));
+  const byId = {}; getEffectiveLayout().forEach(w => { byId[w.id] = w; });
+  const patches = orderedIds
+    .map((id, i) => byId[id] ? { id, visible: true, order: i, size: byId[id].size } : null)
+    .filter(Boolean);
+  patchStoredWidgets(patches);
 }
 
 /* ═══════════════════════════════════════════════════════════════

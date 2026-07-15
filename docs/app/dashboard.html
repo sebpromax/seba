@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="pro-global.css">
-<script src="theme.js"></script>
+<link rel="stylesheet" href="../pro-global.css">
+<script src="../theme.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     /* ── Tactical Dark Absolu (refonte) — override scopé à cette page uniquement,
@@ -679,16 +679,16 @@
       opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
     }
   </style>
-  <link rel="icon" type="image/jpeg" href="favicon.jpg">
-  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/jpeg" href="../favicon.jpg">
+  <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#050505">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+  <link rel="apple-touch-icon" href="../icon-192.png">
+  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("../sw.js").catch(function(){})})}</script>
   <!-- Verrou d'accès : redirection immédiate si Supabase configuré et session absente -->
-  <script src="auth.js"></script>
-  <script src="guard.js"></script>
-  <script src="sentry-init.js" defer></script>
-  <script src="analytics-init.js" defer></script>
+  <script src="../auth.js"></script>
+  <script src="../guard.js"></script>
+  <script src="../sentry-init.js" defer></script>
+  <script src="../analytics-init.js" defer></script>
 </head>
 <body>
 <script>
@@ -712,7 +712,7 @@
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
   <nav class="sidebar"></nav>
-  <script src="sidebar.js"></script>
+  <script src="../sidebar.js"></script>
 
   <!-- ═══════ MAIN ═══════ -->
   <main class="main">
@@ -721,7 +721,7 @@
     <div id="empty-state" class="empty-state" style="display:none;">
       <h2>Bienvenue sur Seba !</h2>
       <p>Créez votre espace professionnel en quelques minutes pour accéder à votre tableau de bord personnalisé.</p>
-      <a href="onboarding.html" class="btn-em">Créer mon entreprise →</a>
+      <a href="../onboarding.html" class="btn-em">Créer mon entreprise →</a>
     </div>
 
     <!-- Dashboard principal -->
@@ -770,10 +770,10 @@
           <div class="avatar-wrap">
             <div class="avatar" id="avatar" style="background:var(--emerald);">—</div>
             <div class="user-menu" id="user-menu">
-              <a href="reglages.html">Mon compte</a>
+              <a href="../reglages.html">Mon compte</a>
               <a href="#" id="pont-donnees-link" onclick="event.preventDefault();activerDonneesReelles();">Activer mes données réelles</a>
               <div class="menu-sep"></div>
-              <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+              <a href="../connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
             </div>
           </div>
         </div>
@@ -790,7 +790,7 @@
             <div class="wc-check"><span class="wc-check-ico">✓</span></div>
             <span class="wc-text">Création de votre compte professionnel</span>
           </div>
-          <a href="devis-nouveau.html" class="wc-item clickable" id="wci-1" onclick="checkItem(1)">
+          <a href="../devis-nouveau.html" class="wc-item clickable" id="wci-1" onclick="checkItem(1)">
             <div class="wc-check"><span class="wc-check-ico">✓</span></div>
             <span class="wc-text">Simuler la création de votre premier devis</span>
             <span class="wc-cta">Créer →</span>
@@ -842,9 +842,9 @@
 <!-- FAB + menu -->
 <button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>
 <div class="fab-menu" id="fab-menu">
-  <a href="clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
-  <a href="devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
-  <a href="planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention<span class="pal-key" style="margin-left:auto;">3</span></a>
+  <a href="../clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
+  <a href="../devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
+  <a href="../planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention<span class="pal-key" style="margin-left:auto;">3</span></a>
 </div>
 
 <!-- Cmd+K palette -->
@@ -935,14 +935,16 @@
   <button class="focus-exit" onclick="toggleFocusMode()" aria-label="Quitter le Mode Focus" title="Quitter (Esc)">Quitter le Mode Focus</button>
 </div>
 
-<script src="businessTypes.js"></script>
-<script src="seba-data.js"></script>
+<script src="../businessTypes.js"></script>
+<script src="../seba-data.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
-<script src="widgets.js"></script>
-<script src="ai-assistant.js" defer></script>
-<script src="push-init.js" defer></script>
-<script src="logger.js" defer></script>
+<script src="../services/config-dashboard.js"></script>
+<script src="../services/widget-data-api.js"></script>
+<script src="../widgets.js"></script>
+<script src="../ai-assistant.js" defer></script>
+<script src="../push-init.js" defer></script>
+<script src="../logger.js" defer></script>
 <script>
   /* ═══════════════════════════════════════════════════════
      DEMO DATA — par secteur
@@ -1955,7 +1957,7 @@
     const notifBtn = document.getElementById('notif-btn');
     if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications (' + late.length + ' non lue' + (late.length > 1 ? 's' : '') + ')');
     body.innerHTML = late.slice(0, 5).map(c =>
-      '<a href="contentieux-recouvrement.html" class="notif-item">' +
+      '<a href="../contentieux-recouvrement.html" class="notif-item">' +
         '<span>Facture en retard — ' + esc(c.client) + '</span>' +
         '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + esc(ctx.sym) + ' en attente</span>' +
       '</a>'
@@ -2284,11 +2286,11 @@
 </script>
 <!-- Seba-Core (migration progressive des onclick, voir docs/src/ui/MIGRATION_REPORT.md) —
      script additif en type="module", n'affecte pas le script classique ci-dessus. -->
-<script type="module" src="src/ui/dashboard-init.js"></script>
+<script type="module" src="../src/ui/dashboard-init.js"></script>
 <!-- Fond shader du Cockpit : Three.js via CDN (Constitution : zéro npm).
      bg-shader.js dégrade silencieusement si le CDN/WebGL est absent. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="bg-shader.js"></script>
+<script src="../bg-shader.js"></script>
 </body>
 </html>
 
