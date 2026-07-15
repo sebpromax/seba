@@ -48,7 +48,7 @@ code (id / titre / catégorie / source). Statuts :
 | `bento-chart` | Suivi des encaissements | Zone 3 Carte 3 — Encaissements | Migré |
 | `bento-actions` | Actions flash | — (explicitement listé §26 de la vision) | Supprimé |
 | `timeline` | Journée d'aujourd'hui | Zone 2 Bloc A — mini-timeline | Migré |
-| `activity` | Activité récente | — (aucune zone V2 explicite) | Orphelin |
+| `activity` | Activité récente | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — pilote exécuté, voir §3bis |
 | `recos` | Recommandations Seba | Zone "Seba IA" (§21 vision, position 14 dans l'ordre §24) | Migré |
 | `quick-actions` | Actions rapides | — (remplacé par le bouton `+ Créer` contextuel du header, §3/§11 vision) | Supprimé |
 | `goal` | Objectif du mois | Zone 3 Carte 1 — CA (fusionné : barre d'objectif) | Migré |
@@ -171,6 +171,40 @@ visible pendant toute la Phase 2).
   moins un cycle complet).
 - Livrable : dashboard V2 avec données 100% réelles sur les widgets migrés, ou état vide
   honnête documenté pour ceux qui dépendent encore d'un champ SebaDB non implémenté.
+
+### 3bis. Pilote exécuté — `activity` (branche `feat/dashboard-v2-layout`)
+
+Premier widget effectivement déplacé en Phase 2, pour valider le mécanisme avant de
+l'appliquer aux 14 autres widgets "Migré" du §1. Mécanisme retenu (à reproduire à
+l'identique pour les prochains) :
+
+- `docs/widgets.js` : `MIGRATED_TO_V2_IDS` (liste plate, à côté de
+  `PINNED_TELEMETRY_IDS`) exclut le widget de `renderGrid()` (V1) — un
+  `document.createComment(...)` est inséré à sa place dans `#widget-grid` au lieu de
+  supprimer le code. `renderV2ZoneActivite(ctx)` (nouvelle fonction, exposée
+  `window.renderV2ZoneActivite`) monte le même `def.render(ctx, el)` — **aucune
+  duplication de logique/données** — dans `.v2-zone-activite`.
+- `docs/app/dashboard.html` : `renderDashboard()` appelle `renderV2ZoneActivite(_ctx)`
+  juste après `renderGrid(...)`, avec le même `_ctx`, uniquement si
+  `window.__SEBA_V2_ENABLED__` (flag posé par le script de toggle `?v2=1` du squelette
+  Phase 1).
+- Chrome du widget en V2 (tête/titre/lien) : classes `.v2-widget-container` /
+  `.v2-widget-head` / `.v2-widget-title` / `.v2-widget-link` / `.v2-widget-content`
+  (nouvelles, `docs/css/dashboard-v2.css`) — jamais `.widget-shell`/`.module-head`
+  (styles "legacy" du `<style>` de `dashboard.html`, non réutilisés pour la coque V2).
+  Le contenu injecté par `def.render()` (ex. `.activity-item`/`.act-dot`) reste
+  inchangé et continue de s'afficher correctement : ces classes ne sont pas scopées à
+  `.app`, donc pas de fuite ni de perte de style à gérer.
+- **Bug préexistant corrigé au passage** : `activity.link.href` valait `'historique.html'`
+  (sans `../`), un résidu de la migration `docs/dashboard.html` → `docs/app/dashboard.html`
+  qui faisait 404 en V1 comme en V2. Corrigé en `'../historique.html'` — bénéficie aux
+  deux, pas seulement à V2. `goal`/`quick-actions` ont le même motif de lien non préfixé
+  et n'ont pas été corrigés ici (hors périmètre de ce pilote) — à vérifier avant leur
+  propre migration.
+- Validé via Puppeteer (`?demo&v2=1` + `sebaEntreprise` seedé en localStorage) : V1 sans
+  `activity` (comment présent, 15 autres widgets intacts) ; V2 avec les 4 items de
+  démo réels, lien correct, classes attendues ; `pro-global.css` diff vide ;
+  `tools/check-design-system.js` vert.
 
 ---
 

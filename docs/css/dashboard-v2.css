@@ -21,6 +21,14 @@
   --v2-placeholder-bg: #181A20;
   --v2-placeholder-border: rgba(255, 255, 255, 0.24);
   --v2-placeholder-text: rgba(255, 255, 255, 0.4);
+
+  /* Tokens de chrome pour widget réel monté en V2 (Phase 2, pilote
+   * .v2-widget-container/.v2-widget-content) — mêmes contraintes que
+   * ci-dessus : neutres, provisoires, à revoir avec la charte définitive. */
+  --v2-widget-bg: #181A20;
+  --v2-widget-border: rgba(255, 255, 255, 0.1);
+  --v2-widget-title-color: #F5F7FA;
+  --v2-widget-link-color: rgba(245, 247, 250, 0.72);
 }
 
 .v2-dashboard-wrapper {
@@ -73,4 +81,75 @@
 
 .v2-zone-activite {
   min-height: 240px;
+}
+
+/* ── Zone peuplée par un widget réel (Phase 2 pilote) ──────────────────────
+ * Remplace la présentation placeholder (fond plein, bordure pointillée,
+ * label centré) par une grille 12 colonnes prête à accueillir les widgets
+ * migrés — cette zone seule bascule ; les 3 autres zones restent en
+ * placeholder Phase 1 tant qu'aucun widget n'y est monté. */
+.v2-zone.v2-zone--has-widget {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+/* Widget Pur monté en V2 : chrome (tête/lien) 100% .v2-*, jamais
+ * .widget-shell/.module-head (styles "legacy" scopés à dashboard.html —
+ * voir renderV2ZoneActivite() dans docs/widgets.js). Le contenu injecté par
+ * def.render() (ex. .activity-item) est encapsulé dans .v2-widget-content
+ * et conserve son apparence actuelle sans modification de pro-global.css
+ * ni du <style> de dashboard.html. */
+.v2-widget-container {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--v2-widget-bg);
+  border: 1px solid var(--v2-widget-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.v2-widget-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--v2-widget-border);
+}
+
+.v2-widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--v2-widget-title-color);
+}
+
+.v2-widget-link {
+  font-size: 12px;
+  color: var(--v2-widget-link-color);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.v2-widget-link:hover {
+  text-decoration: underline;
+}
+
+.v2-widget-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
 }

@@ -1198,9 +1198,16 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 6, link: { href: '../planning.html', label: 'Voir le planning →' },
     render(ctx, el) { el.innerHTML = buildTimelineHTML(ctx.demo.timeline); } },
 
+  /* Migré vers le squelette V2 (.v2-zone-activite) — voir MIGRATED_TO_V2_IDS
+     et renderV2ZoneActivite() ci-dessous, et DASHBOARD_V2_MASTER_PLAN.md §1/§3.
+     render() inchangé : c'est le même appel, qu'on soit monté par renderGrid()
+     (V1) ou renderV2ZoneActivite() (V2) — un seul contrat "Widget Pur" pour
+     les deux. Lien corrigé '../historique.html' (bug préexistant de la
+     migration docs/app/ : le href nu résolvait vers docs/app/historique.html,
+     404 — trouvé pendant la validation des clics de ce widget en V2). */
   'activity': { id: 'activity', title: 'Activité récente', size: 'L', category: 'core', source: 'demo',
     keywords: ['activité récente', 'historique', 'derniers événements'],
-    defaultVisible: true, defaultOrder: 7, link: { href: 'historique.html', label: 'Tout voir →' },
+    defaultVisible: true, defaultOrder: 7, link: { href: '../historique.html', label: 'Tout voir →' },
     render(ctx, el) { el.innerHTML = buildActivityHTML(ctx.demo.activity); } },
 
   'recos': { id: 'recos', title: 'Recommandations Seba', size: 'L', category: 'core', source: 'demo',
@@ -1744,15 +1751,28 @@ function persistOrder(orderedIds) {
    catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable. */
 const PINNED_TELEMETRY_IDS = ['metric-0', 'serenity-score', 'timeline'];
 
+/* ── Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §1/§3) ──────────────────────
+   Widgets retirés de la grille V1 (renderGrid ci-dessous) car montés à la
+   place dans le squelette V2 (voir renderV2ZoneActivite plus bas). Liste
+   volontairement à plat, extensible widget par widget au fil des chantiers
+   de migration — ne pas confondre avec PINNED_TELEMETRY_IDS (qui restent en
+   V1, juste hors de la grille modulable). */
+const MIGRATED_TO_V2_IDS = ['activity'];
+
 function renderGrid(gridEl, ctx, customizeMode) {
   const layout = getEffectiveLayout();
   gridEl.innerHTML = '';
   const visible = layout.filter(w => w.visible && !PINNED_TELEMETRY_IDS.includes(w.id));
-  if (!visible.length) {
+  const renderable = visible.filter(w => !MIGRATED_TO_V2_IDS.includes(w.id));
+  if (!renderable.length) {
     gridEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 24px;"><p>Tout est masqué. Ouvrez <strong>Personnaliser</strong> pour ajouter des widgets.</p></div>';
     return;
   }
   visible.forEach(w => {
+    if (MIGRATED_TO_V2_IDS.includes(w.id)) {
+      gridEl.appendChild(document.createComment(' Widget ' + w.id + ' déplacé vers dashboard-v2 (.v2-zone-activite) — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
+      return;
+    }
     const def = window.WIDGET_CATALOG[w.id];
     if (!def) return;
     const shell = document.createElement('div');
@@ -1770,6 +1790,38 @@ function renderGrid(gridEl, ctx, customizeMode) {
     def.render(ctx, shell.querySelector('.widget-body'));
   });
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   V2 — MONTAGE PILOTE (Phase 2, DASHBOARD_V2_MASTER_PLAN.md §3)
+   Monte les widgets de MIGRATED_TO_V2_IDS dans .v2-zone-activite, avec le
+   même ctx et le même def.render() que renderGrid() — aucune duplication de
+   logique ni de données, seul l'emplacement DOM change. Chrome (tête/lien)
+   en classes .v2-* uniquement (jamais .widget-shell/.module-head — ce sont
+   des styles "legacy" scopés à dashboard.html, voir Widget Pur protocol) ;
+   le contenu rendu par def.render() (ex. .activity-item) reste inchangé et
+   s'affiche normalement puisque ces classes ne sont pas scopées à .app.
+═══════════════════════════════════════════════════════════════ */
+function renderV2ZoneActivite(ctx) {
+  const zone = document.querySelector('.v2-zone-activite');
+  if (!zone) return;
+  zone.classList.add('v2-zone--has-widget');
+  zone.innerHTML = '';
+  MIGRATED_TO_V2_IDS.forEach(id => {
+    const def = window.WIDGET_CATALOG[id];
+    if (!def) return;
+    const container = document.createElement('div');
+    container.className = 'v2-widget-container';
+    container.dataset.widgetId = id;
+    container.innerHTML =
+      '<div class="v2-widget-head">' +
+      '<span class="v2-widget-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span>' +
+      (def.link ? '<a href="' + def.link.href + '" class="v2-widget-link">' + def.link.label + '</a>' : '') +
+      '</div><div class="v2-widget-content"></div>';
+    zone.appendChild(container);
+    def.render(ctx, container.querySelector('.v2-widget-content'));
+  });
+}
+window.renderV2ZoneActivite = renderV2ZoneActivite;
 
 /* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : CA à gauche, Serenity
    Score au centre, Missions du jour à droite — ordre volontaire, pas
