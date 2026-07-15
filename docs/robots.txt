@@ -5,7 +5,7 @@ User-agent: *
 Allow: /
 
 # Application connectée (données derrière auth, aucun intérêt SEO)
-Disallow: /seba/dashboard.html
+Disallow: /seba/app/dashboard.html
 Disallow: /seba/clients.html
 Disallow: /seba/client-fiche.html
 Disallow: /seba/client.html

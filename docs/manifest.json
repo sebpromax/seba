@@ -2,7 +2,7 @@
   "name": "Seba OS — Le système d'exploitation des entreprises de services",
   "short_name": "Seba",
   "description": "Clients, devis, factures, planning et équipe — tout votre business dans une seule application.",
-  "start_url": "./dashboard.html",
+  "start_url": "./app/dashboard.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

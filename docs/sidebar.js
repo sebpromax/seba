@@ -42,7 +42,7 @@
     {
       label: 'Principal',
       items: [
-        { href: 'dashboard.html', label: 'Tableau de bord', key: 'dashboard', match: ['dashboard'] },
+        { href: 'dashboard.html', label: 'Tableau de bord', key: 'dashboard', match: ['dashboard'], appDir: true },
         { href: 'clients.html',   label: 'Clients',         key: 'clients',   match: ['client'],  shortcut: 'C' },
         { href: 'planning.html',  label: 'Planning',        key: 'planning',  match: ['planning'], shortcut: 'P' },
         { href: 'devis.html',     label: 'Devis',           key: 'devis',     match: ['devis'],    shortcut: 'D' },
@@ -79,6 +79,19 @@
     return item.match.some(function (token) { return p.includes(token); });
   }
 
+  /* ── Résolution de chemin relatif ─────────────────────────────────────────
+     dashboard.html est seul dans docs/app/ (première étape de la migration
+     décrite dans _architecture/ARCHITECTURE.md), les autres pages restent à
+     plat dans docs/. sidebar.js est chargé depuis les deux emplacements :
+     on calcule le préfixe selon la profondeur de la page courante plutôt que
+     de coder deux versions du fichier. */
+  function isInApp() { return /\/app\//.test(window.location.pathname); }
+  function resolveHref(item) {
+    var inApp = isInApp();
+    if (item.appDir) return inApp ? item.href : 'app/' + item.href;
+    return inApp ? '../' + item.href : item.href;
+  }
+
   /* ── Nom d'entreprise depuis localStorage ────────────────────────────────── */
   function companyName() {
     try {
@@ -96,7 +109,7 @@
       html += '<div class="' + groupCls + '"><div class="nav-label">' + group.label + '</div>';
       group.items.forEach(function (item) {
         var cls = 'nav-item' + (isActive(item) ? ' active' : '');
-        html += '<a href="' + item.href + '" class="' + cls + '">'
+        html += '<a href="' + resolveHref(item) + '" class="' + cls + '">'
               + (I[item.key] || '') + item.label
               + (item.shortcut ? '<span class="nav-shortcut">' + item.shortcut + '</span>' : '')
               + '</a>';

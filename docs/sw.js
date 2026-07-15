@@ -10,7 +10,7 @@ const VERSION = 'seba-v2'; // v2 : page offline dediee + auth/guard/theme precac
 const CORE = [
   './',
   'index.html', 'connexion.html', 'onboarding.html', 'offline.html',
-  'dashboard.html', 'clients.html', 'planning.html', 'devis.html',
+  'app/dashboard.html', 'clients.html', 'planning.html', 'devis.html',
   'devis-nouveau.html', 'factures.html', 'equipe.html', 'reglages.html', 'historique.html',
   'pro-global.css', 'sidebar.js', 'businessTypes.js', 'widgets.js', 'seba-data.js',
   'auth.js', 'guard.js', 'theme.js',

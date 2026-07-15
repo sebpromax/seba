@@ -26,7 +26,7 @@
     'cockpit-treso': {
       label: 'LOT 1.1 // COCKPIT TRÉSORERIE',
       navLeft:  { href: 'registre-charges.html', text: 'Lot 1.2 →', style: STYLE_ACCENT },
-      navRight: { href: 'dashboard.html',        text: 'Dashboard Pro', style: STYLE_MUTED },
+      navRight: { href: 'app/dashboard.html',        text: 'Dashboard Pro', style: STYLE_MUTED },
     },
     'registre-charges': {
       label: 'LOT 1.2 // REGISTRE DES CHARGES',
