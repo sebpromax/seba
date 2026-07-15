@@ -282,14 +282,18 @@ function renderMetricSparkline(el, secteur, seed) {
     .attr('stroke', 'rgba(0,255,157,.55)').attr('stroke-width', 1.6).attr('stroke-linecap', 'round');
 }
 
-/* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ── */
-let _leafletPromise = null;
-/* Instance vivante du widget 'lot-carte' — cf. audit 2.2 (fuite mémoire). */
-let _lotCarteMapInstance = null;
+/* ── Chargement paresseux de Leaflet (uniquement si le widget carte est affiché) ──
+   Délègue à AssetLoader (docs/services/widget-v2-framework.js) : un seul
+   singleton de chargement pour toute la page, au lieu d'une promesse locale
+   à ce fichier — même garantie qu'avant (un seul <script> Leaflet injecté
+   quel que soit le nombre d'appels), plus réutilisable par d'autres widgets
+   V2 qui en auraient besoin. */
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
-  if (_leafletPromise) return _leafletPromise;
-  _leafletPromise = new Promise((resolve, reject) => {
+  if (typeof AssetLoader === 'undefined') {
+    return Promise.reject(new Error('AssetLoader indisponible'));
+  }
+  return AssetLoader.load('leaflet', () => new Promise((resolve, reject) => {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
     css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -299,8 +303,71 @@ function loadLeaflet() {
     js.onload = resolve;
     js.onerror = reject;
     document.head.appendChild(js);
-  });
-  return _leafletPromise;
+  }));
+}
+
+/* ── WidgetV2 : migration de 'lot-carte' (stress test du framework, voir
+   docs/services/widget-v2-framework.js et DASHBOARD_V2_MASTER_PLAN.md).
+   Reprend à l'identique la logique V1 (positions pseudo-aléatoires mais
+   stables par hash du nom client, style des marqueurs, tuiles OSM) — seul
+   le cycle de vie change : this.map (jamais window.map), un ResizeObserver
+   remplace le setTimeout(...,250) magique de l'ancienne version pour piloter
+   invalidateSize(), et onDestroy() remplace la garde module-scope
+   _lotCarteMapInstance (audit 2.2) pour éviter la fuite mémoire. */
+class LotCarteWidgetV2 extends WidgetV2 {
+  constructor(container, ctx) {
+    super(container);
+    this.ctx = ctx;
+    this.map = null;
+  }
+
+  async load() {
+    await loadLeaflet();
+  }
+
+  render() {
+    this.container.innerHTML = '<div class="widget-map" style="height:100%;min-height:150px;overflow:hidden;"></div>';
+  }
+
+  onMount() {
+    if (this._destroyed || typeof L === 'undefined') return;
+    const box = this.container.querySelector('.widget-map');
+    if (!box) return;
+    const jour = (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsJour : [];
+    this.map = L.map(box, { zoomControl: false, attributionControl: false }).setView([48.8566, 2.3522], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(this.map);
+    const pts = jour.length ? jour : [{ clientName: 'Aucune intervention aujourd\'hui', time: '', service: '' }];
+    const markers = [];
+    pts.forEach((i, idx) => {
+      // position pseudo-aléatoire mais STABLE par client (hash du nom) autour du centre
+      let h = 0; const s = i.clientName || String(idx);
+      for (let c = 0; c < s.length; c++) h = ((h << 5) - h + s.charCodeAt(c)) | 0;
+      const lat = 48.8566 + ((h % 1000) / 1000 - 0.5) * 0.12;
+      const lng = 2.3522 + (((h >> 10) % 1000) / 1000 - 0.5) * 0.18;
+      const m = L.circleMarker([lat, lng], { radius: 9, color: '#00FF9D', weight: 2.5, fillColor: '#00FF9D', fillOpacity: 0.35 }).addTo(this.map);
+      if (i.time) m.bindPopup('<b>' + i.time + '</b> — ' + i.clientName + '<br>' + i.service);
+      markers.push(m);
+    });
+    if (markers.length > 1) this.map.fitBounds(L.featureGroup(markers).getBounds().pad(0.25));
+    // Premier invalidateSize() après montage : le conteneur peut avoir une
+    // taille non définitive au tout premier paint (transition CSS, police
+    // pas encore chargée). Les changements suivants sont couverts par
+    // onResize() (ResizeObserver), plus de setTimeout magique récurrent.
+    requestAnimationFrame(() => { if (!this._destroyed && this.map) this.map.invalidateSize(); });
+  }
+
+  onResize() {
+    if (this.map) this.map.invalidateSize();
+  }
+
+  onDestroy() {
+    super.onDestroy();
+    if (this.map) { try { this.map.remove(); } catch (e) {} this.map = null; }
+  }
+
+  renderError() {
+    if (this.container) this.container.innerHTML = '<div class="tl-empty">Carte indisponible hors ligne.</div>';
+  }
 }
 
 const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
@@ -1383,43 +1450,17 @@ window.WIDGET_CATALOG = {
       wrap.appendChild(legend);
     } },
 
+  /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     V2_CLASS_WIDGET_IDS et LotCarteWidgetV2 ci-dessus). render() retiré
+     (retrait pur, pas une exception) : la logique vit désormais uniquement
+     dans LotCarteWidgetV2, seule source de vérité. Métadonnées (title,
+     keywords, defaultVisible/Order, link) conservées : getEffectiveLayout(),
+     le panneau bibliothèque et la barre IA en dépendent toujours pour savoir
+     QUAND ce widget doit apparaître, même si ce n'est plus ce fichier qui le
+     dessine. */
   'lot-carte': { id: 'lot-carte', title: 'Carte des interventions', size: 'L', category: 'companion', source: 'live',
     keywords: ['carte', 'map', 'tournée sur carte', 'localisation', 'itinéraire carte', 'géolocalisation'],
-    defaultVisible: false, defaultOrder: 24, link: { href: '../planning.html', label: 'Planning →' },
-    render(ctx, el) {
-      /* Audit 2.2 : renderGrid() vide et reconstruit tout #widget-grid à chaque
-         bascule du mode personnalisation/ajout de widget — sans ce nettoyage,
-         chaque re-rendu créait une NOUVELLE instance L.map() sans jamais
-         appeler .remove() sur la précédente (le conteneur DOM disparaissait,
-         mais les listeners window/tuiles Leaflet restaient actifs : fuite
-         mémoire cumulative). Une seule instance vivante à la fois. */
-      if (_lotCarteMapInstance) { try { _lotCarteMapInstance.remove(); } catch (e) {} _lotCarteMapInstance = null; }
-      el.innerHTML = '<div class="widget-map" style="height:100%;min-height:150px;border-radius:0 0 var(--r) var(--r);overflow:hidden;"></div>';
-      const box = el.querySelector('.widget-map');
-      loadLeaflet().then(() => {
-        if (!document.body.contains(box)) return; // widget retiré/re-rendu avant la fin du chargement
-        const jour = (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsJour : [];
-        const map = L.map(box, { zoomControl: false, attributionControl: false }).setView([48.8566, 2.3522], 11);
-        _lotCarteMapInstance = map;
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-        const pts = jour.length ? jour : [{ clientName: 'Aucune intervention aujourd\'hui', time: '', service: '' }];
-        const markers = [];
-        pts.forEach((i, idx) => {
-          // position pseudo-aléatoire mais STABLE par client (hash du nom) autour du centre
-          let h = 0; const s = i.clientName || String(idx);
-          for (let c = 0; c < s.length; c++) h = ((h << 5) - h + s.charCodeAt(c)) | 0;
-          const lat = 48.8566 + ((h % 1000) / 1000 - 0.5) * 0.12;
-          const lng = 2.3522 + (((h >> 10) % 1000) / 1000 - 0.5) * 0.18;
-          const m = L.circleMarker([lat, lng], { radius: 9, color: '#00FF9D', weight: 2.5, fillColor: '#00FF9D', fillOpacity: 0.35 }).addTo(map);
-          if (i.time) m.bindPopup('<b>' + i.time + '</b> — ' + i.clientName + '<br>' + i.service);
-          markers.push(m);
-        });
-        if (markers.length > 1) map.fitBounds(L.featureGroup(markers).getBounds().pad(0.25));
-        setTimeout(() => map.invalidateSize(), 250);
-      }).catch(() => {
-        box.innerHTML = '<div class="tl-empty">Carte indisponible hors ligne.</div>';
-      });
-    } },
+    defaultVisible: false, defaultOrder: 24, link: { href: '../planning.html', label: 'Planning →' } },
 
   /* Migré vers le squelette V2 (.v2-zone-finance) — voir V2_ZONE_FINANCE_IDS
      et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. link.href reste '#' à dessein :
@@ -1752,7 +1793,21 @@ const PINNED_TELEMETRY_IDS = ['metric-0'];
    monter, et où" (consommée directement par mountV2Widgets ci-dessous). */
 const V2_ZONE_ACTIVITE_IDS = ['activity', 'timeline', 'team'];
 const V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso'];
-const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS);
+
+/* Widgets migrés en tant qu'instances WidgetV2 (classe, cycle de vie
+   load/render/onMount/onResize/onDestroy — voir widget-v2-framework.js) au
+   lieu du patron def.render(ctx, el) synchrone de mountV2Widgets(). Montés
+   dans .v2-zone-activite comme le reste du bloc "Aujourd'hui" (même zone
+   cible que dans DASHBOARD_V2_MASTER_PLAN.md §1 : "Carte et déplacements").
+   defaultVisible étant false pour ces widgets (compagnons sectoriels), leur
+   affichage en V2 reste conditionné à getEffectiveLayout() exactement comme
+   en V1 — voir mountV2ClassWidgets(), pas un mount inconditionnel. */
+const V2_CLASS_WIDGETS = {
+  'lot-carte': { title: 'Carte des interventions', link: { href: '../planning.html', label: 'Planning →' }, WidgetClass: (typeof LotCarteWidgetV2 !== 'undefined') ? LotCarteWidgetV2 : null },
+};
+const V2_CLASS_WIDGET_IDS = Object.keys(V2_CLASS_WIDGETS);
+
+const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS, V2_CLASS_WIDGET_IDS);
 
 /* Sous-ensemble de MIGRATED_TO_V2_IDS qui vivait dans PINNED_TELEMETRY_IDS
    (pas dans la grille modulable) — renderCockpitTelemetry a besoin de le
@@ -1851,7 +1906,51 @@ function mountV2Widgets(zoneSelector, ids, ctx) {
     def.render(ctx, container.querySelector('.v2-widget-content'));
   });
 }
-function renderV2ZoneActivite(ctx) { mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx); }
+/* Instances WidgetV2 actuellement montées (toutes zones confondues) — permet
+   d'appeler onDestroy() (déconnexion ResizeObserver, .remove() Leaflet, etc.)
+   AVANT qu'un re-rendu (renderDashboard() rappelé, bascule mode
+   personnalisation) ne recrée une instance par-dessus. Généralise et
+   remplace l'ancienne garde module-scope _lotCarteMapInstance (audit 2.2). */
+let _v2ClassWidgetInstances = [];
+
+function destroyV2ClassWidgets() {
+  _v2ClassWidgetInstances.forEach(inst => { try { inst.onDestroy(); } catch (e) {} });
+  _v2ClassWidgetInstances = [];
+}
+
+/* Monte les widgets à base de classe (WidgetV2) d'une zone, en respectant la
+   même règle de visibilité que renderGrid()/getEffectiveLayout() : un widget
+   "compagnon" (defaultVisible:false) ne s'affiche que si son secteur ou une
+   action manuelle de l'utilisateur l'a rendu visible — pas de mount
+   inconditionnel qui ferait apparaître lot-carte pour tous les secteurs. */
+function mountV2ClassWidgets(zoneSelector, ids, ctx) {
+  const zone = document.querySelector(zoneSelector);
+  if (!zone || typeof WidgetV2 === 'undefined') return;
+  const visibleIds = new Set(getEffectiveLayout().filter(w => w.visible).map(w => w.id));
+  ids.forEach(id => {
+    if (!visibleIds.has(id)) return;
+    const entry = V2_CLASS_WIDGETS[id];
+    if (!entry || !entry.WidgetClass) return;
+    zone.classList.add('v2-zone--has-widget');
+    const container = document.createElement('div');
+    container.className = 'v2-widget-container';
+    container.dataset.widgetId = id;
+    container.innerHTML =
+      '<div class="v2-widget-head">' +
+      '<span class="v2-widget-title">' + entry.title + '</span>' +
+      (entry.link ? '<a href="' + entry.link.href + '" class="v2-widget-link">' + entry.link.label + '</a>' : '') +
+      '</div><div class="v2-widget-content"></div>';
+    zone.appendChild(container);
+    const instance = new entry.WidgetClass(container.querySelector('.v2-widget-content'), ctx);
+    _v2ClassWidgetInstances.push(instance);
+    instance.mount();
+  });
+}
+function renderV2ZoneActivite(ctx) {
+  destroyV2ClassWidgets();
+  mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx);
+  mountV2ClassWidgets('.v2-zone-activite', V2_CLASS_WIDGET_IDS, ctx);
+}
 function renderV2ZoneFinance(ctx) { mountV2Widgets('.v2-zone-finance', V2_ZONE_FINANCE_IDS, ctx); }
 window.renderV2ZoneActivite = renderV2ZoneActivite;
 window.renderV2ZoneFinance = renderV2ZoneFinance;

@@ -66,7 +66,7 @@ code (id / titre / catégorie / source). Statuts :
 | `lot-impayes` | Factures en retard | "À traiter maintenant" (facture échue) + Zone 3 Encaissements | Migré* |
 | `lot-pipeline` | Pipeline devis → facture → encaissé | Zone 3 (Devis/Encaissements) ou Analyse détaillée | Migré* |
 | `lot-tournee` | Tournée du jour | Zone 2 Bloc C — Carte et déplacements | Migré* |
-| `lot-carte` | Carte des interventions | Zone 2 Bloc C — Carte et déplacements | Migré |
+| `lot-carte` | Carte des interventions | Zone 2 Bloc C — Carte et déplacements (`.v2-zone-activite`, montage par classe) | **Migré-exécuté** — voir §6, stress test du framework `WidgetV2` |
 | `lot-treso` | Position de trésorerie | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis (source `lot:treso` inchangée, dette de données) |
 | `generic-media-report` | Rapport photo | Zone cible à réassigner (Zone 5 "Qualité" retirée du backlog — voir "Clôture Qualité/Stock" ; widget lui-même non concerné, données réelles via `SebaWidgetAPI.getMediaReport`) | Migré |
 | `marge-reelle` | Marge réelle | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis. Zone 4 (Rentabilité par intervention) reste sans widget : nécessite `dureeEstimee`/`dureeReelle`, voir §2 |
@@ -642,11 +642,68 @@ des zones de flou, pas fin du travail de code) qui justifie de qualifier le proj
 
 **Ce que "Maintenance/Optimisation" ne veut PAS dire ici — distinction nécessaire pour ne
 pas transformer une clôture honnête en fausse promesse inversée :** l'exécution n'est pas
-terminée. 9 widgets restent marqués "Migré" sans exécution physique (pas de flou sur leur
+terminée. 8 widgets restent marqués "Migré" sans exécution physique (pas de flou sur leur
 destination, juste pas encore codés) : `metric-1`, `metric-3`, `recos`, `goal`,
-`lot-impayes`, `lot-pipeline`, `lot-tournee`, `lot-carte`, `generic-media-report`. Ce sont
-désormais les 9 seules entrées du backlog de maintenance — une liste fermée et connue,
+`lot-impayes`, `lot-pipeline`, `lot-tournee`, `generic-media-report` (`lot-carte`, 9ème de
+cette liste, exécuté depuis — voir §6). Ce sont désormais les 8 seules entrées du backlog de
+maintenance — une liste fermée et connue,
 plus une liste ouverte à explorer. C'est cette fermeture-là (zéro ambiguïté restante, pas
 zéro ligne de code restante) qui distingue "Maintenance/Optimisation" de "Migration
 active" : le projet n'est plus en train de *découvrir* ce qu'il doit migrer, seulement
 d'*exécuter* une liste déjà entièrement connue.
+
+## 6. Framework `WidgetV2` — standard pour le backlog des 9 widgets restants
+
+Les 6 widgets déjà migrés (`activity`, `timeline`, `team`, `bento-chart`, `marge-reelle`,
+`lot-treso`) partagent tous le même patron : `def.render(ctx, el)` synchrone, une chaîne
+HTML construite et injectée, rien d'autre à gérer après coup. Ce patron ne suffit pas pour
+un widget qui a un **vrai cycle de vie** — une lib externe à charger une seule fois, un
+état vivant à nettoyer (instance de carte, listener), un besoin de réagir à un
+redimensionnement de son propre conteneur (pas de la fenêtre). `lot-carte` est le premier
+widget du backlog restant à avoir ce profil — d'où son choix comme "stress test" du
+nouveau framework plutôt qu'un widget plus simple.
+
+**Fichiers** :
+- `docs/services/widget-v2-framework.js` (nouveau, chargé après `widget-data-api.js` et
+  avant `widgets.js`) — classe de base `WidgetV2` (`constructor(container)`, `async load()`,
+  `render()`, `onMount()`, `onResize()`, `onDestroy()`, `renderError(err)`, orchestrateur
+  `async mount()` non réécrit par les sous-classes) + singleton `AssetLoader` (cache de
+  promesses par nom d'asset, une entrée retirée du cache si elle rejette pour permettre une
+  vraie nouvelle tentative).
+- `docs/widgets.js` — `loadLeaflet()` refactorisé pour déléguer à `AssetLoader.load('leaflet', …)`
+  au lieu de sa propre variable de promesse locale (`_leafletPromise`, supprimée : un seul
+  mécanisme de chargement pour toute la page, pas deux en parallèle). `class LotCarteWidgetV2
+  extends WidgetV2` juste après, reprenant à l'identique la logique V1 (hash de position
+  stable par nom client, style des marqueurs, tuiles OSM, `fitBounds`) — seul le cycle de vie
+  change : `this.map` (jamais `window.map`), un `ResizeObserver` remplace le
+  `setTimeout(...,250)` de l'ancienne version pour `invalidateSize()`, `onDestroy()` remplace
+  la garde module-scope `_lotCarteMapInstance` (audit 2.2, fuite mémoire) supprimée. L'entrée
+  `WIDGET_CATALOG['lot-carte']` perd son `render()` (retrait pur — la logique vit désormais
+  uniquement dans la classe) mais garde ses métadonnées (title/keywords/defaultVisible/
+  defaultOrder/link), toujours utilisées par `getEffectiveLayout()` et le panneau bibliothèque.
+- `V2_CLASS_WIDGETS`/`V2_CLASS_WIDGET_IDS` (nouveau, à côté de `V2_ZONE_ACTIVITE_IDS`) —
+  registre widget-par-classe, plié dans `MIGRATED_TO_V2_IDS` pour l'exclusion V1 comme les
+  widgets fonctionnels. `mountV2ClassWidgets()` respecte **la même règle de visibilité que
+  `renderGrid()`** (`getEffectiveLayout().filter(w => w.visible)`) — `lot-carte` étant
+  `defaultVisible:false` (compagnon promu par secteur maintenance/jardinage/déménagement),
+  un mount inconditionnel l'aurait fait apparaître pour tous les secteurs en V2 alors qu'il
+  ne s'affiche qu'à certains en V1 : régression évitée, vérifiée en Puppeteer (secteur
+  `coiffure` → widget absent, secteur `maintenance` → présent). `destroyV2ClassWidgets()`
+  appelle `onDestroy()` sur toutes les instances vivantes avant tout re-mount (bascule mode
+  personnalisation, changement de secteur) — généralise et remplace `_lotCarteMapInstance`.
+
+**Vérification (Puppeteer, `?demo&v2=1`, secteur `maintenance`)** : `window.WidgetV2`/
+`window.AssetLoader` exposés (surface globale minimale — `LotCarteWidgetV2` elle-même reste
+non exposée, seule la fonction de montage l'est) ; conteneur + `.widget-map` + vraie instance
+Leaflet créée (`.leaflet-map-pane` présent) ; `window.map` absent (`this.map`, zéro pollution
+globale) ; V1 n'affiche plus le widget (0 shell rendu, commentaire de traçabilité présent) ;
+un re-rendu forcé (`renderV2ZoneActivite(ctx)` rappelé) ne laisse ni doublon ni conteneur
+orphelin (1 conteneur avant, 1 après) ; redimensionnement du conteneur sans erreur console.
+Secteur `coiffure` (non-promu) : widget absent du DOM, confirmant que la visibilité suit
+`getEffectiveLayout()` et non un mount systématique.
+
+**Reste hors périmètre de cette passe** (backlog du "Batch Finale" proposé, pas commencé) :
+migration des 8 autres widgets en sous-classes `WidgetV2` (la plupart n'ont pas besoin de
+cycle de vie réel — `render()` synchrone suffira, `load()`/`onMount()`/`onResize()` resteront
+vides), audit du "Shadow Backlog" (`session-manager.js`, routage par hash `#widget-id`, audit
+complet de `pro-global.css`), et le retrait total du V1 (Batch 3).
