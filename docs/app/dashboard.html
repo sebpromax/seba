@@ -712,8 +712,27 @@
      Vérification visuelle : ajouter ?v2=1 à l'URL. Aucune donnée, aucun
      script partagé avec #dash-content / .app. -->
 <div id="v2-dashboard-skeleton" class="v2-dashboard-wrapper" style="display:none;">
+  <!-- Header V2 (voir DASHBOARD_V2_MASTER_PLAN.md) : sticky, hors de la grille
+       12 colonnes — remplace le placeholder plat "header-v2" de Phase 1.
+       Fournit une ALTERNATIVE à serenity-score/FAB/quick-actions, ne les
+       supprime pas (voir renderV2Header() dans docs/widgets.js). -->
+  <header id="v2-header" class="v2-header-bar">
+    <div class="v2-header-left">
+      <span class="v2-header-identity-name"></span>
+      <span class="v2-header-identity-sector"></span>
+    </div>
+    <div class="v2-header-center header-status-group">
+      <div class="v2-serenity-row">
+        <span class="v2-serenity-score-num">—</span>
+        <span class="v2-serenity-state-lbl">—</span>
+      </div>
+      <div class="v2-serenity-bar-track"><div class="v2-serenity-bar-fill" style="width:0"></div></div>
+    </div>
+    <div class="v2-header-right">
+      <button type="button" class="v2-header-create-btn" onclick="if (typeof toggleFab === 'function') toggleFab();">+ Créer</button>
+    </div>
+  </header>
   <div class="v2-grid-container">
-    <div class="v2-zone v2-header">header-v2</div>
     <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
     <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
     <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
@@ -1433,6 +1452,7 @@
        montés ici avec le même _ctx, uniquement quand le squelette V2 est
        actif. */
     if (window.__SEBA_V2_ENABLED__) {
+      if (typeof renderV2Header === 'function') renderV2Header(_ctx);
       if (typeof renderV2ZoneActivite === 'function') renderV2ZoneActivite(_ctx);
       if (typeof renderV2ZoneFinance === 'function') renderV2ZoneFinance(_ctx);
     }
@@ -2106,7 +2126,10 @@
     }
   }
   document.addEventListener('click', e => {
-    if (_fabOpen && !e.target.closest('.fab') && !e.target.closest('.fab-menu')) {
+    /* Le bouton "+ Créer" du header V2 appelle ce même toggleFab() (voir
+       #v2-header) — sans cette exemption, le clic qui l'ouvre bulle jusqu'ici
+       et le referme aussitôt (target hors .fab/.fab-menu). */
+    if (_fabOpen && !e.target.closest('.fab') && !e.target.closest('.fab-menu') && !e.target.closest('.v2-header-create-btn')) {
       _fabOpen = false;
       const menu = document.getElementById('fab-menu');
       const btn = document.getElementById('fab');

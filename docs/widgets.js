@@ -1865,6 +1865,46 @@ function renderV2ZoneFinance(ctx) { mountV2Widgets('.v2-zone-finance', V2_ZONE_F
 window.renderV2ZoneActivite = renderV2ZoneActivite;
 window.renderV2ZoneFinance = renderV2ZoneFinance;
 
+/* ═══════════════════════════════════════════════════════════════
+   V2 — HEADER (Phase 2, DASHBOARD_V2_MASTER_PLAN.md)
+   Fournit une ALTERNATIVE (identité, indicateur de santé compact, bouton de
+   création) sans supprimer les widgets/éléments V1 équivalents
+   (serenity-score, #fab/quick-actions, workspace) — dé-duplication : le
+   retrait de ces derniers est une passe suivante, une fois le header validé.
+═══════════════════════════════════════════════════════════════ */
+function renderV2Header(ctx) {
+  const header = document.getElementById('v2-header');
+  if (!header) return;
+
+  // Zone gauche — identité (même donnée que le header V1 : ctx.biz/ctx.sectorLabel).
+  const nameEl = header.querySelector('.v2-header-identity-name');
+  const sectorEl = header.querySelector('.v2-header-identity-sector');
+  if (nameEl) nameEl.textContent = (ctx.biz && ctx.biz.nom) || ctx.nom || 'Mon entreprise';
+  if (sectorEl) sectorEl.textContent = ctx.sectorLabel || ctx.secteur || '';
+
+  /* Zone centrale — indicateur de santé compact : même calcul que le widget
+     serenity-score (computeSerenityScore/serenityStateFor/readThemeVar,
+     définis plus haut dans ce fichier), pas le même rendu (pas de canvas
+     orbital ici, juste un chiffre + une barre fine, cf. vision "micro-
+     interaction"). maybeTriggerAIOnSerenity() est VOLONTAIREMENT pas
+     appelé ici : c'est un effet de bord déjà déclenché par le widget
+     serenity-score lui-même à chaque rendu — l'appeler une seconde fois ici
+     dupliquerait le déclenchement de l'alerte IA. */
+  const score = computeSerenityScore(ctx);
+  const state = serenityStateFor(score);
+  const color = readThemeVar(state.varName, state.fallback);
+  const numEl = header.querySelector('.v2-serenity-score-num');
+  const lblEl = header.querySelector('.v2-serenity-state-lbl');
+  const fillEl = header.querySelector('.v2-serenity-bar-fill');
+  if (numEl) numEl.textContent = score;
+  if (lblEl) lblEl.textContent = state.label;
+  if (fillEl) { fillEl.style.width = score + '%'; fillEl.style.background = color; }
+
+  // Zone droite — le bouton "+ Créer" appelle directement toggleFab() (dashboard.html) :
+  // même menu que le FAB desktop actuel, aucune duplication de logique de création.
+}
+window.renderV2Header = renderV2Header;
+
 /* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : CA à gauche, Serenity
    Score à droite — duo depuis la migration de 'timeline' vers V2 (voir
    MIGRATED_FROM_TELEMETRY_IDS). Jamais de drag-handle/bouton de retrait :

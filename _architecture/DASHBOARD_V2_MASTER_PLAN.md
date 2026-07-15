@@ -337,6 +337,49 @@ correspond" plutôt que de mentir sur un ajout sans effet.
 `pro-global.css` diff vide ; `tools/check-design-system.js` vert (aucun fichier
 HTML/CSS modifié cette passe).
 
+### 4ter. `#v2-header` construit — débloque partiellement le point 1 du §4bis
+
+Le blocage n°1 du §4bis (`serenity-score`/`workspace`/`bento-actions`/`quick-actions`
+sans remplaçant V2) est **partiellement levé** : un header sticky réel existe maintenant
+(`#v2-header`, hors de `.v2-grid-container`, `position:sticky`/`top:0`/`z-index:1000`),
+remplaçant le placeholder plat Phase 1. Contenu, additif uniquement (aucun widget/élément
+V1 supprimé cette passe — dé-duplication explicitement demandée) :
+
+- **Zone gauche** (identité) : nom d'entreprise + badge secteur, mêmes données que le
+  header V1 (`ctx.biz`/`ctx.sectorLabel`). Ne couvre **pas** la fonctionnalité propre au
+  widget `portal` (lien public partageable + QR/code d'accès) — seule l'"identité"
+  textuelle est couverte ; `portal` reste donc encore sans remplaçant réel malgré la
+  mention "remplace l'ancien portal" du brief. À traiter séparément (relocalisation
+  sidebar, comme prévu à l'origine au §1, ou extension de ce header).
+- **Zone centrale** (`header-status-group`) : version compacte de `serenity-score` —
+  réutilise `computeSerenityScore()`/`serenityStateFor()`/`readThemeVar()`
+  (`docs/widgets.js`), pas le rendu canvas orbital (juste chiffre + barre fine, cf.
+  "micro-interaction" du brief). `maybeTriggerAIOnSerenity()` volontairement **pas**
+  appelé ici (effet de bord déjà déclenché par le widget `serenity-score` lui-même —
+  l'appeler deux fois par cycle dupliquerait l'alerte IA). Ne couvre **pas** les données
+  de `workspace` (secteur/services actifs/pays-devise) malgré la mention du brief —
+  seul l'indicateur de santé est construit cette passe.
+- **Zone droite** : bouton "+ Créer" qui appelle `toggleFab()` — **la même** ouverture
+  que le FAB desktop actuel (même `#fab-menu`, aucune logique dupliquée), conformément à
+  la consigne. **Bug réel trouvé et corrigé en cours de route** : le listener global
+  "clic en dehors pour fermer" (`docs/app/dashboard.html`) refermait le menu
+  immédiatement après l'avoir ouvert (l'event du clic sur le nouveau bouton bulle jusqu'à
+  ce listener, qui le traite comme "clic hors du FAB") — exemption ajoutée pour
+  `.v2-header-create-btn`. Limite connue et acceptée : le menu s'ouvre toujours ancré en
+  bas-droite (position du `#fab` d'origine), visuellement déconnecté du bouton du header
+  qui vient de le déclencher — pas corrigé cette passe (repositionner `.fab-menu`
+  dynamiquement est un chantier séparé, hors du périmètre "même modale que l'actuel").
+- Validé via Puppeteer : contenu du header correct (identité, score 65/Vigilance, barre
+  65% couleur ambre) ; clic "+ Créer" ouvre bien `#fab-menu` après le fix ; test de scroll
+  (`position:sticky` confirmée, élément directement sous le header = contenu réel de la
+  grille V2, aucun chevauchement) ; `pro-global.css` diff vide ; lint vert.
+
+**Ce qui reste bloqué** : `workspace` (au-delà de l'indicateur de santé, ses autres
+données n'ont pas de remplaçant), `portal` (fonctionnalité de lien public non couverte).
+Le fondateur peut maintenant autoriser la passe suivante pour `serenity-score`/
+`bento-actions`/`quick-actions`/le bouton flottant desktop (remplaçant fonctionnel
+complet en place) ; `workspace`/`portal` restent partiellement couverts seulement.
+
 ---
 
 ## 5. Règles de protection

@@ -29,6 +29,16 @@
   --v2-widget-border: rgba(255, 255, 255, 0.1);
   --v2-widget-title-color: #F5F7FA;
   --v2-widget-link-color: rgba(245, 247, 250, 0.72);
+
+  /* Tokens du header V2 (barre sticky) — mêmes contraintes de neutralité que
+   * ci-dessus, distincts de --white/--border (Tactical Dark) pour ne rien
+   * hériter d'une charte qui n'est pas encore arbitrée (master plan §0). */
+  --v2-header-bg: #14161B;
+  --v2-header-border: rgba(255, 255, 255, 0.1);
+  --v2-header-badge-bg: rgba(255, 255, 255, 0.08);
+  --v2-header-badge-text: rgba(245, 247, 250, 0.85);
+  --v2-header-cta-bg: #2A2D36;
+  --v2-header-cta-text: #F5F7FA;
 }
 
 .v2-dashboard-wrapper {
@@ -65,10 +75,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
-}
-
-.v2-header {
-  min-height: 72px;
 }
 
 .v2-bandeau-priorite {
@@ -156,4 +162,110 @@
   flex: 1;
   overflow: auto;
   min-height: 0;
+}
+
+/* ── Header V2 — barre sticky, hors de la grille 12 colonnes ───────────────
+ * position:sticky (pas fixed) : `#v2-header` est un enfant de
+ * `#v2-dashboard-skeleton`, lui-même empilé au-dessus de `.app` (V1) dans un
+ * flux de page unique et continu (pas de conteneur à scroll interne). Un
+ * `position:fixed` resterait affiché EN PERMANENCE par-dessus le contenu V1
+ * une fois qu'on scrolle au-delà du squelette V2 — sticky se détache
+ * naturellement dès que `#v2-dashboard-skeleton` (son bloc englobant) sort
+ * du viewport, donc le header ne masque le V1 QUE pendant que du contenu V2
+ * est visible ("pendant la transition", pas indéfiniment).
+ * z-index élevé (1000) : au-dessus du FAB V1 (300) et du canvas confetti
+ * (499) au cas où l'un des deux serait visible en même temps. */
+.v2-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--v2-header-bg);
+  border-bottom: 1px solid var(--v2-header-border);
+}
+
+.v2-header-left,
+.v2-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.v2-header-identity-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--v2-widget-title-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-header-identity-sector {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--v2-header-badge-bg);
+  color: var(--v2-header-badge-text);
+  white-space: nowrap;
+}
+
+/* header-status-group : nom demandé dans le prompt d'exécution, wrapper de
+ * l'indicateur de santé compact (Zone Centrale). */
+.header-status-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.v2-serenity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--v2-widget-link-color);
+}
+
+.v2-serenity-score-num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--v2-widget-title-color);
+}
+
+.v2-serenity-bar-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--v2-header-border);
+  overflow: hidden;
+}
+
+.v2-serenity-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease-out, background-color 0.3s ease-out;
+}
+
+.v2-header-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--v2-header-cta-bg);
+  color: var(--v2-header-cta-text);
+}
+
+.v2-header-create-btn:hover {
+  filter: brightness(1.1);
 }
