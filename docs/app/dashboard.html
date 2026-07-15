@@ -2102,7 +2102,17 @@
     _fabOpen = !_fabOpen;
     const menu = document.getElementById('fab-menu');
     const btn = document.getElementById('fab');
-    if (menu) menu.classList.toggle('open', _fabOpen);
+    if (menu) {
+      /* Position calculée depuis la hauteur RÉELLE de #v2-header (pas un top
+         fixe en dur) : le header n'a pas la même hauteur en desktop qu'en
+         mobile (bouton "+ Créer" 44px min-height + padding réduit, voir
+         @media dashboard-v2.css) — un top fixe unique aurait fait chevaucher
+         le menu et le bouton sur l'un des deux viewports. Recalculé à chaque
+         ouverture : s'adapte aussi si la hauteur du header change plus tard. */
+      const header = document.getElementById('v2-header');
+      if (header) menu.style.top = (header.getBoundingClientRect().bottom + 8) + 'px';
+      menu.classList.toggle('open', _fabOpen);
+    }
     if (btn) {
       btn.textContent = _fabOpen ? '✕' : '+';
       btn.classList.toggle('open-state', _fabOpen);

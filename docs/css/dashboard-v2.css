@@ -269,3 +269,39 @@
 .v2-header-create-btn:hover {
   filter: brightness(1.1);
 }
+
+/* ── Header V2 — mobile (≤768px) ────────────────────────────────────────
+ * Sécurise l'usage mobile maintenant que .fab (V1) a été décommissionné :
+ * #v2-header est désormais le SEUL point de création rapide sur tous les
+ * viewports (voir DASHBOARD_V2_MASTER_PLAN.md §4quater, dette "mobile" —
+ * cette règle referme cette dette pour la zone droite/bouton, pas pour le
+ * reste de la mise en page V2, hors périmètre de cette passe). */
+@media (max-width: 768px) {
+  .v2-header-bar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  /* Labels textuels longs masqués — ne garde qu'une version abrégée de
+   * l'identité (nom seul, déjà tronqué par ellipsis) : le badge secteur
+   * ("Ménage & nettoyage", etc.) est le premier à saturer un écran étroit. */
+  .v2-header-identity-sector {
+    display: none;
+  }
+
+  /* Réduit sa largeur minimale (140px desktop) pour laisser le nom et le
+   * bouton respirer ; le libellé d'état ("Vigilance"...) reste affiché —
+   * seul le badge secteur est un "label long" au sens de cette consigne. */
+  .header-status-group {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  /* Bouton "+ Créer" : seul point de création rapide restant sur mobile
+   * (le FAB desktop est décommissionné) — cible tactile ≥44px garantie. */
+  .v2-header-create-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 14px;
+  }
+}

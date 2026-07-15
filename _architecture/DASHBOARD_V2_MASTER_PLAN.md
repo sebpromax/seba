@@ -445,6 +445,41 @@ ancien emplacement DOM. `workspace`/`portal` **non touchés**, conformément à 
   bouton) ; zones V2 toujours peuplées (3+3) ; aucune erreur console ; `pro-global.css`
   diff vide ; `tools/check-design-system.js` vert.
 
+### 4quinquies. Sécurisation mobile de `#v2-header` — dette "mobile" du §4quater refermée
+
+Suite directe du point de vigilance mobile ci-dessus (§4quater) : `#v2-header` est
+maintenant le seul point de création rapide sur **tous** les viewports (le FAB
+desktop-only jamais implémenté a été décommissionné, pas juste masqué sur desktop) — sans
+correctif, les utilisateurs mobiles auraient perdu tout accès à la création rapide.
+
+- **`@media (max-width: 768px)`** (`docs/css/dashboard-v2.css`) : badge secteur masqué
+  (`.v2-header-identity-sector { display: none; }` — seul "label textuel long" au sens de
+  la consigne, le nom d'entreprise reste affiché, déjà tronqué par ellipsis existant) ;
+  `header-status-group` perd son `min-width: 140px` fixe ; padding du header réduit
+  (`12px 24px` → `8px 12px`) ; bouton `+ Créer` avec `min-height`/`min-width: 44px`
+  explicites (cible tactile). Mesuré à 375×812 (iPhone-ish) : bouton rendu 46×63px,
+  aucun débordement horizontal (`body.scrollWidth === innerWidth`).
+- **Bug réel trouvé en vérifiant la cohérence `#fab-menu`** (demandé explicitement par la
+  consigne, pas supposé correct) : le `top: 64px` fixe de `.fab-menu` (posé lors du
+  §4quater pour la hauteur du header desktop, 56px) chevauchait le bouton de 13px sur
+  mobile, où le header mesure 63px (bouton 44px + padding réduit). **Corrigé
+  différemment d'un simple second breakpoint** : `toggleFab()` calcule maintenant
+  `#fab-menu`'s `top` depuis la hauteur RÉELLE de `#v2-header`
+  (`header.getBoundingClientRect().bottom + 8`) à chaque ouverture, au lieu d'un `top`
+  figé en CSS — s'adapte à n'importe quelle hauteur de header, présente ou future, sans
+  nouveau magic number à maintenir en synchronisation manuelle.
+- **Validé** via Puppeteer (375×812 et 1440×900 dans le même run) : mobile — badge
+  secteur masqué, bouton 46×63px visible, menu FAB rouvert avec un écart de 18px sous le
+  bouton (zéro chevauchement, zéro débordement horizontal) ; desktop — badge secteur
+  toujours visible, hauteur de header inchangée (56px, aucune régression) ; aucune
+  erreur console ; `pro-global.css` diff vide ; `tools/check-design-system.js` vert
+  (2 fichiers scannés).
+- **Non couvert par cette passe** (voir Phase 7 ci-dessous pour la suite) : le libellé
+  d'état de santé ("Vigilance"/"Stable"/"Alerte") reste affiché sur mobile et se
+  retrouve visuellement proche du bouton — pas cassé, mais dense ; les 3 actions
+  perdues du menu FAB (paiement, intervention dédiée, facture) restent des dettes
+  fonctionnelles indépendantes du responsive.
+
 ---
 
 ## 5. Règles de protection
@@ -483,3 +518,48 @@ ancien emplacement DOM. `workspace`/`portal` **non touchés**, conformément à 
 5. **`tools/check-design-system.js` doit rester vert** à chaque commit touchant la V2 —
    aucune couleur hex/rgb en dur hors `:root`, y compris pendant la Phase 1 où la charte
    finale n'est pas encore tranchée (voir §0).
+
+---
+
+## Phase 7 : Évolution UX (dettes ouvertes, non résolues)
+
+Feuille de route des dettes UX identifiées pendant la décommission (§4quater) et sa
+sécurisation mobile (cette passe) — non résolues ici, à trancher avec le fondateur avant
+d'être closes. Chaque sous-section est une dette indépendante, priorisable séparément.
+
+### Actionnaires (menu de création rapide)
+
+Le menu FAB repris par le bouton `+ Créer` du header (`#fab-menu`, 3 entrées : Nouveau
+client / Nouveau devis / Nouvelle intervention) est strictement plus pauvre que les deux
+widgets qu'il remplace :
+
+| Action perdue | Widget d'origine | Statut |
+|---|---|---|
+| Envoyer un lien de paiement | `bento-actions` | Aucun équivalent dans `#fab-menu` |
+| Programmer une intervention (raccourci dédié, distinct de "Nouvelle intervention") | `bento-actions` | Aucun équivalent dans `#fab-menu` |
+| + Facture | `quick-actions` | Aucun équivalent dans `#fab-menu` |
+
+Ces 3 actions ne sont pas perdues pour l'utilisateur (les pages `factures.html`/
+`planning.html` restent accessibles via la sidebar/navigation), seul le **raccourci de
+création rapide** en un clic depuis le dashboard a disparu. Options pour clore cette
+dette, à trancher avec le fondateur : (a) étendre `#fab-menu` à 4-5 entrées, (b) accepter
+la perte de raccourci comme un arbitrage délibéré de simplification V2, (c) déplacer ces
+actions dans une zone V2 dédiée (ex. Zone "À traiter maintenant" du blueprint original).
+
+### Responsive (au-delà de cette passe)
+
+Cette passe sécurise uniquement l'**existant** de `#v2-header` sur mobile (masquage du
+badge secteur, bouton `+ Créer` ≥44px, `#fab-menu` repositionné dynamiquement). Elle ne
+couvre **pas** la croissance future du header : si le header V2 accueille davantage
+d'éléments plus tard (ex. `header-status-group` s'enrichit d'autres indicateurs, `+
+Créer` gagne un sous-menu plus large, une recherche globale s'ajoute côté vision d'origine
+§3 — voir la vision produit reçue avant le Phase 1) — la zone gauche/centrale/droite en
+`display:flex` simple **saturera** sur les petits écrans bien avant le desktop.
+
+**Note pour l'implémentation future :** prévoir un menu burger (☰) ou un affichage
+alternatif (drawer, bottom sheet) dès que `#v2-header` dépasse son contenu actuel sur
+mobile — ne pas empiler indéfiniment de nouveaux `display:none` par média-requête comme
+fait cette passe (solution correcte pour 1 élément masqué, pas une stratégie à long
+terme). Déclencheur suggéré pour rouvrir ce chantier : le jour où un nouvel élément doit
+être ajouté à `.v2-header-left`/`.header-status-group`/`.v2-header-right` et qu'il n'y a
+plus de place sur un viewport ≤768px sans revoir la structure.
