@@ -53,5 +53,14 @@
         return raw ? JSON.parse(raw) : null;
       } catch (e) { return null; }
     },
+
+    /* Secteur de l'entreprise courante (biz.secteur, déjà une clé interne
+     * depuis SECTOR_MAPPING/resolveSector() — voir WM-001). Point d'accès
+     * unique pour tout code qui a besoin du secteur courant sans relire
+     * window._ctx directement (WM-006, _architecture/WIDGET_MASTER_PLAN.md) :
+     * utilisé par buildLibraryPanelHTML() pour filtrer le catalogue. */
+    getCurrentSector: function () {
+      return (window._ctx && window._ctx.secteur) || null;
+    },
   };
 })();

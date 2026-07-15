@@ -1814,11 +1814,24 @@ function moveWidget(id, dir) {
    BIBLIOTHÈQUE DE WIDGETS (Phase 3) — panneau "Personnaliser"
 ═══════════════════════════════════════════════════════════════ */
 const CATEGORY_LABEL = { core: 'Cœur', companion: 'Compagnon', extension: 'Extensions' };
-function buildLibraryPanelHTML() {
+/* Filtrage par secteur (WM-006, _architecture/WIDGET_MASTER_PLAN.md) : un
+   widget marqué "X" (incompatible) dans SEBA_DASHBOARD_CONFIG.isCompatible()
+   pour le secteur courant n'apparaît plus du tout ici — ni coché ni
+   décoché, absent, comme si le catalogue ne le contenait pas. Ne change
+   rien à WIDGET_CATALOG lui-même : la compatibilité est une couche de
+   config (docs/services/config-dashboard.js), pas une propriété du widget.
+   secteur en paramètre optionnel : si omis, résolu via
+   SebaWidgetAPI.getCurrentSector() — aucun appelant existant n'a besoin
+   d'être modifié. */
+function buildLibraryPanelHTML(secteur) {
   const layout = getEffectiveLayout();
   const byId = {}; layout.forEach(w => byId[w.id] = w);
+  const currentSecteur = secteur || (window.SebaWidgetAPI ? window.SebaWidgetAPI.getCurrentSector() : null);
   const groups = { core: [], companion: [], extension: [] };
-  Object.values(window.WIDGET_CATALOG).forEach(w => groups[w.category].push(w));
+  Object.values(window.WIDGET_CATALOG).forEach(w => {
+    const compatible = !window.SEBA_DASHBOARD_CONFIG || window.SEBA_DASHBOARD_CONFIG.isCompatible(w.id, currentSecteur);
+    if (compatible) groups[w.category].push(w);
+  });
   return Object.keys(groups).map(cat => {
     if (!groups[cat].length) return '';
     return '<div class="pal-section"><div class="pal-section-lbl">' + CATEGORY_LABEL[cat] + '</div>' +

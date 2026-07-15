@@ -95,10 +95,24 @@
     },
   };
 
+  /* ── INCOMPATIBLE_BY_SECTEUR (WM-006, _architecture/WIDGET_MASTER_PLAN.md) ──
+     Traduction en code du statut "X" de la matrice §6 : widgets id à masquer
+     complètement du panneau "Personnaliser" pour un secteur donné (pas
+     seulement non promus par défaut — inatteignables, même manuellement).
+     Vide aujourd'hui : au moment de la rédaction de la matrice (§6), aucun
+     widget du catalogue n'est marqué X pour aucun secteur — ce registre
+     existe pour que la prochaine incompatibilité actée par le produit
+     tienne en une seule ligne ici, répercutée automatiquement dans l'UI
+     (buildLibraryPanelHTML, docs/widgets.js), sans toucher au rendu. */
+  var INCOMPATIBLE_BY_SECTEUR = {
+    autre: [],
+  };
+
   window.SEBA_DASHBOARD_CONFIG = {
     core: CORE,
     bySecteur: BY_SECTEUR,
     sectorMapping: SECTOR_MAPPING,
+    incompatibleBySecteur: INCOMPATIBLE_BY_SECTEUR,
     /* Liste ordonnée de widgets visibles par défaut pour un secteur donné. */
     widgetsFor: function (secteur) {
       var extra = BY_SECTEUR[secteur] || BY_SECTEUR.autre;
@@ -117,6 +131,15 @@
       var forWidget = WIDGET_EXTENSIONS[widgetId];
       if (!forWidget) return null;
       return forWidget[secteur] || forWidget.default || null;
+    },
+    /* Statut X de la matrice §6 : false = widget à masquer entièrement pour
+       ce secteur (jamais dans le panneau "Personnaliser", même à ajouter
+       manuellement). true pour tout le reste (O et P ne se distinguent pas
+       ici — seule la visibilité par défaut, gérée par widgetsFor, diffère
+       entre O et P). */
+    isCompatible: function (widgetId, secteur) {
+      var excluded = INCOMPATIBLE_BY_SECTEUR[secteur] || INCOMPATIBLE_BY_SECTEUR.autre || [];
+      return excluded.indexOf(widgetId) === -1;
     },
   };
 })();
