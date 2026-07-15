@@ -1,6 +1,8 @@
 # 🏗️ ARCHITECTURE.md — Blueprint cible "Tour de Contrôle"
 
-*Rédigé le 2026-07-15, révisé le 2026-07-15 (deux passes) suite aux décisions du fondateur (voir `CHANGELOG.md`). Document de référence et de planification uniquement — **aucun fichier n'a été déplacé ou migré**, conformément à la consigne ("avant toute manipulation ou migration de fichiers"). `_architecture/` vit à la racine du dépôt, hors de `docs/` : GitHub Pages ne sert que `docs/`, donc ce dossier n'est jamais livré en production, quelle que soit sa profondeur.*
+*Rédigé le 2026-07-15, révisé le 2026-07-15 (deux passes) suite aux décisions du fondateur (voir `CHANGELOG.md`). `_architecture/` vit à la racine du dépôt, hors de `docs/` : GitHub Pages ne sert que `docs/`, donc ce dossier n'est jamais livré en production, quelle que soit sa profondeur.*
+
+*Mise à jour du 2026-07-15 (même jour, après la rédaction initiale) : la première migration réelle a eu lieu — `docs/dashboard.html` a rejoint `docs/app/dashboard.html` (voir `CHANGELOG.md`, section widgets par domaine métier). `services/` et `design-system/` restent des dossiers cibles non créés à ce stade : seul `docs/services/config-dashboard.js` existe pour l'instant, le reste de `services/`/`design-system/` (regroupement de `pro-global.css`, `auth.js`, etc.) n'a pas commencé. Le reste de ce document décrit toujours le blueprint cible, pas encore l'état actuel dans son ensemble.*
 
 Ce document prolonge deux analyses déjà écrites à la racine du dépôt — `ARCHITECTURE-V2.md` (schéma de données, tokens de thème) et `ARCHITECTURE-MODULAIRE.md` (event bus, découplage) — sans les contredire. Voir la section 3 pour le point de recoupement le plus important.
 
@@ -29,13 +31,14 @@ docs/                            # 🌍 Racine = marketing + sas de conversion (
 ├── blog/                         # 📈 SEO longue traine — V2/V3, pas prioritaire aujourd'hui
 ├── legal/                        # ⚖️ cgu.html, mentions-legales.html, politique-confidentialite.html
 ├── app/                          # 🧠 STRICTEMENT post-login — seule zone bloquee robots.txt + absente du sitemap
-│   ├── dashboard.html
+│   ├── dashboard.html            # ✅ MIGRE (2026-07-15) — seul fichier deplace a ce stade
 │   ├── clients.html, client-fiche.html, devis.html, devis-nouveau.html,
 │   │   factures.html, planning.html, equipe.html, employe-fiche.html,
-│   │   historique.html           # deja bloques par robots.txt aujourd'hui
-│   └── settings/                 # reglages.html actuel
+│   │   historique.html           # deja bloques par robots.txt aujourd'hui, PAS ENCORE migres
+│   └── settings/                 # reglages.html actuel, pas encore migre
 ├── services/                     # ⚙️ (ex-"core/") — renomme pour eviter la collision avec docs/src/core/
-│   ├── api/                      # auth.js, seba-data.js (deja les noms reels du projet)
+│   ├── config-dashboard.js       # ✅ CREE (2026-07-15) — widgets par defaut du dashboard par secteur
+│   ├── api/                      # auth.js, seba-data.js (deja les noms reels du projet) — pas encore deplaces
 │   ├── i18n/                     # ⚠️ n'existe pas aujourd'hui — V2/V3, voir section 3
 │   └── utils/
 ├── design-system/                # 🎨 (ex-"ui/") — renomme pour eviter la collision avec docs/src/ui/
@@ -81,4 +84,4 @@ Toujours pas une opération en un commit — plusieurs PR atomiques, dossier par
 
 ## Statut
 
-📋 **Blueprint finalisé pour son périmètre de décision, aucune migration commencée.** Prochaine étape suggérée : découper la migration en PR atomiques par dossier cible (`app/` d'abord, car il a le rayon d'impact le plus large et le plus simple à vérifier — 0 changement d'indexation attendu).
+🚧 **Migration commencée.** `docs/dashboard.html` → `docs/app/dashboard.html` fait (2026-07-15) : chemins relatifs internes, tous les liens/scripts externes (pages marketing/app, `robots.txt`, `manifest.json`, `sw.js`, `docs/sidebar.js`, scripts QA officiels) mis à jour et vérifiés (`qa-dashboard-full.js` desktop+mobile, `qa-visual-regression.js`, `check-design-system.js`). Le reste de `app/` (clients, planning, devis, factures, équipe, historique, réglages) et la création de `design-system/`/`services/api/` **n'ont pas commencé** — prochaine étape suggérée : une page à la fois, même méthode (déplacement + correction des chemins + vérification QA avant de passer à la suivante).
