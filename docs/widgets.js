@@ -340,7 +340,7 @@ function buildRecoItemHTML(r) {
 
 function buildTeamItemEl(t, couleur) {
   const a = document.createElement('a');
-  a.href = t.href || 'equipe.html';
+  a.href = t.href || '../equipe.html';
   a.className = 'team-item';
   const initials = t.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const avBg = t.working ? couleur : 'var(--border)';
@@ -1157,6 +1157,12 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 3,
     render(ctx, el) { const m = ctx.demo.metrics[3]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 3)); } },
 
+  /* Migré vers le squelette V2 (.v2-zone-finance) — voir V2_ZONE_FINANCE_IDS
+     et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. switchChartPeriod() (plus haut
+     dans ce fichier) cible '[data-widget-id="bento-chart"]' sans hypothèse
+     sur son conteneur parent — fonctionne à l'identique une fois monté dans
+     .v2-widget-container (même attribut dataset.widgetId posé par
+     mountV2Widgets), aucune adaptation nécessaire. */
   'bento-chart': { id: 'bento-chart', title: 'Suivi des encaissements', size: 'L', category: 'core', source: 'demo',
     keywords: ['suivi des encaissements', 'graphique', 'courbe', "évolution ca", 'chiffre d\'affaires'],
     defaultVisible: true, defaultOrder: 4,
@@ -1268,9 +1274,13 @@ window.WIDGET_CATALOG = {
         '<a href="client.html" class="portal-btn primary" target="_blank">Voir l\'aperçu</a></div></div>';
     } },
 
+  /* Migré vers le squelette V2 (.v2-zone-activite) — voir V2_ZONE_ACTIVITE_IDS
+     et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. Lien corrigé '../equipe.html'
+     (même bug préexistant que 'activity' : href nu résolvait vers
+     docs/app/equipe.html, 404, depuis la migration docs/app/). */
   'team': { id: 'team', title: "Équipe aujourd'hui", size: 'L', category: 'core', source: 'demo',
     keywords: ['équipe', 'collaborateurs', 'employés', 'qui travaille'],
-    defaultVisible: true, defaultOrder: 13, link: { href: 'equipe.html', label: 'Voir tout →' },
+    defaultVisible: true, defaultOrder: 13, link: { href: '../equipe.html', label: 'Voir tout →' },
     render(ctx, el) {
       const real = buildRealTeamStatus(ctx.rhEmployees, ctx.rhPointages);
       const list = real.length ? real : ctx.demo.team;
@@ -1444,6 +1454,13 @@ window.WIDGET_CATALOG = {
       });
     } },
 
+  /* Migré vers le squelette V2 (.v2-zone-finance) — voir V2_ZONE_FINANCE_IDS
+     et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. link.href reste '#' à dessein :
+     pointait vers cockpit-treso.html (cluster "Lot", WM-007, mockup sans
+     auth/SebaDB) — neutralisé avant cette migration, pas un lien cassé à
+     corriger. Source 'lot:treso' (démo) inchangée : le rebranchement sur de
+     vraies données de trésorerie est une dette de données distincte (voir
+     master plan §2), pas traitée par ce déplacement. */
   'lot-treso': { id: 'lot-treso', title: 'Position de trésorerie', size: 'M', category: 'companion', source: 'lot:treso',
     keywords: ['trésorerie', 'cash', 'position de trésorerie', 'runway'],
     defaultVisible: false, defaultOrder: 23, link: { href: '#', label: 'Simulateur complet →' },
@@ -1493,7 +1510,10 @@ window.WIDGET_CATALOG = {
      WM-005 (_architecture/WIDGET_MASTER_PLAN.md) : vue_marge_interventions/
      get_marge_reelle existent côté Supabase, aucun consommateur front avant
      ce widget — render() async pour refléter fidèlement ce que sera un vrai
-     appel RPC, avec état de chargement explicite. */
+     appel RPC, avec état de chargement explicite.
+     Migré vers le squelette V2 (.v2-zone-finance) — voir V2_ZONE_FINANCE_IDS
+     et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. render() async monté sans
+     l'attendre par mountV2Widgets, comme le faisait déjà renderGrid(). */
   'marge-reelle': { id: 'marge-reelle', title: 'Marge réelle', size: 'M', category: 'companion', source: 'live',
     keywords: ['marge', 'marge réelle', 'rentabilité', 'coût intervention', 'bénéfice'],
     defaultVisible: false, defaultOrder: 26, link: { href: '../planning.html', label: 'Voir les interventions →' },
@@ -1574,7 +1594,7 @@ function buildRealTeamStatus(employees, pointages) {
   return employees.map(e => {
     const todays = (pointages || []).filter(p => p.empId === e.id && new Date(p.ts).toDateString() === todayStr);
     const last = todays[todays.length - 1];
-    return { name: e.nom, role: e.poste || e.contrat || 'Collaborateur', working: !!last && last.type === 'IN', href: 'equipe.html' };
+    return { name: e.nom, role: e.poste || e.contrat || 'Collaborateur', working: !!last && last.type === 'IN', href: '../equipe.html' };
   });
 }
 
@@ -1744,20 +1764,37 @@ function persistOrder(orderedIds) {
    GRILLE UNIFIÉE (Phase 2/3) — construit .widget-shell par widget
    visible, dans l'ordre du layout, taille S/M/L/XL
 ═══════════════════════════════════════════════════════════════ */
-/* Refonte Tactical Dark (TD-3) : ces 3 widgets sont ancrés dans la zone
+/* Refonte Tactical Dark (TD-3) : ces widgets sont ancrés dans la zone
    "télémétrie" fixe en haut du cockpit (voir renderCockpitTelemetry
    ci-dessous) — exclus de #widget-grid, donc structurellement hors de
    portée de SortableJS, sans toucher à sa configuration. Le reste du
-   catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable. */
-const PINNED_TELEMETRY_IDS = ['metric-0', 'serenity-score', 'timeline'];
+   catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable.
+   'timeline' en est sorti (migré vers V2, voir MIGRATED_FROM_TELEMETRY_IDS
+   et V2_ZONE_ACTIVITE_IDS ci-dessous) — le trio d'origine (CA/Serenity
+   Score/Missions du jour) devient un duo (CA/Serenity Score). */
+const PINNED_TELEMETRY_IDS = ['metric-0', 'serenity-score'];
 
 /* ── Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §1/§3) ──────────────────────
-   Widgets retirés de la grille V1 (renderGrid ci-dessous) car montés à la
-   place dans le squelette V2 (voir renderV2ZoneActivite plus bas). Liste
-   volontairement à plat, extensible widget par widget au fil des chantiers
-   de migration — ne pas confondre avec PINNED_TELEMETRY_IDS (qui restent en
-   V1, juste hors de la grille modulable). */
-const MIGRATED_TO_V2_IDS = ['activity'];
+   Widgets retirés de la grille V1 (renderGrid) ou de la télémétrie épinglée
+   (renderCockpitTelemetry) car montés à la place dans le squelette V2. Une
+   liste par zone V2 cible — chacune sert à la fois de "quoi exclure en V1"
+   (agrégées dans MIGRATED_TO_V2_IDS, source de vérité unique) et de "quoi
+   monter, et où" (consommée directement par mountV2Widgets ci-dessous). */
+const V2_ZONE_ACTIVITE_IDS = ['activity', 'timeline', 'team'];
+const V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso'];
+const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS);
+
+/* Sous-ensemble de MIGRATED_TO_V2_IDS qui vivait dans PINNED_TELEMETRY_IDS
+   (pas dans la grille modulable) — renderCockpitTelemetry a besoin de le
+   savoir pour y laisser son propre commentaire de traçabilité. */
+const MIGRATED_FROM_TELEMETRY_IDS = ['timeline'];
+
+/* Widget id -> sélecteur de la zone V2 où il a été remonté, pour que le
+   commentaire de traçabilité laissé en V1 pointe la bonne zone. */
+function v2ZoneSelectorFor(id) {
+  if (V2_ZONE_FINANCE_IDS.includes(id)) return '.v2-zone-finance';
+  return '.v2-zone-activite';
+}
 
 function renderGrid(gridEl, ctx, customizeMode) {
   const layout = getEffectiveLayout();
@@ -1770,7 +1807,7 @@ function renderGrid(gridEl, ctx, customizeMode) {
   }
   visible.forEach(w => {
     if (MIGRATED_TO_V2_IDS.includes(w.id)) {
-      gridEl.appendChild(document.createComment(' Widget ' + w.id + ' déplacé vers dashboard-v2 (.v2-zone-activite) — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
+      gridEl.appendChild(document.createComment(' Widget ' + w.id + ' déplacé vers dashboard-v2 (' + v2ZoneSelectorFor(w.id) + ') — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
       return;
     }
     const def = window.WIDGET_CATALOG[w.id];
@@ -1792,21 +1829,23 @@ function renderGrid(gridEl, ctx, customizeMode) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   V2 — MONTAGE PILOTE (Phase 2, DASHBOARD_V2_MASTER_PLAN.md §3)
-   Monte les widgets de MIGRATED_TO_V2_IDS dans .v2-zone-activite, avec le
-   même ctx et le même def.render() que renderGrid() — aucune duplication de
-   logique ni de données, seul l'emplacement DOM change. Chrome (tête/lien)
-   en classes .v2-* uniquement (jamais .widget-shell/.module-head — ce sont
-   des styles "legacy" scopés à dashboard.html, voir Widget Pur protocol) ;
-   le contenu rendu par def.render() (ex. .activity-item) reste inchangé et
-   s'affiche normalement puisque ces classes ne sont pas scopées à .app.
+   V2 — MONTAGE (Phase 2, DASHBOARD_V2_MASTER_PLAN.md §3/§3bis)
+   Monte une liste de widgets dans une zone .v2-zone-*, avec le même ctx et
+   le même def.render() que renderGrid()/renderCockpitTelemetry() — aucune
+   duplication de logique ni de données, seul l'emplacement DOM change.
+   Chrome (tête/lien) en classes .v2-* uniquement (jamais .widget-shell/
+   .module-head — styles "legacy" scopés à dashboard.html, voir Widget Pur
+   protocol) ; le contenu rendu par def.render() (ex. .activity-item,
+   .bc-d3-wrap) reste inchangé et s'affiche normalement puisque ces classes
+   ne sont pas scopées à .app. def.render() peut être async (ex.
+   marge-reelle) : on ne l'attend pas, exactement comme renderGrid().
 ═══════════════════════════════════════════════════════════════ */
-function renderV2ZoneActivite(ctx) {
-  const zone = document.querySelector('.v2-zone-activite');
+function mountV2Widgets(zoneSelector, ids, ctx) {
+  const zone = document.querySelector(zoneSelector);
   if (!zone) return;
   zone.classList.add('v2-zone--has-widget');
   zone.innerHTML = '';
-  MIGRATED_TO_V2_IDS.forEach(id => {
+  ids.forEach(id => {
     const def = window.WIDGET_CATALOG[id];
     if (!def) return;
     const container = document.createElement('div');
@@ -1821,13 +1860,15 @@ function renderV2ZoneActivite(ctx) {
     def.render(ctx, container.querySelector('.v2-widget-content'));
   });
 }
+function renderV2ZoneActivite(ctx) { mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx); }
+function renderV2ZoneFinance(ctx) { mountV2Widgets('.v2-zone-finance', V2_ZONE_FINANCE_IDS, ctx); }
 window.renderV2ZoneActivite = renderV2ZoneActivite;
+window.renderV2ZoneFinance = renderV2ZoneFinance;
 
 /* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : CA à gauche, Serenity
-   Score au centre, Missions du jour à droite — ordre volontaire, pas
-   celui de defaultOrder utilisé pour la grille modulable. Jamais de
-   drag-handle/bouton de retrait : ces 3 widgets ne sont pas gérés par
-   le mode personnalisation. */
+   Score à droite — duo depuis la migration de 'timeline' vers V2 (voir
+   MIGRATED_FROM_TELEMETRY_IDS). Jamais de drag-handle/bouton de retrait :
+   ces widgets ne sont pas gérés par le mode personnalisation. */
 function renderCockpitTelemetry(ctx) {
   const container = document.getElementById('cockpit-telemetry');
   if (!container) return;
@@ -1842,6 +1883,9 @@ function renderCockpitTelemetry(ctx) {
     shell.innerHTML = '<div class="module-head"><span class="module-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span></div><div class="widget-body"></div>';
     container.appendChild(shell);
     def.render(ctx, shell.querySelector('.widget-body'));
+  });
+  MIGRATED_FROM_TELEMETRY_IDS.forEach(id => {
+    container.appendChild(document.createComment(' Widget ' + id + ' déplacé vers dashboard-v2 (.v2-zone-activite) — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
   });
 }
 window.renderCockpitTelemetry = renderCockpitTelemetry;

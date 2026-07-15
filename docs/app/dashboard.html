@@ -717,6 +717,7 @@
     <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
     <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
     <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
+    <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
   </div>
 </div>
 <script>
@@ -1427,10 +1428,14 @@
     window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
     if (typeof renderCockpitTelemetry === 'function') renderCockpitTelemetry(_ctx);
     renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
-    /* Pilote de migration V2 (DASHBOARD_V2_MASTER_PLAN.md §3) : widgets déjà
-       déplacés hors de renderGrid() (V1) sont montés ici avec le même _ctx,
-       uniquement quand le squelette V2 est actif. */
-    if (window.__SEBA_V2_ENABLED__ && typeof renderV2ZoneActivite === 'function') renderV2ZoneActivite(_ctx);
+    /* Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §3/§3bis) : widgets déjà
+       déplacés hors de renderGrid()/renderCockpitTelemetry() (V1) sont
+       montés ici avec le même _ctx, uniquement quand le squelette V2 est
+       actif. */
+    if (window.__SEBA_V2_ENABLED__) {
+      if (typeof renderV2ZoneActivite === 'function') renderV2ZoneActivite(_ctx);
+      if (typeof renderV2ZoneFinance === 'function') renderV2ZoneFinance(_ctx);
+    }
     if (_customizeMode) initSortable(document.getElementById('widget-grid'));
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);
     if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);

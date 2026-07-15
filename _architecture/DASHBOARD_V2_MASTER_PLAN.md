@@ -45,24 +45,24 @@ code (id / titre / catégorie / source). Statuts :
 | `metric-1` | Métrique activité | Zone 2 Bloc A — Interventions (compteur) | Migré |
 | `metric-2` | Métrique clients | — (aucune zone V2 dans le MVP 12 widgets ; futur module "Commercial") | Orphelin |
 | `metric-3` | Métrique devis | Zone 3 Carte 4 — Devis | Migré |
-| `bento-chart` | Suivi des encaissements | Zone 3 Carte 3 — Encaissements | Migré |
+| `bento-chart` | Suivi des encaissements | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis |
 | `bento-actions` | Actions flash | — (explicitement listé §26 de la vision) | Supprimé |
-| `timeline` | Journée d'aujourd'hui | Zone 2 Bloc A — mini-timeline | Migré |
+| `timeline` | Journée d'aujourd'hui | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — exécuté, voir §3bis (retiré de PINNED_TELEMETRY_IDS) |
 | `activity` | Activité récente | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — pilote exécuté, voir §3bis |
 | `recos` | Recommandations Seba | Zone "Seba IA" (§21 vision, position 14 dans l'ordre §24) | Migré |
 | `quick-actions` | Actions rapides | — (remplacé par le bouton `+ Créer` contextuel du header, §3/§11 vision) | Supprimé |
 | `goal` | Objectif du mois | Zone 3 Carte 1 — CA (fusionné : barre d'objectif) | Migré |
 | `workspace` | Votre espace | — (explicitement listé §26 de la vision) | Supprimé |
 | `portal` | Portail client | — (retiré du dashboard, relocalisé en item de sidebar "Configuration", §2 vision) | Supprimé |
-| `team` | Équipe aujourd'hui | Zone 2 Bloc B — Équipe | Migré |
+| `team` | Équipe aujourd'hui | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — exécuté, voir §3bis |
 | `chart-donut` | Répartition des interventions | — (graphique décoratif sans action, contraire à §13/§26 vision) | Orphelin |
 | `lot-impayes` | Factures en retard | "À traiter maintenant" (facture échue) + Zone 3 Encaissements | Migré* |
 | `lot-pipeline` | Pipeline devis → facture → encaissé | Zone 3 (Devis/Encaissements) ou Analyse détaillée | Migré* |
 | `lot-tournee` | Tournée du jour | Zone 2 Bloc C — Carte et déplacements | Migré* |
 | `lot-carte` | Carte des interventions | Zone 2 Bloc C — Carte et déplacements | Migré |
-| `lot-treso` | Position de trésorerie | Zone 3 (Encaissements/Dépenses) ou Analyse détaillée | Migré* |
+| `lot-treso` | Position de trésorerie | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis (source `lot:treso` inchangée, dette de données) |
 | `generic-media-report` | Rapport photo | Zone 5 — Qualité ("Photos manquantes") | Migré |
-| `marge-reelle` | Marge réelle | Zone 3 Carte 2 — Marge + Zone 4 — Rentabilité par intervention | Migré** |
+| `marge-reelle` | Marge réelle | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis. Zone 4 (Rentabilité par intervention) reste sans widget : nécessite `dureeEstimee`/`dureeReelle`, voir §2 |
 | `ext-chart` | Nouveau Graphique | — (widget d'extension générique, catalogue seulement) | Orphelin |
 | `ext-notes` | Bloc-notes | — (widget d'extension générique, catalogue seulement) | Orphelin |
 | `ext-rss` | Flux RSS Finance | — (widget d'extension générique, catalogue seulement) | Orphelin |
@@ -206,7 +206,61 @@ l'identique pour les prochains) :
   démo réels, lien correct, classes attendues ; `pro-global.css` diff vide ;
   `tools/check-design-system.js` vert.
 
+### 3ter. Vague 2 exécutée — `timeline`, `team`, `bento-chart`, `marge-reelle`, `lot-treso`
+
+Deuxième vague de migration (même branche), "pipeline industriel" par lots plutôt que
+widget par widget. Généralisation du mécanisme du pilote §3bis :
+
+- `docs/widgets.js` : `MIGRATED_TO_V2_IDS` devient dérivé de deux listes par zone —
+  `V2_ZONE_ACTIVITE_IDS = ['activity', 'timeline', 'team']` et
+  `V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso']` — une seule
+  source de vérité pour "quoi exclure en V1" et "quoi monter, et où". La fonction de
+  montage a été factorisée en `mountV2Widgets(zoneSelector, ids, ctx)`, réutilisée par
+  `renderV2ZoneActivite()` et la nouvelle `renderV2ZoneFinance()` (toutes deux exposées
+  sur `window`).
+- **Cas particulier `timeline`** : contrairement aux autres widgets "Migré", il n'était
+  pas rendu par `renderGrid()` mais épinglé dans `PINNED_TELEMETRY_IDS` (télémétrie fixe
+  du cockpit, `renderCockpitTelemetry()`) — patron du §3bis non applicable tel quel.
+  Retiré de `PINNED_TELEMETRY_IDS` (le trio CA/Serenity Score/Missions du jour devient
+  un duo CA/Serenity Score) ; `MIGRATED_FROM_TELEMETRY_IDS = ['timeline']` fait insérer
+  le commentaire de traçabilité dans `#cockpit-telemetry` (et non `#widget-grid`).
+- **Nouvelle zone DOM** : `.v2-zone-finance` ajoutée au squelette (Phase 1) pour
+  accueillir `bento-chart`/`marge-reelle`/`lot-treso` — même patron placeholder que les
+  4 zones existantes, bascule en grille peuplée via `.v2-zone--has-widget` (règle CSS
+  déjà générique, aucune duplication nécessaire). Zone 4 (Rentabilité par intervention)
+  n'a **pas** reçu de conteneur : aucun widget disponible pour elle actuellement (voir
+  §2, dette `dureeEstimee`/`dureeReelle`) — pas de placeholder vide non sollicité.
+- **Bugs préexistants corrigés au passage** : `team.link.href` et les deux hrefs
+  générés par `buildTeamItemEl()`/`buildRealTeamStatus()` valaient `'equipe.html'` (sans
+  `../`), même résidu de migration `docs/app/` que `activity` — corrigés en
+  `'../equipe.html'`. `lot-treso.link.href` (`'#'`) **n'a pas été touché** : ce n'est
+  pas un lien cassé mais une neutralisation volontaire (WM-007, cible = cluster "Lot"
+  non fiable) — à distinguer d'un oubli.
+- `bento-chart` : `switchChartPeriod()` cible `[data-widget-id="bento-chart"]` en global
+  (pas de dépendance à un conteneur V1 spécifique) — fonctionne à l'identique une fois
+  monté en V2, aucune adaptation nécessaire. Interactivité (clic bouton période) validée.
+- `marge-reelle` : `render()` async monté sans être attendu par `mountV2Widgets`, comme
+  `renderGrid()` le faisait déjà — comportement inchangé (état "Marge réelle
+  indisponible" affiché, `coutReel` toujours absent de SebaDB, voir §2).
+- Validé via Puppeteer (`?demo&v2=1`) : V1 — `#widget-grid` sans les 4 widgets concernés
+  (comment par widget, zone cible correcte dans le texte) ; `#cockpit-telemetry` réduit à
+  `metric-0`/`serenity-score` + commentaire `timeline` ; `.v2-zone-activite` avec 3
+  widgets réels ; `.v2-zone-finance` avec 3 widgets réels (chart D3, marge vide honnête,
+  trésorerie) ; clic sur le bouton de période du graphique fonctionnel ; `pro-global.css`
+  diff vide ; `tools/check-design-system.js` vert.
+
 ---
+
+## Dettes de données (pipeline de migration, Priorités 3+)
+
+Widgets/termes de la demande de migration sans correspondance exécutable actuellement —
+notés ici plutôt que forcés, conformément à la note de conduite du chantier.
+
+| Terme demandé | Widget catalogue le plus proche | Blocage | Décision |
+|---|---|---|---|
+| `planning` (Priorité 1) | Aucun — ni `lot-tournee` ni `lot-carte` ne correspondent sans ambiguïté | Nom ne désigne aucun id réel des 26 widgets | Ignoré pour cette vague (confirmé avec le fondateur) — `lot-tournee`/`lot-carte` restent "Migré*" (dette `lot:*`, voir §2), non traités ici |
+| `quality-check` (Priorité 3) | `generic-media-report` (« Rapport photo ») | Aucune collection SebaDB de contrôles qualité (`controlesQualite`, `reclamations`) — déjà noté Manquant au §2 | Traité comme dette de données (confirmé avec le fondateur) — `generic-media-report` reste "Migré" au §1 mais non exécuté cette vague ; à faire dans une passe Priorité 3 dédiée |
+| `stock-alerts` (Priorité 3) | Aucun | Aucune collection SebaDB (`stock`, `equipements`) ni widget existant — déjà noté Manquant au §2 (Zone 6) | Reporté entièrement : ni zone DOM ni widget à créer avant que la donnée existe |
 
 ## 4. Liste noire (nettoyage)
 

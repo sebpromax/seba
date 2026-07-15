@@ -83,6 +83,10 @@
   min-height: 240px;
 }
 
+.v2-zone-finance {
+  min-height: 200px;
+}
+
 /* ── Zone peuplée par un widget réel (Phase 2 pilote) ──────────────────────
  * Remplace la présentation placeholder (fond plein, bordure pointillée,
  * label centré) par une grille 12 colonnes prête à accueillir les widgets
