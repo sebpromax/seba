@@ -1195,7 +1195,7 @@ window.WIDGET_CATALOG = {
 
   'timeline': { id: 'timeline', title: "Journée d'aujourd'hui", size: 'L', category: 'core', source: 'demo',
     keywords: ['planning', "aujourd'hui", 'journée', 'agenda du jour'],
-    defaultVisible: true, defaultOrder: 6, link: { href: 'planning.html', label: 'Voir le planning →' },
+    defaultVisible: true, defaultOrder: 6, link: { href: '../planning.html', label: 'Voir le planning →' },
     render(ctx, el) { el.innerHTML = buildTimelineHTML(ctx.demo.timeline); } },
 
   'activity': { id: 'activity', title: 'Activité récente', size: 'L', category: 'core', source: 'demo',
@@ -1272,10 +1272,19 @@ window.WIDGET_CATALOG = {
       list.forEach(t => el.appendChild(buildTeamItemEl(t, ctx.couleur)));
     } },
 
-  /* ── Compagnon — issus des pages-outils déjà construites (Phase 5) ── */
+  /* ── Compagnon — issus des pages-outils déjà construites (Phase 5) ──
+     link.href volontairement '#' (2026-07-15) : ces 4 widgets pointaient vers
+     le cluster "Lot" (contentieux-recouvrement.html, mutation-contextuelle.html,
+     haversine-engine.html, cockpit-treso.html) avec un chemin relatif cassé
+     depuis la migration de dashboard.html vers docs/app/ (404 confirmé en
+     prod). Audit (_architecture/WIDGET_MASTER_PLAN.md, WM-007) : ce sont des
+     mockups sans auth, sans SebaDB, sur un design system tiers — on ne les
+     relie plus depuis le dashboard tant que leur sort n'est pas tranché,
+     plutôt que de réparer un lien vers une page non fiable. Voir aussi le
+     Disallow ajouté dans robots.txt pour ce même cluster. */
   'lot-impayes': { id: 'lot-impayes', title: 'Factures en retard', size: 'M', category: 'companion', source: 'lot:contentieux',
     keywords: ['factures en retard', 'impayés', 'relances', 'créances', 'factures impayées'],
-    defaultVisible: false, defaultOrder: 20, link: { href: 'contentieux-recouvrement.html', label: 'Recouvrement →' },
+    defaultVisible: false, defaultOrder: 20, link: { href: '#', label: 'Recouvrement →' },
     render(ctx, el) {
       const RELANCE_LABELS = ['Amiable J+8', 'Relance 1 J+30', 'Relance 2 J+60', 'Mise en demeure J+90', 'Huissier / LRE'];
       const list = (ctx.creances || []).slice().sort((a, b) => b.relanceStep - a.relanceStep);
@@ -1296,7 +1305,7 @@ window.WIDGET_CATALOG = {
 
   'lot-pipeline': { id: 'lot-pipeline', title: 'Pipeline devis → facture → encaissé', size: 'XL', category: 'companion', source: 'lot:mutation',
     keywords: ['pipeline', 'devis facture encaissé', 'kanban commercial', 'suivi commercial'],
-    defaultVisible: false, defaultOrder: 21, link: { href: 'mutation-contextuelle.html', label: 'Pipeline complet →' },
+    defaultVisible: false, defaultOrder: 21, link: { href: '#', label: 'Pipeline complet →' },
     render(ctx, el) {
       const docs = ctx.mutationDocs || [];
       if (!docs.length) {
@@ -1318,7 +1327,7 @@ window.WIDGET_CATALOG = {
 
   'lot-tournee': { id: 'lot-tournee', title: 'Tournée du jour', size: 'L', category: 'companion', source: 'lot:haversine',
     keywords: ['tournée', 'tournée du jour', 'itinéraire', 'déplacements', 'route', 'optimiser tournée'],
-    defaultVisible: false, defaultOrder: 22, link: { href: 'haversine-engine.html', label: 'Optimiser →' },
+    defaultVisible: false, defaultOrder: 22, link: { href: '#', label: 'Optimiser →' },
     render(ctx, el) {
       const pts = ctx.haversinePts || [];
       if (!pts.length) {
@@ -1392,7 +1401,7 @@ window.WIDGET_CATALOG = {
 
   'lot-carte': { id: 'lot-carte', title: 'Carte des interventions', size: 'L', category: 'companion', source: 'live',
     keywords: ['carte', 'map', 'tournée sur carte', 'localisation', 'itinéraire carte', 'géolocalisation'],
-    defaultVisible: false, defaultOrder: 24, link: { href: 'planning.html', label: 'Planning →' },
+    defaultVisible: false, defaultOrder: 24, link: { href: '../planning.html', label: 'Planning →' },
     render(ctx, el) {
       /* Audit 2.2 : renderGrid() vide et reconstruit tout #widget-grid à chaque
          bascule du mode personnalisation/ajout de widget — sans ce nettoyage,
@@ -1430,7 +1439,7 @@ window.WIDGET_CATALOG = {
 
   'lot-treso': { id: 'lot-treso', title: 'Position de trésorerie', size: 'M', category: 'companion', source: 'lot:treso',
     keywords: ['trésorerie', 'cash', 'position de trésorerie', 'runway'],
-    defaultVisible: false, defaultOrder: 23, link: { href: 'cockpit-treso.html', label: 'Simulateur complet →' },
+    defaultVisible: false, defaultOrder: 23, link: { href: '#', label: 'Simulateur complet →' },
     render(ctx, el) {
       const g = ctx.demo.goal;
       if (!g || g.current <= 0) { el.innerHTML = '<div class="tl-empty">Pas encore de données de trésorerie.</div>'; return; }
@@ -1449,7 +1458,7 @@ window.WIDGET_CATALOG = {
      contrat d'extension sectorielle défini dans config-dashboard.js. */
   'generic-media-report': { id: 'generic-media-report', title: 'Rapport photo', size: 'M', category: 'companion', source: 'live',
     keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'média', 'documents intervention'],
-    defaultVisible: false, defaultOrder: 25, link: { href: 'planning.html', label: 'Voir les interventions →' },
+    defaultVisible: false, defaultOrder: 25, link: { href: '../planning.html', label: 'Voir les interventions →' },
     titleFor(ctx) {
       const ext = window.SEBA_DASHBOARD_CONFIG && window.SEBA_DASHBOARD_CONFIG.widgetExtensionFor('generic-media-report', ctx.secteur);
       return (ext && ext.title) || this.title;

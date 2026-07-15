@@ -18,4 +18,14 @@ Disallow: /seba/employe-fiche.html
 Disallow: /seba/historique.html
 Disallow: /seba/reglages.html
 
+# Cluster "Lot" (galerie de concepts / mockups internes, voir AUDIT-EXPERT.md
+# écart #13 et _architecture/WIDGET_MASTER_PLAN.md WM-007) : jamais lié au
+# funnel principal, pas d'auth, pas de vraies données — n'a rien à faire
+# indexé, contrairement à ce que suggérait le commentaire d'intention
+# ci-dessus depuis la création de ce fichier.
+Disallow: /seba/contentieux-recouvrement.html
+Disallow: /seba/mutation-contextuelle.html
+Disallow: /seba/haversine-engine.html
+Disallow: /seba/cockpit-treso.html
+
 Sitemap: https://sebpromax.github.io/seba/sitemap.xml
