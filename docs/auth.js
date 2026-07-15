@@ -23,10 +23,17 @@
      2. config.js — locale, gitignorée : clés SECRÈTES (Groq…) et
         surcharges. Fusionnée PAR-DESSUS la couche publique. */
   if (location.protocol !== 'file:') {
+    // config.public.js/config.js vivent à la racine de docs/, jamais dans
+    // docs/app/ — un chemin relatif nu ('config.public.js') ne résout
+    // correctement que depuis la racine. Depuis docs/app/dashboard.html,
+    // ça pointait vers app/config.public.js (404 en prod, SEBA_CONFIG_PUBLIC
+    // jamais posé, guard.js désarmé) : même correctif que docs/sidebar.js
+    // (resolveHref/isInApp) pour rester correct des deux profondeurs.
+    const prefix = /\/app\//.test(location.pathname) ? '../' : '';
     const loadLayer = (file) => {
       try {
         const x = new XMLHttpRequest();
-        x.open('GET', file, false);
+        x.open('GET', prefix + file, false);
         x.send();
         if (x.status === 200 && x.responseText.indexOf('SEBA_CONFIG') !== -1) (0, eval)(x.responseText);
       } catch (e) {}
