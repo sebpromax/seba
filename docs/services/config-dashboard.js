@@ -187,5 +187,31 @@
       var excluded = INCOMPATIBLE_BY_SECTEUR[resolved] || INCOMPATIBLE_BY_SECTEUR.autre || [];
       return excluded.indexOf(widgetId) === -1;
     },
+    /* Version "explicable" de isCompatible() — n'ajoute rien à la logique,
+       expose juste POURQUOI. Additive : isCompatible() reste inchangée pour
+       ses appelants existants (buildLibraryPanelHTML) ; cette fonction sert
+       les futurs consommateurs qui ont besoin de justifier une décision
+       (ex. un futur "pourquoi ce widget n'est pas proposé ?"). Statuts
+       calqués sur le vocabulaire déjà utilisé dans la matrice §6 de
+       _architecture/WIDGET_MASTER_PLAN.md (O/P/X), pas un nouveau système. */
+    explainCompatibility: function (widgetId, secteur) {
+      var isUniversal = CORE.indexOf(widgetId) !== -1 || (BY_SECTEUR.commun || []).indexOf(widgetId) !== -1;
+      if (isUniversal) {
+        return { compatible: true, status: 'O', reasons: ['Widget universel (socle commun ou promu pour tous les secteurs).'] };
+      }
+      var resolved = resolveWidgetSector(secteur);
+      var fellBack = resolved !== secteur;
+      var excluded = INCOMPATIBLE_BY_SECTEUR[resolved] || INCOMPATIBLE_BY_SECTEUR.autre || [];
+      if (excluded.indexOf(widgetId) !== -1) {
+        return { compatible: false, status: 'X', reasons: ['Marqué incompatible pour secteur "' + resolved + '" (INCOMPATIBLE_BY_SECTEUR).'] };
+      }
+      var defaultIds = BY_SECTEUR[resolved] || BY_SECTEUR.autre;
+      var isDefault = defaultIds.indexOf(widgetId) !== -1;
+      var reasons = [isDefault
+        ? 'Activé par défaut pour secteur "' + resolved + '" (BY_SECTEUR).'
+        : 'Disponible en option pour secteur "' + resolved + '", non activé par défaut.'];
+      if (fellBack) reasons.push('Secteur "' + secteur + '" résolu vers "' + resolved + '" via WIDGET_SECTOR_FALLBACK (WM-002).');
+      return { compatible: true, status: isDefault ? 'O' : 'P', reasons: reasons };
+    },
   };
 })();
