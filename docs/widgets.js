@@ -17,10 +17,16 @@ function writeSeba(key, val) {
   try { localStorage.setItem('seba_' + key, JSON.stringify(val)); } catch (e) {}
 }
 
+/* Règle "Widget Pur" (_architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) : la
+   disposition personnalisée par l'utilisateur (Dashboard Adaptatif) n'est
+   plus lue/écrite ici directement — délègue à SebaWidgetAPI.getUserPreference/
+   saveUserPreference (docs/services/widget-data-api.js), seul point
+   autorisé à toucher localStorage pour ce besoin. SebaLayoutStore reste un
+   alias de compatibilité pour les appelants existants (addWidgetToLayout,
+   removeWidgetFromLayout, persistOrder, saveLayout, ci-dessous). */
 const SebaLayoutStore = {
-  KEY: 'dashboard_layout',
-  read() { return readSeba(this.KEY, null); },
-  write(layout) { layout.updatedAt = new Date().toISOString(); writeSeba(this.KEY, layout); },
+  read() { return window.SebaWidgetAPI ? window.SebaWidgetAPI.getUserPreference() : null; },
+  write(layout) { if (window.SebaWidgetAPI) window.SebaWidgetAPI.saveUserPreference(layout); },
 };
 
 function parseFrDate(str) {

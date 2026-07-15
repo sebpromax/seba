@@ -28,5 +28,28 @@
         latest: withPhotos[withPhotos.length - 1],
       };
     },
+
+    /* ── Dashboard Adaptatif — persistance des préférences de disposition ──
+     * Seul point autorisé à lire/écrire la disposition personnalisée par
+     * l'utilisateur (widgets supprimés/ajoutés/réordonnés). Utilise la même
+     * clé que le moteur de layout déjà en place avant cette règle
+     * ('seba_dashboard_layout', via SebaLayoutStore dans docs/widgets.js) —
+     * pas de renommage cosmétique en 'user-dashboard-prefs' : ça aurait
+     * silencieusement fait perdre sa disposition à tout utilisateur ayant
+     * déjà personnalisé son dashboard. SebaLayoutStore délègue maintenant
+     * ici plutôt que d'écrire dans localStorage lui-même. */
+    LAYOUT_KEY: 'seba_dashboard_layout',
+    saveUserPreference: function (layoutConfig) {
+      try {
+        layoutConfig.updatedAt = new Date().toISOString();
+        localStorage.setItem(this.LAYOUT_KEY, JSON.stringify(layoutConfig));
+      } catch (e) { /* quota/navigation privée : on abandonne silencieusement, comme writeSeba() */ }
+    },
+    getUserPreference: function () {
+      try {
+        const raw = localStorage.getItem(this.LAYOUT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    },
   };
 })();
