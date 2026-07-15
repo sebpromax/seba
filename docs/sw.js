@@ -13,6 +13,7 @@ const CORE = [
   'app/dashboard.html', 'clients.html', 'planning.html', 'devis.html',
   'devis-nouveau.html', 'factures.html', 'equipe.html', 'reglages.html', 'historique.html',
   'pro-global.css', 'sidebar.js', 'businessTypes.js', 'widgets.js', 'seba-data.js',
+  'services/config-dashboard.js', 'services/widget-data-api.js',
   'auth.js', 'guard.js', 'theme.js',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'favicon.jpg',
 ];

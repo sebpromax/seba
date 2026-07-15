@@ -1434,6 +1434,24 @@ window.WIDGET_CATALOG = {
         '<div class="ws-row"><span class="ws-label">Estimation précise</span><span class="ws-val link">Ouvrir le simulateur →</span></div>';
     } },
 
+  /* ── Widget "pur" (règle d'or, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) :
+     ne lit jamais window.SebaDB/localStorage directement, passe uniquement par
+     window.SebaWidgetAPI (docs/services/widget-data-api.js). ── */
+  'cleaning-photo-report': { id: 'cleaning-photo-report', title: 'Rapport photo de ménage', size: 'M', category: 'companion', source: 'live',
+    keywords: ['photo', 'rapport photo', 'avant après', 'preuve intervention', 'ménage'],
+    defaultVisible: false, defaultOrder: 25, link: { href: 'planning.html', label: 'Voir les interventions →' },
+    render(ctx, el) {
+      const report = window.SebaWidgetAPI ? window.SebaWidgetAPI.getCleaningPhotoReport(ctx) : null;
+      if (!report) {
+        el.innerHTML = buildRichEmptyHTML('📷', 'Aucun rapport photo', 'Ajoutez des photos avant/après à vos interventions de ménage pour rassurer vos clients.', 'Voir les interventions', 'planning.html');
+        return;
+      }
+      el.innerHTML = '<div class="bc-pad">' +
+        '<div class="metric-value mono-num">' + report.count + '</div>' +
+        '<div class="metric-label">rapport(s) photo cette semaine</div>' +
+        '</div>';
+    } },
+
   /* ── Bibliothèque d'Extensions (Bible IV.9) — mini-modules ajoutables par
      glisser-déposer depuis le tiroir. defaultVisible:false : n'apparaissent
      que si l'utilisateur les fait glisser dans la grille (ou les coche

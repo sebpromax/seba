@@ -29,7 +29,10 @@
     maintenance: ['chart-donut', 'lot-tournee', 'lot-carte'],
     jardinage: ['chart-donut', 'lot-tournee', 'lot-carte'],
     demenagement: ['chart-donut', 'lot-tournee', 'lot-carte'],
-    menage: ['lot-pipeline', 'lot-impayes'],
+    // 'nettoyage' n'existe pas comme clé de secteur dans seba-data.js/businessTypes.js
+    // (le secteur réel est 'menage', libellé "Ménage & nettoyage") — cleaning-photo-report
+    // est donc rattaché à 'menage' pour être réellement activable par un utilisateur.
+    menage: ['lot-pipeline', 'lot-impayes', 'cleaning-photo-report'],
     conciergerie: ['lot-pipeline', 'lot-impayes'],
     conciergerieCopro: ['lot-pipeline', 'lot-impayes'],
     conciergerieEntreprise: ['lot-pipeline', 'lot-impayes'],

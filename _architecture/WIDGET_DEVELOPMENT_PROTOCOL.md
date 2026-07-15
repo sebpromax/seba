@@ -14,6 +14,16 @@ Deux fichiers différents, deux responsabilités différentes — à ne pas conf
 
 ---
 
+## Règle d'or — Widget Pur
+
+**Un widget est un composant pur. Il n'accède JAMAIS directement à la base de données (LocalStorage/SebaDB). Il passe obligatoirement par une interface d'API centralisée ou des services de données définis** (`docs/services/*.js` — ex. `widget-data-api.js`).
+
+Concrètement : un `render(ctx, el)` n'écrit jamais `window.SebaDB.xxx` ni `localStorage.getItem/setItem` lui-même. Il appelle une fonction exposée par un service dédié (ex. `window.SebaWidgetAPI.getXxx(ctx)`), qui est seule autorisée à parler à SebaDB pour le compte des widgets. Ça permet de faire évoluer la source de données (schéma SebaDB, futur backend) sans toucher au rendu, et de tester/mocker un widget sans dépendre de localStorage.
+
+**Statut au 2026-07-15 : cette règle s'applique aux widgets créés à partir de maintenant** (premier exemple : `cleaning-photo-report`, via `docs/services/widget-data-api.js`). Les widgets antérieurs à cette règle (`chart-donut`, `lot-carte`, `lot-treso`, etc., voir §3) appellent encore `window.SebaDB` directement dans leur `render()` — c'est de la dette technique documentée, pas une exception silencieuse. Ils ne sont pas rétro-migrés dans ce changement ; à faire opportunément, pas en bloquant tout nouveau widget dessus.
+
+---
+
 ## 1. Emplacement du code JS
 
 Tout se passe dans `docs/widgets.js` :
@@ -55,29 +65,42 @@ N'invente pas de secteur qui n'existe pas dans `seba-data.js` — un secteur inc
 
 ---
 
-## 3. Lier le widget à SebaDB
+## 3. Lier le widget à SebaDB (via l'API centralisée)
 
-`docs/seba-data.js` (SebaDB) reste la source de vérité unique — jamais de données métier codées en dur dans un widget (règle CLAUDE.md, sans exception).
+`docs/seba-data.js` (SebaDB) reste la source de vérité unique — jamais de données métier codées en dur dans un widget (règle CLAUDE.md, sans exception). Depuis la règle d'or ci-dessus, un widget n'y accède plus directement : il passe par un service dédié.
 
-Pattern déjà en place dans tous les widgets `source: 'live'` (ex. `chart-donut`, `lot-carte`) :
+Pattern à suivre pour tout nouveau widget (ex. `cleaning-photo-report` / `docs/services/widget-data-api.js`) :
 
 ```js
-render(ctx, el) {
-  if (window.SebaDB && SebaDB.hasData()) {
+// docs/services/widget-data-api.js — seul fichier autorisé à lire SebaDB pour les widgets
+window.SebaWidgetAPI = {
+  getMaDonnee: function (ctx) {
+    if (!window.SebaDB || !SebaDB.hasData()) return null;
     const list = SebaDB.list('interventions');   // ou 'clients', 'devis', 'factures'...
-    const m = SebaDB.metrics();                  // agrégats déjà calculés (CA, interventions du jour, etc.)
-    // ... construire le HTML à partir des vraies données
-  } else {
+    // ... calcule/filtre, renvoie un objet simple (jamais l'objet SebaDB brut)
+    return list.length ? { count: list.length } : null;
+  },
+};
+
+// docs/widgets.js — le widget ne connaît que l'API, jamais SebaDB
+render(ctx, el) {
+  const data = window.SebaWidgetAPI.getMaDonnee(ctx);
+  if (!data) {
     el.innerHTML = buildRichEmptyHTML('🗂️', 'Titre état vide', 'Sous-titre explicatif', 'Créer un client', 'clients.html');
+    return;
   }
+  // ... construire le HTML à partir de data
 }
 ```
 
 Règles :
-- Vérifie toujours `window.SebaDB && SebaDB.hasData()` avant de lire — un compte tout neuf n'a pas encore de données.
+- La fonction de service vérifie `window.SebaDB && SebaDB.hasData()`, jamais le widget lui-même.
 - Utilise l'état vide riche (`buildRichEmptyHTML`, déjà générique) plutôt qu'une ligne `.tl-empty` pauvre — c'est souvent le premier contact d'un utilisateur avec le widget.
+- Si la donnée n'existe pas encore réellement dans SebaDB (fonctionnalité produit pas encore construite), le service renvoie honnêtement `null`/vide plutôt que d'inventer un chiffre — le widget affiche alors son état vide jusqu'à ce que la vraie donnée existe (voir `getCleaningPhotoReport`, qui attend un futur champ `photos` sur les interventions).
 - `ctx` (construit par `buildWidgetCtx()`) porte déjà `biz`, `demo`, `secteur`, `sectorLabel`, `nom`, `couleur`, `services`, `slug`, `sym` — n'ajoute pas un second mécanisme de contexte, étends `buildWidgetCtx()` si un widget a besoin d'une donnée qui n'y est pas encore.
 - Si le widget n'a pas encore de vraies données à afficher (prototype), utilise `source: 'demo'` et lis dans `ctx.demo` (alimenté par `DEMO[secteur]` ou par `buildLiveData()` une fois SebaDB peuplé) — jamais un tableau écrit en dur dans le widget lui-même.
+
+**Widgets antérieurs à la règle d'or** (`chart-donut`, `lot-carte`, `lot-treso`...) appellent encore `window.SebaDB` directement dans leur `render()` — ne t'en inspire pas pour un nouveau widget, ce sont des exemples de l'ancien pattern, pas du pattern actuel.
 
 ---
 
