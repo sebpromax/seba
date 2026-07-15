@@ -1593,9 +1593,26 @@ function getEffectiveLayout() {
   const stored = SebaLayoutStore.read();
   const storedById = {};
   if (stored && Array.isArray(stored.widgets)) stored.widgets.forEach(w => { storedById[w.id] = w; });
+
+  /* Avant toute personnalisation (stored === null), les valeurs par défaut
+     ne sont plus figées dans le catalogue mais dépendent du secteur de
+     l'entreprise (docs/services/config-dashboard.js) — un plombier et un
+     paysagiste n'ont pas les mêmes widgets "compagnon" pertinents à
+     l'ouverture. Dès que l'utilisateur personnalise, sa disposition
+     sauvegardée reprend le dessus et cette config n'intervient plus. */
+  let domainOrder = null;
+  if (!stored && window.SEBA_DASHBOARD_CONFIG && window._ctx) {
+    domainOrder = window.SEBA_DASHBOARD_CONFIG.widgetsFor(window._ctx.secteur);
+  }
+
   return Object.values(window.WIDGET_CATALOG).map(w => {
     const o = storedById[w.id];
-    return { id: w.id, visible: o ? o.visible : w.defaultVisible, order: o && typeof o.order === 'number' ? o.order : w.defaultOrder, size: (o && o.size) || w.size };
+    if (o) return { id: w.id, visible: o.visible, order: typeof o.order === 'number' ? o.order : w.defaultOrder, size: o.size || w.size };
+    if (domainOrder) {
+      const idx = domainOrder.indexOf(w.id);
+      return { id: w.id, visible: idx !== -1, order: idx !== -1 ? idx : w.defaultOrder, size: w.size };
+    }
+    return { id: w.id, visible: w.defaultVisible, order: w.defaultOrder, size: w.size };
   }).sort((a, b) => a.order - b.order);
 }
 
