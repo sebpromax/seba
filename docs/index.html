@@ -33,7 +33,6 @@
     --db-teal:#0D9488; --pure-white:#FFFFFF;
     --zinc-400:#A1A1AA; --zinc-500:#71717A; --zinc-600:#52525B;
     --zinc-700:#3F3F46; --zinc-800:#27272A; --zinc-900:#18181B; --zinc-950:#09090B;
-    --badge-bg:rgba(255,255,255,.02); --badge-bd:rgba(255,255,255,.08); --badge-bd-hover:rgba(16,185,129,.3);
     --grid-node:rgba(63,63,70,.4);
     --atmo-glint:rgba(255,255,255,.03); --atmo-teal:rgba(13,148,136,.04);
     --cta-inset:rgba(255,255,255,.2); --cta-inset-h:rgba(255,255,255,.25);
@@ -98,15 +97,6 @@
   }
 
   /* ── Hero Dual-Tone (spec fondateur 2026-07-11) ── */
-  .hero-badge{
-    display:inline-flex;align-items:center;gap:8px;
-    font-size:12px;font-weight:500;color:var(--zinc-400);
-    background:var(--badge-bg);border:1px solid var(--badge-bd);
-    padding:6px 14px;border-radius:9999px;
-    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-    margin-bottom:24px;transition:border-color 0.3s ease;
-  }
-  .hero-badge:hover{border-color:var(--badge-bd-hover);}
   .hero-title{
     font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;
     font-weight:800;font-size:clamp(2.5rem,5vw,4.5rem);
@@ -469,7 +459,6 @@ p{letter-spacing:-0.02em;}
 <section class="hero-section">
   <div class="hero-glow"></div>
   <div style="position:relative;z-index:1;text-align:center;width:min(950px,90%);margin:0 auto;">
-    <div class="hero-badge">Seba OS — Le poste de pilotage des entreprises de services</div>
     <h1 class="hero-title"><span class="hero-line">Clients. Plannings. Factures.</span><span class="hero-title-grad hero-line">Pilotez tout votre écosystème.</span></h1>
     <p class="hero-subtitle">
       Le compagnon unique qui centralise l'intégralité de votre activité. Libérez votre esprit du stress administratif : plus un seul oubli, plus aucun retard, tout est sous contrôle au même endroit.

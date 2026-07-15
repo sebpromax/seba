@@ -23,7 +23,7 @@
   (function(){ function loadScript(src,cb){var s=document.createElement('script');s.src=src;s.defer=true;s.onload=cb;s.onerror=cb;document.head.appendChild(s);} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js');});else loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js'); })();
 </script>
 <style>
-:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;}
+:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;--hero-p-mute:rgba(255,255,255,.5);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:auto;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
@@ -64,12 +64,9 @@ a{color:inherit;text-decoration:none;}
 .sh-cta:hover{opacity:.85;}
 
 .page-hero{background:var(--ink);padding:80px 0 88px;position:relative;overflow:hidden;}
-/* Halo radial retire (audit 2026-07-08) : lisait "glow tech/hype" plutot
-   qu'institutionnel pour une cible PME traditionnelle. */
-.ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
-.ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px rgba(0,200,150,.7);}
-.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
-.page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:580px;line-height:1.65;}
+.page-hero .wrap{text-align:center;}
+.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin:0 auto 18px;}
+.page-hero p{font-size:1.05rem;color:var(--hero-p-mute);max-width:580px;line-height:1.65;margin-left:auto;margin-right:auto;}
 
 .section{padding:88px 0;}
 .section-head{max-width:640px;margin-bottom:52px;}
@@ -164,7 +161,6 @@ p{letter-spacing:-0.02em;}
 
 <section class="page-hero">
   <div class="wrap">
-    <div class="ph-eyebrow"><span class="e-dot"></span>La confiance avant tout</div>
     <h1>Vos données méritent<br>plus qu'un Excel.</h1>
     <p>Chaque information sur vos clients, vos devis et votre équipe est protégée, sauvegardée et accessible uniquement par vous. Voici exactement comment.</p>
   </div>
