@@ -48,6 +48,10 @@
   --v2-content-plum-glow: rgba(201, 169, 218, 0.4);
   --v2-content-accent-tint: rgba(0, 255, 157, 0.08);
   --v2-content-accent-border: rgba(0, 255, 157, 0.2);
+
+  /* Tokens pour le chrome ajouté en §7 (retrait/déroulants du header). */
+  --v2-widget-remove-hover: #FFB800;
+  --v2-dropdown-shadow: rgba(0, 0, 0, 0.4);
 }
 
 .v2-dashboard-wrapper {
@@ -173,6 +177,30 @@
   min-height: 0;
 }
 
+/* Mode personnalisation (GridManagerV2, docs/widgets.js) — remplace
+ * .widget-drag-handle/.widget-remove-btn (V1, supprimés). */
+.v2-widget-drag-handle {
+  cursor: grab;
+  color: var(--v2-widget-link-color);
+  font-size: 14px;
+  margin-right: 6px;
+}
+.v2-widget-drag-handle:active {
+  cursor: grabbing;
+}
+.v2-widget-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--v2-widget-link-color);
+  font-size: 13px;
+  padding: 2px 4px;
+  margin-left: 6px;
+}
+.v2-widget-remove-btn:hover {
+  color: var(--v2-widget-remove-hover);
+}
+
 /* ── Header V2 — barre sticky, hors de la grille 12 colonnes ───────────────
  * position:sticky (pas fixed) : `#v2-header` est un enfant de
  * `#v2-dashboard-skeleton`, lui-même empilé au-dessus de `.app` (V1) dans un
@@ -203,6 +231,7 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
+  position: relative; /* ancre .v2-dropdown-panel (workspace/portail) */
 }
 
 .v2-header-identity-name {
@@ -279,6 +308,60 @@
   filter: brightness(1.1);
 }
 
+/* Workspace (zone gauche) / Actions-portail (zone droite) — widgets 'workspace'
+ * et 'portal' migrés depuis la grille V1 vers le chrome fixe du header (voir
+ * DASHBOARD_V2_MASTER_PLAN.md §7, WorkspaceWidget/PortalWidget dans
+ * docs/widgets.js). Boutons discrets (contour, pas de fond plein) pour ne pas
+ * rivaliser visuellement avec "+ Créer" (action principale). */
+.v2-header-workspace-btn,
+.v2-header-actions-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--v2-header-border);
+  background: transparent;
+  color: var(--v2-widget-link-color);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 32px;
+}
+
+.v2-header-workspace-btn:hover,
+.v2-header-actions-btn:hover {
+  border-color: var(--v2-widget-link-color);
+  color: var(--v2-widget-title-color);
+}
+
+/* Panneau déroulant générique (workspace/portail) — masqué par défaut,
+ * .open l'affiche (toggleWorkspacePanel()/togglePortalMenu(), dashboard.html).
+ * Réutilise les tokens de carte widget (.v2-widget-bg/border) : même famille
+ * visuelle qu'une carte de zone, cohérent avec le reste du chrome V2. */
+.v2-dropdown-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  background: var(--v2-widget-bg);
+  border: 1px solid var(--v2-widget-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--v2-dropdown-shadow);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.v2-dropdown-panel.open {
+  display: block;
+}
+
+.v2-dropdown-panel--right {
+  left: auto;
+  right: 0;
+}
+
 /* ── Header V2 — mobile (≤768px) ────────────────────────────────────────
  * Sécurise l'usage mobile maintenant que .fab (V1) a été décommissionné :
  * #v2-header est désormais le SEUL point de création rapide sur tous les
@@ -312,6 +395,25 @@
     min-height: 44px;
     min-width: 44px;
     padding: 8px 14px;
+  }
+
+  /* Workspace/Actions : mêmes contraintes tactiles ≥44px, texte du bouton
+   * Actions masqué (icône "⋯" via ::before) pour ne pas saturer la barre à
+   * côté de "+ Créer" — le panneau reste plein texte une fois ouvert. */
+  .v2-header-workspace-btn,
+  .v2-header-actions-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .v2-header-actions-btn {
+    font-size: 0;
+  }
+  .v2-header-actions-btn::before {
+    content: '⋯';
+    font-size: 16px;
+  }
+  .v2-dropdown-panel {
+    min-width: 200px;
   }
 }
 

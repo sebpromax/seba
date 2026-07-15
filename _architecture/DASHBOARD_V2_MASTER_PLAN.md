@@ -1,9 +1,9 @@
 ---
 name: dashboard-v2-master-plan
-status: maintenance
-version: 2
-project_phase: Maintenance/Optimisation (planification close, 9 widgets restants au backlog d'exécution — voir "Clôture Qualité/Stock")
-scope: docs/app/dashboard.html, docs/widgets.js, docs/services/config-dashboard.js, docs/services/widget-data-api.js
+status: complete
+version: 3
+project_phase: "[MIGRATION COMPLÈTE] — V2 natif, V1 retiré (voir §7). Seul système de rendu restant."
+scope: docs/app/dashboard.html, docs/widgets.js, docs/services/config-dashboard.js, docs/services/widget-data-api.js, docs/css/dashboard-v2.css, docs/services/widget-v2-framework.js
 depends_on: _architecture/WIDGET_MASTER_PLAN.md, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md
 ---
 
@@ -802,3 +802,121 @@ v2-header), `metric-2`, `workspace`, `portal`, `chart-donut`, `ext-chart`, `ext-
 vide (attendu : ces 8 sont hors périmètre de toute bascule V2 planifiée à ce jour, voir §1).
 Le "Shadow Backlog" (`session-manager.js`, routage hash, audit `pro-global.css`) et le Batch 3
 (retrait total du V1) restent non commencés.
+
+## 7. [MIGRATION COMPLÈTE] — Bascule V2 Native, retrait total du V1
+
+Les 8 derniers "Orphelins" sont migrés et le rendu V1 est intégralement retiré. Le dashboard
+n'a plus qu'un seul système de rendu : `renderAllV2(ctx, customizeMode)` (`docs/widgets.js`),
+seul point d'entrée appelé depuis `docs/app/dashboard.html`.
+
+**Derniers "Orphelins" migrés** :
+- `metric-0`/`metric-2`/`chart-donut` → `Metric0Widget`/`Metric2Widget`/`ChartDonutWidget`
+  (patron `WidgetV2` identique aux batches précédents), montés dans `.v2-zone-finance`/
+  `.v2-zone-activite`. `metric-0` sort de `#cockpit-telemetry`/`PINNED_TELEMETRY_IDS`
+  (décommissionnés avec lui — plus rien à épingler une fois seul). `chart-donut` avait un
+  statut particulier : contrairement aux autres orphelins, il reste **réellement promu par
+  défaut** pour 3 secteurs (maintenance/jardinage/déménagement, voir `config-dashboard.js`) —
+  sans cette migration il aurait disparu silencieusement pour ces secteurs à la suppression du
+  rendu V1 (régression évitée, pas un simple nettoyage de code mort).
+- `workspace`/`portal` → `WorkspaceWidget`/`PortalWidget`, intégrés au chrome fixe du
+  `#v2-header` plutôt qu'à une zone : `workspace` dans un panneau déroulant zone gauche
+  (`toggleWorkspacePanel()`, bouton `▾` à côté de l'identité), `portal` dans un menu "Actions"
+  zone droite (`togglePortalMenu()`, à côté de "+ Créer"). **Écart constaté et assumé** : la
+  consigne d'exécution décrivait `workspace` comme "le sélecteur de secteur/service/devise" —
+  le widget V1 réel n'a jamais été un contrôle interactif, seulement un résumé lecture-seule
+  (secteur/services actifs/portail/pays-devise) avec liens vers Réglages pour modification.
+  Comportement préservé à l'identique, aucune interactivité inventée. Bonus au passage :
+  liens `reglages.html`/`client.html` corrigés en `../reglages.html`/`../client.html` (même
+  bug de chemin relatif déjà rencontré et corrigé pour `activity`/`team` plus tôt dans ce
+  document — `docs/app/` casse les chemins non préfixés).
+- `HEADER_MOUNTED_IDS = ['workspace', 'portal']` : exclus du panneau bibliothèque/barre IA
+  (rien à cocher/décocher pour un widget de chrome fixe, contrairement à une carte de zone).
+
+**Bibliothèque d'Extensions (Bible IV.9) décommissionnée** : jamais assignée à une zone V2,
+déjà qualifiée "contraire à la vision" — `ext-chart`/`ext-notes`/`ext-rss` retirés du
+catalogue, tiroir (DOM + JS + CSS) supprimé intégralement. Dette notée : les notes
+éventuellement saisies dans `ext-notes` restent dans `localStorage` (clé `widget_notes`)
+mais deviennent inaccessibles via l'UI — donnée non supprimée, juste plus aucun widget pour
+la lire/éditer.
+
+**`GridManagerV2`** (`docs/widgets.js`) : moteur de glisser-déposer extrait du V1
+(`initSortable()`/`#widget-grid`) et reciblé sur les 3 zones V2 — une instance SortableJS par
+zone peuplée (`initGridManagerV2()`), drag borné à l'intérieur d'une zone (le tri inter-zone
+n'a plus de sens : chaque widget a une zone cible fixe, déterminée par son contenu). Réutilise
+`persistOrder()`/`getEffectiveLayout()`/`patchStoredWidgets()` tels quels (couche données
+inchangée). **Bug trouvé et corrigé pendant la vérification** : un premier jet montait les
+widgets fonctionnels (`def.render`) et les widgets-classe (`WidgetV2`) en deux passes
+séparées par zone — chaque groupe respectait bien l'ordre persisté *en interne*, mais les deux
+groupes restaient toujours concaténés dans un ordre fixe l'un après l'autre, empêchant un
+widget-classe glissé au-dessus d'un widget fonctionnel de jamais se refléter dans le DOM.
+Corrigé en fusionnant les deux listes d'ids AVANT de trier (`mountV2Zone()`), puis en montant
+chaque id, dans cet ordre fusionné, via le bon chemin (fonctionnel ou classe) — vérifié en
+Puppeteer par un test explicite d'inversion d'ordre sur `.v2-zone-finance` (6 widgets mixtes
+fonctionnel+classe), confirmant que l'ordre inversé demandé correspond exactement à l'ordre
+rendu après un re-rendu complet.
+
+**Panneau bibliothèque + barre IA adaptés** : `buildLibraryPanelHTML()`/`matchIntent()`/
+`suggestClosest()` utilisaient `MIGRATED_TO_V2_IDS.includes(w.id)) return;` comme garde
+d'exclusion temporaire (pendant la période hybride, pour ne pas lister un widget déjà migré et
+confirmer un ajout sans effet). Une fois TOUS les widgets restants migrés, cette garde aurait
+exclu l'intégralité du catalogue — panneau et barre IA vidés en silence. Remplacée par
+`HEADER_MOUNTED_IDS` (seuls `workspace`/`portal` restent exclus, tout le reste redevient
+listable/ajoutable normalement).
+
+**Retrait V1 (DOM + CSS + JS)** : `#widget-grid`, `#cockpit-telemetry`, le tiroir
+d'extensions, `.widget-shell`/`.module-head`/`.module-title`/`.module-link`/`.widget-body`/
+`.widget-drag-handle`/`.widget-remove-btn` (CSS, plus aucun créateur JS) retirés. Le flag
+`?v2=1`/`window.__SEBA_V2_ENABLED__` est retiré : `renderAllV2()` s'exécute désormais
+inconditionnellement — plus de condition `if (v2)` nulle part dans le code. **La vraie
+sidebar de navigation (`<nav class="sidebar">`, `sidebar.js`, `.mobile-header`) n'a PAS été
+touchée** : elle n'a jamais fait partie du périmètre V1/V2 widgets (c'est la navigation réelle
+et actuelle vers les autres pages de l'app, pas un vestige à retirer) — vérifié qu'elle est
+exclusive à `dashboard.html` (`sidebar.js` n'est chargé par aucune autre page), donc aucun
+risque de casser la navigation des autres pages en la laissant intacte ici.
+**Bugs latents trouvés et corrigés en chemin** (existaient déjà dans le code, révélés par la
+suppression de `#widget-grid`) : un listener `document.getElementById('widget-grid')
+.addEventListener('mousemove', ...)` (glow radial des `.metric-card`) aurait levé une
+`TypeError` au chargement de la page une fois `#widget-grid` retiré — reciblé sur
+`.v2-grid-container` ; la règle CSS Focus Mode (`body.focus-active .widget-grid > .widget-shell`)
+ne correspondait déjà plus à rien d'utile depuis le décommissionnement de `serenity-score`
+(§4quater) — reciblée sur `.v2-header-bar`/`.v2-grid-container` pour continuer à masquer tout
+le dashboard normal pendant le Mode Focus.
+
+**"URL racine" — écart avec la consigne littérale, vérifié et documenté** : `docs/index.html`
+est le site marketing public (page d'accueil commerciale), sans aucun rapport avec le
+dashboard applicatif. La consigne "redirige tout comportement legacy vers la V2" ne s'applique
+donc à aucun fichier réel — non exécutée. L'intention pratique (V2 comme seul comportement,
+plus de legacy) est couverte par le retrait du flag `?v2=1` : `dashboard.html` est désormais
+nativement et inconditionnellement le rendu V2.
+
+**Vérification (Puppeteer, secteur `maintenance` puis `menage`, aucun flag requis)** : les 3
+zones se peuplent correctement (widgets fonctionnels + classe mélangés, triés par ordre
+persisté) ; `#widget-grid`/`#cockpit-telemetry`/`#ext-drawer` absents du DOM ; panneau
+workspace et menu portail s'ouvrent/se ferment avec le bon contenu (copier-lien/aperçu) ;
+mode personnalisation pose poignées de tri + boutons de retrait sur tous les widgets de zone ;
+panneau bibliothèque liste 18 widgets cochables ; retrait/ré-ajout d'un widget fonctionne ;
+barre IA trouve et ajoute un widget par mot-clé ; `GridManagerV2` attache 3 instances
+SortableJS (une par zone peuplée) ; Mode Focus masque bien le header + la grille V2 après la
+transition CSS ; zéro erreur console dans tous les tests. `node tools/check-design-system.js
+--base=main` : 0 violation (2 couleurs en dur introduites par ce chantier — `#FFB800`,
+`rgba(0,0,0,.4)` — reformulées en tokens `--v2-widget-remove-hover`/`--v2-dropdown-shadow`).
+
+**Point non résolu, signalé plutôt que corrigé en silence** : `node
+scripts/qa-dashboard-full.js` (desktop + mobile) rapporte 4 "findings" — `.widget-shell`
+absent, `.widget-drag-handle` absent, `#ext-drawer-trigger` absent, `serenity-score` absent.
+Les 4 sont **attendus** (chacun correspond à un élément intentionnellement retiré, avec un
+équivalent V2 documenté ci-dessus), pas des régressions. Mais `CLAUDE.md` interdit
+explicitement de modifier un fichier `scripts/qa-*.js` pour faire taire un échec — ce script
+teste encore la forme DOM du V1 par construction. Il devra être mis à jour pour tester la
+forme V2 native (`.v2-widget-container`, `.v2-widget-drag-handle`, panneaux workspace/portail)
+dans un chantier dédié, avec accord explicite, plutôt que d'être corrigé en douce ici. Même
+remarque pour `docs/visual-baselines/` : la mise en page ayant changé dans son ensemble, une
+passe de `qa-visual-regression.js` montrerait des diffs massifs partout — attendus, pas
+utiles tels quels, nouvelles baselines à capturer séparément après validation humaine du rendu.
+
+**Statut final** : les 26 widgets d'origine du catalogue ont chacun un verdict définitif et
+exécuté — plus aucun widget en V1, plus de flag, plus de grille modulable héritée. Le "Shadow
+Backlog" (`session-manager.js` — vérifié inexistant dans le dépôt —, routage par hash — vérifié
+absent de `dashboard.html` —, audit complet de `pro-global.css` — non fait, hors périmètre de ce
+chantier qui ne touchait que `docs/app/dashboard.html`/`docs/widgets.js`) reste, pour sa
+dernière partie, un chantier distinct si besoin.

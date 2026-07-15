@@ -531,6 +531,129 @@ class GenericMediaReportWidget extends WidgetV2 {
   }
 }
 
+/* ── WidgetV2 : derniers "orphelins" (DASHBOARD_V2_MASTER_PLAN.md §7) ──────
+   metric-0/metric-2/chart-donut suivent le même patron que les batches
+   précédents. workspace/portal sont un cas à part : leur render() cible le
+   panneau du v2-header (zone gauche/droite), pas un .v2-widget-container en
+   zone — voir mountWorkspaceV2()/mountPortalV2() plus bas. */
+
+class Metric0Widget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.demo.metrics[0]; }
+  render() {
+    this.container.innerHTML = '';
+    if (this._data) this.container.appendChild(buildMetricCardEl(this._data, this.ctx.secteur, 0));
+  }
+}
+
+class Metric2Widget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() { this._data = this.ctx.demo.metrics[2]; }
+  render() {
+    this.container.innerHTML = '';
+    if (this._data) this.container.appendChild(buildMetricCardEl(this._data, this.ctx.secteur, 2));
+  }
+}
+
+class ChartDonutWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
+  async load() {
+    if (window.SebaDB && SebaDB.hasData()) {
+      const list = SebaDB.list('interventions');
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const done = list.filter(i => i.done).length;
+      const enCours = list.filter(i => !i.done && new Date(i.date) <= today).length;
+      const aVenir = list.length - done - enCours;
+      this._data = [
+        { label: 'Terminées', value: done, color: '#00FF9D' },
+        { label: 'En cours', value: Math.max(enCours, 0), color: '#FFB800' },
+        { label: 'À venir', value: Math.max(aVenir, 0), color: 'rgba(255,255,255,.35)' },
+      ];
+    } else {
+      this._data = [
+        { label: 'Terminées', value: 14, color: '#00FF9D' },
+        { label: 'En cours', value: 3, color: '#FFB800' },
+        { label: 'À venir', value: 6, color: 'rgba(255,255,255,.35)' },
+      ];
+    }
+  }
+  render() {
+    this.container.innerHTML = '<div class="donut-wrap" style="display:flex;align-items:center;gap:18px;height:100%;padding:12px 16px;"></div>';
+    const wrap = this.container.querySelector('.donut-wrap');
+    if (typeof d3 === 'undefined') { wrap.innerHTML = '<div class="tl-empty">Graphique indisponible.</div>'; return; }
+    const data = this._data;
+    const total = data.reduce((s, d) => s + d.value, 0) || 1;
+    const size = 140, R = size / 2;
+    const svg = d3.select(wrap).append('svg')
+      .attr('viewBox', `0 0 ${size} ${size}`).style('width', size + 'px').style('flex-shrink', 0);
+    const g = svg.append('g').attr('transform', `translate(${R},${R})`);
+    const pie = d3.pie().value(d => d.value).sort(null).padAngle(0.03);
+    const arc = d3.arc().innerRadius(R - 22).outerRadius(R - 4).cornerRadius(3);
+    g.selectAll('path').data(pie(data)).enter().append('path')
+      .attr('fill', d => d.data.color)
+      .transition().duration(900).ease(d3.easeCubicOut)
+      .attrTween('d', function (d) {
+        const i = d3.interpolate({ startAngle: d.startAngle, endAngle: d.startAngle }, d);
+        return t => arc(i(t));
+      });
+    g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
+      .style('font-size', '26px').style('font-weight', '800').style('fill', 'var(--ink)').text(total);
+    g.append('text').attr('text-anchor', 'middle').attr('dy', '1.4em')
+      .style('font-size', '10px').style('fill', 'var(--text-2)').text('interventions');
+    const legend = document.createElement('div');
+    legend.innerHTML = data.map(d =>
+      '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.82rem;">' +
+      '<span style="width:10px;height:10px;border-radius:3px;background:' + d.color + ';flex-shrink:0;"></span>' +
+      '<span style="color:var(--text-2);">' + d.label + '</span>' +
+      '<b style="margin-left:auto;">' + d.value + '</b></div>'
+    ).join('');
+    legend.style.cssText = 'flex:1;min-width:0;';
+    wrap.appendChild(legend);
+  }
+}
+
+/* WorkspaceWidgetV2 : la description du prompt d'exécution ("sélecteur de
+   secteur/service/devise") ne correspond PAS au widget V1 réel — celui-ci
+   n'a jamais été un contrôle interactif, juste un résumé lecture-seule
+   (secteur/services actifs/portail/pays-devise) avec liens vers Réglages
+   pour la modification. Comportement préservé à l'identique, pas
+   d'interactivité inventée. Monté dans le panneau déroulant du v2-header
+   (zone gauche), pas dans une zone .v2-widget-container. */
+class WorkspaceWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; }
+  async load() {}
+  render() {
+    const ctx = this.ctx;
+    const sc = ctx.services.length;
+    this.container.innerHTML =
+      '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + esc(ctx.sectorLabel) + '</span></div>' +
+      '<a href="../reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
+      '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#00FF9D">Actif</span></div>' +
+      '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + esc(ctx.biz.pays || 'Non renseigné') + ' · ' + esc(ctx.sym) + '</span></div>';
+  }
+}
+
+/* PortalWidgetV2 : copyLink()/aperçu client identiques au widget V1, montés
+   dans le menu "Actions" du v2-header (zone droite) au lieu d'une carte de
+   zone. */
+class PortalWidget extends WidgetV2 {
+  constructor(container, ctx) { super(container); this.ctx = ctx; }
+  async load() {}
+  render() {
+    const ctx = this.ctx;
+    const publicName = ctx.biz.publicName || ctx.nom;
+    const portalUrl = 'seba.app/p/' + ctx.slug;
+    const portalCode = 'SEBA-' + ctx.slug.substring(0, 4).toUpperCase();
+    this.container.innerHTML = '<div class="portal-block">' +
+      '<div class="portal-name">' + esc(publicName) + '</div>' +
+      '<div class="portal-url-txt" id="portal-url">' + esc(portalUrl) + '</div>' +
+      '<div class="portal-code-row"><span class="portal-code-lbl">Code d\'accès</span><span class="code-chip">' + esc(portalCode) + '</span></div>' +
+      '<div class="portal-actions">' +
+      '<button class="portal-btn" id="copy-btn" onclick="copyLink(this)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>Copier le lien</button>' +
+      '<a href="../client.html" class="portal-btn primary" target="_blank">Voir l\'aperçu</a></div></div>';
+  }
+}
+
 const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 'Client', paiement: 'Paiement' };
 
 // Echappe le texte libre (noms clients/employes, notes, reponses IA) avant
@@ -1340,21 +1463,23 @@ window.WIDGET_CATALOG = {
      dashboard.html toggleFocusMode()), seule renderSerenityScore() (le
      rendu canvas orbital, exclusif à ce widget) a été supprimée avec lui. */
 
+  /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
+     Metric0Widget/V2_CLASS_WIDGETS plus haut). Sort de #cockpit-telemetry
+     (PINNED_TELEMETRY_IDS, décommissionné avec ce widget — voir §7). */
   'metric-0': { id: 'metric-0', title: 'Métrique principale', size: 'S', category: 'core', source: 'demo',
     keywords: ['ca', "chiffre d'affaires", 'revenu', 'argent gagné', 'encaissé', 'combien j\'ai gagné'],
-    defaultVisible: true, defaultOrder: 0,
-    render(ctx, el) { const m = ctx.demo.metrics[0]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 0)); } },
+    defaultVisible: true, defaultOrder: 0 },
   /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
      Metric1Widget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur) :
-     buildMetricCardEl() reste utilisée par metric-0 (télémétrie v2-header) et
-     metric-2 (toujours V1, orphelin) ci-dessous, donc conservée telle quelle. */
+     buildMetricCardEl() reste utilisée par metric-0/metric-2 (classes ci-dessus). */
   'metric-1': { id: 'metric-1', title: 'Métrique activité', size: 'S', category: 'core', source: 'demo',
     keywords: ['interventions', 'activité', 'volume'],
     defaultVisible: true, defaultOrder: 1 },
+  /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     Metric2Widget/V2_CLASS_WIDGETS plus haut). */
   'metric-2': { id: 'metric-2', title: 'Métrique clients', size: 'S', category: 'core', source: 'demo',
     keywords: ['clients', 'clientèle'],
-    defaultVisible: true, defaultOrder: 2,
-    render(ctx, el) { const m = ctx.demo.metrics[2]; if (m) el.appendChild(buildMetricCardEl(m, ctx.secteur, 2)); } },
+    defaultVisible: true, defaultOrder: 2 },
   /* Migré vers le squelette V2 (.v2-zone-finance, montage par classe — voir
      Metric3Widget/V2_CLASS_WIDGETS ci-dessus). Même remarque que metric-1. */
   'metric-3': { id: 'metric-3', title: 'Métrique devis', size: 'S', category: 'core', source: 'demo',
@@ -1438,33 +1563,19 @@ window.WIDGET_CATALOG = {
     keywords: ['objectif', 'objectif du mois', 'progression'],
     defaultVisible: true, defaultOrder: 10, link: { href: 'factures.html', label: 'Factures →' } },
 
+  /* Migré vers le v2-header (zone gauche, panneau déroulant — voir
+     WorkspaceWidget/mountWorkspaceV2 plus haut, DASHBOARD_V2_MASTER_PLAN.md
+     §7). Pas dans une zone .v2-widget-container : pas de link.href ici, le
+     lien Réglages vit dans WorkspaceWidget.render(). */
   'workspace': { id: 'workspace', title: 'Votre espace', size: 'L', category: 'core', source: 'demo',
     keywords: ['espace', 'mon entreprise', 'profil'],
-    defaultVisible: true, defaultOrder: 11, link: { href: 'reglages.html', label: 'Réglages →' },
-    render(ctx, el) {
-      const sc = ctx.services.length;
-      el.innerHTML =
-        '<div class="ws-row"><span class="ws-label">Secteur</span><span class="ws-val">' + esc(ctx.sectorLabel) + '</span></div>' +
-        '<a href="reglages.html" class="ws-row"><span class="ws-label">Services actifs</span><span class="ws-val link">' + sc + ' service' + (sc !== 1 ? 's' : '') + ' →</span></a>' +
-        '<div class="ws-row"><span class="ws-label">Portail</span><span class="ws-val" style="color:#00FF9D">Actif</span></div>' +
-        '<div class="ws-row"><span class="ws-label">Pays / Devise</span><span class="ws-val">' + esc(ctx.biz.pays || 'Non renseigné') + ' · ' + esc(ctx.sym) + '</span></div>';
-    } },
+    defaultVisible: true, defaultOrder: 11 },
 
+  /* Migré vers le v2-header (zone droite, menu "Actions" — voir
+     PortalWidget/mountPortalV2 plus haut, DASHBOARD_V2_MASTER_PLAN.md §7). */
   'portal': { id: 'portal', title: 'Portail client', size: 'L', category: 'core', source: 'demo',
     keywords: ['portail client', 'lien client', 'partager'],
-    defaultVisible: true, defaultOrder: 12,
-    render(ctx, el) {
-      const publicName = ctx.biz.publicName || ctx.nom;
-      const portalUrl = 'seba.app/p/' + ctx.slug;
-      const portalCode = 'SEBA-' + ctx.slug.substring(0, 4).toUpperCase();
-      el.innerHTML = '<div class="portal-block">' +
-        '<div class="portal-name">' + esc(publicName) + '</div>' +
-        '<div class="portal-url-txt" id="portal-url">' + esc(portalUrl) + '</div>' +
-        '<div class="portal-code-row"><span class="portal-code-lbl">Code d\'accès</span><span class="code-chip">' + esc(portalCode) + '</span></div>' +
-        '<div class="portal-actions">' +
-        '<button class="portal-btn" id="copy-btn" onclick="copyLink(this)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>Copier le lien</button>' +
-        '<a href="client.html" class="portal-btn primary" target="_blank">Voir l\'aperçu</a></div></div>';
-    } },
+    defaultVisible: true, defaultOrder: 12 },
 
   /* Migré vers le squelette V2 (.v2-zone-activite) — voir V2_ZONE_ACTIVITE_IDS
      et DASHBOARD_V2_MASTER_PLAN.md §1/§3bis. Lien corrigé '../equipe.html'
@@ -1512,61 +1623,16 @@ window.WIDGET_CATALOG = {
     keywords: ['tournée', 'tournée du jour', 'itinéraire', 'déplacements', 'route', 'optimiser tournée'],
     defaultVisible: false, defaultOrder: 22, link: { href: '#', label: 'Optimiser →' } },
 
+  /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
+     ChartDonutWidget/V2_CLASS_WIDGETS plus haut). Contrairement aux autres
+     "Orphelins", ce widget reste PROMU par défaut pour 3 secteurs réels
+     (maintenance/jardinage/déménagement — voir config-dashboard.js) : sans
+     cette migration, il disparaîtrait silencieusement une fois le rendu V1
+     retiré (§7 — pas un simple nettoyage de code mort, une vraie régression
+     évitée pour ces secteurs). */
   'chart-donut': { id: 'chart-donut', title: 'Répartition des interventions', size: 'L', category: 'core', source: 'live',
     keywords: ['répartition', 'donut', 'camembert', 'statuts interventions', 'anneau'],
-    defaultVisible: false, defaultOrder: 14,
-    render(ctx, el) {
-      el.innerHTML = '<div class="donut-wrap" style="display:flex;align-items:center;gap:18px;height:100%;padding:12px 16px;"></div>';
-      const wrap = el.querySelector('.donut-wrap');
-      if (typeof d3 === 'undefined') { wrap.innerHTML = '<div class="tl-empty">Graphique indisponible.</div>'; return; }
-      // Répartition réelle si données, sinon démo plausible
-      let data;
-      if (window.SebaDB && SebaDB.hasData()) {
-        const list = SebaDB.list('interventions');
-        const today = new Date(); today.setHours(0,0,0,0);
-        const done = list.filter(i => i.done).length;
-        const enCours = list.filter(i => !i.done && new Date(i.date) <= today).length;
-        const aVenir = list.length - done - enCours;
-        data = [
-          { label: 'Terminées', value: done, color: '#00FF9D' },
-          { label: 'En cours', value: Math.max(enCours, 0), color: '#FFB800' },
-          { label: 'À venir', value: Math.max(aVenir, 0), color: 'rgba(255,255,255,.35)' },
-        ];
-      } else {
-        data = [
-          { label: 'Terminées', value: 14, color: '#00FF9D' },
-          { label: 'En cours', value: 3, color: '#FFB800' },
-          { label: 'À venir', value: 6, color: 'rgba(255,255,255,.35)' },
-        ];
-      }
-      const total = data.reduce((s, d) => s + d.value, 0) || 1;
-      const size = 140, R = size / 2;
-      const svg = d3.select(wrap).append('svg')
-        .attr('viewBox', `0 0 ${size} ${size}`).style('width', size + 'px').style('flex-shrink', 0);
-      const g = svg.append('g').attr('transform', `translate(${R},${R})`);
-      const pie = d3.pie().value(d => d.value).sort(null).padAngle(0.03);
-      const arc = d3.arc().innerRadius(R - 22).outerRadius(R - 4).cornerRadius(3);
-      g.selectAll('path').data(pie(data)).enter().append('path')
-        .attr('fill', d => d.data.color)
-        .transition().duration(900).ease(d3.easeCubicOut)
-        .attrTween('d', function (d) {
-          const i = d3.interpolate({ startAngle: d.startAngle, endAngle: d.startAngle }, d);
-          return t => arc(i(t));
-        });
-      g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
-        .style('font-size', '26px').style('font-weight', '800').style('fill', 'var(--ink)').text(total);
-      g.append('text').attr('text-anchor', 'middle').attr('dy', '1.4em')
-        .style('font-size', '10px').style('fill', 'var(--text-2)').text('interventions');
-      const legend = document.createElement('div');
-      legend.innerHTML = data.map(d =>
-        '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.82rem;">' +
-        '<span style="width:10px;height:10px;border-radius:3px;background:' + d.color + ';flex-shrink:0;"></span>' +
-        '<span style="color:var(--text-2);">' + d.label + '</span>' +
-        '<b style="margin-left:auto;">' + d.value + '</b></div>'
-      ).join('');
-      legend.style.cssText = 'flex:1;min-width:0;';
-      wrap.appendChild(legend);
-    } },
+    defaultVisible: false, defaultOrder: 14 },
 
   /* Migré vers le squelette V2 (.v2-zone-activite, montage par classe — voir
      V2_CLASS_WIDGET_IDS et LotCarteWidgetV2 ci-dessus). render() retiré
@@ -1646,50 +1712,14 @@ window.WIDGET_CATALOG = {
         '</div>';
     } },
 
-  /* ── Bibliothèque d'Extensions (Bible IV.9) — mini-modules ajoutables par
-     glisser-déposer depuis le tiroir. defaultVisible:false : n'apparaissent
-     que si l'utilisateur les fait glisser dans la grille (ou les coche
-     depuis le panneau Personnaliser existant, qui liste aussi cette
-     catégorie). ── */
-  'ext-chart': { id: 'ext-chart', title: 'Nouveau Graphique', size: 'M', category: 'extension', source: 'extension',
-    keywords: ['nouveau graphique', 'graphique personnalisé'],
-    defaultVisible: false, defaultOrder: 30,
-    render(ctx, el) {
-      el.innerHTML = '<div class="ext-placeholder"><div class="ext-ph-ico">📈</div>' +
-        '<div class="ext-ph-title">Graphique personnalisé</div>' +
-        '<div class="ext-ph-sub">Choisissez une métrique à suivre — configuration à venir.</div></div>';
-    } },
-
-  'ext-notes': { id: 'ext-notes', title: 'Bloc-notes', size: 'M', category: 'extension', source: 'extension',
-    keywords: ['bloc-notes', 'notes', 'mémo'],
-    defaultVisible: false, defaultOrder: 31,
-    render(ctx, el) {
-      const KEY = 'widget_notes';
-      el.innerHTML = '<textarea class="ext-notes-area" placeholder="Notez une idée, un rappel...">' +
-        (readSeba(KEY, '') || '') + '</textarea>';
-      const area = el.querySelector('.ext-notes-area');
-      let t;
-      area.addEventListener('input', () => {
-        clearTimeout(t);
-        t = setTimeout(() => writeSeba(KEY, area.value), 300);
-      });
-    } },
-
-  'ext-rss': { id: 'ext-rss', title: 'Flux RSS Finance', size: 'M', category: 'extension', source: 'extension',
-    keywords: ['flux rss', 'actualités finance', 'rss finance'],
-    defaultVisible: false, defaultOrder: 32,
-    render(ctx, el) {
-      /* Un site 100% statique ne peut pas interroger un flux RSS externe
-         sans proxy serveur (CORS) — aperçu honnête plutôt qu'un faux flux. */
-      const items = [
-        'Taux BCE inchangés ce trimestre',
-        'Inflation : légère baisse en zone euro',
-        'PME : nouvelles aides à la trésorerie annoncées',
-      ];
-      el.innerHTML = '<div class="ext-rss-list">' +
-        items.map(t => '<div class="ext-rss-item">' + t + '</div>').join('') +
-        '</div><div class="ext-rss-note">Aperçu de démonstration — connexion à un vrai flux RSS nécessite un relais serveur.</div>';
-    } },
+  /* ── Bibliothèque d'Extensions (Bible IV.9) — DÉCOMMISSIONNÉE (DASHBOARD_V2_MASTER_PLAN.md §7) ──
+     Le tiroir (glisser-déposer une vignette depuis #ext-drawer) n'a jamais eu
+     de zone V2 assignée et était déjà qualifié "contraire à la vision" —
+     décommissionné avec la purge V1 plutôt que porté vers une 5e zone V2.
+     ext-chart/ext-notes/ext-rss retirés du catalogue. Note : les notes
+     éventuellement saisies dans 'ext-notes' restent dans localStorage
+     (clé 'widget_notes') mais deviennent inaccessibles via l'UI — donnée non
+     supprimée, juste plus aucun widget pour la lire/éditer. */
 };
 
 function fmtNum(n, unit) {
@@ -1871,43 +1901,29 @@ function persistOrder(orderedIds) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GRILLE UNIFIÉE (Phase 2/3) — construit .widget-shell par widget
-   visible, dans l'ordre du layout, taille S/M/L/XL
+   V2 NATIF (DASHBOARD_V2_MASTER_PLAN.md §7) — le dashboard n'a plus qu'un
+   seul monde de rendu. Tout widget du catalogue est soit monté dans une
+   zone .v2-zone-* (fonctionnel via mountV2Widgets, ou classe WidgetV2 via
+   mountV2ClassWidgets), soit intégré au chrome fixe du #v2-header
+   (HEADER_MOUNTED_IDS : workspace/portal). Plus de grille V1, plus de
+   #cockpit-telemetry, plus de flag ?v2=1 — voir renderAllV2() plus bas,
+   seul point d'entrée désormais appelé par dashboard.html.
 ═══════════════════════════════════════════════════════════════ */
-/* Refonte Tactical Dark (TD-3) : ces widgets sont ancrés dans la zone
-   "télémétrie" fixe en haut du cockpit (voir renderCockpitTelemetry
-   ci-dessous) — exclus de #widget-grid, donc structurellement hors de
-   portée de SortableJS, sans toucher à sa configuration. Le reste du
-   catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable.
-   'timeline' en est sorti (migré vers V2) et 'serenity-score' décommissionné
-   (voir DECOMMISSIONED_TELEMETRY_IDS ci-dessous) — le trio d'origine
-   (CA/Serenity Score/Missions du jour) est retombé à un seul widget
-   (CA/metric-0). renderCockpitTelemetry() pose une classe .solo sur
-   #cockpit-telemetry dans ce cas (voir CSS dashboard.html) pour ne pas
-   laisser metric-0 flotter dans une grille pensée pour 3 pistes. */
-const PINNED_TELEMETRY_IDS = ['metric-0'];
-
-/* ── Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §1/§3) ──────────────────────
-   Widgets retirés de la grille V1 (renderGrid) ou de la télémétrie épinglée
-   (renderCockpitTelemetry) car montés à la place dans le squelette V2. Une
-   liste par zone V2 cible — chacune sert à la fois de "quoi exclure en V1"
-   (agrégées dans MIGRATED_TO_V2_IDS, source de vérité unique) et de "quoi
-   monter, et où" (consommée directement par mountV2Widgets ci-dessous). */
 const V2_ZONE_ACTIVITE_IDS = ['activity', 'timeline', 'team'];
 const V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso'];
 
-/* Widgets migrés en tant qu'instances WidgetV2 (classe, cycle de vie
+/* Widgets montés en instances WidgetV2 (classe, cycle de vie
    load/render/onMount/onResize/onDestroy — voir widget-v2-framework.js) au
    lieu du patron def.render(ctx, el) synchrone de mountV2Widgets(). Une liste
-   par zone V2 cible, même logique que les listes fonctionnelles ci-dessus :
-   "quoi exclure en V1" (agrégées dans MIGRATED_TO_V2_IDS via V2_CLASS_WIDGET_IDS)
-   et "quoi monter, et où" (consommées par mountV2ClassWidgets ci-dessous).
-   defaultVisible étant false pour la plupart de ces widgets (compagnons
-   sectoriels), leur affichage en V2 reste conditionné à getEffectiveLayout()
-   exactement comme en V1 — voir mountV2ClassWidgets(), pas un mount
-   inconditionnel qui les ferait apparaître pour tous les secteurs. */
-const V2_ZONE_ACTIVITE_CLASS_IDS = ['lot-carte', 'metric-1', 'lot-tournee', 'generic-media-report'];
-const V2_ZONE_FINANCE_CLASS_IDS = ['metric-3', 'goal', 'lot-impayes', 'lot-pipeline'];
+   par zone V2 cible — consommée par mountV2ClassWidgets ci-dessous.
+   defaultVisible étant false pour la plupart des widgets "compagnon", leur
+   affichage reste conditionné à getEffectiveLayout() — pas de mount
+   inconditionnel qui les ferait apparaître pour tous les secteurs. metric-0/
+   metric-2/chart-donut rejoignent ce système ici (§7) : chart-donut en
+   particulier reste réellement promu par défaut pour 3 secteurs (voir son
+   commentaire au catalogue) — sans cette entrée il disparaîtrait pour eux. */
+const V2_ZONE_ACTIVITE_CLASS_IDS = ['lot-carte', 'metric-1', 'lot-tournee', 'generic-media-report', 'metric-2', 'chart-donut'];
+const V2_ZONE_FINANCE_CLASS_IDS = ['metric-3', 'goal', 'lot-impayes', 'lot-pipeline', 'metric-0'];
 const V2_ZONE_TRAITEMENT_CLASS_IDS = ['recos'];
 
 const V2_CLASS_WIDGETS = {
@@ -1927,112 +1943,54 @@ const V2_CLASS_WIDGETS = {
     },
     WidgetClass: GenericMediaReportWidget,
   },
+  'metric-0': { title: 'Métrique principale', WidgetClass: Metric0Widget },
+  'metric-2': { title: 'Métrique clients', WidgetClass: Metric2Widget },
+  'chart-donut': { title: 'Répartition des interventions', WidgetClass: ChartDonutWidget },
 };
 const V2_CLASS_WIDGET_IDS = V2_ZONE_ACTIVITE_CLASS_IDS.concat(V2_ZONE_FINANCE_CLASS_IDS, V2_ZONE_TRAITEMENT_CLASS_IDS);
 
-const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS, V2_CLASS_WIDGET_IDS);
+/* Widgets intégrés au chrome fixe du #v2-header (identité/actions), pas à
+   une zone de la grille — jamais togglables via le panneau bibliothèque
+   (rien à "masquer" visuellement : contrairement à un widget de zone, ils
+   ne disparaissent pas, ils changent juste ce que montre un panneau
+   toujours présent). Voir mountWorkspaceV2()/mountPortalV2() plus bas. */
+const HEADER_MOUNTED_IDS = ['workspace', 'portal'];
 
-/* Sous-ensemble de MIGRATED_TO_V2_IDS qui vivait dans PINNED_TELEMETRY_IDS
-   (pas dans la grille modulable) — renderCockpitTelemetry a besoin de le
-   savoir pour y laisser son propre commentaire de traçabilité. */
-const MIGRATED_FROM_TELEMETRY_IDS = ['timeline'];
-
-/* ── Décommissionnement V2 (DASHBOARD_V2_MASTER_PLAN.md §4quater) ──────────
-   Contrairement à MIGRATED_TO_V2_IDS (widget déplacé tel quel dans une zone
-   V2), ces ids sont retirés de WIDGET_CATALOG lui-même : leur fonction est
-   désormais assurée par du code dédié dans #v2-header (identité, indicateur
-   de santé, bouton "+ Créer"), pas par un mount de widget catalogue — donc
-   rien à monter nulle part en V2. getEffectiveLayout()/renderGrid() ne les
-   voient plus du tout (absents du catalogue) ; ces deux listes existent
-   uniquement pour poser le commentaire de traçabilité au bon endroit. */
-const DECOMMISSIONED_TELEMETRY_IDS = ['serenity-score'];
-const DECOMMISSIONED_GRID_IDS = ['quick-actions', 'bento-actions'];
-
-/* Widget id -> sélecteur de la zone V2 où il a été remonté, pour que le
-   commentaire de traçabilité laissé en V1 pointe la bonne zone. */
-function v2ZoneSelectorFor(id) {
-  if (V2_ZONE_FINANCE_IDS.includes(id) || V2_ZONE_FINANCE_CLASS_IDS.includes(id)) return '.v2-zone-finance';
-  if (V2_ZONE_TRAITEMENT_CLASS_IDS.includes(id)) return '.v2-zone-traitement';
-  return '.v2-zone-activite';
-}
-
-function renderGrid(gridEl, ctx, customizeMode) {
-  const layout = getEffectiveLayout();
-  gridEl.innerHTML = '';
-  /* quick-actions/bento-actions ne sont plus dans WIDGET_CATALOG (voir
-     DECOMMISSIONED_GRID_IDS) — getEffectiveLayout() ne les voit donc plus du
-     tout et ne peut pas placer leur commentaire à leur ancien defaultOrder
-     (5 et 9). Posés ici en tête de grille : traçabilité garantie, position
-     exacte non préservée (limite acceptée, documentée au master plan). */
-  DECOMMISSIONED_GRID_IDS.forEach(id => {
-    gridEl.appendChild(document.createComment(' ' + id + ' décommissionné en faveur de v2-header — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
-  });
-  const visible = layout.filter(w => w.visible && !PINNED_TELEMETRY_IDS.includes(w.id));
-  const renderable = visible.filter(w => !MIGRATED_TO_V2_IDS.includes(w.id));
-  if (!renderable.length) {
-    // insertAdjacentHTML (pas innerHTML =) : préserve les commentaires de
-    // traçabilité DECOMMISSIONED_GRID_IDS déjà ajoutés juste au-dessus.
-    gridEl.insertAdjacentHTML('beforeend', '<div class="empty-state" style="grid-column:1/-1;padding:48px 24px;"><p>Tout est masqué. Ouvrez <strong>Personnaliser</strong> pour ajouter des widgets.</p></div>');
-    return;
-  }
-  visible.forEach(w => {
-    if (MIGRATED_TO_V2_IDS.includes(w.id)) {
-      gridEl.appendChild(document.createComment(' Widget ' + w.id + ' déplacé vers dashboard-v2 (' + v2ZoneSelectorFor(w.id) + ') — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
-      return;
-    }
-    const def = window.WIDGET_CATALOG[w.id];
-    if (!def) return;
-    const shell = document.createElement('div');
-    shell.className = 'widget-shell';
-    shell.dataset.size = w.size;
-    shell.dataset.widgetId = w.id;
-    shell.innerHTML =
-      '<div class="module-head">' +
-      (customizeMode ? '<span class="widget-drag-handle" title="Déplacer">⠿</span>' : '') +
-      '<span class="module-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span>' +
-      (def.link ? '<a href="' + def.link.href + '" class="module-link">' + def.link.label + '</a>' : '') +
-      (customizeMode ? '<button class="widget-remove-btn" title="Retirer" onclick="onWidgetRemove(\'' + w.id + '\')">✕</button>' : '') +
-      '</div><div class="widget-body"></div>';
-    gridEl.appendChild(shell);
-    def.render(ctx, shell.querySelector('.widget-body'));
-  });
-}
+/* Union de tout ce que le catalogue sait rendre en V2 (zones + header).
+   Utilisée par buildLibraryPanelHTML/matchIntent pour savoir qu'un widget
+   EST géré (donc listable), pas pour en exclure — voir plus bas : après la
+   bascule V2 native, il n'existe plus de widget "hors système". */
+const ALL_V2_MANAGED_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS, V2_CLASS_WIDGET_IDS, HEADER_MOUNTED_IDS);
 
 /* ═══════════════════════════════════════════════════════════════
-   V2 — MONTAGE (Phase 2, DASHBOARD_V2_MASTER_PLAN.md §3/§3bis)
-   Monte une liste de widgets dans une zone .v2-zone-*, avec le même ctx et
-   le même def.render() que renderGrid()/renderCockpitTelemetry() — aucune
-   duplication de logique ni de données, seul l'emplacement DOM change.
-   Chrome (tête/lien) en classes .v2-* uniquement (jamais .widget-shell/
-   .module-head — styles "legacy" scopés à dashboard.html, voir Widget Pur
-   protocol) ; le contenu rendu par def.render() (ex. .activity-item,
-   .bc-d3-wrap) reste inchangé et s'affiche normalement puisque ces classes
-   ne sont pas scopées à .app. def.render() peut être async (ex.
-   marge-reelle) : on ne l'attend pas, exactement comme renderGrid().
+   V2 — MONTAGE PAR ZONE
+   Monte une liste de widgets dans une zone .v2-zone-*. Chrome (tête/lien/
+   poignée de tri/bouton de retrait) en classes .v2-* uniquement. Les widgets
+   sont triés par l'ordre persisté (getEffectiveLayout()) avant montage —
+   c'est ce tri, pas l'ordre littéral du tableau d'ids, qui rend le
+   glisser-déposer (GridManagerV2) visible d'un rendu à l'autre.
 ═══════════════════════════════════════════════════════════════ */
-function mountV2Widgets(zoneSelector, ids, ctx) {
-  const zone = document.querySelector(zoneSelector);
-  if (!zone) return;
-  zone.classList.add('v2-zone--has-widget');
-  // Le nettoyage de la zone (zone.innerHTML = '') est centralisé dans les
-  // orchestrateurs renderV2Zone*() ci-dessous : une même zone peut recevoir
-  // à la fois des widgets fonctionnels (ici) et des widgets à base de classe
-  // (mountV2ClassWidgets) — un clear() local ici effacerait ce que l'autre
-  // vient d'ajouter selon l'ordre d'appel.
-  ids.forEach(id => {
-    const def = window.WIDGET_CATALOG[id];
-    if (!def) return;
-    const container = document.createElement('div');
-    container.className = 'v2-widget-container';
-    container.dataset.widgetId = id;
-    container.innerHTML =
-      '<div class="v2-widget-head">' +
-      '<span class="v2-widget-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span>' +
-      (def.link ? '<a href="' + def.link.href + '" class="v2-widget-link">' + def.link.label + '</a>' : '') +
-      '</div><div class="v2-widget-content"></div>';
-    zone.appendChild(container);
-    def.render(ctx, container.querySelector('.v2-widget-content'));
-  });
+function sortByPersistedOrder(ids) {
+  const orderById = {};
+  getEffectiveLayout().forEach(w => { orderById[w.id] = w.order; });
+  return ids.slice().sort((a, b) => (orderById[a] ?? 0) - (orderById[b] ?? 0));
+}
+
+function appendFunctionalWidget(zone, id, ctx, customizeMode) {
+  const def = window.WIDGET_CATALOG[id];
+  if (!def) return;
+  const container = document.createElement('div');
+  container.className = 'v2-widget-container';
+  container.dataset.widgetId = id;
+  container.innerHTML =
+    '<div class="v2-widget-head">' +
+    (customizeMode ? '<span class="v2-widget-drag-handle" title="Déplacer">⠿</span>' : '') +
+    '<span class="v2-widget-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span>' +
+    (def.link ? '<a href="' + def.link.href + '" class="v2-widget-link">' + def.link.label + '</a>' : '') +
+    (customizeMode ? '<button class="v2-widget-remove-btn" title="Retirer" onclick="onWidgetRemove(\'' + id + '\')">✕</button>' : '') +
+    '</div><div class="v2-widget-content"></div>';
+  zone.appendChild(container);
+  def.render(ctx, container.querySelector('.v2-widget-content'));
 }
 /* Instances WidgetV2 actuellement montées (toutes zones confondues) — permet
    d'appeler onDestroy() (déconnexion ResizeObserver, .remove() Leaflet, etc.)
@@ -2046,56 +2004,69 @@ function destroyV2ClassWidgets() {
   _v2ClassWidgetInstances = [];
 }
 
-/* Monte les widgets à base de classe (WidgetV2) d'une zone, en respectant la
-   même règle de visibilité que renderGrid()/getEffectiveLayout() : un widget
+function appendClassWidget(zone, id, ctx, customizeMode) {
+  const entry = V2_CLASS_WIDGETS[id];
+  if (!entry || !entry.WidgetClass) return;
+  const container = document.createElement('div');
+  container.className = 'v2-widget-container';
+  container.dataset.widgetId = id;
+  const title = entry.titleFor ? entry.titleFor(ctx) : entry.title;
+  container.innerHTML =
+    '<div class="v2-widget-head">' +
+    (customizeMode ? '<span class="v2-widget-drag-handle" title="Déplacer">⠿</span>' : '') +
+    '<span class="v2-widget-title">' + title + '</span>' +
+    (entry.link ? '<a href="' + entry.link.href + '" class="v2-widget-link">' + entry.link.label + '</a>' : '') +
+    (customizeMode ? '<button class="v2-widget-remove-btn" title="Retirer" onclick="onWidgetRemove(\'' + id + '\')">✕</button>' : '') +
+    '</div><div class="v2-widget-content"></div>';
+  zone.appendChild(container);
+  const instance = new entry.WidgetClass(container.querySelector('.v2-widget-content'), ctx);
+  _v2ClassWidgetInstances.push(instance);
+  instance.mount();
+}
+
+/* Monte une zone en INTERCALANT widgets fonctionnels (def.render) et widgets
+   à base de classe (WidgetV2) selon leur ordre persisté commun —
+   fusionner les deux listes AVANT de trier est indispensable : les monter
+   en 2 passes séparées (tous les fonctionnels, puis tous les classe) aurait
+   respecté le tri À L'INTÉRIEUR de chaque groupe mais jamais leur
+   entrelacement réel (un widget classe glissé au-dessus d'un widget
+   fonctionnel dans la même zone n'aurait jamais pu se refléter dans le DOM).
+   Même règle de visibilité que getEffectiveLayout() partout : un widget
    "compagnon" (defaultVisible:false) ne s'affiche que si son secteur ou une
-   action manuelle de l'utilisateur l'a rendu visible — pas de mount
-   inconditionnel qui ferait apparaître lot-carte pour tous les secteurs. */
-function mountV2ClassWidgets(zoneSelector, ids, ctx) {
+   action manuelle de l'utilisateur l'a rendu visible. */
+function mountV2Zone(zoneSelector, functionalIds, classIds, ctx, customizeMode) {
   const zone = document.querySelector(zoneSelector);
-  if (!zone || typeof WidgetV2 === 'undefined') return;
+  if (!zone) return;
   const visibleIds = new Set(getEffectiveLayout().filter(w => w.visible).map(w => w.id));
-  ids.forEach(id => {
-    if (!visibleIds.has(id)) return;
-    const entry = V2_CLASS_WIDGETS[id];
-    if (!entry || !entry.WidgetClass) return;
-    zone.classList.add('v2-zone--has-widget');
-    const container = document.createElement('div');
-    container.className = 'v2-widget-container';
-    container.dataset.widgetId = id;
-    const title = entry.titleFor ? entry.titleFor(ctx) : entry.title;
-    container.innerHTML =
-      '<div class="v2-widget-head">' +
-      '<span class="v2-widget-title">' + title + '</span>' +
-      (entry.link ? '<a href="' + entry.link.href + '" class="v2-widget-link">' + entry.link.label + '</a>' : '') +
-      '</div><div class="v2-widget-content"></div>';
-    zone.appendChild(container);
-    const instance = new entry.WidgetClass(container.querySelector('.v2-widget-content'), ctx);
-    _v2ClassWidgetInstances.push(instance);
-    instance.mount();
+  const merged = functionalIds.concat(classIds).filter(id => visibleIds.has(id));
+  const sorted = sortByPersistedOrder(merged);
+  if (sorted.length) zone.classList.add('v2-zone--has-widget');
+  const classIdSet = new Set(classIds);
+  sorted.forEach(id => {
+    if (classIdSet.has(id)) {
+      if (typeof WidgetV2 !== 'undefined') appendClassWidget(zone, id, ctx, customizeMode);
+    } else {
+      appendFunctionalWidget(zone, id, ctx, customizeMode);
+    }
   });
 }
-/* Nettoie une zone V2 avant repeuplement — appelé une seule fois par zone,
-   avant les mounts fonctionnel (mountV2Widgets) ET classe (mountV2ClassWidgets)
-   qui peuvent tous deux y contribuer, pour éviter qu'un clear() interne à
-   l'un efface ce que l'autre vient d'ajouter. */
+/* Nettoie une zone V2 avant repeuplement — appelé une fois par zone, avant
+   mountV2Zone(). */
 function clearV2Zone(zoneSelector) {
   const zone = document.querySelector(zoneSelector);
   if (zone) zone.innerHTML = '';
 }
-function renderV2ZoneActivite(ctx) {
+function renderV2ZoneActivite(ctx, customizeMode) {
   clearV2Zone('.v2-zone-activite');
-  mountV2Widgets('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, ctx);
-  mountV2ClassWidgets('.v2-zone-activite', V2_ZONE_ACTIVITE_CLASS_IDS, ctx);
+  mountV2Zone('.v2-zone-activite', V2_ZONE_ACTIVITE_IDS, V2_ZONE_ACTIVITE_CLASS_IDS, ctx, customizeMode);
 }
-function renderV2ZoneFinance(ctx) {
+function renderV2ZoneFinance(ctx, customizeMode) {
   clearV2Zone('.v2-zone-finance');
-  mountV2Widgets('.v2-zone-finance', V2_ZONE_FINANCE_IDS, ctx);
-  mountV2ClassWidgets('.v2-zone-finance', V2_ZONE_FINANCE_CLASS_IDS, ctx);
+  mountV2Zone('.v2-zone-finance', V2_ZONE_FINANCE_IDS, V2_ZONE_FINANCE_CLASS_IDS, ctx, customizeMode);
 }
-function renderV2ZoneTraitement(ctx) {
+function renderV2ZoneTraitement(ctx, customizeMode) {
   clearV2Zone('.v2-zone-traitement');
-  mountV2ClassWidgets('.v2-zone-traitement', V2_ZONE_TRAITEMENT_CLASS_IDS, ctx);
+  mountV2Zone('.v2-zone-traitement', [], V2_ZONE_TRAITEMENT_CLASS_IDS, ctx, customizeMode);
 }
 window.renderV2ZoneActivite = renderV2ZoneActivite;
 window.renderV2ZoneFinance = renderV2ZoneFinance;
@@ -2103,32 +2074,87 @@ window.renderV2ZoneTraitement = renderV2ZoneTraitement;
 window.destroyV2ClassWidgets = destroyV2ClassWidgets;
 
 /* ═══════════════════════════════════════════════════════════════
-   V2 — HEADER (Phase 2, DASHBOARD_V2_MASTER_PLAN.md)
-   Fournit une ALTERNATIVE (identité, indicateur de santé compact, bouton de
-   création) sans supprimer les widgets/éléments V1 équivalents
-   (serenity-score, #fab/quick-actions, workspace) — dé-duplication : le
-   retrait de ces derniers est une passe suivante, une fois le header validé.
+   GridManagerV2 (DASHBOARD_V2_MASTER_PLAN.md §7) — moteur de glisser-déposer
+   extrait du V1 (même librairie SortableJS, même patron d'animation/verrou
+   "lock-wave", même persistance via persistOrder()) mais reciblé sur les
+   zones V2 : une instance Sortable par zone peuplée, drag borné à
+   l'intérieur d'une zone (le tri inter-zone n'a plus de sens — chaque
+   widget a une zone cible fixe, déterminée par son contenu, pas par un choix
+   utilisateur). Ne remplace PAS persistOrder/getEffectiveLayout/
+   patchStoredWidgets (couche données, inchangée) — seul le rendu DOM et le
+   wiring Sortable changent de forme (grille V1 unique -> 3 zones séparées).
+═══════════════════════════════════════════════════════════════ */
+let _gridManagerSortables = [];
+function destroyGridManagerV2() {
+  _gridManagerSortables.forEach(s => { try { s.destroy(); } catch (e) {} });
+  _gridManagerSortables = [];
+}
+function initGridManagerV2() {
+  destroyGridManagerV2();
+  if (typeof Sortable === 'undefined') return;
+  ['.v2-zone-activite', '.v2-zone-finance', '.v2-zone-traitement'].forEach(zoneSelector => {
+    const zone = document.querySelector(zoneSelector);
+    if (!zone) return;
+    const inst = Sortable.create(zone, {
+      handle: '.v2-widget-drag-handle',
+      animation: 150,
+      easing: 'cubic-bezier(.34,1.56,.64,1)',
+      onStart(evt) { evt.item.classList.add('is-dragging'); },
+      onEnd(evt) {
+        evt.item.classList.remove('is-dragging');
+        const ids = Array.from(zone.children).filter(el => el.dataset && el.dataset.widgetId).map(el => el.dataset.widgetId);
+        persistOrder(ids);
+        const el = evt.item;
+        if (window.AudioUI) window.AudioUI.playClick();
+        el.classList.remove('lock-wave');
+        void el.offsetWidth;
+        el.classList.add('lock-wave');
+        el.addEventListener('animationend', () => el.classList.remove('lock-wave'), { once: true });
+      },
+    });
+    _gridManagerSortables.push(inst);
+  });
+}
+window.initGridManagerV2 = initGridManagerV2;
+window.destroyGridManagerV2 = destroyGridManagerV2;
+
+/* Point d'entrée unique de rendu V2 — remplace le duo
+   renderGrid(...)+initSortable(...) qu'appelait chaque mutation (retrait,
+   toggle, ajout via bibliothèque/IA, bascule mode personnalisation) du temps
+   du V1. dashboard.html n'appelle plus que celle-ci. */
+function renderAllV2(ctx, customizeMode) {
+  destroyV2ClassWidgets();
+  if (typeof renderV2Header === 'function') renderV2Header(ctx);
+  renderV2ZoneActivite(ctx, customizeMode);
+  renderV2ZoneFinance(ctx, customizeMode);
+  renderV2ZoneTraitement(ctx, customizeMode);
+  initGridManagerV2();
+}
+window.renderAllV2 = renderAllV2;
+
+/* ═══════════════════════════════════════════════════════════════
+   V2 — HEADER
+   Identité, indicateur de santé compact, bouton "+ Créer" (zone droite),
+   + désormais workspace (zone gauche, panneau déroulant) et portal (zone
+   droite, menu "Actions") — voir §7, ces deux widgets n'ont plus de rendu V1
+   du tout, le header est leur seule représentation.
 ═══════════════════════════════════════════════════════════════ */
 function renderV2Header(ctx) {
   const header = document.getElementById('v2-header');
   if (!header) return;
 
-  // Zone gauche — identité (même donnée que le header V1 : ctx.biz/ctx.sectorLabel).
+  // Zone gauche — identité.
   const nameEl = header.querySelector('.v2-header-identity-name');
   const sectorEl = header.querySelector('.v2-header-identity-sector');
   if (nameEl) nameEl.textContent = (ctx.biz && ctx.biz.nom) || ctx.nom || 'Mon entreprise';
   if (sectorEl) sectorEl.textContent = ctx.sectorLabel || ctx.secteur || '';
+  mountWorkspaceV2(ctx);
 
   /* Zone centrale — indicateur de santé compact : même calcul que
      l'ex-widget serenity-score (computeSerenityScore/serenityStateFor/
-     readThemeVar, définis plus haut dans ce fichier), pas le même rendu
-     (pas de canvas orbital ici, juste un chiffre + une barre fine, cf.
-     vision "micro-interaction"). maybeTriggerAIOnSerenity() — Bible V.1,
-     alerte IA en entrée d'état critique — est appelé ICI depuis le
-     décommissionnement du widget serenity-score (§4quater) : ce header est
-     désormais le seul point qui calcule le score à chaque rendu, donc le
-     seul endroit légitime pour ce déclenchement (plus de risque de double
-     appel maintenant que renderSerenityScore() n'existe plus). */
+     readThemeVar, définis plus haut dans ce fichier). maybeTriggerAIOnSerenity()
+     (Bible V.1) reste appelé ici, seul point qui calcule le score à chaque
+     rendu. */
   const score = computeSerenityScore(ctx);
   const state = serenityStateFor(score);
   maybeTriggerAIOnSerenity(state, ctx);
@@ -2140,80 +2166,40 @@ function renderV2Header(ctx) {
   if (lblEl) lblEl.textContent = state.label;
   if (fillEl) { fillEl.style.width = score + '%'; fillEl.style.background = color; }
 
-  // Zone droite — le bouton "+ Créer" appelle directement toggleFab() (dashboard.html) :
-  // même menu que le FAB desktop actuel, aucune duplication de logique de création.
+  // Zone droite — "+ Créer" (toggleFab(), dashboard.html) + "Actions" (portail).
+  mountPortalV2(ctx);
 }
 window.renderV2Header = renderV2Header;
 
-/* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : à l'origine CA / Serenity
-   Score / Missions du jour. 'timeline' a migré vers V2 (voir
-   MIGRATED_FROM_TELEMETRY_IDS), 'serenity-score' a été décommissionné (voir
-   DECOMMISSIONED_TELEMETRY_IDS, §4quater) — il ne reste que metric-0 (CA).
-   .solo (posée ci-dessous quand PINNED_TELEMETRY_IDS n'a plus qu'un widget)
-   recentre la grille CSS 3 pistes en 1 seule piste pleine largeur (voir
-   dashboard.html, règle .cockpit-telemetry.solo). Jamais de drag-handle/
-   bouton de retrait : ces widgets ne sont pas gérés par le mode
-   personnalisation. */
-function renderCockpitTelemetry(ctx) {
-  const container = document.getElementById('cockpit-telemetry');
-  if (!container) return;
-  container.innerHTML = '';
-  container.classList.toggle('solo', PINNED_TELEMETRY_IDS.length === 1);
-  PINNED_TELEMETRY_IDS.forEach(id => {
-    const def = window.WIDGET_CATALOG[id];
-    if (!def) return;
-    const shell = document.createElement('div');
-    shell.className = 'widget-shell cockpit-pinned';
-    shell.dataset.size = def.size;
-    shell.dataset.widgetId = id;
-    shell.innerHTML = '<div class="module-head"><span class="module-title">' + (def.titleFor ? def.titleFor(ctx) : def.title) + '</span></div><div class="widget-body"></div>';
-    container.appendChild(shell);
-    def.render(ctx, shell.querySelector('.widget-body'));
-  });
-  MIGRATED_FROM_TELEMETRY_IDS.forEach(id => {
-    container.appendChild(document.createComment(' Widget ' + id + ' déplacé vers dashboard-v2 (.v2-zone-activite) — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
-  });
-  DECOMMISSIONED_TELEMETRY_IDS.forEach(id => {
-    container.appendChild(document.createComment(' ' + id + ' décommissionné en faveur de v2-header — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
-  });
+/* WorkspaceWidgetV2 monté dans le panneau déroulant #v2-workspace-panel
+   (dashboard.html), ouvert/fermé par toggleWorkspacePanel(). Pas de zone
+   .v2-widget-container : contenu injecté directement dans le panneau. */
+function mountWorkspaceV2(ctx) {
+  const panelBody = document.getElementById('v2-workspace-panel-body');
+  if (!panelBody || typeof WorkspaceWidget === 'undefined') return;
+  const instance = new WorkspaceWidget(panelBody, ctx);
+  _v2ClassWidgetInstances.push(instance);
+  instance.mount();
 }
-window.renderCockpitTelemetry = renderCockpitTelemetry;
+
+/* PortalWidgetV2 monté dans le menu déroulant #v2-portal-menu (dashboard.html),
+   ouvert/fermé par togglePortalMenu(). Mêmes actions (copier lien/aperçu)
+   que le widget V1, câblées sur le même copyLink() de dashboard.html. */
+function mountPortalV2(ctx) {
+  const menuBody = document.getElementById('v2-portal-menu-body');
+  if (!menuBody || typeof PortalWidget === 'undefined') return;
+  const instance = new PortalWidget(menuBody, ctx);
+  _v2ClassWidgetInstances.push(instance);
+  instance.mount();
+}
 
 /* ═══════════════════════════════════════════════════════════════
-   DRAG-AND-DROP (Phase 4) — SortableJS, actif uniquement en
-   mode personnalisation. Boutons clavier monter/descendre en repli.
+   DRAG-AND-DROP — voir GridManagerV2 plus haut (initGridManagerV2/
+   destroyGridManagerV2), qui remplace l'ancien initSortable() ciblant
+   #widget-grid (V1, supprimé — voir DASHBOARD_V2_MASTER_PLAN.md §7).
+   Boutons clavier monter/descendre en repli (moveWidget, inchangé — couche
+   données, indépendante de la forme du DOM).
 ═══════════════════════════════════════════════════════════════ */
-/* ── Drag & Drop Haptique (Bible IV.8) ──────────────────────────────────────
-   SortableJS gère uniquement les enfants de #widget-grid (les .widget-shell).
-   Le rail de la Timeline de Vie (.timeline-life-rail) est un élément
-   position:fixed rendu en dehors de .app, jamais un enfant de la grille —
-   il est donc structurellement impossible à saisir par ce Sortable, sans
-   exclusion explicite à ajouter. ── */
-let _sortableInstance = null;
-function initSortable(gridEl) {
-  if (typeof Sortable === 'undefined') return;
-  if (_sortableInstance) { _sortableInstance.destroy(); _sortableInstance = null; }
-  _sortableInstance = Sortable.create(gridEl, {
-    handle: '.widget-drag-handle',
-    animation: 150,
-    easing: 'cubic-bezier(.34,1.56,.64,1)', // léger dépassement = sensation d'aimantation/accélération au snap
-    onStart(evt) {
-      evt.item.classList.add('is-dragging');
-    },
-    onEnd(evt) {
-      evt.item.classList.remove('is-dragging');
-      const ids = Array.from(gridEl.children).map(el => el.dataset.widgetId);
-      persistOrder(ids);
-      /* Verrouillage : onde lumineuse émeraude sur les bords, puis nettoyage */
-      const el = evt.item;
-      if (window.AudioUI) window.AudioUI.playClick();
-      el.classList.remove('lock-wave'); // relance l'animation même si elle tournait déjà
-      void el.offsetWidth; // force le reflow pour redémarrer le keyframe
-      el.classList.add('lock-wave');
-      el.addEventListener('animationend', () => el.classList.remove('lock-wave'), { once: true });
-    },
-  });
-}
 function moveWidget(id, dir) {
   const layout = getEffectiveLayout().filter(w => w.visible);
   const idx = layout.findIndex(w => w.id === id);
@@ -2243,10 +2229,11 @@ function buildLibraryPanelHTML(secteur) {
   const currentSecteur = secteur || (window.SebaWidgetAPI ? window.SebaWidgetAPI.getCurrentSector() : null);
   const groups = { core: [], companion: [], extension: [] };
   Object.values(window.WIDGET_CATALOG).forEach(w => {
-    /* Widgets migrés vers V2 : plus gérés par ce panneau (renderGrid() les
-       ignore désormais quel que soit `visible`) — les lister ici afficherait
-       une case à cocher sans aucun effet. Voir DASHBOARD_V2_MASTER_PLAN.md §3ter. */
-    if (MIGRATED_TO_V2_IDS.includes(w.id)) return;
+    /* workspace/portal sont intégrés au chrome fixe du #v2-header (voir
+       HEADER_MOUNTED_IDS) — pas des cartes de zone qu'on peut cocher/décocher,
+       donc absents de ce panneau (une case à cocher sans effet visible serait
+       trompeuse). Tout le reste du catalogue passe par ce panneau normalement. */
+    if (HEADER_MOUNTED_IDS.includes(w.id)) return;
     const compatible = !window.SEBA_DASHBOARD_CONFIG || window.SEBA_DASHBOARD_CONFIG.isCompatible(w.id, currentSecteur);
     if (compatible) groups[w.category].push(w);
   });
@@ -2287,10 +2274,8 @@ function matchIntent(text) {
     const normQuery = normalizeText(sub);
     let best = null, bestScore = 0;
     Object.values(window.WIDGET_CATALOG).forEach(w => {
-      /* Widgets migrés : addWidgetToLayout() ne les rend plus visibles nulle
-         part en V1 (renderGrid() les ignore) — les proposer ici confirmerait
-         faussement un ajout sans effet. Voir DASHBOARD_V2_MASTER_PLAN.md §3ter. */
-      if (MIGRATED_TO_V2_IDS.includes(w.id)) return;
+      /* workspace/portal : voir buildLibraryPanelHTML() ci-dessus, même raison. */
+      if (HEADER_MOUNTED_IDS.includes(w.id)) return;
       const s = scoreWidget(w.keywords || [], normQuery);
       if (s > bestScore) { bestScore = s; best = w; }
     });
@@ -2301,7 +2286,7 @@ function matchIntent(text) {
 
 function suggestClosest(normQuery) {
   const scored = Object.values(window.WIDGET_CATALOG)
-    .filter(w => !MIGRATED_TO_V2_IDS.includes(w.id)) // voir matchIntent() ci-dessus
+    .filter(w => !HEADER_MOUNTED_IDS.includes(w.id)) // voir matchIntent() ci-dessus
     .map(w => {
     let s = 0;
     (w.keywords || []).forEach(kw => {
