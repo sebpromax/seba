@@ -42,21 +42,53 @@
     'quick-actions', 'goal', 'workspace', 'portal', 'team',
   ];
 
+  /* ── WIDGET_SECTOR_FALLBACK (WM-002, _architecture/WIDGET_MASTER_PLAN.md) ──
+     conciergerieCopro/conciergerieEntreprise n'ont pas leur propre logique
+     de widgets "compagnon" : ils héritent de celle de 'conciergerie' plutôt
+     que de la dupliquer (même métier de fond — réception/accès/courrier —
+     pas des interventions de terrain dispersées comme maintenance/jardinage).
+     Résolu UNIQUEMENT ici, à l'intérieur du moteur de widgets — biz.secteur
+     n'est jamais réécrit : businessTypes.js/seba-data.js continuent de lire
+     la clé fine (copro/entreprise) pour les services, libellés et champs de
+     fiche client, qui doivent eux rester spécifiques. Pas de champ subSector
+     ajouté en localStorage : biz.secteur porte déjà cette précision, rien
+     n'est écrasé donc rien n'a besoin d'être dupliqué pour être "préservé".
+     Inerte aujourd'hui en pratique : aucun parcours (onboarding compris) ne
+     produit encore biz.secteur === 'conciergerieCopro'/'conciergerieEntreprise'
+     (WM-002 reste ouvert sur ce point précis) — prêt pour le jour où un
+     compte portera l'une de ces deux valeurs. */
+  var WIDGET_SECTOR_FALLBACK = {
+    conciergerieCopro: 'conciergerie',
+    conciergerieEntreprise: 'conciergerie',
+  };
+  function resolveWidgetSector(secteur) {
+    return WIDGET_SECTOR_FALLBACK[secteur] || secteur;
+  }
+
   /* Widgets "compagnon" promus par domaine, en plus du socle commun.
      Champ terrain (tournées/interventions dispersées) : carte + tournée.
-     Services récurrents/abonnement (facturation régulière) : pipeline + impayés. */
+     Services récurrents/abonnement (facturation régulière) : pipeline + impayés.
+     conciergerieCopro/conciergerieEntreprise : pas d'entrée dédiée, voir
+     WIDGET_SECTOR_FALLBACK ci-dessus (héritent de 'conciergerie'). */
   var BY_SECTEUR = {
     maintenance: ['chart-donut', 'lot-tournee', 'lot-carte', 'marge-reelle'],
     jardinage: ['chart-donut', 'lot-tournee', 'lot-carte'],
     demenagement: ['chart-donut', 'lot-tournee', 'lot-carte', 'marge-reelle'],
     menage: ['lot-pipeline', 'lot-impayes', 'generic-media-report'],
     conciergerie: ['lot-pipeline', 'lot-impayes'],
-    conciergerieCopro: ['lot-pipeline', 'lot-impayes'],
-    conciergerieEntreprise: ['lot-pipeline', 'lot-impayes'],
     pressing: ['lot-pipeline', 'lot-impayes'],
     beaute: ['lot-pipeline', 'lot-impayes'],
     animaux: ['lot-pipeline', 'lot-impayes'],
     autre: [],
+    /* ── 'commun' (WM-003, universalisation de lot-treso) : n'est jamais une
+       vraie clé de biz.secteur (aucun secteur ne s'appelle "commun" dans
+       businessTypes.js/seba-data.js) — c'est une liste ajoutée à TOUS les
+       secteurs par widgetsFor() ci-dessous, quel que soit secteur. Distincte
+       de CORE par intention : CORE = identité du produit (widgets présents
+       depuis toujours) ; 'commun' = widgets "compagnon" promus universels
+       par décision produit ultérieure, sans changer leur category
+       ('companion') dans WIDGET_CATALOG. */
+    commun: ['lot-treso'],
   };
 
   /* ── WIDGET_EXTENSIONS (WM-004, _architecture/WIDGET_MASTER_PLAN.md) ──
@@ -113,10 +145,14 @@
     bySecteur: BY_SECTEUR,
     sectorMapping: SECTOR_MAPPING,
     incompatibleBySecteur: INCOMPATIBLE_BY_SECTEUR,
-    /* Liste ordonnée de widgets visibles par défaut pour un secteur donné. */
+    /* Liste ordonnée de widgets visibles par défaut pour un secteur donné.
+       BY_SECTEUR.commun (WM-003) s'ajoute TOUJOURS, quel que soit secteur —
+       ce n'est pas une entrée sélectionnée par clé comme les autres.
+       secteur passe par resolveWidgetSector() (WM-002) avant le lookup. */
     widgetsFor: function (secteur) {
-      var extra = BY_SECTEUR[secteur] || BY_SECTEUR.autre;
-      return CORE.concat(extra);
+      var resolved = resolveWidgetSector(secteur);
+      var extra = BY_SECTEUR[resolved] || BY_SECTEUR.autre;
+      return CORE.concat(BY_SECTEUR.commun || [], extra);
     },
     /* Résout un libellé de l'onboarding (docs/onboarding.html) vers une clé
        de secteur interne. Renvoie 'autre' si le libellé est inconnu — un
@@ -125,6 +161,9 @@
     resolveSector: function (label) {
       return SECTOR_MAPPING[label] || 'autre';
     },
+    /* Repli de secteur pour le seul usage du moteur de widgets (WM-002) —
+       ne remplace jamais biz.secteur, voir WIDGET_SECTOR_FALLBACK ci-dessus. */
+    resolveWidgetSector: resolveWidgetSector,
     /* Copie/règles métier d'un widget générique pour un secteur donné —
        contrat d'extension sectorielle (voir WIDGET_EXTENSIONS ci-dessus). */
     widgetExtensionFor: function (widgetId, secteur) {
@@ -138,7 +177,14 @@
        ici — seule la visibilité par défaut, gérée par widgetsFor, diffère
        entre O et P). */
     isCompatible: function (widgetId, secteur) {
-      var excluded = INCOMPATIBLE_BY_SECTEUR[secteur] || INCOMPATIBLE_BY_SECTEUR.autre || [];
+      /* Un widget du socle commun (CORE) ou universel ('commun', WM-003) ne
+         peut jamais être marqué X : le filtrage par secteur ne s'applique
+         qu'aux widgets réellement spécifiques à un métier. Évite qu'une
+         future entrée INCOMPATIBLE_BY_SECTEUR mal placée masque par erreur
+         un widget désormais universel (ex. lot-treso). */
+      if (CORE.indexOf(widgetId) !== -1 || (BY_SECTEUR.commun || []).indexOf(widgetId) !== -1) return true;
+      var resolved = resolveWidgetSector(secteur);
+      var excluded = INCOMPATIBLE_BY_SECTEUR[resolved] || INCOMPATIBLE_BY_SECTEUR.autre || [];
       return excluded.indexOf(widgetId) === -1;
     },
   };

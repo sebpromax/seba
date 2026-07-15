@@ -1,5 +1,5 @@
 ---
-widget_matrix_version: 3
+widget_matrix_version: 4
 last_updated: 2026-07-15
 status: draft
 owners:
@@ -216,11 +216,14 @@ Légende : **O** obligatoire (activé par défaut) · **P** optionnel (disponibl
 | lot-carte | P | P | P | P | O | O | P | P | P | O | P |
 | lot-pipeline | O | O | O | O | P | P | O | O | O | P | P |
 | lot-impayes | O | O | O | O | P | P | O | O | O | P | P |
-| lot-treso | P | P | P | P | P | P | P | P | P | P | P |
+| lot-treso | O | O | O | O | O | O | O | O | O | O | O |
 | generic-media-report | O | P | P | P | P | P | P | P | P | P | P |
+| marge-reelle | P | P | P | P | P | O | P | P | P | O | P |
 | ext-chart / ext-notes / ext-rss | P | P | P | P | P | P | P | P | P | P | P |
 
 *(`team` est marqué O partout par cohérence avec `CORE` de `config-dashboard.js`, bien qu'une entreprise individuelle sans salarié — plausible pour `beaute`/`animaux` — n'ait rien à y afficher : voir état vide, non une incompatibilité.)*
+
+*(`lot-treso` est O partout depuis le 2026-07-15 — universalisé via `BY_SECTEUR.commun`, voir "Décisions actées"/WM-003 ; il n'est plus un widget "compagnon" sectoriel mais un widget commun au même titre que le socle `CORE`, bien que sa `category` reste `companion` dans `WIDGET_CATALOG`.)*
 
 ### 6.1 Justification des obligations
 
@@ -236,7 +239,7 @@ Aucun statut X discutable ne subsiste pour `generic-media-report` depuis sa gén
 ### 6.3 Intersections non résolues (mise à jour 2026-07-15)
 
 - **`generic-media-report` pour `conciergerie`/`conciergerieCopro`/`conciergerieEntreprise`/`jardinage`/`maintenance`/`pressing`/`beaute`/`animaux`/`demenagement`** — **Résolu (WM-004)** : le widget a été généralisé (`docs/widgets.js`, id `generic-media-report`) et sa copie résolue via un contrat d'extension sectorielle (`WIDGET_EXTENSIONS`, `docs/services/config-dashboard.js`) — titre/icône/état vide dédiés pour `menage`/`conciergerie`/`conciergerieCopro`/`conciergerieEntreprise`, copie générique neutre (`default`) pour les 6 secteurs restants. Passé de X (aspirationnel) à P partout (sauf `menage` en O) — plus aucune incohérence de terminologie à l'affichage, quel que soit le secteur qui l'active manuellement.
-- **`lot-treso` pour tous les secteurs** (marqué P partout, jamais O) : absent de tout tableau `BY_SECTEUR` dans `config-dashboard.js` — **à valider si c'est un choix délibéré ou un oubli**, puisque la trésorerie concernerait a priori tous les secteurs à facturation récurrente au même titre que `lot-pipeline`/`lot-impayes`. Voir WM-003 (toujours ouvert, non traité par cette session de correctifs).
+- ~~`lot-treso` pour tous les secteurs~~ — **Résolu (WM-003, voir "Décisions actées")** : universalisé en O partout via `BY_SECTEUR.commun`.
 
 ---
 
@@ -383,7 +386,7 @@ Aucun statut X discutable ne subsiste pour `generic-media-report` depuis sa gén
 ### `lot-treso` — Position de trésorerie
 
 **État :** Actif (estimation simplifiée, le widget l'indique lui-même) · **Catégorie :** Finance · **Widget pur :** Oui pour la lecture (`ctx.demo.goal` uniquement, aucun accès SebaDB/localStorage direct dans le `render()` consulté)
-**Secteurs obligatoires :** aucun (absent de `BY_SECTEUR` — voir §6.3, WM-003) · **Secteurs optionnels :** tous · **Secteurs incompatibles :** aucun
+**Secteurs obligatoires :** tous (universalisé via `BY_SECTEUR.commun`, WM-003, 2026-07-15) · **Secteurs optionnels :** aucun · **Secteurs incompatibles :** aucun
 
 **Objectif métier** — Estimation de trésorerie simplifiée à partir du CA du mois, lien vers un "simulateur complet" (`cockpit-treso.html`).
 **Limites actuelles** — Le widget affiche lui-même "Estimation simplifiée" — ce n'est pas un calcul de trésorerie réel (pas de charges/décaissements pris en compte).
@@ -476,7 +479,7 @@ Critères (repris et complétés de `_architecture/WIDGET_DEVELOPMENT_PROTOCOL.m
 
 - **Pur** : `bento-actions`, `quick-actions`, `ext-chart`, `ext-notes`, `ext-rss` (aucune donnée métier sectorielle, aucun besoin d'extension).
 - **Pur avec extension** : **`generic-media-report`** — premier exemple réel de cette catégorie (résolu WM-004) : accès données via `SebaWidgetAPI.getMediaReport()`, copie (titre/icône/état vide) résolue via le contrat d'extension `WIDGET_EXTENSIONS`/`widgetExtensionFor()` (`docs/services/config-dashboard.js`), noyau de rendu unique partagé par tous les secteurs. Le widget `recos` s'en approche également (contenu variable par `businessTypes[secteur].recommendations`) mais via un mécanisme différent, non consolidé avec `WIDGET_EXTENSIONS` — **à valider** si les deux devraient converger vers un seul contrat d'extension à terme.
-- **Spécifique** : `chart-donut`, `lot-carte` (accès direct SebaDB, dette technique — toujours non résolue par cette session de correctifs), `lot-tournee`/`lot-pipeline`/`lot-impayes`/`lot-treso` (liés chacun à une page mockup potentiellement non généralisable).
+- **Spécifique** : `chart-donut`, `lot-carte` (accès direct SebaDB, dette technique — toujours non résolue par cette session de correctifs), `lot-tournee`/`lot-pipeline`/`lot-impayes` (liés chacun à une page mockup potentiellement non généralisable). `lot-treso` n'appartient plus à cette catégorie depuis son universalisation (WM-003) — il reste lié à une page mockup (`cockpit-treso.html`) mais n'est plus spécifique à un secteur donné.
 
 Un widget spécifique n'est pas automatiquement mauvais — mais la majorité du catalogue "compagnon" reste spécifique de fait : il n'existe pas de brique universelle sous-jacente partagée entre, par exemple, `lot-tournee` (jardinage/maintenance) et un futur widget tournée pour un autre secteur. `generic-media-report` montre que le contrat d'extension fonctionne pour un cas simple (texte) — **à valider/concevoir** s'il peut s'étendre à des widgets aux données plus complexes (voir §19).
 
@@ -536,6 +539,7 @@ owners:
 | 1 | 2026-07-15 | Création initiale (ce document) — inventaire 11 secteurs, 25 widgets, matrice complète, contradiction onboarding documentée | Tous secteurs | Non (documentation uniquement, aucun code modifié) |
 | 2 | 2026-07-15 | WM-001 résolu (`SECTOR_MAPPING`/`resolveSector()`, `docs/onboarding.html` corrigé), WM-004 résolu (`cleaning-photo-report` renommé `generic-media-report`, contrat d'extension `WIDGET_EXTENSIONS`), matrice mise à jour (`generic-media-report` : X→P pour 6 secteurs, ?→P pour 3 secteurs) | Onboarding (tous secteurs), widget `generic-media-report`/anciennement `cleaning-photo-report` | Non (aucun compte réel confirmé existant nécessitant une migration de données à ce jour) |
 | 3 | 2026-07-15 | WM-006 résolu (enforcement technique du statut X — `SEBA_DASHBOARD_CONFIG.isCompatible()`/`INCOMPATIBLE_BY_SECTEUR`, filtrage dans `buildLibraryPanelHTML()`, registre vide donc sans effet visible aujourd'hui), WM-007 résolu (cluster "Lot" confirmé mockup, `robots.txt` corrigé, liens 404 des widgets `lot-*` neutralisés), WM-005 partiellement résolu (widget `marge-reelle` créé — `docs/widgets.js`, `SebaWidgetAPI.getMargeReelle(ctx)`, promu pour `maintenance`/`demenagement` — reste bloqué sur l'absence de champ de coût par intervention dans SebaDB) | Panneau "Personnaliser" (tous secteurs), SEO (cluster "Lot"), dashboard `maintenance`/`demenagement` (nouveau widget) | Non |
+| 4 | 2026-07-15 | WM-003 résolu (`lot-treso` universalisé — `BY_SECTEUR.commun`, `docs/services/config-dashboard.js`, immunisé contre le statut X via `isCompatible()`), WM-002 résolu pour sa part backend (repli `WIDGET_SECTOR_FALLBACK` : `conciergerieCopro`/`conciergerieEntreprise` héritent des widgets de `conciergerie`, sans jamais réécrire `biz.secteur` — granularité onboarding elle-même toujours non traitée). Nouvelle section "Décisions actées" créée, WM-002/WM-003 retirés de "Décisions ouvertes" (§17). Matrice mise à jour (`lot-treso` : P→O partout, ligne `marge-reelle` ajoutée). | `lot-treso` (tous secteurs), `conciergerieCopro`/`conciergerieEntreprise` (widgets, pas `biz.secteur`) | Non (repli inerte en pratique, aucun compte n'a ces valeurs de secteur aujourd'hui) |
 
 ---
 
@@ -605,13 +609,39 @@ Recommandation à retenir pour tout futur widget : **jamais de donnée inventée
 
 ---
 
+## Décisions actées
+
+Décisions stratégiques tranchées et implémentées, retirées de la table "Décisions ouvertes" (§17) une fois closes.
+
+### WM-003 — Universalisation du widget Trésorerie
+
+**Décision (2026-07-15) :** `lot-treso` (Position de trésorerie) est désormais affiché par défaut pour **tous les secteurs**, pas seulement promu au cas par cas. Justification : la trésorerie concerne toute entreprise à facturation récurrente au même titre que `lot-pipeline`/`lot-impayes`, sans raison métier de l'exclure d'aucun des 11 secteurs.
+
+**Implémentation :** nouvelle entrée `BY_SECTEUR.commun` (`docs/services/config-dashboard.js`) — une liste ajoutée à **tous** les secteurs par `widgetsFor()`, distincte de `CORE` (identité produit) par intention : `commun` = widgets "compagnon" promus universellement par décision produit ultérieure, sans changer leur `category` (`companion`) dans `WIDGET_CATALOG`. `lot-treso` y est désormais seul membre.
+
+**Interaction avec WM-006 (enforcement du statut X) :** `isCompatible()` traite tout widget de `CORE` ou de `BY_SECTEUR.commun` comme **toujours compatible**, quel que soit le contenu de `INCOMPATIBLE_BY_SECTEUR` — un widget universel ne peut plus être accidentellement masqué par une future entrée X mal placée pour un secteur donné.
+
+**Compatibilité descendante :** un utilisateur qui a déjà personnalisé son dashboard sans jamais toucher individuellement à `lot-treso` le verra apparaître à sa prochaine visite (c'est l'effet recherché d'une promotion O) ; toute autre personnalisation existante (widgets retirés/ajoutés/réordonnés) reste intacte — le merge par widget (voir §2bis, `_architecture/WIDGET_DEVELOPMENT_PROTOCOL.md`) ne touche jamais un widget déjà explicitement géré par l'utilisateur.
+
+**Vérifié :** `lot-treso` visible pour `menage`, `jardinage`, `conciergerieCopro`, `conciergerieEntreprise` (secteurs aux profils très différents) — confirmé universel sans effet de bord sur les autres promotions sectorielles (`chart-donut`/`lot-pipeline` restent correctement isolés à leurs secteurs respectifs).
+
+### WM-002 — Mapping de repli pour conciergerieCopro / conciergerieEntreprise
+
+**Décision (2026-07-15) :** `conciergerieCopro` et `conciergerieEntreprise` n'ont plus leur propre entrée dans `BY_SECTEUR` — ils héritent de celle de `conciergerie` via un repli dédié au moteur de widgets. Ces deux profils partagent la même logique de fond que `conciergerie` (facturation récurrente, réception/accès/courrier), pas le profil "terrain dispersé" de `maintenance`/`jardinage`/`demenagement` — un mapping vers `maintenance` avait été envisagé puis écarté après vérification (cf. clarification apportée pendant cette session), car il aurait donné à ces profils des widgets orientés tournée/carte sans rapport avec leur activité réelle.
+
+**Implémentation :** `WIDGET_SECTOR_FALLBACK` (`docs/services/config-dashboard.js`) = `{ conciergerieCopro: 'conciergerie', conciergerieEntreprise: 'conciergerie' }`, résolu via `resolveWidgetSector(secteur)`, consulté par `widgetsFor()` et `isCompatible()` uniquement. **`biz.secteur` n'est jamais réécrit** : `businessTypes.js`/`seba-data.js` continuent de lire la clé fine (`conciergerieCopro`/`conciergerieEntreprise`) pour les services, libellés et champs de fiche client, qui doivent rester spécifiques à ces profils. Aucun champ `subSector` ajouté en `localStorage` — `biz.secteur` porte déjà la précision métier initiale, rien n'est écrasé donc rien n'a besoin d'être dupliqué pour être "préservé". `SEBA_DASHBOARD_CONFIG.widgetExtensionFor()` (copie du widget `generic-media-report`) continue de lire `ctx.secteur` brut, sans passer par ce repli : ses entrées dédiées `conciergerieCopro`/`conciergerieEntreprise` ("parties communes", "espaces entretenus") restent plus précises que la copie générique de `conciergerie` et ne doivent pas être collapsées par ce mapping.
+
+**Statut résiduel (inchangé) :** ce repli est aujourd'hui **inerte en pratique** — aucun parcours, onboarding compris, ne produit encore `biz.secteur === 'conciergerieCopro'`/`'conciergerieEntreprise'` (seuls `menage`/`conciergerie`/`maintenance`/`autre` sont atteignables via les 4 boutons de `onboarding.html`, cf. WM-001). C'est une infrastructure prête pour le jour où un compte portera l'une de ces deux valeurs (saisie manuelle, ou future évolution de l'onboarding), pas une fonctionnalité activement utilisée aujourd'hui.
+
+**Vérifié :** `widgetsFor('conciergerieCopro')`/`widgetsFor('conciergerieEntreprise')` retournent désormais exactement les mêmes widgets que `widgetsFor('conciergerie')` (`lot-pipeline`/`lot-impayes` visibles, `chart-donut` absent) — confirmé par simulation, sans régression sur les autres secteurs.
+
+---
+
 ## 17. Décisions ouvertes
 
 | ID | Question | Pourquoi elle compte | Options | Recommandation | Responsable | Priorité | Statut |
 |---|---|---|---|---|---|---|---|
 | WM-001 | `onboarding.html` stocke des libellés ("Nettoyage & Entretien"...) au lieu des clés de secteur internes (`menage`...) — comment corriger sans casser les comptes déjà créés ? | **Rendait inerte, pour tout utilisateur réel, toute la fonctionnalité "widgets/services par secteur"** (§4.5) | (a) Remapper les 4 libellés vers 4 des 11 clés au moment de l'onboarding ; (b) migrer les comptes existants (`secteur` textuel → clé) ; (c) les deux | (a) implémentée ; (b) non faite (pas de compte réel confirmé existant à ce jour selon le contexte projet — à revalider avant tout lancement public si des comptes de test ont été créés entre-temps) | Produit + Architecture | Critique | **Résolu (2026-07-15)** — `SECTOR_MAPPING`/`resolveSector()` dans `config-dashboard.js`, appliqué dans `onboarding.html` avant `localStorage.setItem`. Testé de bout en bout (clic réel → dashboard → bon jeu de widgets). |
-| WM-002 | L'onboarding n'offre que 4 catégories contre 11 clés internes — faut-il élargir l'onboarding à 11 choix, réduire les clés à 4 familles, ou garder un mapping 4→11 avec un choix secondaire ("précisez votre activité") ? | Détermine la granularité réelle de personnalisation dont bénéficient les nouveaux utilisateurs | (a) 11 choix dans l'onboarding ; (b) 4 familles + sous-choix ; (c) réduire le modèle interne à 4 ; (d) mapping 4→1 simple (une seule clé par libellé, pas de sous-choix) | (d) implémentée par pragmatisme — **`conciergerieCopro`/`conciergerieEntreprise` restent inatteignables depuis l'onboarding réel aujourd'hui**, seul `conciergerie` est joignable via "Conciergerie & Accueil" | Produit | Haute | **Partiellement résolu** — le blocage critique (WM-001) est levé, mais la granularité fine (copro/entreprise) reste à trancher si jugée nécessaire |
-| WM-003 | `lot-treso` n'est promu O dans aucun secteur — oubli ou choix délibéré ? | Incohérence apparente avec `lot-pipeline`/`lot-impayes` qui suivent la même logique de facturation récurrente | (a) Ajouter `lot-treso` aux mêmes secteurs que `lot-pipeline` ; (b) le laisser P partout (widget "avancé") | À trancher par le produit — pas de préférence technique | Produit | Moyenne | Ouvert (non traité par cette session de correctifs, hors périmètre demandé) |
 | WM-004 | `generic-media-report` : généraliser la copie pour `conciergerie*` (et au-delà), ou le garder spécifique à `menage` ? | Premier widget "Widget Pur" du catalogue, mais spécifique de fait (§9) — précédent pour tous les futurs widgets | (a) Généraliser via une extension sectorielle (texte configurable) ; (b) dupliquer pour chaque secteur ; (c) garder tel quel, secteur unique | (a) implémentée — contrat d'extension `WIDGET_EXTENSIONS`/`widgetExtensionFor()` | Architecture | Moyenne | **Résolu (2026-07-15)** — testé (titre et état vide corrects pour `menage` via le flux réel) ; copie dédiée pour `conciergerie*` non re-testée en conditions réelles (vérifiée par lecture de code uniquement) |
 | WM-005 | Widget "marge réelle" (`vue_marge_interventions`/`get_marge_reelle`) : quel secteur prioritaire, quel nom technique, quelle UI ? | Fonctionnalité backend prête, zéro consommateur — premier arbitrage nécessaire avant tout développement | À définir entièrement | Nom technique tranché (`marge-reelle` / `SebaWidgetAPI.getMargeReelle(ctx)`) ; secteurs prioritaires : `maintenance`+`demenagement` (coûts variables) | Produit | Basse (pas bloquant, rien n'en dépend aujourd'hui) | **Partiellement résolu (2026-07-15)** — widget construit et intégré (`docs/widgets.js`, `docs/services/config-dashboard.js`), respecte le contrat Widget Pur. **Reste bloqué** sur la vraie donnée : SebaDB n'a aucun champ de coût par intervention, donc le widget affiche honnêtement son état vide en attendant. Construire ce champ (et brancher `vue_marge_interventions`/`get_marge_reelle` réellement) reste un chantier séparé, non commencé. |
 | WM-006 | Faut-il réellement bâtir l'enforcement technique du statut X (aujourd'hui purement déclaratif) ? | Sans lui, cette matrice reste un document d'intention, pas une contrainte produit | (a) Filtrer `buildLibraryPanelHTML`/le tiroir par compatibilité secteur ; (b) laisser le catalogue ouvert à tous, X = recommandation UX uniquement | (a) implémentée — `SEBA_DASHBOARD_CONFIG.isCompatible()`/`INCOMPATIBLE_BY_SECTEUR` (`config-dashboard.js`) + filtrage dans `buildLibraryPanelHTML()` (`docs/widgets.js`) | Architecture | Haute | **Résolu (2026-07-15)** — mécanisme construit et testé (canari d'exclusion confirmé fonctionnel, isolé par secteur). **`INCOMPATIBLE_BY_SECTEUR` est vide** : aucun widget n'est marqué X dans la matrice actuelle (§6), donc aucun effet visible tant qu'une vraie incompatibilité n'est pas actée par le produit. Tiroir "Bibliothèque d'extensions" (`ext-drawer`) non filtré — seul le panneau "Personnaliser" l'est, voir note ci-dessous. |
@@ -632,7 +662,7 @@ Recommandation à retenir pour tout futur widget : **jamais de donnée inventée
 | R-07 — Absence de tout modèle multi-secteurs | Modéré | Bloque toute évolution vers des entreprises à activité mixte (§15) |
 | R-08 — Widgets `chart-donut`/`lot-carte` toujours en accès direct SebaDB | Élevé | Dette "Widget Pur" documentée mais non résorbée — risque de duplication de pattern si de nouveaux widgets s'en inspirent par erreur |
 | R-09 — Absence de tout système de permissions | Modéré | Aucun widget ne peut aujourd'hui être restreint par rôle — à anticiper avant l'ajout d'une équipe avec des droits différenciés |
-| R-10 — `lot-treso` orphelin de toute promotion sectorielle | Faible | Incohérence mineure (WM-003), pas de risque fonctionnel immédiat |
+| R-10 — `lot-treso` orphelin de toute promotion sectorielle | **Résolu (WM-003)** | Universalisé via `BY_SECTEUR.commun`, voir "Décisions actées" |
 | R-11 — Aucune notion de version de matrice appliquée par compte | Modéré | Une évolution future de `config-dashboard.js` s'appliquera identiquement, sans distinction, à tous les comptes sans disposition sauvegardée — pas de mécanisme de migration versionnée (§11) |
 
 ---
