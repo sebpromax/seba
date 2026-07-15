@@ -67,22 +67,27 @@ N'invente pas de secteur qui n'existe pas dans `seba-data.js` — un secteur inc
 
 ## 2bis. Dashboard Adaptatif — merge config métier + préférences utilisateur
 
-Deux couches, dans cet ordre de priorité (la première qui répond gagne) :
+**Règle de priorité (par widget, pas par disposition entière) :**
 
-1. **Préférence utilisateur sauvegardée** (`SebaWidgetAPI.getUserPreference()`, `docs/services/widget-data-api.js`) — dès qu'un utilisateur a supprimé, ajouté ou réordonné un widget une seule fois, cette préférence existe et devient **prioritaire sur tout le reste**, pour toujours (jusqu'à ce qu'il la modifie à nouveau).
-2. **Config par défaut du métier** (`SEBA_DASHBOARD_CONFIG.widgetsFor(secteur)`, §2) — ne s'applique que si (1) n'existe pas encore (première visite, aucune personnalisation).
+1. **Widget explicitement touché par l'utilisateur** (supprimé, ajouté, ou déplacé au moins une fois — présent dans `SebaWidgetAPI.getUserPreference()`) → ce choix gagne **pour toujours**, quel que soit le secteur courant. Un changement de métier n'écrase jamais une action manuelle.
+2. **Widget jamais touché par l'utilisateur** → suit la config du **secteur courant** (`SEBA_DASHBOARD_CONFIG.widgetsFor(window._ctx.secteur)`, §2), relue à chaque rendu — pas figée à la première visite. Si l'utilisateur change de métier (ex. `menage` → `jardinage`), les widgets "compagnon" du nouveau secteur s'injectent et ceux de l'ancien redeviennent masqués, **mais seulement pour les widgets que l'utilisateur n'a jamais touchés individuellement**.
+3. **Ni l'un ni l'autre** → `defaultVisible`/`defaultOrder` du catalogue (filet de sécurité si `config-dashboard.js` ne s'est pas chargé).
 
-Le merge lui-même vit dans `getEffectiveLayout()` (`docs/widgets.js`) : pour **chaque** widget de `WIDGET_CATALOG`, il regarde s'il existe une entrée dans la préférence sauvegardée (`storedById[w.id]`) ; si oui il l'utilise telle quelle (`visible`/`order`/`size` choisis par l'utilisateur) ; sinon il retombe sur la config du secteur (ou, à défaut, sur `defaultVisible`/`defaultOrder` du catalogue). Un widget "supprimé" par l'utilisateur n'est donc jamais retiré du catalogue — il est stocké avec `visible: false`, ce qui revient au même à l'affichage mais garde l'entrée disponible si l'utilisateur le rajoute plus tard depuis le panneau "Personnaliser".
+C'est un merge **par widget**, pas par disposition entière : `getEffectiveLayout()` (`docs/widgets.js`) parcourt tout `WIDGET_CATALOG` et décide indépendamment, pour chaque `id`, laquelle des trois couches ci-dessus s'applique.
+
+**Piège corrigé (test de stress "changement de secteur", validé avant fusion) :** `addWidgetToLayout()`, `removeWidgetFromLayout()` et `persistOrder()` ne doivent **jamais** sauvegarder un instantané complet de `getEffectiveLayout()` (tout le catalogue) — seulement le(s) widget(s) réellement concerné(s) par l'action, via `patchStoredWidgets(patches)`. Une première version faisait `saveLayout(getEffectiveLayout())` : la moindre suppression gelait silencieusement l'état calculé de **tous** les widgets (y compris ceux jamais touchés), ce qui aurait empêché tout changement de secteur ultérieur d'avoir le moindre effet — la règle 2 ci-dessus ne pouvait jamais s'appliquer puisque tout finissait dans la règle 1. Toute nouvelle fonction qui écrit une disposition doit patcher, jamais snapshotter tout le catalogue.
 
 **Toute interaction passe par `SebaWidgetAPI`, sans exception** — c'est la règle d'or appliquée à l'engine lui-même, pas seulement aux widgets :
-- Bouton ✕ sur un widget → `onWidgetRemove(id)` → `removeWidgetFromLayout(id)` → `saveLayout(...)`
+- Bouton ✕ sur un widget → `onWidgetRemove(id)` → `removeWidgetFromLayout(id)`
 - Case à cocher du panneau "Personnaliser" (`buildLibraryPanelHTML()`, déjà existant — liste tout `WIDGET_CATALOG` groupé par catégorie) → `onWidgetToggle(id, checked)` → `addWidgetToLayout`/`removeWidgetFromLayout`
 - Glisser-déposer (SortableJS, `initSortable()`) → `persistOrder(orderedIds)`
 - Tiroir "Bibliothèque d'extensions" (`ext-drawer`, widgets `category: 'extension'`) → `addWidgetToLayout(id)`
 
-... et ces quatre chemins convergent **tous** vers une seule fonction, `saveLayout(layout)`, qui appelle `SebaWidgetAPI.saveUserPreference(layout)` — jamais `localStorage.setItem` directement depuis `docs/widgets.js` ou `docs/app/dashboard.html`. C'est ce choke point unique qui garantit la règle, pas une discipline à respecter à chaque nouveau bouton.
+... et ces quatre chemins convergent **tous** vers `patchStoredWidgets()` → `saveLayout(layout)` → `SebaWidgetAPI.saveUserPreference(layout)` — jamais `localStorage.setItem` directement depuis `docs/widgets.js` ou `docs/app/dashboard.html`. C'est ce choke point unique qui garantit la règle, pas une discipline à respecter à chaque nouveau bouton.
 
 **Nom de clé réel : `seba_dashboard_layout`, pas `user-dashboard-prefs`.** Le moteur de persistance (visibilité/ordre/taille, drag & drop, panneau "Personnaliser") existait déjà avant l'introduction de `SebaWidgetAPI` — `SebaWidgetAPI.saveUserPreference`/`getUserPreference` sont venus se brancher dessus, sous la même clé, plutôt que d'introduire une deuxième clé parallèle qui aurait fait perdre silencieusement sa disposition à tout utilisateur ayant déjà personnalisé son dashboard.
+
+**Changer de secteur n'a aujourd'hui aucune UI réelle** (pas de champ secteur dans `reglages.html`) — le comportement ci-dessus concerne la robustesse de l'algorithme de merge, prêt pour le jour où ce réglage existera, pas une fonctionnalité déjà exposée à l'utilisateur.
 
 ---
 

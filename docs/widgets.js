@@ -1618,16 +1618,21 @@ function getEffectiveLayout() {
   const storedById = {};
   if (stored && Array.isArray(stored.widgets)) stored.widgets.forEach(w => { storedById[w.id] = w; });
 
-  /* Avant toute personnalisation (stored === null), les valeurs par défaut
-     ne sont plus figées dans le catalogue mais dépendent du secteur de
-     l'entreprise (docs/services/config-dashboard.js) — un plombier et un
-     paysagiste n'ont pas les mêmes widgets "compagnon" pertinents à
-     l'ouverture. Dès que l'utilisateur personnalise, sa disposition
-     sauvegardée reprend le dessus et cette config n'intervient plus. */
-  let domainOrder = null;
-  if (!stored && window.SEBA_DASHBOARD_CONFIG && window._ctx) {
-    domainOrder = window.SEBA_DASHBOARD_CONFIG.widgetsFor(window._ctx.secteur);
-  }
+  /* Merge PAR WIDGET, pas par disposition entière (test de stress "changement
+     de secteur", _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md §2bis) :
+     - un widget que l'utilisateur a explicitement touché (supprimé, ajouté,
+       déplacé — présent dans storedById) garde ce choix POUR TOUJOURS, quel
+       que soit le secteur courant. Un changement de métier n'écrase jamais
+       une action manuelle.
+     - un widget que l'utilisateur n'a jamais touché suit la config du secteur
+       COURANT (window._ctx.secteur, relu à chaque appel — pas figé à la
+       première visite) : si l'utilisateur change de secteur, les widgets
+       "compagnon" du nouveau métier s'injectent, ceux de l'ancien métier
+       redeviennent masqués — mais seulement pour les widgets jamais touchés
+       manuellement. */
+  const domainOrder = (window.SEBA_DASHBOARD_CONFIG && window._ctx)
+    ? window.SEBA_DASHBOARD_CONFIG.widgetsFor(window._ctx.secteur)
+    : null;
 
   return Object.values(window.WIDGET_CATALOG).map(w => {
     const o = storedById[w.id];
@@ -1642,24 +1647,39 @@ function getEffectiveLayout() {
 
 function saveLayout(layout) { SebaLayoutStore.write({ v: 1, widgets: layout }); }
 
+/* Fusionne UNIQUEMENT les widgets explicitement patchés dans la disposition
+   déjà stockée — ne réécrit jamais un instantané complet de getEffectiveLayout()
+   (tout WIDGET_CATALOG). Sinon la moindre suppression/ajout gèlerait
+   silencieusement TOUS les widgets (y compris ceux jamais touchés par
+   l'utilisateur) dans le stockage, empêchant un futur changement de secteur
+   d'injecter les widgets "compagnon" du nouveau métier ou de masquer ceux de
+   l'ancien (test de stress "changement de secteur",
+   _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md §2bis). */
+function patchStoredWidgets(patches) {
+  const stored = SebaLayoutStore.read();
+  const widgets = (stored && Array.isArray(stored.widgets)) ? stored.widgets.slice() : [];
+  const byId = {}; widgets.forEach(w => { byId[w.id] = w; });
+  patches.forEach(p => { byId[p.id] = Object.assign({}, byId[p.id], p); });
+  saveLayout(Object.values(byId));
+}
+
 function addWidgetToLayout(id) {
-  const layout = getEffectiveLayout();
-  const entry = layout.find(w => w.id === id);
-  if (entry) entry.visible = true;
-  saveLayout(layout);
+  const entry = getEffectiveLayout().find(w => w.id === id);
+  if (!entry) return null;
+  patchStoredWidgets([{ id, visible: true, order: entry.order, size: entry.size }]);
   return entry;
 }
 function removeWidgetFromLayout(id) {
-  const layout = getEffectiveLayout();
-  const entry = layout.find(w => w.id === id);
-  if (entry) entry.visible = false;
-  saveLayout(layout);
+  const entry = getEffectiveLayout().find(w => w.id === id);
+  if (!entry) return;
+  patchStoredWidgets([{ id, visible: false, order: entry.order, size: entry.size }]);
 }
 function persistOrder(orderedIds) {
-  const layout = getEffectiveLayout();
-  const byId = {}; layout.forEach(w => byId[w.id] = w);
-  orderedIds.forEach((id, i) => { if (byId[id]) byId[id].order = i; });
-  saveLayout(Object.values(byId));
+  const byId = {}; getEffectiveLayout().forEach(w => { byId[w.id] = w; });
+  const patches = orderedIds
+    .map((id, i) => byId[id] ? { id, visible: true, order: i, size: byId[id].size } : null)
+    .filter(Boolean);
+  patchStoredWidgets(patches);
 }
 
 /* ═══════════════════════════════════════════════════════════════
