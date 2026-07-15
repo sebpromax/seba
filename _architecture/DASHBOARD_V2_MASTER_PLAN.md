@@ -286,6 +286,57 @@ vision §26), à traiter en Phase 2/3 selon les règles de protection du §5 :
 
 **Aucun de ces éléments n'est effacé du code** — voir §5.
 
+### 4bis. Audit d'exécution (branche `feat/dashboard-v2-layout`) — Statut : **bloqué, pas terminé**
+
+Tentative de purge de la Liste Noire menée à son terme logique : **aucun des éléments
+listés ci-dessus n'a pu être supprimé sans régression**, pour deux raisons distinctes,
+vérifiées concrètement dans le code avant toute décision (pas une supposition) :
+
+**1. Cinq entrées supposent un remplaçant V2 qui n'existe pas encore.**
+`serenity-score`, `workspace`, `portal`, `bento-actions`, `quick-actions` sont "Supprimé"
+dans l'hypothèse que le Bandeau de situation, le bouton `+ Créer` du header et le lien
+sidebar "Portail client" existent en V2 — vérifié : `.v2-zone-header` et
+`.v2-zone-bandeau-priorite` sont **toujours de simples placeholders** (Phase 1, aucune
+logique), et aucun lien "Portail client" n'a été ajouté à la sidebar. Les supprimer
+maintenant retirerait ces 5 fonctionnalités du dashboard réel (V1, sans `?v2=1`) sans
+rien pour les remplacer. **Décision (confirmée avec le fondateur) : reportées** jusqu'à
+ce que leur remplaçant V2 soit réellement construit (probablement en même temps que le
+header/bandeau de situation eux-mêmes, un futur chantier dédié).
+
+**2. Le bouton flottant `+` (desktop) sert une fonction réelle sans remplaçant non plus.**
+`#fab`/`.fab-menu` (`docs/app/dashboard.html`) est le seul point d'accès "création
+rapide" du dashboard actuel (client/devis/intervention, avec raccourcis clavier 1/2/3) —
+pas une décoration. Le masquer sur desktop sans le bouton `+ Créer` du header (qui
+n'existe pas encore) retirerait cette fonction pour tous les utilisateurs desktop.
+**Reporté** pour la même raison que le point 1.
+
+**3. Les "effets décoratifs" et "graphiques sans contexte" de la vision §13 ne
+correspondent à aucun élément concret identifiable dans le code actuel.** Recherche
+ciblée (lignes lumineuses/néon, points colorés sur les bords, halos, bordures
+multicolores) : aucun résultat au-delà de fonctionnalités réelles déjà shippées
+(`bg-shader.js` = intro globe, `#confetti-canvas` = célébration onboarding, `.fab` =
+bouton de création). Le texte de la vision décrivait un pattern générique de mockup
+("AI slop"), pas un défaut concret de l'implémentation Tactical Dark actuelle. Rien à
+supprimer ici tant qu'un élément concret n'est pas désigné.
+
+**Ce qui a effectivement été corrigé cette passe — dette de code réelle, pas de la
+Liste Noire, trouvée en auditant le "code mort" post-migration :** `buildLibraryPanelHTML()`,
+`matchIntent()` et `suggestClosest()` (`docs/widgets.js`) itéraient encore tout
+`WIDGET_CATALOG`, y compris les 6 widgets déjà migrés (§3bis/§3ter) — un utilisateur
+pouvait cocher "Activité récente" dans le panneau *Personnaliser*, ou taper "équipe" dans
+la barre de commande IA (confirmation "✓ Widget ajouté", son, particules), sans que rien
+n'apparaisse jamais dans la grille (`renderGrid()` les exclut désormais
+inconditionnellement). Les trois fonctions excluent maintenant `MIGRATED_TO_V2_IDS` —
+vérifié : le panneau ne les liste plus, la barre IA retombe sur un widget non-migré
+pertinent (`metric-1` pour "activité") ou répond honnêtement "Aucun widget ne
+correspond" plutôt que de mentir sur un ajout sans effet.
+
+**Validé** : `#widget-grid`/`#cockpit-telemetry` déjà propres pour les 6 widgets migrés
+(commentaires en place, confirmé §3bis/§3ter) ; `?demo&v2=1` sans erreur console ;
+`.v2-zone-activite`/`.v2-zone-finance` toujours peuplées (3+3) après les corrections ;
+`pro-global.css` diff vide ; `tools/check-design-system.js` vert (aucun fichier
+HTML/CSS modifié cette passe).
+
 ---
 
 ## 5. Règles de protection

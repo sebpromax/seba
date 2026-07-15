@@ -1954,6 +1954,10 @@ function buildLibraryPanelHTML(secteur) {
   const currentSecteur = secteur || (window.SebaWidgetAPI ? window.SebaWidgetAPI.getCurrentSector() : null);
   const groups = { core: [], companion: [], extension: [] };
   Object.values(window.WIDGET_CATALOG).forEach(w => {
+    /* Widgets migrés vers V2 : plus gérés par ce panneau (renderGrid() les
+       ignore désormais quel que soit `visible`) — les lister ici afficherait
+       une case à cocher sans aucun effet. Voir DASHBOARD_V2_MASTER_PLAN.md §3ter. */
+    if (MIGRATED_TO_V2_IDS.includes(w.id)) return;
     const compatible = !window.SEBA_DASHBOARD_CONFIG || window.SEBA_DASHBOARD_CONFIG.isCompatible(w.id, currentSecteur);
     if (compatible) groups[w.category].push(w);
   });
@@ -1994,6 +1998,10 @@ function matchIntent(text) {
     const normQuery = normalizeText(sub);
     let best = null, bestScore = 0;
     Object.values(window.WIDGET_CATALOG).forEach(w => {
+      /* Widgets migrés : addWidgetToLayout() ne les rend plus visibles nulle
+         part en V1 (renderGrid() les ignore) — les proposer ici confirmerait
+         faussement un ajout sans effet. Voir DASHBOARD_V2_MASTER_PLAN.md §3ter. */
+      if (MIGRATED_TO_V2_IDS.includes(w.id)) return;
       const s = scoreWidget(w.keywords || [], normQuery);
       if (s > bestScore) { bestScore = s; best = w; }
     });
@@ -2003,7 +2011,9 @@ function matchIntent(text) {
 }
 
 function suggestClosest(normQuery) {
-  const scored = Object.values(window.WIDGET_CATALOG).map(w => {
+  const scored = Object.values(window.WIDGET_CATALOG)
+    .filter(w => !MIGRATED_TO_V2_IDS.includes(w.id)) // voir matchIntent() ci-dessus
+    .map(w => {
     let s = 0;
     (w.keywords || []).forEach(kw => {
       const nk = normalizeText(kw);
