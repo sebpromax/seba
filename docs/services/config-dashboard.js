@@ -46,9 +46,9 @@
      Champ terrain (tournées/interventions dispersées) : carte + tournée.
      Services récurrents/abonnement (facturation régulière) : pipeline + impayés. */
   var BY_SECTEUR = {
-    maintenance: ['chart-donut', 'lot-tournee', 'lot-carte'],
+    maintenance: ['chart-donut', 'lot-tournee', 'lot-carte', 'marge-reelle'],
     jardinage: ['chart-donut', 'lot-tournee', 'lot-carte'],
-    demenagement: ['chart-donut', 'lot-tournee', 'lot-carte'],
+    demenagement: ['chart-donut', 'lot-tournee', 'lot-carte', 'marge-reelle'],
     menage: ['lot-pipeline', 'lot-impayes', 'generic-media-report'],
     conciergerie: ['lot-pipeline', 'lot-impayes'],
     conciergerieCopro: ['lot-pipeline', 'lot-impayes'],

@@ -1480,6 +1480,35 @@ window.WIDGET_CATALOG = {
         '</div>';
     } },
 
+  /* ── Widget "pur" (règle d'or, _architecture/WIDGET_DEVELOPMENT_PROTOCOL.md) :
+     ne lit jamais window.SebaDB directement, passe uniquement par
+     window.SebaWidgetAPI.getMargeReelle(ctx) (docs/services/widget-data-api.js).
+     WM-005 (_architecture/WIDGET_MASTER_PLAN.md) : vue_marge_interventions/
+     get_marge_reelle existent côté Supabase, aucun consommateur front avant
+     ce widget — render() async pour refléter fidèlement ce que sera un vrai
+     appel RPC, avec état de chargement explicite. */
+  'marge-reelle': { id: 'marge-reelle', title: 'Marge réelle', size: 'M', category: 'companion', source: 'live',
+    keywords: ['marge', 'marge réelle', 'rentabilité', 'coût intervention', 'bénéfice'],
+    defaultVisible: false, defaultOrder: 26, link: { href: '../planning.html', label: 'Voir les interventions →' },
+    async render(ctx, el) {
+      el.innerHTML = '<div class="bc-pad"><div class="metric-label">Calcul de la marge en cours…</div></div>';
+      let data;
+      try {
+        data = window.SebaWidgetAPI ? await window.SebaWidgetAPI.getMargeReelle(ctx) : null;
+      } catch (e) {
+        el.innerHTML = buildRichEmptyHTML('⚠️', 'Erreur de calcul', 'Impossible de calculer la marge réelle pour le moment.', '', '');
+        return;
+      }
+      if (!data) {
+        el.innerHTML = buildRichEmptyHTML('📐', 'Marge réelle indisponible', 'Ajoutez le coût réel de vos interventions pour voir votre marge ici.', 'Voir les interventions', '../planning.html');
+        return;
+      }
+      el.innerHTML = '<div class="bc-pad">' +
+        '<div class="metric-value mono-num">' + data.margeMoyennePct + '%</div>' +
+        '<div class="metric-label">marge moyenne sur ' + data.interventionsAnalysees + ' intervention(s)</div>' +
+        '</div>';
+    } },
+
   /* ── Bibliothèque d'Extensions (Bible IV.9) — mini-modules ajoutables par
      glisser-déposer depuis le tiroir. defaultVisible:false : n'apparaissent
      que si l'utilisateur les fait glisser dans la grille (ou les coche

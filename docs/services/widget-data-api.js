@@ -62,5 +62,29 @@
     getCurrentSector: function () {
       return (window._ctx && window._ctx.secteur) || null;
     },
+
+    /* Marge réelle par intervention (widget marge-reelle — WM-005,
+     * _architecture/WIDGET_MASTER_PLAN.md). vue_marge_interventions et
+     * get_marge_reelle(p_account, p_intervention_id) existent déjà côté
+     * Supabase (supabase-schema.sql, lignes ~773/803) mais aucun consommateur
+     * front n'existe : SebaDB (docs/seba-data.js) n'expose aucun champ de
+     * coût par intervention aujourd'hui, et aucun appel Supabase n'est câblé
+     * ici. Async par conception (une vraie invocation RPC Supabase le
+     * serait) : renvoie honnêtement null tant que la donnée de coût
+     * n'existe pas côté produit, plutôt que d'inventer un pourcentage de
+     * marge. Isolation Widget Pur : ctx en entrée (comme getMediaReport),
+     * jamais le secteur seul — le futur appel réel à get_marge_reelle aura
+     * besoin de l'identité du compte (ctx.biz), pas seulement du secteur. */
+    getMargeReelle: async function (ctx) {
+      if (!window.SebaDB || !SebaDB.hasData()) return null;
+      var interventions = SebaDB.list('interventions') || [];
+      var withCost = interventions.filter(function (i) { return typeof i.coutReel === 'number' && i.montant > 0; });
+      if (!withCost.length) return null;
+      var total = withCost.reduce(function (sum, i) { return sum + (i.montant - i.coutReel) / i.montant; }, 0);
+      return {
+        margeMoyennePct: Math.round((total / withCost.length) * 100),
+        interventionsAnalysees: withCost.length,
+      };
+    },
   };
 })();

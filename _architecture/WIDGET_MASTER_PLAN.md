@@ -1,5 +1,5 @@
 ---
-widget_matrix_version: 2
+widget_matrix_version: 3
 last_updated: 2026-07-15
 status: draft
 owners:
@@ -158,6 +158,7 @@ Second écart, indépendant du premier : même corrigé, l'onboarding n'offre qu
 | `chart-donut` | Répartition des interventions | Grille (opt-in) | Intervention | **Non — appelle `window.SebaDB` directement** | Non |
 | `lot-carte` | Carte des interventions | Grille (opt-in) | Intervention | **Non — appelle `window.SebaDB` directement**, + Leaflet | Non |
 | `generic-media-report` | Rapport photo (titre variable par secteur) | Grille (opt-in) | Intervention | **Oui — seul widget via `SebaWidgetAPI`, ET généralisé par extension sectorielle (WM-004, résolu)** | Non (copie via `WIDGET_EXTENSIONS`) |
+| `marge-reelle` | Marge réelle | Grille (opt-in) | Finance | **Oui — via `SebaWidgetAPI.getMargeReelle(ctx)`** (WM-005, ajouté 2026-07-15) | Non — mais affiche toujours son état vide, voir §5.2 |
 
 ### 5.2 Widgets partiels ou simulés
 
@@ -169,14 +170,13 @@ Second écart, indépendant du premier : même corrigé, l'onboarding n'offre qu
 | `lot-pipeline` | Pipeline devis → facture → encaissé | Idem, `source: 'lot:mutation'`, lié à `mutation-contextuelle.html` |
 | `lot-tournee` | Tournée du jour | Idem, `source: 'lot:haversine'`, lié à `haversine-engine.html` |
 | `lot-treso` | Position de trésorerie | Idem, `source: 'lot:treso'`, lié à `cockpit-treso.html`, lit `ctx.demo.goal` uniquement (estimation simplifiée, dit explicitement "Estimation simplifiée" dans son propre rendu) |
+| `marge-reelle` | Marge réelle | Widget "coquille" fonctionnelle : catalogué, promu pour `maintenance`/`demenagement`, respecte le contrat Widget Pur — mais `SebaWidgetAPI.getMargeReelle()` retourne toujours `null` (aucun champ de coût par intervention dans SebaDB) ; affiche systématiquement son état vide jusqu'à ce que cette donnée existe |
 
 Les 4 widgets `lot-*` ci-dessus renvoient vers des pages mockup/SEO (`docs/*.html` à la racine, hors `docs/app/`) qui ne sont **pas** confirmées comme des pages produit connectées à SebaDB — **à valider**.
 
 ### 5.3 Widgets prévus
 
-| ID stable proposé | Nom | Statut | Source |
-|---|---|---|---|
-| `marge-reelle` (nom non confirmé, aucune entrée `WIDGET_CATALOG`) | Widget "marge réelle" | **Prévu — non commencé** | `PLAN.md` l.36/55 : "aucune UI ne consomme encore `vue_marge_interventions`/`get_marge_reelle`". Ces deux objets existent bien côté base (`supabase-schema.sql` l.773, l.803) — **dépendance conceptuelle, implémentation front et nom technique à définir** |
+Aucun aujourd'hui — `marge-reelle` (dernier widget "prévu" recensé) est passé en §5.2 le 2026-07-15 : le widget existe et respecte le contrat Widget Pur, seule la donnée de coût réel manque encore côté SebaDB.
 
 ### 5.4 Éléments ne devant pas être considérés comme des widgets
 
@@ -408,14 +408,18 @@ Aucun statut X discutable ne subsiste pour `generic-media-report` depuis sa gén
 **Secteurs :** P partout, jamais O — cohérent avec leur nature d'extensions "à la carte" ajoutées volontairement (`defaultVisible:false`, jamais promues nulle part).
 **Questions ouvertes** — `ext-notes` (bloc-notes) et `ext-rss` (flux RSS finance externe) posent une question de confidentialité/pertinence **à valider** (flux RSS externe = dépendance réseau tierce, non auditée ici).
 
-### `marge-reelle` (Prévu, id non confirmé)
+### `marge-reelle` — Marge réelle
 
-**État : Prévu — non commencé** (aucune entrée dans `WIDGET_CATALOG`) · **Catégorie :** Finance · **Widget pur :** À valider (n'existe pas encore) · **Extension sectorielle :** À valider
+**État : Actif, en attente de donnée réelle** (entrée `WIDGET_CATALOG` créée le 2026-07-15) · **Catégorie :** Finance · **Widget pur : Oui** (accès données intégralement via `window.SebaWidgetAPI.getMargeReelle(ctx)`) · **Extension sectorielle :** Aucune (copie neutre, pertinente pour tous les secteurs qui l'activent)
+**Secteurs obligatoires :** `maintenance`, `demenagement` · **Secteurs optionnels :** les 9 autres (ajoutables manuellement, jamais promus) · **Secteurs incompatibles :** aucun
 
-**Objectif métier** — Afficher la marge réelle par intervention (revenu réel vs. coûts).
-**Données requises** — `vue_marge_interventions` (vue SQL, confirmée `supabase-schema.sql` l.773), `get_marge_reelle(account, intervention_id)` (fonction SQL, confirmée l.803). **Dépendance conceptuelle — aucun consommateur front, aucun nom d'API JS/widget défini.**
-**Limites actuelles** — Entièrement côté backend, zéro UI. `PLAN.md` le liste explicitement comme non commencé.
-**Questions ouvertes** — Quel secteur en a le plus besoin (probablement tous ceux avec coûts variables — `maintenance`, `demenagement`) ? Non tranché ici (WM-005).
+**Objectif métier** — Afficher la marge réelle moyenne (revenu − coût réel) sur les interventions récentes.
+**Utilisateur principal** — Dirigeant.
+**Données requises** — `vue_marge_interventions` (vue SQL, `supabase-schema.sql` l.773), `get_marge_reelle(p_account, p_intervention_id)` (fonction SQL, l.803) — **toujours une dépendance conceptuelle côté SebaDB** : aucun champ de coût par intervention n'existe dans `docs/seba-data.js`, et aucun appel Supabase réel n'est câblé. `SebaWidgetAPI.getMargeReelle(ctx)` cherche un champ `i.coutReel` (nombre) sur chaque intervention — absent partout aujourd'hui, donc retourne toujours `null`.
+**États requis** — Chargement (`"Calcul de la marge en cours…"`, affiché avant l'`await`), donnée disponible (marge moyenne + nombre d'interventions analysées), aucune donnée (état vide riche, honnête — pas de pourcentage inventé), erreur (`try/catch` autour de l'appel, message dédié).
+**Permissions** — Non trouvé (cohérent avec le reste du catalogue).
+**Limites actuelles** — Reste un widget "coquille" tant que le champ de coût par intervention n'existe pas côté produit (upload/saisie de coût, migration SebaDB, puis branchement réel à `vue_marge_interventions`/`get_marge_reelle`) — chantier séparé, non commencé.
+**Questions ouvertes** — Le nom technique et les 2 secteurs prioritaires sont tranchés (WM-005) ; reste à décider qui saisit le coût réel d'une intervention et où (formulaire `planning.html` ? `client-fiche.html` ?) — non traité ici, hors périmètre widget.
 
 ---
 
@@ -531,6 +535,7 @@ owners:
 |---|---|---|---|---|
 | 1 | 2026-07-15 | Création initiale (ce document) — inventaire 11 secteurs, 25 widgets, matrice complète, contradiction onboarding documentée | Tous secteurs | Non (documentation uniquement, aucun code modifié) |
 | 2 | 2026-07-15 | WM-001 résolu (`SECTOR_MAPPING`/`resolveSector()`, `docs/onboarding.html` corrigé), WM-004 résolu (`cleaning-photo-report` renommé `generic-media-report`, contrat d'extension `WIDGET_EXTENSIONS`), matrice mise à jour (`generic-media-report` : X→P pour 6 secteurs, ?→P pour 3 secteurs) | Onboarding (tous secteurs), widget `generic-media-report`/anciennement `cleaning-photo-report` | Non (aucun compte réel confirmé existant nécessitant une migration de données à ce jour) |
+| 3 | 2026-07-15 | WM-006 résolu (enforcement technique du statut X — `SEBA_DASHBOARD_CONFIG.isCompatible()`/`INCOMPATIBLE_BY_SECTEUR`, filtrage dans `buildLibraryPanelHTML()`, registre vide donc sans effet visible aujourd'hui), WM-007 résolu (cluster "Lot" confirmé mockup, `robots.txt` corrigé, liens 404 des widgets `lot-*` neutralisés), WM-005 partiellement résolu (widget `marge-reelle` créé — `docs/widgets.js`, `SebaWidgetAPI.getMargeReelle(ctx)`, promu pour `maintenance`/`demenagement` — reste bloqué sur l'absence de champ de coût par intervention dans SebaDB) | Panneau "Personnaliser" (tous secteurs), SEO (cluster "Lot"), dashboard `maintenance`/`demenagement` (nouveau widget) | Non |
 
 ---
 
@@ -608,7 +613,7 @@ Recommandation à retenir pour tout futur widget : **jamais de donnée inventée
 | WM-002 | L'onboarding n'offre que 4 catégories contre 11 clés internes — faut-il élargir l'onboarding à 11 choix, réduire les clés à 4 familles, ou garder un mapping 4→11 avec un choix secondaire ("précisez votre activité") ? | Détermine la granularité réelle de personnalisation dont bénéficient les nouveaux utilisateurs | (a) 11 choix dans l'onboarding ; (b) 4 familles + sous-choix ; (c) réduire le modèle interne à 4 ; (d) mapping 4→1 simple (une seule clé par libellé, pas de sous-choix) | (d) implémentée par pragmatisme — **`conciergerieCopro`/`conciergerieEntreprise` restent inatteignables depuis l'onboarding réel aujourd'hui**, seul `conciergerie` est joignable via "Conciergerie & Accueil" | Produit | Haute | **Partiellement résolu** — le blocage critique (WM-001) est levé, mais la granularité fine (copro/entreprise) reste à trancher si jugée nécessaire |
 | WM-003 | `lot-treso` n'est promu O dans aucun secteur — oubli ou choix délibéré ? | Incohérence apparente avec `lot-pipeline`/`lot-impayes` qui suivent la même logique de facturation récurrente | (a) Ajouter `lot-treso` aux mêmes secteurs que `lot-pipeline` ; (b) le laisser P partout (widget "avancé") | À trancher par le produit — pas de préférence technique | Produit | Moyenne | Ouvert (non traité par cette session de correctifs, hors périmètre demandé) |
 | WM-004 | `generic-media-report` : généraliser la copie pour `conciergerie*` (et au-delà), ou le garder spécifique à `menage` ? | Premier widget "Widget Pur" du catalogue, mais spécifique de fait (§9) — précédent pour tous les futurs widgets | (a) Généraliser via une extension sectorielle (texte configurable) ; (b) dupliquer pour chaque secteur ; (c) garder tel quel, secteur unique | (a) implémentée — contrat d'extension `WIDGET_EXTENSIONS`/`widgetExtensionFor()` | Architecture | Moyenne | **Résolu (2026-07-15)** — testé (titre et état vide corrects pour `menage` via le flux réel) ; copie dédiée pour `conciergerie*` non re-testée en conditions réelles (vérifiée par lecture de code uniquement) |
-| WM-005 | Widget "marge réelle" (`vue_marge_interventions`/`get_marge_reelle`) : quel secteur prioritaire, quel nom technique, quelle UI ? | Fonctionnalité backend prête, zéro consommateur — premier arbitrage nécessaire avant tout développement | À définir entièrement | Product doit spécifier avant qu'un développement ne commence (hors périmètre de cette mission) | Produit | Basse (pas bloquant, rien n'en dépend aujourd'hui) | Ouvert |
+| WM-005 | Widget "marge réelle" (`vue_marge_interventions`/`get_marge_reelle`) : quel secteur prioritaire, quel nom technique, quelle UI ? | Fonctionnalité backend prête, zéro consommateur — premier arbitrage nécessaire avant tout développement | À définir entièrement | Nom technique tranché (`marge-reelle` / `SebaWidgetAPI.getMargeReelle(ctx)`) ; secteurs prioritaires : `maintenance`+`demenagement` (coûts variables) | Produit | Basse (pas bloquant, rien n'en dépend aujourd'hui) | **Partiellement résolu (2026-07-15)** — widget construit et intégré (`docs/widgets.js`, `docs/services/config-dashboard.js`), respecte le contrat Widget Pur. **Reste bloqué** sur la vraie donnée : SebaDB n'a aucun champ de coût par intervention, donc le widget affiche honnêtement son état vide en attendant. Construire ce champ (et brancher `vue_marge_interventions`/`get_marge_reelle` réellement) reste un chantier séparé, non commencé. |
 | WM-006 | Faut-il réellement bâtir l'enforcement technique du statut X (aujourd'hui purement déclaratif) ? | Sans lui, cette matrice reste un document d'intention, pas une contrainte produit | (a) Filtrer `buildLibraryPanelHTML`/le tiroir par compatibilité secteur ; (b) laisser le catalogue ouvert à tous, X = recommandation UX uniquement | (a) implémentée — `SEBA_DASHBOARD_CONFIG.isCompatible()`/`INCOMPATIBLE_BY_SECTEUR` (`config-dashboard.js`) + filtrage dans `buildLibraryPanelHTML()` (`docs/widgets.js`) | Architecture | Haute | **Résolu (2026-07-15)** — mécanisme construit et testé (canari d'exclusion confirmé fonctionnel, isolé par secteur). **`INCOMPATIBLE_BY_SECTEUR` est vide** : aucun widget n'est marqué X dans la matrice actuelle (§6), donc aucun effet visible tant qu'une vraie incompatibilité n'est pas actée par le produit. Tiroir "Bibliothèque d'extensions" (`ext-drawer`) non filtré — seul le panneau "Personnaliser" l'est, voir note ci-dessous. |
 | WM-007 | Faut-il des pages `docs/*.html` (`contentieux-recouvrement.html`, `mutation-contextuelle.html`, `haversine-engine.html`, `cockpit-treso.html`) confirmées comme produit connecté, ou sont-elles des mockups marketing ? | Détermine si les widgets `lot-*` pointent vers du contenu réel ou une vitrine | À vérifier par une lecture dédiée de ces 4 pages | Confirmées comme mockups (galerie de concepts, `docs/layout-manager.js` l.2) — voir audit dédié | Architecture | Basse | **Résolu (2026-07-15)** — mockups confirmés (pas d'auth, pas de SebaDB, design system tiers) ; `robots.txt` corrigé et liens 404 des widgets `lot-*` neutralisés en conséquence |
 
