@@ -40,17 +40,17 @@ code (id / titre / catégorie / source). Statuts :
 
 | Widget actuel (id) | Titre actuel | Zone V2 cible | Statut |
 |---|---|---|---|
-| `serenity-score` | Indice de santé du compte | — (remplacé par le Bandeau de situation, §4 vision) | Supprimé |
+| `serenity-score` | Indice de santé du compte | `header-status-group` (`#v2-header`) | **Supprimé*** — exécuté, voir §4quater |
 | `metric-0` | Métrique principale | Zone 3 — Santé financière (à réassigner : CA/Marge/Encaissements) | Orphelin |
 | `metric-1` | Métrique activité | Zone 2 Bloc A — Interventions (compteur) | Migré |
 | `metric-2` | Métrique clients | — (aucune zone V2 dans le MVP 12 widgets ; futur module "Commercial") | Orphelin |
 | `metric-3` | Métrique devis | Zone 3 Carte 4 — Devis | Migré |
 | `bento-chart` | Suivi des encaissements | Zone 3 — Santé financière (`.v2-zone-finance`) | **Migré*** — exécuté, voir §3bis |
-| `bento-actions` | Actions flash | — (explicitement listé §26 de la vision) | Supprimé |
+| `bento-actions` | Actions flash | Bouton `+ Créer` (`#v2-header`) — partiel | **Supprimé*** — exécuté, voir §4quater (dette : lien paiement/intervention non couverts) |
 | `timeline` | Journée d'aujourd'hui | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — exécuté, voir §3bis (retiré de PINNED_TELEMETRY_IDS) |
 | `activity` | Activité récente | Zone 2 — Aujourd'hui (`.v2-zone-activite`) | **Migré*** — pilote exécuté, voir §3bis |
 | `recos` | Recommandations Seba | Zone "Seba IA" (§21 vision, position 14 dans l'ordre §24) | Migré |
-| `quick-actions` | Actions rapides | — (remplacé par le bouton `+ Créer` contextuel du header, §3/§11 vision) | Supprimé |
+| `quick-actions` | Actions rapides | Bouton `+ Créer` (`#v2-header`) — partiel | **Supprimé*** — exécuté, voir §4quater (dette : "+ Facture" non couvert) |
 | `goal` | Objectif du mois | Zone 3 Carte 1 — CA (fusionné : barre d'objectif) | Migré |
 | `workspace` | Votre espace | — (explicitement listé §26 de la vision) | Supprimé |
 | `portal` | Portail client | — (retiré du dashboard, relocalisé en item de sidebar "Configuration", §2 vision) | Supprimé |
@@ -379,6 +379,71 @@ données n'ont pas de remplaçant), `portal` (fonctionnalité de lien public non
 Le fondateur peut maintenant autoriser la passe suivante pour `serenity-score`/
 `bento-actions`/`quick-actions`/le bouton flottant desktop (remplaçant fonctionnel
 complet en place) ; `workspace`/`portal` restent partiellement couverts seulement.
+
+### 4quater. Décommission exécutée — `serenity-score`, `bento-actions`, `quick-actions`, `.fab`
+
+Suite du §4bis : le remplaçant (`#v2-header`) étant en place, ces 4 éléments ont été
+retirés pour de bon (pas seulement masqués), avec traçabilité par commentaire à leur
+ancien emplacement DOM. `workspace`/`portal` **non touchés**, conformément à l'instruction.
+
+- **`serenity-score`** : entrée retirée de `WIDGET_CATALOG` et de `PINNED_TELEMETRY_IDS`
+  (`['metric-0', 'serenity-score']` → `['metric-0']`). `renderSerenityScore()` (le rendu
+  canvas orbital, exclusif à ce widget) supprimée. **Fonctions partagées conservées** —
+  vérifié avant suppression, pas supposé : `computeSerenityScore()`/`serenityStateFor()`/
+  `readThemeVar()` restent utilisées par `renderV2Header()` **et** par le Focus Mode
+  (`toggleFocusMode()`, `docs/app/dashboard.html`, classes `.focus-*` totalement
+  distinctes de `.serenity-*` — confirmé aucun partage de CSS). `startSerenityAnimation()`
+  conservée pour la même raison (Focus Mode). CSS mort retiré : `.serenity-wrap`/
+  `.serenity-canvas`/`.serenity-readout`/`.serenity-score-num`/`.serenity-score-lbl`/
+  `.serenity-orbit*`, les règles `[data-serenity-state]:hover`, et le token
+  `.serenity-score-num` extrait d'une règle partagée (`.metric-value, .bc-amount,
+  .goal-current, .serenity-score-num, .focus-score-num`) sans toucher aux 3 autres cibles.
+  **`maybeTriggerAIOnSerenity()` (Bible V.1, alerte IA proactive) transférée dans
+  `renderV2Header()`** — ce n'était PAS une simple suppression : sans ce transfert, la
+  fonctionnalité aurait disparu silencieusement (plus aucun appelant). Le header devient
+  le nouveau propriétaire de cet effet de bord, sans risque de double déclenchement
+  puisque `renderSerenityScore()` n'existe plus.
+- **`bento-actions`/`quick-actions`** : entrées retirées de `WIDGET_CATALOG`. Le bouton
+  "+ Créer" du header ouvre le même menu FAB (client/devis/intervention) — **dette
+  fonctionnelle non résolue** : "Envoyer un lien de paiement" et "Programmer une
+  intervention" (`bento-actions`), "+ Facture" (`quick-actions`) n'ont **aucun**
+  équivalent dans ce menu à 3 entrées. Documenté ici plutôt que silencieusement perdu ;
+  à trancher avec le fondateur (étendre le menu FAB, ou accepter la perte de raccourci).
+  CSS mort retiré : `.qa-grid`/`.qa-btn`, `.bento-flash`/`.flash-*`, et leurs tokens
+  extraits de la règle combinée `:active` partagée avec `.metric-card`/`.portal-btn`
+  (conservée pour ces deux-là).
+- **`.fab`** : élément `<button id="fab">` retiré du DOM, remplacé par un commentaire.
+  **`#fab-menu` conservé** (seul déclencheur restant : `.v2-header-create-btn` via
+  `toggleFab()`) — le supprimer aussi aurait cassé le bouton "+ Créer" lui-même (Test 1
+  l'exige fonctionnel). **Repositionné** de `bottom:92px;right:28px` vers `top:64px;
+  right:24px` (+ direction d'animation inversée, `translateY(-10px)` au lieu de
+  `translateY(10px)`) : sans ce repositionnement, le menu se serait ouvert dans un coin
+  bas-droite vide, sans bouton pour le justifier visuellement — un vrai bug de
+  "décommission propre", pas une amélioration cosmétique optionnelle. CSS `.fab`/
+  `.fab:hover`/`.fab:active`/`.fab.open-state` retiré ; `.fab` retiré du sélecteur combiné
+  `body.focus-active .fab, body.focus-active .fab-menu` (gardé `.fab-menu` seul).
+  **`toggleFab()` non modifiée** : ses accès à `document.getElementById('fab')` sont déjà
+  gardés (`if (btn) {...}`) depuis l'origine — aucune `TypeError` sur élément supprimé.
+- **Point de vigilance résolu** : `.cockpit-telemetry` avait `grid-template-columns:
+  1fr 1.3fr 1.4fr` (3 pistes fixes) — avec un seul widget restant (`metric-0`), il
+  aurait occupé la première piste (1fr, la plus étroite) en laissant 1.3fr+1.4fr vides à
+  droite. Classe `.solo` ajoutée (`grid-template-columns: 1fr`), posée par
+  `renderCockpitTelemetry()` via `PINNED_TELEMETRY_IDS.length === 1` — `metric-0`
+  occupe maintenant toute la largeur, pas de zone flottante disgracieuse.
+- **Régression réelle trouvée sur une autre passe (non liée à ce chantier) : mobile.**
+  Aucune règle `@media` ne distinguait jamais `.fab` desktop/mobile (vérifié avant
+  suppression) — la vision (§12) prévoyait "bouton flottant uniquement sur mobile", jamais
+  implémenté. Supprimer `.fab` retire donc le seul point de création rapide **sur mobile
+  aussi**, où `#v2-header` n'a pas d'adaptation responsive dédiée. Signalé explicitement
+  plutôt que laissé silencieux — à trancher : rétablir un FAB mobile-only via media query,
+  ou adapter `#v2-header` pour petits écrans.
+- **Validé** via Puppeteer (`?demo`/`?demo&v2=1`) : grid V1 sans `quick-actions`/
+  `bento-actions` (commentaires en tête de grille — position exacte non préservée,
+  limite documentée) ; télémétrie réduite à `metric-0` seul, `.solo` posée ; `workspace`/
+  `portal` toujours présents dans la grille V1 ; `#fab` absent du DOM ; clic "+ Créer"
+  ouvre bien `#fab-menu` (repositionné, visible dans le screenshot juste sous le
+  bouton) ; zones V2 toujours peuplées (3+3) ; aucune erreur console ; `pro-global.css`
+  diff vide ; `tools/check-design-system.js` vert.
 
 ---
 

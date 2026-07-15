@@ -397,37 +397,6 @@ function serenityStateFor(score) {
   return { key: 'alerte', label: 'Alerte', varName: '--critical', fallback: '#8B1E1E', speed: 0.032, jitter: 0.6 };
 }
 
-function renderSerenityScore(wctx, el) {
-  const score = computeSerenityScore(wctx);
-  const state = serenityStateFor(score);
-  maybeTriggerAIOnSerenity(state, wctx); // Bible V.1 — entrée en alerte seulement
-  const goal = wctx.demo.goal;
-  /* Trésorerie = estimation simplifiée (CA du mois moins les factures en retard
-     encore non encaissées) — même logique que le companion "Position de
-     trésorerie", pas un vrai calcul de cash-flow. */
-  const lateTotal = (wctx.creances || []).reduce((s, c) => s + (c.montant || 0), 0);
-  const tresorerie = Math.max(0, goal.current - lateTotal);
-
-  el.innerHTML =
-    '<div class="serenity-wrap">' +
-      '<canvas class="serenity-canvas"></canvas>' +
-      '<div class="serenity-readout">' +
-        '<div class="serenity-score-num">' + score + '</div>' +
-        '<div class="serenity-score-lbl">' + state.label + '</div>' +
-      '</div>' +
-      '<div class="serenity-orbit">' +
-        '<span class="serenity-orbit-item o10h"><span class="oi-lbl">Trésorerie</span><span class="oi-val">' + fmtNum(tresorerie, wctx.sym) + '</span></span>' +
-        '<span class="serenity-orbit-item o2h"><span class="oi-lbl">CA</span><span class="oi-val">' + fmtNum(goal.current, wctx.sym) + '</span></span>' +
-      '</div>' +
-    '</div>';
-
-  const wrap = el.querySelector('.serenity-wrap');
-  const canvas = el.querySelector('.serenity-canvas');
-  const shell = el.closest('.widget-shell');
-  if (shell) shell.dataset.serenityState = state.key;
-  startSerenityAnimation(canvas, wrap, state);
-}
-
 function startSerenityAnimation(canvas, wrap, state) {
   state.color = readThemeVar(state.varName, state.fallback);
   const ctx2d = canvas.getContext('2d');
@@ -1135,10 +1104,13 @@ function maybeTriggerAIOnHorizon(series, sym) {
 ═══════════════════════════════════════════════════════════════ */
 window.WIDGET_CATALOG = {
 
-  'serenity-score': { id: 'serenity-score', title: 'Indice de santé du compte', size: 'L', category: 'core', source: 'live',
-    keywords: ['indice de sante', 'score de sante', 'sante entreprise', 'coeur reacteur', 'barometre'],
-    defaultVisible: true, defaultOrder: -1,
-    render(ctx, el) { renderSerenityScore(ctx, el); } },
+  /* serenity-score décommissionné en faveur de v2-header (voir
+     DASHBOARD_V2_MASTER_PLAN.md §4quater) : indicateur compact désormais
+     construit par renderV2Header() (docs/widgets.js), qui réutilise
+     computeSerenityScore()/serenityStateFor()/readThemeVar() ci-dessus —
+     ces 3 fonctions restent nécessaires (aussi utilisées par le Focus Mode,
+     dashboard.html toggleFocusMode()), seule renderSerenityScore() (le
+     rendu canvas orbital, exclusif à ce widget) a été supprimée avec lui. */
 
   'metric-0': { id: 'metric-0', title: 'Métrique principale', size: 'S', category: 'core', source: 'demo',
     keywords: ['ca', "chiffre d'affaires", 'revenu', 'argent gagné', 'encaissé', 'combien j\'ai gagné'],
@@ -1189,15 +1161,13 @@ window.WIDGET_CATALOG = {
         '</div><div class="bc-d3-wrap"></div></div>';
       renderFinanceChartD3(el.querySelector('.bc-d3-wrap'), buildFinanceSeries(ctx.secteur, cur), ctx.sym, tgt);
     } },
-  'bento-actions': { id: 'bento-actions', title: 'Actions flash', size: 'L', category: 'core', source: 'static',
-    keywords: ['actions flash', 'raccourcis', 'programmer intervention', 'envoyer lien paiement'],
-    defaultVisible: true, defaultOrder: 5,
-    render(ctx, el) {
-      el.innerHTML = '<div class="bento-flash" style="padding:14px;">' +
-        '<a href="planning.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14M8 4V2M12 4V2"/></svg></div><div><span class="flash-txt">Programmer une intervention</span><span class="flash-sub">Créer et assigner en 3 clics</span></div></a>' +
-        '<button class="flash-btn" onclick="copyLink(this)"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M9 3h8v8"/></svg></div><div><span class="flash-txt">Envoyer un lien de paiement</span><span class="flash-sub">Copier votre lien portail client</span></div></button>' +
-        '<a href="devis-nouveau.html" class="flash-btn"><div class="flash-ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00FF9D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h2"/></svg></div><div><span class="flash-txt">Créer un devis</span><span class="flash-sub">Devis signable en 2 minutes</span></div></a></div>';
-    } },
+  /* bento-actions décommissionné en faveur de v2-header (bouton "+ Créer",
+     voir DASHBOARD_V2_MASTER_PLAN.md §4quater) — le lien "Envoyer un lien de
+     paiement" (copyLink()) et le raccourci "Programmer une intervention"
+     n'ont pas de remplaçant direct dans le header (celui-ci ne propose que
+     la création rapide client/devis/intervention, via le menu FAB
+     réutilisé) — dette fonctionnelle à noter si ces deux actions
+     spécifiques manquent au fondateur. */
 
   'timeline': { id: 'timeline', title: "Journée d'aujourd'hui", size: 'L', category: 'core', source: 'demo',
     keywords: ['planning', "aujourd'hui", 'journée', 'agenda du jour'],
@@ -1221,14 +1191,11 @@ window.WIDGET_CATALOG = {
     defaultVisible: true, defaultOrder: 8,
     render(ctx, el) { el.innerHTML = evaluateRules(ctx).map(buildRecoItemHTML).join(''); } },
 
-  'quick-actions': { id: 'quick-actions', title: 'Actions rapides', size: 'M', category: 'core', source: 'static',
-    keywords: ['actions rapides', 'créer', 'ajouter'],
-    defaultVisible: true, defaultOrder: 9,
-    render(ctx, el) {
-      el.innerHTML = '<div class="qa-grid">' +
-        '<a href="clients.html" class="qa-btn">+ Client</a><a href="devis-nouveau.html" class="qa-btn">+ Devis</a>' +
-        '<a href="planning.html" class="qa-btn">+ Intervention</a><a href="factures.html" class="qa-btn">+ Facture</a></div>';
-    } },
+  /* quick-actions décommissionné en faveur de v2-header (bouton "+ Créer",
+     voir DASHBOARD_V2_MASTER_PLAN.md §4quater) — "+ Facture" n'a pas
+     d'équivalent direct dans le menu FAB réutilisé (client/devis/
+     intervention seulement) ; dette fonctionnelle à noter si ce raccourci
+     manque au fondateur. */
 
   'goal': { id: 'goal', title: 'Objectif du mois', size: 'M', category: 'core', source: 'demo',
     keywords: ['objectif', 'objectif du mois', 'progression'],
@@ -1769,10 +1736,13 @@ function persistOrder(orderedIds) {
    ci-dessous) — exclus de #widget-grid, donc structurellement hors de
    portée de SortableJS, sans toucher à sa configuration. Le reste du
    catalogue (Bibliothèque d'Extensions incluse) reste 100% modulable.
-   'timeline' en est sorti (migré vers V2, voir MIGRATED_FROM_TELEMETRY_IDS
-   et V2_ZONE_ACTIVITE_IDS ci-dessous) — le trio d'origine (CA/Serenity
-   Score/Missions du jour) devient un duo (CA/Serenity Score). */
-const PINNED_TELEMETRY_IDS = ['metric-0', 'serenity-score'];
+   'timeline' en est sorti (migré vers V2) et 'serenity-score' décommissionné
+   (voir DECOMMISSIONED_TELEMETRY_IDS ci-dessous) — le trio d'origine
+   (CA/Serenity Score/Missions du jour) est retombé à un seul widget
+   (CA/metric-0). renderCockpitTelemetry() pose une classe .solo sur
+   #cockpit-telemetry dans ce cas (voir CSS dashboard.html) pour ne pas
+   laisser metric-0 flotter dans une grille pensée pour 3 pistes. */
+const PINNED_TELEMETRY_IDS = ['metric-0'];
 
 /* ── Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §1/§3) ──────────────────────
    Widgets retirés de la grille V1 (renderGrid) ou de la télémétrie épinglée
@@ -1789,6 +1759,17 @@ const MIGRATED_TO_V2_IDS = V2_ZONE_ACTIVITE_IDS.concat(V2_ZONE_FINANCE_IDS);
    savoir pour y laisser son propre commentaire de traçabilité. */
 const MIGRATED_FROM_TELEMETRY_IDS = ['timeline'];
 
+/* ── Décommissionnement V2 (DASHBOARD_V2_MASTER_PLAN.md §4quater) ──────────
+   Contrairement à MIGRATED_TO_V2_IDS (widget déplacé tel quel dans une zone
+   V2), ces ids sont retirés de WIDGET_CATALOG lui-même : leur fonction est
+   désormais assurée par du code dédié dans #v2-header (identité, indicateur
+   de santé, bouton "+ Créer"), pas par un mount de widget catalogue — donc
+   rien à monter nulle part en V2. getEffectiveLayout()/renderGrid() ne les
+   voient plus du tout (absents du catalogue) ; ces deux listes existent
+   uniquement pour poser le commentaire de traçabilité au bon endroit. */
+const DECOMMISSIONED_TELEMETRY_IDS = ['serenity-score'];
+const DECOMMISSIONED_GRID_IDS = ['quick-actions', 'bento-actions'];
+
 /* Widget id -> sélecteur de la zone V2 où il a été remonté, pour que le
    commentaire de traçabilité laissé en V1 pointe la bonne zone. */
 function v2ZoneSelectorFor(id) {
@@ -1799,10 +1780,20 @@ function v2ZoneSelectorFor(id) {
 function renderGrid(gridEl, ctx, customizeMode) {
   const layout = getEffectiveLayout();
   gridEl.innerHTML = '';
+  /* quick-actions/bento-actions ne sont plus dans WIDGET_CATALOG (voir
+     DECOMMISSIONED_GRID_IDS) — getEffectiveLayout() ne les voit donc plus du
+     tout et ne peut pas placer leur commentaire à leur ancien defaultOrder
+     (5 et 9). Posés ici en tête de grille : traçabilité garantie, position
+     exacte non préservée (limite acceptée, documentée au master plan). */
+  DECOMMISSIONED_GRID_IDS.forEach(id => {
+    gridEl.appendChild(document.createComment(' ' + id + ' décommissionné en faveur de v2-header — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
+  });
   const visible = layout.filter(w => w.visible && !PINNED_TELEMETRY_IDS.includes(w.id));
   const renderable = visible.filter(w => !MIGRATED_TO_V2_IDS.includes(w.id));
   if (!renderable.length) {
-    gridEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 24px;"><p>Tout est masqué. Ouvrez <strong>Personnaliser</strong> pour ajouter des widgets.</p></div>';
+    // insertAdjacentHTML (pas innerHTML =) : préserve les commentaires de
+    // traçabilité DECOMMISSIONED_GRID_IDS déjà ajoutés juste au-dessus.
+    gridEl.insertAdjacentHTML('beforeend', '<div class="empty-state" style="grid-column:1/-1;padding:48px 24px;"><p>Tout est masqué. Ouvrez <strong>Personnaliser</strong> pour ajouter des widgets.</p></div>');
     return;
   }
   visible.forEach(w => {
@@ -1882,16 +1873,19 @@ function renderV2Header(ctx) {
   if (nameEl) nameEl.textContent = (ctx.biz && ctx.biz.nom) || ctx.nom || 'Mon entreprise';
   if (sectorEl) sectorEl.textContent = ctx.sectorLabel || ctx.secteur || '';
 
-  /* Zone centrale — indicateur de santé compact : même calcul que le widget
-     serenity-score (computeSerenityScore/serenityStateFor/readThemeVar,
-     définis plus haut dans ce fichier), pas le même rendu (pas de canvas
-     orbital ici, juste un chiffre + une barre fine, cf. vision "micro-
-     interaction"). maybeTriggerAIOnSerenity() est VOLONTAIREMENT pas
-     appelé ici : c'est un effet de bord déjà déclenché par le widget
-     serenity-score lui-même à chaque rendu — l'appeler une seconde fois ici
-     dupliquerait le déclenchement de l'alerte IA. */
+  /* Zone centrale — indicateur de santé compact : même calcul que
+     l'ex-widget serenity-score (computeSerenityScore/serenityStateFor/
+     readThemeVar, définis plus haut dans ce fichier), pas le même rendu
+     (pas de canvas orbital ici, juste un chiffre + une barre fine, cf.
+     vision "micro-interaction"). maybeTriggerAIOnSerenity() — Bible V.1,
+     alerte IA en entrée d'état critique — est appelé ICI depuis le
+     décommissionnement du widget serenity-score (§4quater) : ce header est
+     désormais le seul point qui calcule le score à chaque rendu, donc le
+     seul endroit légitime pour ce déclenchement (plus de risque de double
+     appel maintenant que renderSerenityScore() n'existe plus). */
   const score = computeSerenityScore(ctx);
   const state = serenityStateFor(score);
+  maybeTriggerAIOnSerenity(state, ctx);
   const color = readThemeVar(state.varName, state.fallback);
   const numEl = header.querySelector('.v2-serenity-score-num');
   const lblEl = header.querySelector('.v2-serenity-state-lbl');
@@ -1905,14 +1899,20 @@ function renderV2Header(ctx) {
 }
 window.renderV2Header = renderV2Header;
 
-/* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : CA à gauche, Serenity
-   Score à droite — duo depuis la migration de 'timeline' vers V2 (voir
-   MIGRATED_FROM_TELEMETRY_IDS). Jamais de drag-handle/bouton de retrait :
-   ces widgets ne sont pas gérés par le mode personnalisation. */
+/* Zone télémétrie fixe (Bible V — Cockpit, TD-3) : à l'origine CA / Serenity
+   Score / Missions du jour. 'timeline' a migré vers V2 (voir
+   MIGRATED_FROM_TELEMETRY_IDS), 'serenity-score' a été décommissionné (voir
+   DECOMMISSIONED_TELEMETRY_IDS, §4quater) — il ne reste que metric-0 (CA).
+   .solo (posée ci-dessous quand PINNED_TELEMETRY_IDS n'a plus qu'un widget)
+   recentre la grille CSS 3 pistes en 1 seule piste pleine largeur (voir
+   dashboard.html, règle .cockpit-telemetry.solo). Jamais de drag-handle/
+   bouton de retrait : ces widgets ne sont pas gérés par le mode
+   personnalisation. */
 function renderCockpitTelemetry(ctx) {
   const container = document.getElementById('cockpit-telemetry');
   if (!container) return;
   container.innerHTML = '';
+  container.classList.toggle('solo', PINNED_TELEMETRY_IDS.length === 1);
   PINNED_TELEMETRY_IDS.forEach(id => {
     const def = window.WIDGET_CATALOG[id];
     if (!def) return;
@@ -1926,6 +1926,9 @@ function renderCockpitTelemetry(ctx) {
   });
   MIGRATED_FROM_TELEMETRY_IDS.forEach(id => {
     container.appendChild(document.createComment(' Widget ' + id + ' déplacé vers dashboard-v2 (.v2-zone-activite) — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
+  });
+  DECOMMISSIONED_TELEMETRY_IDS.forEach(id => {
+    container.appendChild(document.createComment(' ' + id + ' décommissionné en faveur de v2-header — voir _architecture/DASHBOARD_V2_MASTER_PLAN.md '));
   });
 }
 window.renderCockpitTelemetry = renderCockpitTelemetry;

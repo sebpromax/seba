@@ -27,7 +27,7 @@
        nulle part — seul le CA pinné en télémétrie avait sa propre règle locale
        dupliquée. Applique désormais "chiffres en monospace façon terminal
        financier" (charte Tactical Dark) à toute donnée numérique principale. */
-    .metric-value, .bc-amount, .goal-current, .serenity-score-num, .focus-score-num {
+    .metric-value, .bc-amount, .goal-current, .focus-score-num {
       font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;
     }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
@@ -114,8 +114,14 @@
     .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
 
     /* ── Cockpit : zone télémétrie fixe (TD-3) — CA / Serenity Score / Missions,
-       jamais déplaçable, toujours dans cet ordre ── */
+       jamais déplaçable, toujours dans cet ordre. serenity-score et timeline
+       décommissionnés/migrés (voir DASHBOARD_V2_MASTER_PLAN.md) : le trio
+       d'origine est retombé à un seul widget (metric-0) — .solo (posée par
+       renderCockpitTelemetry() selon PINNED_TELEMETRY_IDS.length) recentre la
+       grille en 1 seule piste pleine largeur au lieu de laisser metric-0
+       flotter à gauche dans les pistes 1.3fr/1.4fr désormais vides. ── */
     .cockpit-telemetry { display: grid; grid-template-columns: 1fr 1.3fr 1.4fr; gap: 16px; margin-bottom: 20px; }
+    .cockpit-telemetry.solo { grid-template-columns: 1fr; }
     .cockpit-telemetry .widget-shell { min-height: 260px; }
     /* Les 3 widgets pinnés gardent leur data-size d'origine (utile ailleurs
        dans le catalogue), mais ici la grille télémétrie n'a que 3 pistes :
@@ -220,10 +226,9 @@
     .reco-desc { font-size: .75rem; color: var(--text-2); line-height: 1.45; margin-bottom: 5px; }
     .reco-cta { font-size: .71rem; font-weight: 600; color: var(--emerald); }
 
-    /* ── Quick actions ── */
-    .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
-    .qa-btn { display: flex; align-items: center; justify-content: center; padding: 10px 6px; border-radius: var(--rs); background: var(--bg); border: 1.5px solid var(--border); font-size: .78rem; font-weight: 600; color: var(--ink); text-align: center; transition: border-color .15s, background .15s, color .15s; }
-    .qa-btn:hover { border-color: var(--emerald); background: rgba(0,255,157,.08); color: var(--emerald); }
+    /* quick-actions décommissionné en faveur de v2-header — voir
+       DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .qa-grid/.qa-btn retiré
+       (exclusif à ce widget). */
 
     /* ── Monthly goal ── */
     .goal-block { padding: 14px 16px; }
@@ -287,23 +292,12 @@
     .empty-state p { font-size: .95rem; color: var(--text-2); margin-bottom: 28px; max-width: 380px; margin-left: auto; margin-right: auto; }
     .btn-em { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 24px; background: var(--emerald); color: var(--on-emerald); font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; }
 
-    /* ── Serenity Score (Bible I.1) — sphère-nébuleuse, cœur réacteur ── */
-    .serenity-wrap { position: relative; height: 100%; min-height: 190px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .serenity-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .serenity-readout { position: relative; z-index: 2; text-align: center; pointer-events: none; }
-    .serenity-score-num { font-size: 2.7rem; font-weight: var(--weight-data); letter-spacing: var(--tracking-tight); line-height: var(--leading-data); color: var(--ink); }
-    .serenity-score-lbl { font-size: .76rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .09em; margin-top: 2px; }
-    .serenity-orbit { position: absolute; inset: 0; pointer-events: none; }
-    /* Repos : invisibles, légèrement affaissés (translateY positif) — l'apparition
-       au survol "remonte" les libellés dans leur position, comme happés par une
-       légère gravité inversée. Easing à léger dépassement (même courbe que le FAB)
-       pour une sensation d'assemblage physique, pas un simple fondu plat. */
-    .serenity-orbit-item { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--rs); opacity: 0; transform: translateY(10px) scale(.9); transition: opacity .35s var(--ease-out), transform .4s cubic-bezier(.34,1.56,.64,1); }
-    .serenity-wrap:hover .serenity-orbit-item { opacity: 1; transform: translateY(0) scale(1); }
-    /* 10h et 2h : deux points au-dessus de la sphère, symétriques de part et d'autre */
-    .serenity-orbit-item.o10h { top: 10%; left: 16%; }
-    .serenity-orbit-item.o2h { top: 10%; right: 16%; }
-    .serenity-wrap:hover .serenity-orbit-item.o2h { transition-delay: .05s; }
+    /* Serenity Score (Bible I.1, sphère-nébuleuse) décommissionné en faveur de
+       v2-header — voir DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS de rendu
+       (.serenity-wrap/.serenity-canvas/.serenity-readout/.serenity-score-num/
+       .serenity-score-lbl/.serenity-orbit*) retiré : exclusif à ce widget,
+       jamais réutilisé par le Focus Mode (classes .focus-* distinctes, voir
+       plus bas) ni ailleurs. */
     .oi-lbl { font-size: .63rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
     .oi-val { font-size: .88rem; font-weight: 700; color: var(--ink); }
 
@@ -382,10 +376,6 @@
     .aura-btn.validate:hover { opacity: .88; }
     /* Matérialisation du nouveau Vecteur d'Action après le morphing */
     .action-vector.materializing { opacity: 0 !important; transform: scale(.85) !important; }
-    @media (prefers-reduced-motion: reduce) { .serenity-canvas { opacity: .92; } }
-    /* La bordure au survol reflète l'état de santé plutôt que rester émeraude par défaut */
-    .widget-shell[data-serenity-state="attention"]:hover { border-color: rgba(255,184,0,.45) !important; box-shadow: 0 0 0 1px rgba(255,184,0,.28), 0 4px 24px rgba(255,184,0,.14); }
-    .widget-shell[data-serenity-state="alerte"]:hover { border-color: rgba(139,30,30,.55) !important; box-shadow: 0 0 0 1px rgba(139,30,30,.32), 0 4px 24px rgba(139,30,30,.18); }
 
     /* ── Bento Cockpit + Flash ── */
     /* Sélecteur de période (benchmark Shopify §7.1) — zoom temporel sur la même
@@ -425,12 +415,9 @@
     .bc-empty-sub{font-size:.78rem;color:var(--text-2);line-height:1.4;margin-bottom:10px;max-width:360px;}
     .bc-empty-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
     .bc-empty-btn:hover{opacity:.88;}
-    .bento-flash{display:flex;flex-direction:column;gap:10px;}
-    .flash-btn{flex:1;display:flex;align-items:center;gap:14px;padding:18px 18px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,background .15s;text-decoration:none;color:var(--ink);font-family:'Inter',sans-serif;}
-    .flash-btn:hover{border-color:var(--emerald);background:rgba(0,255,157,.04);}
-    .flash-ico{width:40px;height:40px;border-radius:9px;background:rgba(0,255,157,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .flash-txt{font-size:.88rem;font-weight:600;display:block;}
-    .flash-sub{font-size:.73rem;color:var(--text-2);margin-top:2px;display:block;}
+    /* bento-actions décommissionné en faveur de v2-header — voir
+       DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .bento-flash/.flash-*
+       retiré (exclusif à ce widget). */
     .team-av-wrap{position:relative;display:inline-block;}
     .team-av-status{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg);}
     .team-av-status.on{background:var(--emerald);}
@@ -461,11 +448,11 @@
     .wc-bar-fill{height:100%;background:var(--emerald);border-radius:99px;transition:width .5s cubic-bezier(0.4,0,0.2,1);}
     .wc-pct{font-size:.73rem;font-weight:700;color:var(--text-2);white-space:nowrap;}
 
-    /* ── Floating Action Button ── */
-    .fab{position:fixed;bottom:28px;right:28px;width:56px;height:56px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,255,157,.25),0 1px 6px rgba(0,0,0,.4);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}
-    .fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,0,0,.25);}
-    .fab:active{transform:scale(.96);}
-    .fab-menu{position:fixed;bottom:92px;right:28px;display:flex;flex-direction:column;gap:8px;z-index:299;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s;}
+    /* ── Fab menu (bouton .fab décommissionné en faveur de v2-header, voir
+       DASHBOARD_V2_MASTER_PLAN.md) : seul déclencheur restant = le bouton
+       "+ Créer" du header V2 (position top-right, plus bottom-right — sinon
+       le menu s'ouvrirait dans un coin vide sans bouton pour le justifier). ── */
+    .fab-menu{position:fixed;top:64px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:299;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .2s,transform .2s;}
     .fab-menu.open{opacity:1;pointer-events:auto;transform:translateY(0);}
     .fab-item{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;font-weight:600;color:var(--ink);text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.3);transition:border-color .15s,transform .15s;}
     .fab-item:hover{border-color:var(--emerald);transform:translateX(-2px);}
@@ -515,16 +502,12 @@
     @keyframes chartLineDraw{from{stroke-dashoffset:1600;}to{stroke-dashoffset:0;}}
     .chart-line-anim{stroke-dasharray:1600;animation:chartLineDraw 1.4s cubic-bezier(0.22,1,.36,1) .55s both;}
 
-    /* ── FAB rotate on open ── */
-    .fab{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}
-    .fab.open-state{transform:rotate(45deg) scale(1.08);}
-
     /* ── Sidebar SVG icon ── */
     .nav-item svg{flex-shrink:0;transition:opacity .15s,color .15s;opacity:.55;}
     .nav-item:hover svg,.nav-item.active svg{opacity:1;}
 
     /* ── Micro-interactions ── */
-    .metric-card:active, .qa-btn:active, .flash-btn:active, .portal-btn:active { transform: scale(.985); }
+    .metric-card:active, .portal-btn:active { transform: scale(.985); }
     .topbar-btn { transition: border-color var(--t-fast) var(--ease-std), box-shadow var(--t-std) var(--ease-std), transform var(--t-fast) var(--ease-std); }
     .topbar-btn:hover { box-shadow: 0 0 0 3px rgba(0,255,157,.12); }
     .topbar-btn:active { transform: scale(.94); }
@@ -677,7 +660,7 @@
     body.focus-active .sidebar, body.focus-active .mobile-header, body.focus-active .welcome-checklist,
     body.focus-active .action-stream, body.focus-active .horizon-section,
     body.focus-active .timeline-life-rail, body.focus-active .aura-stack,
-    body.focus-active .fab, body.focus-active .fab-menu,
+    body.focus-active .fab-menu,
     body.focus-active .widget-grid > .widget-shell:not([data-widget-id="serenity-score"]) {
       opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
     }
@@ -887,8 +870,8 @@
 <!-- Timeline de Vie (Bible III.6) — rail vertical fixe, pouls d'activite en continu -->
 <div class="timeline-life-rail"><canvas id="timeline-life"></canvas></div>
 
-<!-- FAB + menu -->
-<button class="fab" id="fab" onclick="toggleFab()" aria-label="Actions rapides">+</button>
+<!-- fab décommissionné en faveur de v2-header (bouton "+ Créer") -->
+<!-- fab-menu conservé : seul déclencheur désormais .v2-header-create-btn (toggleFab()) -->
 <div class="fab-menu" id="fab-menu">
   <a href="../clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
   <a href="../devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
