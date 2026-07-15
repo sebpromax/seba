@@ -115,31 +115,9 @@
        modulable (grille de widgets). Discrets, pas des titres de module. ── */
     .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
 
-    /* ── Cockpit : zone télémétrie fixe (TD-3) — CA / Serenity Score / Missions,
-       jamais déplaçable, toujours dans cet ordre. serenity-score et timeline
-       décommissionnés/migrés (voir DASHBOARD_V2_MASTER_PLAN.md) : le trio
-       d'origine est retombé à un seul widget (metric-0) — .solo (posée par
-       renderCockpitTelemetry() selon PINNED_TELEMETRY_IDS.length) recentre la
-       grille en 1 seule piste pleine largeur au lieu de laisser metric-0
-       flotter à gauche dans les pistes 1.3fr/1.4fr désormais vides. ── */
-    .cockpit-telemetry { display: grid; grid-template-columns: 1fr 1.3fr 1.4fr; gap: 16px; margin-bottom: 20px; }
-    .cockpit-telemetry.solo { grid-template-columns: 1fr; }
-    .cockpit-telemetry .widget-shell { min-height: 260px; }
-    /* Les 3 widgets pinnés gardent leur data-size d'origine (utile ailleurs
-       dans le catalogue), mais ici la grille télémétrie n'a que 3 pistes :
-       chacun occupe exactement 1 colonne/1 rangée, pas le span S/M/L/XL
-       habituel de la grille modulable. */
-    .cockpit-telemetry .widget-shell[data-size] { grid-column: span 1; grid-row: span 1; }
-    .cockpit-telemetry [data-widget-id="metric-0"] .metric-card { height: 100%; display: flex; flex-direction: column; justify-content: center; }
-    .cockpit-telemetry [data-widget-id="metric-0"] .metric-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 3rem; line-height: 1; margin: 10px 0; }
-    @media (max-width: 980px) { .cockpit-telemetry { grid-template-columns: 1fr; } }
-
-    /* ── Widget grid (Notion blocs × Apple widgets) ── */
-    .widget-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 96px; gap: 16px; grid-auto-flow: dense; margin-bottom: 20px; }
-    .customize-mode .widget-grid { grid-auto-rows: 122px; }
-    /* Glassmorphism clair : cartes translucides sur fond ambiant, lueur émeraude au survol */
-    .widget-shell { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; transition: border-color var(--t-std) var(--ease-std), box-shadow var(--t-std) var(--ease-std), transform var(--t-std) var(--ease-std); }
-    .widget-shell:hover { border-color: rgba(0,255,157,.4); box-shadow: var(--shadow-glow); transform: translateY(-2px); }
+    /* Cockpit-telemetry/widget-grid/widget-shell/module-* (V1) supprimés avec
+       la purge (DASHBOARD_V2_MASTER_PLAN.md §7) — équivalents V2 :
+       .v2-widget-container/.v2-widget-head dans dashboard-v2.css. */
     .main { background:
       radial-gradient(900px 420px at 85% -10%, rgba(0,255,157,.09), transparent 60%),
       radial-gradient(700px 380px at -10% 30%, rgba(201,169,218,.05), transparent 55%); }
@@ -153,28 +131,19 @@
     .metric-card { position: relative; }
     .metric-spark { position: absolute; right: 12px; bottom: 10px; width: 84px; opacity: .7; pointer-events: none; }
 
-    /* Performance mobile : blur coûteux → réduit sous 760px (garde le glass, sans le coût du blur(20px)) */
+    /* Performance mobile : blur coûteux → réduit sous 760px (garde le glass, sans le coût du blur(20px)).
+       .widget-shell gardé dans ce sélecteur bien que retiré du DOM (V1, voir
+       §7) : le retirer ne change rien fonctionnellement et forcerait une
+       nouvelle valeur de couleur en dur sur cette ligne pour rester conforme
+       à tools/check-design-system.js — non-modification délibérée. */
     @media (max-width: 760px) {
       .widget-shell, .metric-card { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(255,255,255,.05); }
       .widget-shell:hover { transform: none; }
     }
-    .widget-shell[data-size="S"] { grid-column: span 1; grid-row: span 1; }
-    .widget-shell[data-size="M"] { grid-column: span 2; grid-row: span 1; }
-    .widget-shell[data-size="L"] { grid-column: span 2; grid-row: span 2; }
-    .widget-shell[data-size="XL"] { grid-column: span 4; grid-row: span 2; }
-    .widget-shell[data-size="S"] .module-head, .widget-shell[data-size="M"] .module-head { display: none; }
-    .widget-shell[data-size="S"] .widget-body, .widget-shell[data-size="M"] .widget-body { display: flex; flex-direction: column; }
-    .widget-body { flex: 1; overflow: auto; min-height: 0; }
-    .widget-drag-handle { cursor: grab; color: var(--text-2); font-size: .9rem; margin-right: 6px; }
-    .widget-drag-handle:active { cursor: grabbing; }
-    .widget-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: .8rem; padding: 2px 4px; margin-left: 6px; }
-    .widget-remove-btn:hover { color: var(--amber); }
-    .customize-mode .widget-shell { border-style: dashed; border-color: rgba(0,255,157,.4); }
-    .customize-mode .widget-shell[data-size="S"] .module-head, .customize-mode .widget-shell[data-size="M"] .module-head { display: flex; }
 
-    /* ── Drag & Drop Haptique (Bible IV.8) ── */
-    /* Pick-up : effet 3D au clic maintenu */
-    .widget-shell.is-dragging {
+    /* ── Drag & Drop Haptique (Bible IV.8) — reciblé sur .v2-widget-container
+       (GridManagerV2, docs/widgets.js) au lieu de .widget-shell (V1, supprimé). ── */
+    .v2-widget-container.is-dragging {
       transform: scale(1.05);
       box-shadow: 0 22px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(0,255,157,.35);
       cursor: grabbing;
@@ -186,16 +155,9 @@
       70%  { box-shadow: 0 0 0 16px rgba(0,255,157,0); }
       100% { box-shadow: 0 0 0 16px rgba(0,255,157,0); }
     }
-    .widget-shell.lock-wave { animation: lockWave .65s var(--ease-out); }
+    .v2-widget-container.lock-wave { animation: lockWave .65s var(--ease-out); }
     /* Le placeholder SortableJS (l'espace vide qui "aimante") reprend le style pointillé existant */
     .sortable-ghost { opacity: .35; border-style: dashed !important; border-color: rgba(0,255,157,.5) !important; }
-
-    /* ── Module ── */
-    .module { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
-    .module-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border); }
-    .module-title { font-size: .83rem; font-weight: 600; flex: 1; }
-    .module-link { font-size: .76rem; color: var(--emerald); white-space: nowrap; }
-    .module-link:hover { text-decoration: underline; }
 
     /* ── Timeline ── */
     .tl-item { display: grid; grid-template-columns: 50px 1fr; gap: 0; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
@@ -470,12 +432,12 @@
     @keyframes dbFadeIn{from{opacity:0;}to{opacity:1;}}
     .dash-header{animation:dbFadeIn .35s ease .05s both;}
     .welcome-checklist{animation:dbFadeUp .45s cubic-bezier(0.22,1,.36,1) .04s both;}
-    .widget-shell{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) both;}
-    .widget-shell:nth-child(1){animation-delay:.06s;}
-    .widget-shell:nth-child(2){animation-delay:.11s;}
-    .widget-shell:nth-child(3){animation-delay:.16s;}
-    .widget-shell:nth-child(4){animation-delay:.21s;}
-    .widget-shell:nth-child(n+5){animation-delay:.26s;}
+    .v2-widget-container{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) both;}
+    .v2-widget-container:nth-child(1){animation-delay:.06s;}
+    .v2-widget-container:nth-child(2){animation-delay:.11s;}
+    .v2-widget-container:nth-child(3){animation-delay:.16s;}
+    .v2-widget-container:nth-child(4){animation-delay:.21s;}
+    .v2-widget-container:nth-child(n+5){animation-delay:.26s;}
 
     /* ── Metric card radial hover glow ── */
     .metric-card{overflow:hidden;}
@@ -513,17 +475,10 @@
     }
 
     /* ── Responsive ── */
-    @media (max-width: 1120px) {
-      .widget-grid { grid-template-columns: repeat(2, 1fr); }
-      .widget-shell[data-size="L"], .widget-shell[data-size="XL"] { grid-column: span 2; }
-    }
     @media (max-width: 760px) {
       .app { grid-template-columns: 1fr; }
       .sidebar {}
       .main { padding: 20px 16px 40px; }
-      .widget-grid { grid-template-columns: 1fr; }
-      .widget-shell[data-size="S"], .widget-shell[data-size="M"], .widget-shell[data-size="L"], .widget-shell[data-size="XL"] { grid-column: span 1; }
-      .widget-shell[data-size="S"] .module-head, .widget-shell[data-size="M"] .module-head { display: flex; }
     }
 
     /* ── Panneau Personnaliser (bibliothèque de widgets) ── */
@@ -539,41 +494,9 @@
     .widget-lib-row:hover{background:var(--bg);}
     .cp-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
 
-    /* ── Bibliothèque d'Extensions (Bible IV.9) — tiroir gauche ── */
-    /* Intégré au fil du header (dh-left) plutôt qu'en position:fixed — évite
-       toute collision avec le titre ou le logo de la sidebar, quel que soit
-       le viewport, sans media query de repli à maintenir. */
-    .ext-drawer-trigger{flex-shrink:0;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,transform .15s;}
-    .ext-drawer-trigger:hover{border-color:var(--emerald);transform:scale(1.06);}
-    .ext-drawer-overlay{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,.4);display:none;}
-    .ext-drawer-overlay.open{display:block;}
-    .ext-drawer{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:88vw;background:rgba(5,5,5,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-right:1px solid var(--border);box-shadow:8px 0 32px rgba(0,0,0,.5);z-index:521;transform:translateX(-100%);transition:transform .28s cubic-bezier(0.22,1,.36,1);display:flex;flex-direction:column;}
-    .ext-drawer.open{transform:translateX(0);}
-    .ext-drawer-head{padding:20px 20px 6px;}
-    .ext-drawer-title{font-size:1rem;font-weight:700;color:var(--ink-inverse);margin-bottom:4px;}
-    .ext-drawer-sub{font-size:.78rem;color:rgba(255,255,255,.55);line-height:1.4;}
-    .ext-drawer-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-    .ext-tile{padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);cursor:grab;transition:border-color .15s,background .15s;}
-    .ext-tile:hover{border-color:var(--emerald);background:rgba(0,255,157,.06);}
-    .ext-tile:active{cursor:grabbing;}
-    .ext-tile.ext-tile-added{opacity:.4;cursor:default;pointer-events:none;}
-    .ext-tile-ico{font-size:1.2rem;margin-bottom:6px;display:block;}
-    .ext-tile-name{font-size:.86rem;font-weight:600;color:var(--ink-inverse);}
-    .ext-tile-desc{font-size:.74rem;color:rgba(255,255,255,.5);margin-top:2px;}
-    .ext-drawer-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.72rem;color:rgba(255,255,255,.45);}
-    /* Zone de dépose : léger halo émeraude sur la grille pendant qu'on glisse une vignette au-dessus */
-    .widget-grid.ext-drop-target{box-shadow:inset 0 0 0 2px rgba(0,255,157,.35);border-radius:var(--r);}
-
-    /* Rendu des 3 widgets d'extension */
-    .ext-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:16px;}
-    .ext-ph-ico{font-size:1.6rem;margin-bottom:8px;}
-    .ext-ph-title{font-size:.9rem;font-weight:600;margin-bottom:4px;}
-    .ext-ph-sub{font-size:.78rem;color:var(--text-2);max-width:220px;}
-    .ext-notes-area{width:100%;height:100%;border:none;background:transparent;color:var(--ink);font-family:'Inter',sans-serif;font-size:.85rem;padding:14px 16px;resize:none;outline:none;}
-    .ext-rss-list{padding:10px 16px 0;}
-    .ext-rss-item{font-size:.82rem;padding:8px 0;border-bottom:1px solid var(--border);}
-    .ext-rss-item:last-child{border-bottom:none;}
-    .ext-rss-note{font-size:.7rem;color:var(--text-2);padding:8px 16px 12px;font-style:italic;}
+    /* Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1
+       (DASHBOARD_V2_MASTER_PLAN.md §7) — tiroir + rendu des 3 widgets
+       d'extension retirés. */
 
     /* ── Planète de Calibration (Bible V.10) — cérémonie one-shot ── */
     .calib-overlay{position:fixed;inset:0;z-index:900;background:#020204;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;opacity:0;transition:opacity .6s ease;}
@@ -640,12 +563,14 @@
     @keyframes focusBlink{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.5);}50%{box-shadow:0 0 0 10px rgba(0,255,157,0);}}
     .focus-exit{position:fixed;top:24px;right:28px;z-index:2;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:8px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
     .focus-exit:hover{border-color:rgba(255,255,255,.5);color:var(--ink-inverse);}
-    /* Le superflu se dissout plutôt que de disparaître d'un coup */
+    /* Le superflu se dissout plutôt que de disparaître d'un coup. Reciblé sur
+       .v2-header-bar/.v2-grid-container (remplace l'ancien .widget-grid >
+       .widget-shell — voir DASHBOARD_V2_MASTER_PLAN.md §7, V1 retiré). */
     body.focus-active .sidebar, body.focus-active .mobile-header, body.focus-active .welcome-checklist,
     body.focus-active .action-stream, body.focus-active .horizon-section,
     body.focus-active .timeline-life-rail, body.focus-active .aura-stack,
     body.focus-active .fab-menu,
-    body.focus-active .widget-grid > .widget-shell:not([data-widget-id="serenity-score"]) {
+    body.focus-active .v2-header-bar, body.focus-active .v2-grid-container {
       opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
     }
   </style>
@@ -672,21 +597,23 @@
 </script>
 <canvas id="bg-shader" aria-hidden="true"></canvas>
 
-<!-- ═══════ DASHBOARD V2 — SQUELETTE LAYOUT (Phase 1) ═══════
-     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md. Bloc isolé, masqué par
-     défaut via style inline (indépendant de dashboard-v2.css) — retirer ce
-     fichier CSS n'a donc aucun effet sur le rendu V1 ci-dessous.
-     Vérification visuelle : ajouter ?v2=1 à l'URL. Aucune donnée, aucun
-     script partagé avec #dash-content / .app. -->
-<div id="v2-dashboard-skeleton" class="v2-dashboard-wrapper" style="display:none;">
-  <!-- Header V2 (voir DASHBOARD_V2_MASTER_PLAN.md) : sticky, hors de la grille
-       12 colonnes — remplace le placeholder plat "header-v2" de Phase 1.
-       Fournit une ALTERNATIVE à serenity-score/FAB/quick-actions, ne les
-       supprime pas (voir renderV2Header() dans docs/widgets.js). -->
+<!-- ═══════ DASHBOARD — STANDARD V2 NATIF ═══════
+     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md §7 (bascule V2 native,
+     legacy retiré). Seul rendu du dashboard désormais — plus de flag
+     ?v2=1/__SEBA_V2_ENABLED__, plus de grille V1 en parallèle. -->
+<div id="v2-dashboard-skeleton" class="v2-dashboard-wrapper">
+  <!-- Header : sticky, hors de la grille 12 colonnes. Identité + workspace
+       (zone gauche, panneau déroulant), indicateur de santé (centre),
+       portail + "+ Créer" (zone droite) — voir renderV2Header() dans
+       docs/widgets.js. -->
   <header id="v2-header" class="v2-header-bar">
     <div class="v2-header-left">
       <span class="v2-header-identity-name"></span>
       <span class="v2-header-identity-sector"></span>
+      <button type="button" class="v2-header-workspace-btn" title="Votre espace" onclick="toggleWorkspacePanel()">▾</button>
+      <div class="v2-dropdown-panel" id="v2-workspace-panel">
+        <div id="v2-workspace-panel-body"></div>
+      </div>
     </div>
     <div class="v2-header-center header-status-group">
       <div class="v2-serenity-row">
@@ -696,6 +623,10 @@
       <div class="v2-serenity-bar-track"><div class="v2-serenity-bar-fill" style="width:0"></div></div>
     </div>
     <div class="v2-header-right">
+      <button type="button" class="v2-header-actions-btn" title="Portail client" onclick="togglePortalMenu()">Actions</button>
+      <div class="v2-dropdown-panel v2-dropdown-panel--right" id="v2-portal-menu">
+        <div id="v2-portal-menu-body"></div>
+      </div>
       <button type="button" class="v2-header-create-btn" onclick="if (typeof toggleFab === 'function') toggleFab();">+ Créer</button>
     </div>
   </header>
@@ -706,15 +637,6 @@
     <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
   </div>
 </div>
-<script>
-(function () {
-  var params = new URLSearchParams(window.location.search);
-  window.__SEBA_V2_ENABLED__ = params.get('v2') === '1';
-  if (window.__SEBA_V2_ENABLED__) {
-    document.getElementById('v2-dashboard-skeleton').style.display = 'block';
-  }
-})();
-</script>
 
 <div class="app">
 
@@ -745,9 +667,6 @@
       <!-- ── Zone 1 : En-tête ── -->
       <div class="dash-header">
         <div class="dh-left">
-          <button class="ext-drawer-trigger" id="ext-drawer-trigger" onclick="openExtDrawer()" aria-label="Bibliothèque d'extensions" title="Bibliothèque d'extensions">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
-          </button>
           <div>
             <div class="dh-greeting" id="greeting">Bonjour !</div>
             <div class="dh-meta">
@@ -828,14 +747,6 @@
         <button class="portal-btn primary" style="padding:5px 14px;" onclick="toggleCustomizeMode()">Terminer</button>
       </div>
 
-      <!-- ── Zone télémétrie (Cockpit, TD-3) — CA / Serenity Score / Missions,
-           ancrée, jamais déplaçable ── -->
-      <div class="zone-eyebrow">Vue d'ensemble</div>
-      <div class="cockpit-telemetry" id="cockpit-telemetry"></div>
-
-      <!-- ── Grille de widgets (modulaire, glisser-déposer) ── -->
-      <div class="zone-eyebrow">Votre espace de travail</div>
-      <div class="widget-grid" id="widget-grid"></div>
 
       <!-- ── Vecteurs d'action (Bible II.4) — gains a valider, pas des taches ── -->
       <div class="zone-eyebrow">À traiter maintenant</div>
@@ -892,16 +803,9 @@
   <div class="cp-foot">Cochez les widgets que vous voulez voir. Activez le mode réorganisation pour les glisser-déposer.</div>
 </div>
 
-<!-- Bibliothèque d'Extensions (Bible IV.9) — le déclencheur vit désormais dans .dh-left (dash-header) -->
-<div class="ext-drawer-overlay" id="ext-drawer-overlay" onclick="closeExtDrawer()"></div>
-<aside class="ext-drawer" id="ext-drawer">
-  <div class="ext-drawer-head">
-    <div class="ext-drawer-title">Bibliothèque d'extensions</div>
-    <div class="ext-drawer-sub">Glissez une vignette dans le dashboard pour l'installer.</div>
-  </div>
-  <div class="ext-drawer-body" id="ext-drawer-body"></div>
-  <div class="ext-drawer-foot">Chaque extension s'installe comme un widget normal — déplaçable, retirable.</div>
-</aside>
+<!-- Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1 —
+     voir DASHBOARD_V2_MASTER_PLAN.md §7. ext-chart/ext-notes/ext-rss retirés
+     du catalogue, ce tiroir n'a plus rien à afficher. -->
 
 <!-- Planète de Calibration (Bible V.10) — cérémonie one-shot -->
 <div class="calib-overlay" id="calib-overlay">
@@ -1410,27 +1314,13 @@
     const sidebarCompanyEl = document.getElementById('sidebar-company');
     if (sidebarCompanyEl) sidebarCompanyEl.textContent = nom;
 
-    /* Widgets */
+    /* Widgets — rendu V2 natif, seul système depuis la bascule (DASHBOARD_V2_MASTER_PLAN.md §7).
+       Plus de grille V1/flag ?v2=1 : renderAllV2() est le seul point d'entrée
+       (détruit les instances WidgetV2 vivantes, remonte les 3 zones + le
+       header, réattache GridManagerV2). */
     _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
     window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
-    if (typeof renderCockpitTelemetry === 'function') renderCockpitTelemetry(_ctx);
-    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
-    /* Migration V2 (DASHBOARD_V2_MASTER_PLAN.md §3/§3bis) : widgets déjà
-       déplacés hors de renderGrid()/renderCockpitTelemetry() (V1) sont
-       montés ici avec le même _ctx, uniquement quand le squelette V2 est
-       actif. */
-    if (window.__SEBA_V2_ENABLED__) {
-      // Détruit TOUTES les instances WidgetV2 encore vivantes (ResizeObserver,
-      // instances Leaflet, etc.) avant que les 3 zones ne soient repeuplées —
-      // une seule passe, avant les 3 renderV2Zone*() qui suivent (voir
-      // destroyV2ClassWidgets() dans docs/widgets.js).
-      if (typeof destroyV2ClassWidgets === 'function') destroyV2ClassWidgets();
-      if (typeof renderV2Header === 'function') renderV2Header(_ctx);
-      if (typeof renderV2ZoneActivite === 'function') renderV2ZoneActivite(_ctx);
-      if (typeof renderV2ZoneFinance === 'function') renderV2ZoneFinance(_ctx);
-      if (typeof renderV2ZoneTraitement === 'function') renderV2ZoneTraitement(_ctx);
-    }
-    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    if (typeof renderAllV2 === 'function') renderAllV2(_ctx, _customizeMode);
     if (typeof populateActionStream === 'function') populateActionStream(_ctx);
     if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
     if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
@@ -1445,20 +1335,16 @@
     _customizeMode = !_customizeMode;
     document.getElementById('customize-bar').style.display = _customizeMode ? 'flex' : 'none';
     document.body.classList.toggle('customize-mode', _customizeMode);
-    const grid = document.getElementById('widget-grid');
-    renderGrid(grid, _ctx, _customizeMode);
-    if (_customizeMode) initSortable(grid);
+    renderAllV2(_ctx, _customizeMode);
   }
   function onWidgetRemove(id) {
     removeWidgetFromLayout(id);
-    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
-    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    renderAllV2(_ctx, _customizeMode);
     refreshLibraryPanel();
   }
   function onWidgetToggle(id, checked) {
     if (checked) addWidgetToLayout(id); else removeWidgetFromLayout(id);
-    renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
-    if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+    renderAllV2(_ctx, _customizeMode);
   }
   function refreshLibraryPanel() {
     const b = document.getElementById('cp-body');
@@ -1476,79 +1362,22 @@
   }
 
   /* ═══════════════════════════════════════════════════════
-     BIBLIOTHÈQUE D'EXTENSIONS (Bible IV.9) — tiroir gauche,
-     glisser une vignette vers #widget-grid pour l'installer.
-     Drag natif HTML5 (pas SortableJS) : le tiroir n'est pas une
-     liste réordonnable, juste une source de "vignettes à cloner".
+     PANNEAUX v2-header : workspace (zone gauche) / portail (zone droite)
+     Même patron clic-dehors-pour-fermer que .user-menu/.notif-panel
+     existants — voir le listener global plus bas.
   ═══════════════════════════════════════════════════════ */
-  function buildExtDrawerHTML() {
-    const layout = getEffectiveLayout();
-    const installed = {}; layout.forEach(w => { if (w.visible) installed[w.id] = true; });
-    return Object.values(window.WIDGET_CATALOG)
-      .filter(w => w.category === 'extension')
-      .map(w => {
-        const added = !!installed[w.id];
-        const icons = { 'ext-chart': '📈', 'ext-notes': '📝', 'ext-rss': '📰' };
-        return '<div class="ext-tile' + (added ? ' ext-tile-added' : '') + '" draggable="' + (!added) + '" data-widget-id="' + w.id + '">' +
-          '<span class="ext-tile-ico">' + (icons[w.id] || '🧩') + '</span>' +
-          '<div class="ext-tile-name">' + w.title + (added ? ' — installé' : '') + '</div>' +
-          '<div class="ext-tile-desc">' + (w.keywords[0] || '') + '</div>' +
-          '</div>';
-      }).join('');
+  function toggleWorkspacePanel() {
+    document.getElementById('v2-workspace-panel').classList.toggle('open');
+    document.getElementById('v2-portal-menu').classList.remove('open');
   }
-  function refreshExtDrawer() {
-    document.getElementById('ext-drawer-body').innerHTML = buildExtDrawerHTML();
-    document.querySelectorAll('.ext-tile[draggable="true"]').forEach(tile => {
-      tile.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', tile.dataset.widgetId);
-        e.dataTransfer.effectAllowed = 'copy';
-      });
-    });
+  function togglePortalMenu() {
+    document.getElementById('v2-portal-menu').classList.toggle('open');
+    document.getElementById('v2-workspace-panel').classList.remove('open');
   }
-  let _customizeModeBeforeDrawer = false;
-  function openExtDrawer() {
-    refreshExtDrawer();
-    document.getElementById('ext-drawer-overlay').classList.add('open');
-    document.getElementById('ext-drawer').classList.add('open');
-    _customizeModeBeforeDrawer = _customizeMode; // état à restaurer symétriquement à la fermeture (audit 1.3)
-    if (!_customizeMode) toggleCustomizeMode(); // la nouvelle vignette doit tout de suite montrer sa poignée (IV.8)
-  }
-  function closeExtDrawer() {
-    document.getElementById('ext-drawer-overlay').classList.remove('open');
-    document.getElementById('ext-drawer').classList.remove('open');
-    /* Ne restaure le mode personnalisation à son état d'avant-ouverture que s'il
-       avait été activé automatiquement par openExtDrawer() — si l'utilisateur l'a
-       activé lui-même AVANT d'ouvrir le tiroir, on ne le désactive pas dans son dos. */
-    if (_customizeMode && !_customizeModeBeforeDrawer) toggleCustomizeMode();
-  }
-  (function initExtDropZone() {
-    const grid = document.getElementById('widget-grid');
-    grid.addEventListener('dragover', (e) => {
-      if (!e.dataTransfer.types.includes('text/plain')) return;
-      e.preventDefault();
-      grid.classList.add('ext-drop-target');
-    });
-    grid.addEventListener('dragleave', () => grid.classList.remove('ext-drop-target'));
-    grid.addEventListener('drop', (e) => {
-      e.preventDefault();
-      grid.classList.remove('ext-drop-target');
-      const id = e.dataTransfer.getData('text/plain');
-      if (!id || !window.WIDGET_CATALOG[id]) return;
-      addWidgetToLayout(id);
-      renderGrid(grid, _ctx, _customizeMode);
-      if (_customizeMode) initSortable(grid);
-      refreshExtDrawer();
-      /* Le nouveau widget hérite du feedback de verrouillage IV.8 pour
-         "vendre" l'instantiation, comme une pièce qui vient de s'enclencher. */
-      const newShell = grid.querySelector('.widget-shell[data-widget-id="' + id + '"]');
-      if (newShell) {
-        AudioUI.playSuccess();
-        newShell.classList.add('lock-wave');
-        newShell.addEventListener('animationend', () => newShell.classList.remove('lock-wave'), { once: true });
-        newShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    });
-  })();
+
+  /* Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1
+     (DASHBOARD_V2_MASTER_PLAN.md §7) — plus de tiroir, plus de catégorie
+     'extension' peuplée dans WIDGET_CATALOG. */
 
   /* ═══════════════════════════════════════════════════════
      BARRE DE COMMANDE IA (simulée)
@@ -1578,7 +1407,7 @@
         addedAny = true;
         html += '<div class="ai-bar-match"><span class="ok">✓</span> Widget ajouté : « ' + r.widget.title + ' »</div>';
       } else if (r.suggestions && r.suggestions.length) {
-        html += '<div class="ai-bar-match">Vouliez-vous dire : ' + r.suggestions.map(w => '<a href="#" onclick="event.preventDefault();addWidgetToLayout(\'' + w.id + '\');document.getElementById(\'ai-bar-results\').innerHTML=\'✓ Ajouté.\';renderGrid(document.getElementById(\'widget-grid\'),_ctx,_customizeMode);" style="color:var(--emerald);">' + w.title + '</a>').join(' ou ') + ' ?</div>';
+        html += '<div class="ai-bar-match">Vouliez-vous dire : ' + r.suggestions.map(w => '<a href="#" onclick="event.preventDefault();addWidgetToLayout(\'' + w.id + '\');document.getElementById(\'ai-bar-results\').innerHTML=\'✓ Ajouté.\';renderAllV2(_ctx,_customizeMode);" style="color:var(--emerald);">' + w.title + '</a>').join(' ou ') + ' ?</div>';
       } else {
         html += '<div class="ai-bar-match">Aucun widget ne correspond à « ' + r.query + ' ».</div>';
       }
@@ -1587,8 +1416,7 @@
     if (addedAny) {
       AudioUI.playSuccess();
       if (window.aiBarParticleBurst) aiBarParticleBurst(document.getElementById('ai-bar-burst-canvas'));
-      renderGrid(document.getElementById('widget-grid'), _ctx, _customizeMode);
-      if (_customizeMode) initSortable(document.getElementById('widget-grid'));
+      renderAllV2(_ctx, _customizeMode);
       setTimeout(closeAiBar, 1400);
     }
   }
@@ -2121,6 +1949,16 @@
       if (btn) { btn.textContent = '+'; btn.classList.remove('open-state'); }
     }
   });
+  /* Ferme les panneaux workspace/portail du v2-header au clic extérieur —
+     même patron que .user-menu/.notif-panel/.fab-menu ci-dessus. */
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.v2-header-workspace-btn') && !e.target.closest('#v2-workspace-panel')) {
+      document.getElementById('v2-workspace-panel')?.classList.remove('open');
+    }
+    if (!e.target.closest('.v2-header-actions-btn') && !e.target.closest('#v2-portal-menu')) {
+      document.getElementById('v2-portal-menu')?.classList.remove('open');
+    }
+  });
 
   /* ═══════════════════════════════════════════════════════
      CMD+K PALETTE
@@ -2287,8 +2125,10 @@
 
   /* ═══════════════════════════════════════════════════════
      METRIC CARD — radial glow on mousemove
+     Reciblé sur .v2-grid-container (les .metric-card vivent désormais dans
+     les zones V2, plus dans #widget-grid — voir DASHBOARD_V2_MASTER_PLAN.md §7).
   ═══════════════════════════════════════════════════════ */
-  document.getElementById('widget-grid').addEventListener('mousemove', e => {
+  document.querySelector('.v2-grid-container').addEventListener('mousemove', e => {
     const card = e.target.closest('.metric-card');
     if (!card) return;
     const r = card.getBoundingClientRect();
