@@ -21,6 +21,7 @@
        thème clair pour ce cockpit). ── */
     [data-theme="dark"], [data-theme="light"] {
       --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
+      --overlay-scrim: rgba(0,0,0,.35);
     }
     .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
     /* Benchmark Vercel §3.1 : la classe .mono-num existait mais n'était appliquée
@@ -406,8 +407,8 @@
     .fab-item-ico{font-size:.9rem;}
 
     /* ── Cmd+K palette ── */
-    .palette-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
-    .palette-overlay.open{display:flex;}
+    .palette-overlay{position:fixed;inset:0;z-index:500;background:var(--overlay-scrim);backdrop-filter:none;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease,backdrop-filter .2s ease,visibility .2s;}
+    .palette-overlay.open{visibility:visible;opacity:1;pointer-events:auto;backdrop-filter:blur(4px);}
     .palette-box{background:var(--white);border:1px solid var(--border);border-radius:14px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);overflow:hidden;}
     .palette-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
     .palette-ico{color:var(--text-2);font-size:1rem;}
@@ -527,8 +528,8 @@
     }
 
     /* ── Barre de commande IA (simulée) ── */
-    .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;}
-    .ai-bar-overlay.open{display:flex;}
+    .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:var(--overlay-scrim);backdrop-filter:none;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease,backdrop-filter .2s ease,visibility .2s;}
+    .ai-bar-overlay.open{visibility:visible;opacity:1;pointer-events:auto;backdrop-filter:blur(4px);}
     .ai-bar-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3),var(--shadow-glow);overflow:hidden;position:relative;}
     .ai-bar-burst-canvas{position:absolute;inset:0;pointer-events:none;z-index:1;}
     .ai-bar-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
