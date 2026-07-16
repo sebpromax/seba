@@ -121,28 +121,16 @@
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-  <aside class="sidebar">
-    <div class="logo"><span class="logo-dot" id="logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-    <nav class="nav-section">
-      <a href="app/dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
-      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
-      <a href="planning.html"><div class="nav-item"><span class="dot"></span>Planning</div></a>
-      <a href="devis.html"><div class="nav-item"><span class="dot"></span>Devis</div></a>
-      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
-      <div class="nav-item active"><span class="dot"></span>Équipe</div>
-      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
-    </nav>
-    <div class="sidebar-footer" id="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
-  </aside>
-  <!-- Couleur de marque personnalisée (même bloc que clients.html/planning.html/
-       devis.html/factures.html) -- absent ici auparavant, ce qui faisait
-       "rester" cette page sur le vert par défaut pendant que les autres
-       suivaient la couleur choisie par l'entreprise, donnant l'impression
-       d'un changement de thème en naviguant. -->
+  <!-- Sidebar générée par sidebar.js (source unique de vérité) -- avant ce
+       correctif, cette page avait sa propre copie HTML (markup différent :
+       <a><div class="nav-item">, libellé "Vue d'ensemble" au lieu de
+       "Tableau de bord", pas de lien "Historique"). Voir docs/sidebar.js. -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
   <script>
     (function(){
       const c=localStorage.getItem('user_theme_color');
-      if(c){document.documentElement.style.setProperty('--emerald',c);const dot=document.getElementById('logo-dot');if(dot)dot.style.background=c;}
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
     })();
   </script>
 
@@ -335,10 +323,8 @@
   }
 
   // ── Init ──
-  try {
-    const biz = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-    if (biz.nom) document.getElementById('sidebar-footer').innerHTML = esc(biz.nom) + '<br>Compte de démonstration';
-  } catch(e) {}
+  // Le nom d'entreprise dans le pied de sidebar est désormais posé par
+  // sidebar.js (companyName()) -- plus besoin de le faire ici.
 
   render();
 </script>

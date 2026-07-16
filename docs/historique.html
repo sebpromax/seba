@@ -110,35 +110,18 @@
       <span></span><span></span><span></span>
     </button>
   </div>
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div><nav class="sidebar">
-    <div class="logo"><span class="logo-dot" id="logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-    <div class="nav-section">
-      <div class="nav-lbl">Principal</div>
-      <a href="app/dashboard.html" class="nav-item active"><span class="dot"></span>Tableau de bord</a>
-      <a href="clients.html" class="nav-item"><span class="dot"></span>Clients</a>
-      <a href="planning.html" class="nav-item"><span class="dot"></span>Planning</a>
-      <a href="devis.html" class="nav-item"><span class="dot"></span>Devis</a>
-      <a href="factures.html" class="nav-item"><span class="dot"></span>Factures</a>
-    </div>
-    <div class="nav-section">
-      <div class="nav-lbl">Équipe</div>
-      <a href="equipe.html" class="nav-item"><span class="dot"></span>Équipe</a>
-    </div>
-    <div class="nav-section">
-      <div class="nav-lbl">Compte</div>
-      <a href="reglages.html" class="nav-item"><span class="dot"></span>Réglages</a>
-    </div>
-    <div class="sidebar-footer">
-      <strong id="sidebar-company">Mon entreprise</strong>
-      Compte de démonstration
-    </div>
-  </nav>
-  <!-- Couleur de marque personnalisée (même bloc que clients.html/planning.html/
-       devis.html/factures.html) -- absent ici auparavant. -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité) -- avant ce
+       correctif, cette page n'avait PAS de lien "Historique" dans sa propre
+       nav (oubli), et affichait "Tableau de bord" comme actif en dur au
+       lieu de "Historique" -- symptôme le plus visible de la divergence
+       entre pages. Voir docs/sidebar.js. -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
   <script>
     (function(){
       const c=localStorage.getItem('user_theme_color');
-      if(c){document.documentElement.style.setProperty('--emerald',c);const dot=document.getElementById('logo-dot');if(dot)dot.style.background=c;}
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
     })();
   </script>
 

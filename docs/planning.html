@@ -118,32 +118,14 @@
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-  <aside class="sidebar">
-    <div class="logo"><span class="logo-dot" id="logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-    <nav>
-      <div class="nav-section" style="margin-bottom:4px;">
-        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Principal</div>
-        <a href="app/dashboard.html" class="nav-item"><span class="dot"></span>Tableau de bord</a>
-        <a href="clients.html" class="nav-item"><span class="dot"></span>Clients</a>
-        <a href="planning.html" class="nav-item active"><span class="dot"></span>Planning</a>
-        <a href="devis.html" class="nav-item"><span class="dot"></span>Devis</a>
-        <a href="factures.html" class="nav-item"><span class="dot"></span>Factures</a>
-      </div>
-      <div class="nav-section" style="margin-bottom:4px;">
-        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Équipe</div>
-        <a href="equipe.html" class="nav-item"><span class="dot"></span>Équipe</a>
-      </div>
-      <div class="nav-section">
-        <div style="font-size:.68rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;padding:0 14px 8px;">Compte</div>
-        <a href="reglages.html" class="nav-item"><span class="dot"></span>Réglages</a>
-      </div>
-    </nav>
-    <div class="sidebar-footer">Mon entreprise<br>Compte de démonstration</div>
-  </aside>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité) -- voir
+       docs/sidebar.js et le correctif équivalent sur clients.html. -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
   <script>
     (function(){
       const c=localStorage.getItem('user_theme_color');
-      if(c){document.documentElement.style.setProperty('--emerald',c);const dot=document.getElementById('logo-dot');if(dot)dot.style.background=c;}
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
     })();
   </script>
 
