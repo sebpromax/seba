@@ -70,8 +70,19 @@
         return;
       }
       if (this._destroyed) return; // détruit pendant le load() asynchrone
-      this.render();
-      this.onMount();
+      /* Isolation de pannes (P.Bulletproof, pilier 2) : render()/onMount()
+         sont synchrones et appelés depuis appendClassWidget() sans attendre
+         la promesse mount() — une exception ici ne remontait nulle part
+         (rejet de promesse non observé), laissant le widget dans un état
+         DOM à moitié construit sans message d'erreur. Même garde que le
+         load() ci-dessus, pour un widget cohérent dans tous les cas d'échec. */
+      try {
+        this.render();
+        this.onMount();
+      } catch (err) {
+        if (!this._destroyed) this.renderError(err);
+        return;
+      }
       this._attachResizeObserver();
     }
 

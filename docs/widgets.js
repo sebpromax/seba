@@ -2007,7 +2007,23 @@ function appendFunctionalWidget(zone, id, ctx, customizeMode) {
     (customizeMode ? '<button class="v2-widget-remove-btn" title="Retirer" onclick="onWidgetRemove(\'' + id + '\')">✕</button>' : '') +
     '</div><div class="v2-widget-content"></div>';
   zone.appendChild(container);
-  def.render(ctx, container.querySelector('.v2-widget-content'));
+  /* Isolation de pannes (P.Bulletproof, pilier 2) : def.render() est
+     synchrone et appelé dans le .forEach de mountV2Zone() — sans ce
+     try/catch, une exception dans UN widget interrompt le forEach et
+     empêche tous les widgets suivants (et les zones suivantes, appelées en
+     séquence par renderAllV2()) de se monter. Isole au widget concerné. */
+  try {
+    def.render(ctx, container.querySelector('.v2-widget-content'));
+  } catch (err) {
+    console.error('[Seba Error Boundary] Crash sur le widget "' + id + '":', err);
+    const contentEl = container.querySelector('.v2-widget-content');
+    if (contentEl) {
+      contentEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--critical,var(--amber));">' +
+        '<span style="font-size:1.2rem;">⚠️</span>' +
+        '<p style="margin:8px 0 0;font-size:.85rem;color:var(--text-2);">Ce widget est temporairement indisponible.</p>' +
+        '</div>';
+    }
+  }
 }
 /* Instances WidgetV2 actuellement montées (toutes zones confondues) — permet
    d'appeler onDestroy() (déconnexion ResizeObserver, .remove() Leaflet, etc.)

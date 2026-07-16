@@ -608,6 +608,21 @@
   <script src="../analytics-init.js" defer></script>
 </head>
 <body>
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;width:100%;background:var(--amber);color:var(--on-emerald);text-align:center;padding:6px;font-size:.8rem;font-weight:600;z-index:9999;">
+  Connexion perdue. Mode hors-ligne actif (vos modifications locales sont protégées).
+</div>
+<script>
+(function(){
+  window.addEventListener('offline', () => {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'block';
+  });
+  window.addEventListener('online', () => {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'none';
+  });
+})();
+</script>
 <script>
 (function(){
   const c=localStorage.getItem('user_theme_color');
