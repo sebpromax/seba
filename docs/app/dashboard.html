@@ -667,12 +667,6 @@
       <button type="button" class="v2-header-create-btn" onclick="if (typeof toggleFab === 'function') toggleFab();">+ Créer</button>
     </div>
   </header>
-  <div class="v2-grid-container">
-    <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
-    <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
-    <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
-    <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
-  </div>
 </div>
 
 <div class="app">
@@ -791,6 +785,17 @@
 
       <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
       <section class="horizon-section"><canvas id="horizon-line"></canvas></section>
+
+      <!-- ── Grille de widgets V2 (demande fondateur 2026-07-16) : déplacée sous
+           "Bonsoir" / Vecteurs d'action / Lignes d'Horizon, jugé plus logique
+           que ces sections apparaissent avant le détail des widgets. Le header
+           sticky (.v2-header-bar) reste en haut, seule cette grille bouge. -->
+      <div class="v2-grid-container">
+        <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
+        <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
+        <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
+        <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
+      </div>
 
     </div><!-- /dash-content -->
   </main>
