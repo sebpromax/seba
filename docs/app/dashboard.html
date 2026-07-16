@@ -89,7 +89,6 @@
     .dh-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
     .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
     .dh-meta { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--text-2); flex-wrap: wrap; }
-    .sector-badge { display: inline-flex; align-items: center; padding: 2px 9px; background: rgba(0,255,157,.12); color: var(--emerald); border-radius: 20px; font-size: .73rem; font-weight: 600; letter-spacing: .02em; }
     .clock-time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .84rem; color: var(--ink); letter-spacing: .04em; }
     .clock-tz { font-size: .71rem; color: var(--text-2); }
     .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -719,7 +718,6 @@
           <div>
             <div class="dh-greeting" id="greeting">Bonjour !</div>
             <div class="dh-meta">
-              <span class="sector-badge" id="sector-badge">—</span>
               <span id="topbar-date"></span>
               <span aria-hidden="true">·</span>
               <span class="clock-time" id="clock-time">--:--:--</span>
@@ -1388,7 +1386,6 @@
       const h = new Date().getHours();
       const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
       document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
-      document.getElementById('sector-badge').textContent = sectorLabel;
       document.getElementById('topbar-date').textContent =
         new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
       startClock(biz);

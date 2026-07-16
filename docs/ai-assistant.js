@@ -156,9 +156,12 @@
   /* ═══════════ Interface de chat ═══════════ */
   const css = document.createElement('style');
   css.textContent =
-    '.ai-chat-fab{position:fixed;bottom:28px;left:28px;width:52px;height:52px;border-radius:50%;background:var(--white,#fff);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}' +
+    /* right:28px (pas left) : évite de chevaucher le pied de sidebar
+       (nom d'entreprise/compte, en bas-gauche) -- même côté que .aura-stack
+       déjà repositionné à droite pour la même raison. */
+    '.ai-chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--white,#fff);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}' +
     '.ai-chat-fab:hover{transform:scale(1.08);box-shadow:0 0 0 3px rgba(0,200,150,.15),0 6px 24px rgba(0,0,0,.18);}' +
-    '.ai-chat-panel{position:fixed;bottom:92px;left:28px;width:340px;max-width:calc(100vw - 40px);max-height:60vh;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border,#E8E6E1);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);z-index:301;display:none;flex-direction:column;overflow:hidden;}' +
+    '.ai-chat-panel{position:fixed;bottom:92px;right:28px;width:340px;max-width:calc(100vw - 40px);max-height:60vh;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border,#E8E6E1);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);z-index:301;display:none;flex-direction:column;overflow:hidden;}' +
     '.ai-chat-panel.open{display:flex;animation:aiPanelIn .22s cubic-bezier(0,0,.2,1) both;}' +
     '@keyframes aiPanelIn{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}' +
     '.ai-chat-head{padding:13px 16px;border-bottom:1px solid var(--border,#E8E6E1);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;}' +

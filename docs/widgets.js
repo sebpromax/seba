@@ -170,7 +170,17 @@ function renderFinanceChartD3(wrapEl, series, sym, goalTarget) {
     .style('width', '100%').style('display', 'block').style('overflow', 'visible');
 
   const x = d3.scalePoint().domain(series.map(d => d.month)).range([PAD.left, W - PAD.right]);
-  const maxV = Math.max(d3.max(series, d => d.value), goalTarget > 0 ? goalTarget : 0);
+  /* L'objectif ne doit dominer l'échelle Y QUE s'il reste dans un ordre de
+     grandeur comparable aux données réelles (ici : au plus 3x le maximum
+     de la série). Un objectif de fin de mois très supérieur au CA actuel
+     (ex. 3500€ d'objectif vs 190€ de CA réel en tout début de mois)
+     écrasait sinon toute la courbe réelle tout en bas du graphique, la
+     rendant plate/illisible — l'écart CA/objectif est déjà visible sur le
+     widget "Objectif du mois" juste à côté, pas besoin de le dupliquer ici
+     au prix de la lisibilité de la tendance. */
+  const dataMax = d3.max(series, d => d.value) || 0;
+  const goalInScale = goalTarget > 0 && goalTarget <= dataMax * 3;
+  const maxV = Math.max(dataMax, goalInScale ? goalTarget : 0) || 1;
   const y = d3.scaleLinear().domain([0, maxV * 1.08]).range([H - PAD.bottom, PAD.top]);
 
   const defs = svg.append('defs');
@@ -184,7 +194,7 @@ function renderFinanceChartD3(wrapEl, series, sym, goalTarget) {
   svg.append('path').datum(series).attr('d', area).attr('fill', 'url(#d3-fin-fill)').attr('opacity', 0)
     .transition().duration(900).delay(350).attr('opacity', 1);
 
-  if (goalTarget > 0) {
+  if (goalInScale) {
     svg.append('line')
       .attr('x1', PAD.left).attr('x2', W - PAD.right)
       .attr('y1', y(goalTarget)).attr('y2', y(goalTarget))
@@ -504,7 +514,15 @@ class LotTourneeWidget extends WidgetV2 {
 class RecosWidget extends WidgetV2 {
   constructor(container, ctx) { super(container); this.ctx = ctx; this._data = null; }
   async load() { this._data = evaluateRules(this.ctx); }
-  render() { this.container.innerHTML = this._data.map(buildRecoItemHTML).join(''); }
+  render() {
+    /* Corps vide possible depuis que 'sector-seed' (secteur 'autre') se
+       masque une fois le compte actif (voir RULES) : un compte 'autre' sans
+       facture en retard ni devis bloqué peut se retrouver sans aucune règle
+       qui matche. */
+    this.container.innerHTML = this._data.length
+      ? this._data.map(buildRecoItemHTML).join('')
+      : '<div class="tl-empty">Aucune recommandation pour le moment — tout est à jour.</div>';
+  }
 }
 
 class GenericMediaReportWidget extends WidgetV2 {
@@ -1835,7 +1853,14 @@ const RULES = [
       return { cls: 'em', title: stuck.length + ' devis en attente depuis +7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher — relancez le client.', cta: 'Voir le pipeline', href: 'mutation-contextuelle.html' };
     } },
   { id: 'sector-seed', priority: 10,
-    when: () => true,
+    /* DEMO['autre'].recos ("Personnalisez votre espace", "Créez votre
+       premier devis") est un contenu de démarrage, pas une recommandation
+       métier évolutive comme les autres secteurs (menage, demenagement...).
+       Le masquer une fois que le compte a de vraies données évite de
+       traiter en boucle un artisan actif comme un nouvel inscrit — les
+       secteurs reconnus gardent leurs conseils, eux légitimement utiles en
+       continu. */
+    when: ctx => !(ctx.secteur === 'autre' && window.SebaDB && SebaDB.hasData()),
     build: ctx => ctx.demo.recos },
 ];
 
@@ -1997,7 +2022,7 @@ function appendFunctionalWidget(zone, id, ctx, customizeMode) {
   const def = window.WIDGET_CATALOG[id];
   if (!def) return;
   const container = document.createElement('div');
-  container.className = 'v2-widget-container';
+  container.className = 'v2-widget-container v2-size-' + (def.size || 'XL').toLowerCase();
   container.dataset.widgetId = id;
   container.innerHTML =
     '<div class="v2-widget-head">' +
@@ -2040,8 +2065,12 @@ function destroyV2ClassWidgets() {
 function appendClassWidget(zone, id, ctx, customizeMode) {
   const entry = V2_CLASS_WIDGETS[id];
   if (!entry || !entry.WidgetClass) return;
+  /* Le champ size vit dans WIDGET_CATALOG (source de vérité unique pour tout
+     le catalogue, y compris les widgets classe), pas dans V2_CLASS_WIDGETS
+     (qui ne porte que title/link/WidgetClass). */
+  const catalogEntry = window.WIDGET_CATALOG[id];
   const container = document.createElement('div');
-  container.className = 'v2-widget-container';
+  container.className = 'v2-widget-container v2-size-' + ((catalogEntry && catalogEntry.size) || 'XL').toLowerCase();
   container.dataset.widgetId = id;
   const title = entry.titleFor ? entry.titleFor(ctx) : entry.title;
   container.innerHTML =

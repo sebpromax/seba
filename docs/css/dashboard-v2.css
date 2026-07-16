@@ -155,6 +155,9 @@
 .v2-zone.v2-zone--has-widget {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: dense; /* comble les trous laissés par les widgets L/XL avec
+    les S/M suivants dans l'ordre de montage, plutôt que de forcer une ligne
+    vide sous chaque widget qui ne remplit pas exactement 12 colonnes. */
   gap: 16px;
   background: transparent;
   border: none;
@@ -165,6 +168,7 @@
   font-weight: inherit;
   letter-spacing: normal;
   text-transform: none;
+  text-align: left;
   align-items: stretch;
   justify-content: stretch;
 }
@@ -176,7 +180,7 @@
  * et conserve son apparence actuelle sans modification de pro-global.css
  * ni du <style> de dashboard.html. */
 .v2-widget-container {
-  grid-column: 1 / -1;
+  grid-column: 1 / -1; /* repli XL si le champ size est absent/inconnu */
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -185,6 +189,25 @@
   border: 1px solid var(--v2-widget-border);
   border-radius: 14px;
   overflow: hidden;
+}
+
+/* Tailles S/M/L/XL (champ `size` du catalogue, docs/widgets.js) — posées par
+ * appendFunctionalWidget()/appendClassWidget() au montage. grid-auto-flow:
+ * dense (ci-dessus) comble les lignes derrière les widgets qui ne font pas
+ * exactement 12 colonnes. Sous 900px, chaque taille repasse en pleine
+ * largeur (voir media query plus bas) : pas de mise en page en colonnes sur
+ * mobile/tablette étroite. */
+.v2-widget-container.v2-size-s { grid-column: span 3; }
+.v2-widget-container.v2-size-m { grid-column: span 4; }
+.v2-widget-container.v2-size-l { grid-column: span 6; }
+.v2-widget-container.v2-size-xl { grid-column: span 12; }
+@media (max-width: 900px) {
+  .v2-widget-container.v2-size-s,
+  .v2-widget-container.v2-size-m,
+  .v2-widget-container.v2-size-l,
+  .v2-widget-container.v2-size-xl {
+    grid-column: span 12;
+  }
 }
 
 .v2-widget-head {
