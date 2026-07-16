@@ -124,7 +124,7 @@
 
     /* ── Graphique D3 : conteneur + tooltip ── */
     .bc-d3-wrap { flex: 1; margin-top: 12px; position: relative; min-height: 0; }
-    .d3-fin-tip { position: absolute; transform: translateX(-50%); background: var(--surface-inverse); border: 1px solid var(--border); color: var(--emerald); font-size: .72rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none; box-shadow: var(--shadow-md); z-index: 5; }
+    .d3-fin-tip { position: absolute; transform: translateX(-50%); background: var(--surface-inverse); border: 1px solid var(--border); color: var(--emerald); font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: .72rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none; box-shadow: var(--shadow-md); z-index: 5; }
     .d3-fin-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--surface-inverse); }
 
     /* ── Mini-sparkline des metric cards (posée en fond bas-droit, ne pousse pas le layout) ── */
@@ -210,6 +210,7 @@
     .ws-label { color: var(--text-2); font-size: .76rem; }
     .ws-val { font-weight: 500; }
     .ws-val.link { color: var(--emerald); }
+    .ws-val.warn { color: var(--amber); }
 
     /* ── Portal ── */
     .portal-block { padding: 14px 16px; }
@@ -308,7 +309,7 @@
       border: 1px solid var(--border);
       border-radius: var(--r);
       opacity: 0; transform: translateY(16px) scale(.92);
-      transition: opacity .4s var(--ease-out), transform .4s cubic-bezier(.34,1.56,.64,1);
+      transition: opacity .4s var(--ease-out), transform .4s cubic-bezier(0.22,1,.36,1);
       animation: auraPulse 3.2s ease-in-out infinite;
     }
     .aura-card.visible { opacity: 1; transform: translateY(0) scale(1); }

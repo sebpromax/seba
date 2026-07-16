@@ -449,7 +449,7 @@ class LotImpayesWidget extends WidgetV2 {
     const total = list.reduce((s, c) => s + c.montant, 0);
     this.container.innerHTML = '<div class="ws-row"><span class="ws-label">' + list.length + ' facture(s) en retard</span><span class="ws-val">' + total.toLocaleString('fr-FR') + ' €</span></div>' +
       list.slice(0, 3).map(c =>
-        '<div class="ws-row"><span class="ws-label">' + esc(c.client) + '</span><span class="ws-val" style="color:#FFB800">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
+        '<div class="ws-row"><span class="ws-label">' + esc(c.client) + '</span><span class="ws-val warn">' + (c.montant).toLocaleString('fr-FR') + ' € · ' + (RELANCE_LABELS[c.relanceStep] || '') + '</span></div>'
       ).join('');
   }
 }
