@@ -13,6 +13,27 @@
  * master plan. Ne pas coder en dur la palette violette avant cet arbitrage.
  */
 
+/* ── Skeleton / shimmer (P1.1, ticket #4) ──────────────────────────────────
+ * Nommé .v2-skeleton (pas .seba-skeleton) pour respecter la règle
+ * d'isolation de ce fichier ci-dessus (uniquement des classes .v2-).
+ * Utilise --white/--border, déjà résolus dans le contexte dashboard.html
+ * (--white en override Tactical Dark local, --border hérité de
+ * src/ui/theme.css) — aucun nouveau token nécessaire. */
+.v2-skeleton {
+  background: linear-gradient(90deg, var(--white) 25%, var(--border) 50%, var(--white) 75%);
+  background-size: 200% 100%;
+  animation: v2-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+  display: inline-block;
+  width: 100%;
+  height: 1.2em;
+  pointer-events: none;
+}
+@keyframes v2-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 :root {
   /* Tokens de squelette V2 — placeholders uniquement (Phase 1). Palette
    * provisoire, distincte de --bg/--emerald (Tactical Dark Absolu) et de

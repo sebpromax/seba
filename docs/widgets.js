@@ -1694,7 +1694,10 @@ window.WIDGET_CATALOG = {
     keywords: ['marge', 'marge réelle', 'rentabilité', 'coût intervention', 'bénéfice'],
     defaultVisible: false, defaultOrder: 26, link: { href: '../planning.html', label: 'Voir les interventions →' },
     async render(ctx, el) {
-      el.innerHTML = '<div class="bc-pad"><div class="metric-label">Calcul de la marge en cours…</div></div>';
+      el.innerHTML = '<div class="bc-pad">' +
+        '<div class="v2-skeleton" style="width:40%;height:24px;margin-bottom:8px;"></div>' +
+        '<div class="v2-skeleton" style="width:70%;height:14px;"></div>' +
+        '</div>';
       let data;
       try {
         data = window.SebaWidgetAPI ? await window.SebaWidgetAPI.getMargeReelle(ctx) : null;
