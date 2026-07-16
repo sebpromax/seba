@@ -1329,9 +1329,24 @@
     const bt       = window.businessTypes || {};
     const sectorLabel = (bt[secteur] || {}).label || secteur;
     const sym = biz.deviseSymbole || '€';
-    /* Données réelles du compte si le moteur en a, sinon démo du secteur */
+    /* Données réelles du compte si le moteur en a, sinon démo du secteur.
+       Filet de sécurité (post-mortem "4 blocs placeholder V2 bloqués en
+       prod") : buildLiveData() lit des données réelles imprévisibles
+       (interventions/factures/clients saisis à la main) — une seule valeur
+       manquante y a déjà fait remonter une exception jusqu'ici, empêchant
+       tout le reste de renderDashboard() (dont renderAllV2()) de s'exécuter
+       et laissant les 4 zones V2 bloquées sur leur texte de squelette brut.
+       Un repli sur demoFallback vaut mieux qu'un dashboard entièrement
+       cassé pour une seule donnée mal formée. */
     const demoFallback = DEMO[secteur] || DEMO['autre'];
-    const demo = (window.SebaDB && SebaDB.hasData()) ? buildLiveData(demoFallback, sym) : demoFallback;
+    let demo = demoFallback;
+    if (window.SebaDB && SebaDB.hasData()) {
+      try {
+        demo = buildLiveData(demoFallback, sym);
+      } catch (err) {
+        console.error('[Seba Error Boundary] buildLiveData() a échoué, repli sur les données démo :', err);
+      }
+    }
 
     /* Header */
     const h = new Date().getHours();

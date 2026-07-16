@@ -503,7 +503,7 @@
         clientsTotal: state.clients.length,
         devisAttente: state.devis.filter(d => d.status === 'attente').length,
         facturesRetard: state.factures.filter(f => f.status === 'retard').length,
-        interventionsJour: state.interventions.filter(i => i.date === today).sort((a, b) => a.time.localeCompare(b.time)),
+        interventionsJour: state.interventions.filter(i => i.date === today).sort((a, b) => (a.time || '').localeCompare(b.time || '')),
       };
     },
 
