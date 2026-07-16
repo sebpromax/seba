@@ -61,7 +61,7 @@
 
 .v2-grid-container {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
   box-sizing: border-box;
 }
@@ -113,7 +113,7 @@
  * placeholder Phase 1 tant qu'aucun widget n'y est monté. */
 .v2-zone.v2-zone--has-widget {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
   background: transparent;
   border: none;

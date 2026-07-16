@@ -730,7 +730,7 @@
             <span class="wc-text">Simuler la création de votre premier devis</span>
             <span class="wc-cta">Créer →</span>
           </a>
-          <div class="wc-item clickable" id="wci-2" onclick="checkItem(2)">
+          <div class="wc-item clickable" id="wci-2" role="button" tabindex="0" onclick="checkItem(2)" onkeydown="if(event.key==='Enter'||event.key===' '){checkItem(2);event.preventDefault();}">
             <div class="wc-check"><span class="wc-check-ico">✓</span></div>
             <span class="wc-text">Copier votre lien public et le partager</span>
             <span class="wc-cta">Copier →</span>
@@ -795,9 +795,9 @@
 
 <!-- Panneau Personnaliser (bibliothèque de widgets) -->
 <div class="customize-panel-overlay" id="customize-panel-overlay" onclick="closeCustomizePanel()"></div>
-<div class="customize-panel" id="customize-panel">
+<div class="customize-panel" id="customize-panel" role="dialog" aria-modal="true" aria-labelledby="cp-title" tabindex="-1">
   <div class="cp-head">
-    <span class="cp-title">Personnaliser le dashboard</span>
+    <span class="cp-title" id="cp-title">Personnaliser le dashboard</span>
     <button class="cp-close" onclick="closeCustomizePanel()" aria-label="Fermer">✕</button>
   </div>
   <div class="cp-body" id="cp-body"></div>
@@ -819,7 +819,7 @@
 
 <!-- Barre de commande IA (simulée, 100% côté client) -->
 <div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
-  <div class="ai-bar-box" onclick="event.stopPropagation()">
+  <div class="ai-bar-box" id="ai-bar-box" role="dialog" aria-modal="true" aria-label="Barre de commande IA" tabindex="-1" onclick="event.stopPropagation()">
     <canvas class="ai-bar-burst-canvas" id="ai-bar-burst-canvas"></canvas>
     <div class="ai-bar-inp-wrap">
       <span class="ai-bar-ico">✨</span>
@@ -832,8 +832,8 @@
 
 <!-- Aide raccourcis clavier -->
 <div class="shortcuts-overlay" id="shortcuts-overlay" onclick="closeShortcuts(event)">
-  <div class="shortcuts-box" onclick="event.stopPropagation()">
-    <h3>Raccourcis clavier</h3>
+  <div class="shortcuts-box" id="shortcuts-box" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" tabindex="-1" onclick="event.stopPropagation()">
+    <h3 id="shortcuts-title">Raccourcis clavier</h3>
     <div class="shortcut-row"><span>Ouvrir la recherche</span><span class="pal-key">⌘K</span></div>
     <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
     <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
@@ -1351,11 +1351,40 @@
     const b = document.getElementById('cp-body');
     if (b) b.innerHTML = buildLibraryPanelHTML();
   }
+  /* Piège de focus (P0.2) : contient Tab/Shift+Tab à l'intérieur d'une modale
+     ouverte. Les éléments focusables sont recalculés à chaque Tab (pas figés
+     à l'ouverture) car le contenu du panneau Personnaliser est reconstruit
+     dynamiquement par refreshLibraryPanel(). Idempotent : n'attache le
+     listener qu'une fois par élément (dataset.trapBound), sinon chaque
+     ouverture empilerait un nouveau listener keydown. */
+  function setupFocusTrap(modalEl) {
+    if (!modalEl) return;
+    const getFocusable = () => modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex="0"]');
+    if (modalEl.dataset.trapBound !== '1') {
+      modalEl.dataset.trapBound = '1';
+      modalEl.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab') return;
+        const focusableEls = getFocusable();
+        const firstFocusable = focusableEls[0];
+        const lastFocusable = focusableEls[focusableEls.length - 1];
+        if (!firstFocusable) { e.preventDefault(); return; }
+        if (e.shiftKey) {
+          if (document.activeElement === firstFocusable) { lastFocusable.focus(); e.preventDefault(); }
+        } else {
+          if (document.activeElement === lastFocusable) { firstFocusable.focus(); e.preventDefault(); }
+        }
+      });
+    }
+    const focusableEls = getFocusable();
+    if (focusableEls[0]) focusableEls[0].focus();
+    else modalEl.focus();
+  }
   function openCustomizePanel() {
     refreshLibraryPanel();
     document.getElementById('customize-panel-overlay').classList.add('open');
     document.getElementById('customize-panel').classList.add('open');
     if (!_customizeMode) toggleCustomizeMode();
+    setupFocusTrap(document.getElementById('customize-panel'));
   }
   function closeCustomizePanel() {
     document.getElementById('customize-panel-overlay').classList.remove('open');
@@ -1388,7 +1417,8 @@
     document.getElementById('ai-bar-overlay').classList.add('open');
     const inp = document.getElementById('ai-bar-inp');
     document.getElementById('ai-bar-results').textContent = 'Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.';
-    if (inp) { inp.value = ''; inp.focus(); }
+    if (inp) inp.value = '';
+    setupFocusTrap(document.getElementById('ai-bar-box'));
   }
   function closeAiBar(e) {
     if (e && e.target !== document.getElementById('ai-bar-overlay')) return;
@@ -1425,7 +1455,10 @@
   /* ═══════════════════════════════════════════════════════
      AIDE RACCOURCIS
   ═══════════════════════════════════════════════════════ */
-  function openShortcuts() { document.getElementById('shortcuts-overlay').classList.add('open'); }
+  function openShortcuts() {
+    document.getElementById('shortcuts-overlay').classList.add('open');
+    setupFocusTrap(document.getElementById('shortcuts-box'));
+  }
   function closeShortcuts(e) {
     if (e && e.target !== document.getElementById('shortcuts-overlay')) return;
     document.getElementById('shortcuts-overlay').classList.remove('open');
@@ -2029,7 +2062,7 @@
           recentItems.forEach(it => {
             const idx = _palFiltered.length;
             _palFiltered.push(it);
-            html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" onclick="palGo(' + idx + ')">' +
+            html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" role="button" tabindex="0" onclick="palGo(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){palGo(' + idx + ');event.preventDefault();}">' +
               '<div class="pal-item-ico" style="background:rgba(0,255,157,.1);">🕐</div>' +
               '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
               '</div>';
@@ -2046,7 +2079,7 @@
       matches.forEach(it => {
         const idx = _palFiltered.length;
         _palFiltered.push(it);
-        html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" onclick="palGo(' + idx + ')">' +
+        html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" role="button" tabindex="0" onclick="palGo(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){palGo(' + idx + ');event.preventDefault();}">' +
           '<div class="pal-item-ico">' + it.ico + '</div>' +
           '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
           '</div>';
