@@ -297,9 +297,14 @@
        elle-même laisse passer les clics (pointer-events:none) ; seules les cartes
        réellement visibles interceptent les clics qui leur sont destinés. */
     .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 300px; max-height: 46vh; overflow: hidden; pointer-events: none; }
-    @media (min-width: 841px) { .aura-stack { left: auto; right: 24px; } }
+    /* Repli à droite (right:24px) dès que la sidebar redevient une colonne fixe
+       (.app bascule à 760px, voir media query "Responsive" plus bas) — un
+       ancien seuil à 841px créait une fenêtre 761-840px où la sidebar est
+       déjà pleine largeur (220px) mais .aura-stack restait encore à
+       left:24px, la faisant chevaucher le pied de sidebar (nom d'entreprise). */
+    @media (min-width: 761px) { .aura-stack { left: auto; right: 24px; } }
     .aura-stack-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 0 2px 2px; display: none; }
-    @media (min-width: 841px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
+    @media (min-width: 761px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
     /* Mobile : encore plus contenue, pour ne jamais masquer la Welcome Checklist
        (avant ce correctif, la pile recouvrait ~60% de la hauteur d'écran). */
     @media (max-width: 840px) { .aura-stack { max-height: 34vh; max-width: 260px; } }
