@@ -73,11 +73,24 @@
   /* Tokens pour le chrome ajouté en §7 (retrait/déroulants du header). */
   --v2-widget-remove-hover: #FFB800;
   --v2-dropdown-shadow: rgba(0, 0, 0, 0.4);
+
+  /* Hauteur totale du bandeau fixe (header ~57px + padding vertical du
+   * wrapper 24px+24px) = 105px. Utilisé ici pour positionner le wrapper et
+   * dans dashboard.html pour décaler .app/.sidebar d'autant (voir demande
+   * fondateur "bandeau + sidebar fixes, seul le reste scrolle"). Une seule
+   * source de vérité pour éviter que les deux dérivent l'un de l'autre. */
+  --v2-fixed-header-space: 105px;
 }
 
 .v2-dashboard-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   padding: 24px;
   box-sizing: border-box;
+  background: var(--bg);
 }
 
 .v2-grid-container {
@@ -229,21 +242,22 @@
   color: var(--v2-widget-remove-hover);
 }
 
-/* ── Header V2 — barre sticky, hors de la grille 12 colonnes ───────────────
- * position:sticky (pas fixed) : `#v2-header` est un enfant de
- * `#v2-dashboard-skeleton`, lui-même empilé au-dessus de `.app` (V1) dans un
- * flux de page unique et continu (pas de conteneur à scroll interne). Un
- * `position:fixed` resterait affiché EN PERMANENCE par-dessus le contenu V1
- * une fois qu'on scrolle au-delà du squelette V2 — sticky se détache
- * naturellement dès que `#v2-dashboard-skeleton` (son bloc englobant) sort
- * du viewport, donc le header ne masque le V1 QUE pendant que du contenu V2
- * est visible ("pendant la transition", pas indéfiniment).
- * z-index élevé (1000) : au-dessus du FAB V1 (300) et du canvas confetti
- * (499) au cas où l'un des deux serait visible en même temps. */
+/* ── Header V2 — barre fixe, hors de la grille 12 colonnes ─────────────────
+ * Historique : ce bandeau était en position:sticky tant qu'il partageait
+ * `#v2-dashboard-skeleton` avec `.v2-grid-container` (bloc englobant haut de
+ * plusieurs centaines de px, laissant une longue plage de scroll avant que
+ * sticky ne "décroche" naturellement). Depuis que la grille a été déplacée
+ * plus bas dans #dash-content (demande fondateur 2026-07-16), ce bloc ne
+ * contient plus que le header : sa hauteur réelle tombe à ~105px, et sticky
+ * décrochait donc après seulement 105px de scroll — le bandeau défilait avec
+ * le reste de la page au lieu de rester visible. Demande explicite du
+ * fondateur : bandeau ET sidebar fixes en permanence, seul le contenu
+ * scrolle. Le position:fixed vit maintenant sur `.v2-dashboard-wrapper`
+ * (le parent), voir plus haut — ce bloc ne porte plus que le style visuel.
+ * z-index élevé (1000, porté par le wrapper) : au-dessus du FAB V1 (300) et
+ * du canvas confetti (499) au cas où l'un des deux serait visible en même
+ * temps. */
 .v2-header-bar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;

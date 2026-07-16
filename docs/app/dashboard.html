@@ -46,10 +46,23 @@
     a { color: inherit; text-decoration: none; }
 
     /* ── App layout ── */
-    .app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
+    /* margin-top = --v2-fixed-header-space (dashboard-v2.css) : le bandeau V2
+       est maintenant position:fixed (demande fondateur, voir commentaire
+       .v2-header-bar dans dashboard-v2.css) et sort donc du flux normal —
+       sans ce décalage, la sidebar et le contenu démarreraient sous le
+       bandeau au lieu de commencer juste en dessous. */
+    .app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; margin-top: var(--v2-fixed-header-space); }
 
     /* ── Sidebar ── */
     /* position/height/responsive behavior fournis par pro-global.css (base sticky + bascule mobile fixed) */
+    /* Décalage desktop uniquement (même seuil que le repli mobile de
+       pro-global.css, 840/841px) : la sidebar doit démarrer sous le bandeau
+       fixe, pas à top:0, sinon elle passerait derrière lui pendant le
+       scroll. Sur mobile, pro-global.css bascule .sidebar en tiroir plein
+       écran (position:fixed inset haut/bas) — non concerné par ce décalage. */
+    @media (min-width: 841px) {
+      .sidebar { top: var(--v2-fixed-header-space); height: calc(100vh - var(--v2-fixed-header-space)); }
+    }
     .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
     .s-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
     .nav-group { padding: 0 10px; margin-bottom: 8px; }
