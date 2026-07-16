@@ -1354,11 +1354,25 @@ function dismissAuraNotification(card, validated, message) {
   }, { once: true });
 }
 
+/* Suivi global des minuteurs de démo Aura (P3.1, ticket #5). triggerAuraDemo()
+   n'est plus auto-déclenchée en production (audit 2026-07-07, §1.1) mais
+   reste appelée manuellement par scripts/qa-dashboard-full.js — qui l'invoque
+   deux fois dans la même session de page. Sans nettoyage, un second appel
+   empile un second jeu de setTimeout par-dessus le premier encore en attente,
+   produisant des notifications fantômes en double. */
+window.sebaActiveTimers = window.sebaActiveTimers || [];
+window.clearAllSebaTimers = function() {
+  window.sebaActiveTimers.forEach(id => clearTimeout(id));
+  window.sebaActiveTimers = [];
+};
+
 /* Déclenche les scénarios de démonstration, décalés pour rester non
    intrusif (elles n'arrivent pas toutes en même temps à l'ouverture). */
 function triggerAuraDemo() {
+  window.clearAllSebaTimers();
   AURA_TEST_SCENARIOS.forEach((s, i) => {
-    setTimeout(() => showAuraNotification(s.message, s.probability), 2500 + i * 3500);
+    const id = setTimeout(() => showAuraNotification(s.message, s.probability), 2500 + i * 3500);
+    window.sebaActiveTimers.push(id);
   });
 }
 

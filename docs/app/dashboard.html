@@ -575,6 +575,26 @@
     body.focus-active .v2-header-bar, body.focus-active .v2-grid-container {
       opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
     }
+
+    /* Sobriété de mouvement (P3.2, ticket #17) — neutralise toutes les
+       animations/transitions du cockpit (y compris calibFlash, auraPulse,
+       le shimmer .v2-skeleton) pour les utilisateurs ayant activé la
+       réduction des animations au niveau système. Posé ici plutôt que dans
+       dashboard-v2.css, dont l'en-tête interdit les sélecteurs non préfixés
+       .v2- (un `*` global y contredirait la règle d'isolation du fichier). */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-delay: -1ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0s !important;
+        scroll-behavior: auto !important;
+      }
+      .v2-skeleton {
+        background: var(--border) !important;
+        animation: none !important;
+      }
+    }
   </style>
   <link rel="icon" type="image/jpeg" href="../favicon.jpg">
   <link rel="manifest" href="../manifest.json">
