@@ -327,19 +327,27 @@
     list.forEach(c => {
       const slug = encodeURIComponent(c.prenom + ' ' + c.nom);
       const href = 'client-fiche.html?nom=' + slug + '&id=' + encodeURIComponent(c.id);
-      const canOpen = c.statut === 'actif';
+      /* La fiche doit être ouvrable pour TOUT client, quel que soit son
+         statut -- "attente"/"relance" sont des étiquettes de suivi commercial
+         (devis envoyé / facture en retard), pas un verrou d'accès. Avant ce
+         correctif, canOpen===false (le cas de tout client nouvellement créé,
+         statut par défaut 'attente') retirait le lien "Ouvrir" et remplaçait
+         le clic sur la ligne par "Relancer" -- aucun client fraîchement
+         ajouté ne pouvait donc jamais consulter sa propre fiche. "Relancer"
+         reste disponible en plus, pas à la place. */
+      const needsRelance = c.statut === 'attente' || c.statut === 'relance';
       const cJson = JSON.stringify(c).replace(/"/g,'&quot;');
       const tr = document.createElement('tr');
       tr.className = 'client-row';
-      if (canOpen) tr.onclick = () => location.href = href;
-      else tr.onclick = () => relancer(c);
+      tr.onclick = () => location.href = href;
       tr.innerHTML =
         '<td><div class="client-name"><div class="mini-avatar">' + initials(c) + '</div>' + esc(c.prenom) + ' ' + esc(c.nom) + '</div></td>' +
         '<td>' + esc(c.contact) + '</td>' +
         '<td>' + esc(c.service) + '</td>' +
         '<td class="ca-cell">' + (c.ca > 0 ? c.ca + ' ' + sym : '—') + '</td>' +
         '<td><span class="badge ' + BADGE[c.statut] + '">' + BADGE_LBL[c.statut] + '</span></td>' +
-        '<td class="row-action">' + (canOpen ? '<a href="' + href + '">Ouvrir</a>' : '<span onclick="event.stopPropagation();relancer(' + cJson + ')">Relancer</span>') +
+        '<td class="row-action"><a href="' + href + '">Ouvrir</a>' +
+        (needsRelance ? ' · <span onclick="event.stopPropagation();relancer(' + cJson + ')">Relancer</span>' : '') +
         ' · <span onclick="event.stopPropagation();supprimerClient(' + cJson + ')" style="color:var(--text-2)" title="Supprimer ce client">Supprimer</span></td>';
       tbody.appendChild(tr);
     });

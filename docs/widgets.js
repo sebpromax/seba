@@ -1593,7 +1593,7 @@ window.WIDGET_CATALOG = {
      GoalWidget/V2_CLASS_WIDGETS ci-dessus). render() retiré (retrait pur). */
   'goal': { id: 'goal', title: 'Objectif du mois', size: 'M', category: 'core', source: 'demo',
     keywords: ['objectif', 'objectif du mois', 'progression'],
-    defaultVisible: true, defaultOrder: 10, link: { href: 'factures.html', label: 'Factures →' } },
+    defaultVisible: true, defaultOrder: 10, link: { href: '../factures.html', label: 'Factures →' } },
 
   /* Migré vers le v2-header (zone gauche, panneau déroulant — voir
      WorkspaceWidget/mountWorkspaceV2 plus haut, DASHBOARD_V2_MASTER_PLAN.md
@@ -1808,26 +1808,31 @@ function buildLiveData(demoFallback, sym) {
   return {
     metrics: [
       { label: 'CA ce mois', value: fmtVal(m.caMois), unit: sym,
-        delta: caDelta !== null ? (caDelta >= 0 ? '+' : '') + caDelta + '% vs mois der.' : 'encaissé ce mois', up: caDelta === null || caDelta >= 0, href: 'factures.html' },
+        delta: caDelta !== null ? (caDelta >= 0 ? '+' : '') + caDelta + '% vs mois der.' : 'encaissé ce mois', up: caDelta === null || caDelta >= 0, href: '../factures.html' },
       { label: 'Interventions', value: String(m.interventionsMois), unit: '',
-        delta: m.interventionsJour.length + " aujourd'hui", up: true, href: 'planning.html' },
+        delta: m.interventionsJour.length + " aujourd'hui", up: true, href: '../planning.html' },
       { label: 'Clients actifs', value: String(m.clientsActifs), unit: '',
-        delta: clientsNouveaux ? '+' + clientsNouveaux + ' ce mois' : 'sur ' + m.clientsTotal + ' clients', up: true, href: 'clients.html' },
+        delta: clientsNouveaux ? '+' + clientsNouveaux + ' ce mois' : 'sur ' + m.clientsTotal + ' clients', up: true, href: '../clients.html' },
       { label: 'Devis en attente', value: String(m.devisAttente), unit: '',
-        delta: devisVieux ? devisVieux + ' à relancer' : 'à jour', up: devisVieux === 0, href: 'devis.html' },
+        delta: devisVieux ? devisVieux + ' à relancer' : 'à jour', up: devisVieux === 0, href: '../devis.html' },
     ],
     timeline: m.interventionsJour.map(i => ({
       time: i.time, done: !!i.done, type: 'intervention',
       label: i.service + ' — ' + i.clientName,
-      sub: i.done ? 'Terminé' : 'À venir', href: 'planning.html',
+      sub: i.done ? 'Terminé' : 'À venir', href: '../planning.html',
     })),
+    /* e.href (SebaDB.log(), écrit par clients.html/devis.html/factures.html/...)
+       est toujours relatif à la racine docs/ (ex. 'clients.html') -- correct
+       pour historique.html (même racine), 404 depuis dashboard.html
+       (docs/app/). Préfixé ici, seul point qui affiche ce journal dans
+       docs/app/. */
     activity: DB.journal(4).map(e => ({
       type: e.type === 'facture' ? 'paiement' : e.type,
-      label: e.label, time: relativeTime(e.ts), href: e.href || 'historique.html',
+      label: e.label, time: relativeTime(e.ts), href: '../' + (e.href || 'historique.html'),
     })),
     recos: demoFallback.recos,
     team: DB.list('employes').map(e => ({
-      name: e.prenom + ' ' + e.nom, role: e.role, working: !!e.actif, href: 'equipe.html',
+      name: e.prenom + ' ' + e.nom, role: e.role, working: !!e.actif, href: '../equipe.html',
     })),
     goal: { label: 'CA mensuel', current: m.caMois, target: demoFallback.goal.target || 3500, unit: sym },
   };
@@ -1844,13 +1849,13 @@ const RULES = [
       const late = ctx.creances.filter(c => c.relanceStep >= 2);
       const n = late.length;
       const total = late.reduce((s, c) => s + c.montant, 0);
-      return { cls: 'am', title: n + ' facture(s) en retard sérieux', desc: total.toLocaleString('fr-FR') + ' € en attente depuis plus de 60 jours. Relancez maintenant.', cta: 'Relancer', href: 'contentieux-recouvrement.html' };
+      return { cls: 'am', title: n + ' facture(s) en retard sérieux', desc: total.toLocaleString('fr-FR') + ' € en attente depuis plus de 60 jours. Relancez maintenant.', cta: 'Relancer', href: '../contentieux-recouvrement.html' };
     } },
   { id: 'devis-stuck', priority: 60,
     when: ctx => (ctx.mutationDocs || []).some(d => d.stage === 'devis' && daysSince(parseFrDate(d.date)) > 7),
     build: ctx => {
       const stuck = ctx.mutationDocs.filter(d => d.stage === 'devis' && daysSince(parseFrDate(d.date)) > 7);
-      return { cls: 'em', title: stuck.length + ' devis en attente depuis +7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher — relancez le client.', cta: 'Voir le pipeline', href: 'mutation-contextuelle.html' };
+      return { cls: 'em', title: stuck.length + ' devis en attente depuis +7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher — relancez le client.', cta: 'Voir le pipeline', href: '../mutation-contextuelle.html' };
     } },
   { id: 'sector-seed', priority: 10,
     /* DEMO['autre'].recos ("Personnalisez votre espace", "Créez votre
@@ -1972,7 +1977,7 @@ const V2_CLASS_WIDGETS = {
   'lot-carte': { title: 'Carte des interventions', link: { href: '../planning.html', label: 'Planning →' }, WidgetClass: LotCarteWidgetV2 },
   'metric-1': { title: 'Métrique activité', WidgetClass: Metric1Widget },
   'metric-3': { title: 'Métrique devis', WidgetClass: Metric3Widget },
-  'goal': { title: 'Objectif du mois', link: { href: 'factures.html', label: 'Factures →' }, WidgetClass: GoalWidget },
+  'goal': { title: 'Objectif du mois', link: { href: '../factures.html', label: 'Factures →' }, WidgetClass: GoalWidget },
   'lot-impayes': { title: 'Factures en retard', link: { href: '#', label: 'Recouvrement →' }, WidgetClass: LotImpayesWidget },
   'lot-pipeline': { title: 'Pipeline devis → facture → encaissé', link: { href: '#', label: 'Pipeline complet →' }, WidgetClass: LotPipelineWidget },
   'lot-tournee': { title: 'Tournée du jour', link: { href: '#', label: 'Optimiser →' }, WidgetClass: LotTourneeWidget },

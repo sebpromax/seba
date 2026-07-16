@@ -448,6 +448,95 @@
       (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
   }
 
+  /* ── Branchement SebaDB (corrige : la fiche affichait toujours les mêmes
+     données factices "Sophie Lacroix" quel que soit le client réellement
+     ouvert — CA, historique, devis/factures, adresse, statut). Seule la
+     suppression touchait déjà SebaDB ; tout le reste vient maintenant du
+     client réel identifié par ?id=. ── */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtDateFr(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  const STATUT_BADGE = { actif: ['actif', 'Actif'], attente: ['attente', 'Devis envoyé'], relance: ['relance', 'Facture en retard'] };
+  const FACT_BADGE = { payee: ['signe', 'Payée'], attente: ['attente', 'En attente'], retard: ['relance', 'En retard'] };
+  const DEVIS_BADGE = { signe: ['signe', 'Signé'], attente: ['attente', 'En attente'], expire: ['expire', 'Expiré'] };
+
+  (function loadRealClient() {
+    if (!window.SebaDB || !_id) return; // pas d'id -> reste le squelette de démo statique
+    const client = SebaDB.list('clients').find(c => c.id === _id);
+    if (!client) return;
+
+    // En-tête : badge de statut réel + contact réel (email si @ dedans, sinon tel).
+    const badgeEl = document.querySelector('.client-name-row .badge');
+    const [bCls, bLbl] = STATUT_BADGE[client.statut] || STATUT_BADGE.attente;
+    badgeEl.className = 'badge ' + bCls;
+    badgeEl.textContent = bLbl;
+    const contactEl = document.querySelector('.client-contact');
+    const contact = client.contact || '—';
+    contactEl.innerHTML = contact.includes('@')
+      ? '<a href="mailto:' + esc(contact) + '">' + esc(contact) + '</a>'
+      : (contact !== '—' ? '<a href="tel:' + esc(contact.replace(/\s+/g, '')) + '">' + esc(contact) + '</a>' : '—');
+
+    // Interventions/devis/factures réellement liés à ce client (clientId).
+    const interventions = (SebaDB.list('interventions') || []).filter(i => i.clientId === _id)
+      .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    const devisList = (SebaDB.list('devis') || []).filter(d => d.clientId === _id);
+    const facturesList = (SebaDB.list('factures') || []).filter(f => f.clientId === _id);
+
+    // Stats : CA total = somme des factures payées (plus fiable que client.ca,
+    // qui n'est mis à jour nulle part au fil des paiements).
+    const caTotal = facturesList.filter(f => f.status === 'payee').reduce((s, f) => s + (f.amount || 0), 0);
+    document.querySelector('.stat-card .svalue.moss').textContent = caTotal.toLocaleString('fr-FR') + ' €';
+    document.querySelectorAll('.stat-card .svalue')[1].textContent = String(interventions.length);
+
+    // Historique des interventions.
+    const histBody = document.querySelectorAll('.panel table tbody')[0];
+    histBody.innerHTML = interventions.length
+      ? interventions.map(i => '<tr>' +
+          '<td><span class="num">' + fmtDateFr(i.date) + ' · ' + esc(i.time || '') + '</span></td>' +
+          '<td>' + esc(i.service || '—') + '</td>' +
+          '<td>—</td>' +
+          '<td class="amount">—</td>' +
+          '<td><span class="badge ' + (i.done ? 'signe' : 'attente') + '">' + (i.done ? 'Terminée' : 'À venir') + '</span></td>' +
+        '</tr>').join('')
+      : '<tr><td colspan="5" style="color:var(--text-2);">Aucune intervention enregistrée pour ce client.</td></tr>';
+
+    // Devis & factures liés, fusionnés et triés par date décroissante.
+    const docs = [
+      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente })),
+      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente })),
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const docsBody = document.querySelectorAll('.panel table tbody')[1];
+    docsBody.innerHTML = docs.length
+      ? docs.map(d => '<tr>' +
+          '<td class="num">' + esc(d.num || '—') + '</td>' +
+          '<td>' + d.type + '</td>' +
+          '<td>' + esc(d.service || '—') + '</td>' +
+          '<td class="amount">' + (d.amount || 0).toLocaleString('fr-FR') + ' €</td>' +
+          '<td><span class="badge ' + d.badge[0] + '">' + d.badge[1] + '</span></td>' +
+          '<td class="row-action">—</td>' +
+        '</tr>').join('')
+      : '<tr><td colspan="6" style="color:var(--text-2);">Aucun devis ni facture pour ce client.</td></tr>';
+
+    // Colonne latérale : adresse réelle, date de premier contact réelle.
+    const infoValues = document.querySelectorAll('.content-grid > div:last-child .info-value');
+    if (infoValues[0]) infoValues[0].innerHTML = client.adresse ? esc(client.adresse) : 'Non renseignée';
+    if (infoValues[1]) infoValues[1].textContent = fmtDateFr(client.createdAt);
+    // "Zone d'intervention"/"Fréquence" : aucun champ correspondant dans le
+    // modèle de données réel (SebaDB) -- retirés plutôt que de laisser des
+    // valeurs inventées ("Lyon 3e — Lyon 6e", "Mensuelle") qui ne
+    // correspondent à aucune donnée du client.
+    if (infoValues[2]) infoValues[2].closest('.info-row').remove();
+    if (infoValues[3]) infoValues[3].closest('.info-row').remove();
+
+    // Notes internes réelles (vide si le client n'en a pas).
+    const notesEl = document.querySelector('.notes-area');
+    if (notesEl) notesEl.value = client.notes || '';
+  })();
+
   // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
   function supprimerClient() {
     if (!_id) { showFicheToast('Client non identifié — impossible de supprimer'); return; }

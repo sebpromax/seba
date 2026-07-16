@@ -67,8 +67,14 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   background: var(--emerald);
   flex-shrink: 0;
 }
-/* "Se" gras / "ba" fin -- meme traitement que le logo marketing (PR #74). */
-.logo-se { font-weight: 800; color: var(--ink); }
+/* "Se" gras / "ba" fin -- meme traitement que le logo marketing (PR #74).
+   .logo-se utilise --ink-inverse (pas --ink) : la sidebar reste TOUJOURS
+   sombre quel que soit le theme (voir commentaire "Rail de navigation
+   toujours sombre" plus haut), mais --ink devient quasi-noir en theme
+   clair -- texte quasi-noir sur fond quasi-noir, illisible (trouve en
+   testant reellement le bouton "Clair" dans Reglages). --ink-inverse est
+   deja le token prevu pour "texte sur surface toujours sombre" (theme.css). */
+.logo-se { font-weight: 800; color: var(--ink-inverse); }
 .logo-ba { font-weight: 300; color: var(--text-2); }
 
 /* ── Reset d'état du menu (Design System, IV) ────────────────────────────────
@@ -115,7 +121,10 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
    ::before est en position:absolute, donc jamais de saut de box model. */
 .sidebar .nav-item.active {
   background-color: transparent;
-  color: var(--ink);
+  /* --ink-inverse, pas --ink : même bug que .logo-se ci-dessus -- --ink
+     devient quasi-noir en thème clair alors que la sidebar reste toujours
+     sombre, rendant le libellé actif illisible. */
+  color: var(--ink-inverse);
 }
 .sidebar .nav-item.active::before {
   content: '';
