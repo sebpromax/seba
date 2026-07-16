@@ -6,7 +6,12 @@
    - Assets statiques : Cache First, repli réseau + mise en cache.
    - Cross-origin (CDN fonts/D3/GSAP…) : passthrough réseau.
 ═══════════════════════════════════════════════════════════════ */
-const VERSION = 'seba-v2'; // v2 : page offline dediee + auth/guard/theme precaches
+const VERSION = 'seba-v3'; // v3 : force la purge du cache Cache-First (widgets.js/seba-data.js
+// restaient figes indefiniment cote navigateur malgre des deploiements serveur reussis --
+// un Ctrl+Maj+R ne vide pas le cache d'un Service Worker, seulement le cache HTTP normal.
+// Changer VERSION change les octets de ce fichier : le navigateur detecte la mise a jour,
+// installe la nouvelle version, purge l'ancien cache (voir 'activate' ci-dessous) et
+// re-telecharge tout le CORE au prochain fetch.
 const CORE = [
   './',
   'index.html', 'connexion.html', 'onboarding.html', 'offline.html',
