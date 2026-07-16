@@ -22,6 +22,9 @@
     [data-theme="dark"], [data-theme="light"] {
       --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
       --overlay-scrim: rgba(0,0,0,.35);
+      --sidebar-border-faint: rgba(255,255,255,.08);
+      --sidebar-text-dim: rgba(255,255,255,.35);
+      --sidebar-text-base: rgba(255,255,255,.55);
     }
     .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
     /* Benchmark Vercel §3.1 : la classe .mono-num existait mais n'était appliquée
@@ -63,16 +66,27 @@
     @media (min-width: 841px) {
       .sidebar { top: var(--v2-fixed-header-space); height: calc(100vh - var(--v2-fixed-header-space)); }
     }
-    .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
+    /* Sélecteurs préfixés .sidebar (au lieu de bruts) : même spécificité que
+       .sidebar .nav-item/.s-logo/etc. dans pro-global.css (partagé, chargé
+       avant ce <style>), donc CES valeurs gagnent sur cette page — sans
+       toucher pro-global.css (rayon d'impact large, CLAUDE.md). Resserré
+       (logo/labels/items/footer) pour que la sidebar tienne sans son
+       mini-scroll interne (overflow-y:auto de pro-global.css) sur les
+       hauteurs d'écran réduites (~700-800px) : mesuré à 666px de contenu
+       nécessaire avant ce resserrement, contre ~595px disponibles sous le
+       bandeau fixe à 700px de haut — demande fondateur "sidebar fixe, zéro
+       scroll, même mini". */
+    .sidebar .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 12px; border-bottom: 1px solid var(--sidebar-border-faint); margin-bottom: 8px; }
     .s-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
-    .nav-group { padding: 0 10px; margin-bottom: 8px; }
-    .nav-label { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .07em; padding: 0 10px 8px; }
-    .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: var(--rs); font-size: .875rem; color: rgba(255,255,255,.55); cursor: pointer; margin-bottom: 1px; transition: background .15s, color .15s; }
+    .sidebar .nav-group { padding: 0 10px; margin-bottom: 4px; }
+    .sidebar .nav-group-gap { margin-top: 12px; }
+    .sidebar .nav-label { font-size: .68rem; font-weight: 600; color: var(--sidebar-text-dim); text-transform: uppercase; letter-spacing: .07em; padding: 0 10px 5px; }
+    .sidebar .nav-item { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: var(--rs); font-size: .875rem; color: var(--sidebar-text-base); cursor: pointer; margin-bottom: 1px; transition: background .15s, color .15s; }
     .nav-item:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
     .nav-item.active { background: rgba(0,255,157,.12); color: var(--emerald); }
     .nav-item .ni-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); opacity: 0; transition: opacity .15s; }
     .nav-item.active .ni-dot { opacity: 1; }
-    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .78rem; color: rgba(255,255,255,.35); }
+    .sidebar .sidebar-footer { margin-top: auto; padding: 10px 20px; border-top: 1px solid var(--sidebar-border-faint); font-size: .78rem; color: var(--sidebar-text-dim); }
     .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
 
     /* ── Main ── */
