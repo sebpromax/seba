@@ -1,17 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════
    SEBA — Service Worker (PWA, mode hors-ligne)
    Stratégies :
-   - Navigation HTML  : Network First, repli cache (le dashboard
-     s'affiche même sans réseau une fois visité).
-   - Assets statiques : Cache First, repli réseau + mise en cache.
+   - Navigation HTML ET assets statiques : Network First, repli cache
+     (voir note v4 ci-dessous — unifié depuis Cache First).
    - Cross-origin (CDN fonts/D3/GSAP…) : passthrough réseau.
 ═══════════════════════════════════════════════════════════════ */
-const VERSION = 'seba-v3'; // v3 : force la purge du cache Cache-First (widgets.js/seba-data.js
-// restaient figes indefiniment cote navigateur malgre des deploiements serveur reussis --
-// un Ctrl+Maj+R ne vide pas le cache d'un Service Worker, seulement le cache HTTP normal.
-// Changer VERSION change les octets de ce fichier : le navigateur detecte la mise a jour,
-// installe la nouvelle version, purge l'ancien cache (voir 'activate' ci-dessous) et
-// re-telecharge tout le CORE au prochain fetch.
+// v4 : les assets statiques (widgets.js/seba-data.js/sidebar.js/dashboard.html...)
+// passaient en Cache-First -- une fois mis en cache, ils restaient figes
+// INDEFINIMENT cote navigateur, meme apres plusieurs deploiements serveur
+// reussis et des Ctrl+Maj+R (qui ne vide que le cache HTTP normal, jamais le
+// cache d'un Service Worker). Le correctif v3 (bump manuel de VERSION) ne
+// resolvait qu'UN seul deploiement : chaque commit suivant reproduisait le
+// meme blocage tant que VERSION n'etait pas re-bumpe a la main. Passer TOUS
+// les assets en Network First (comme la navigation) elimine la classe de bug
+// : plus besoin de se souvenir de bumper VERSION a chaque deploiement.
+const VERSION = 'seba-v4';
 const CORE = [
   './',
   'index.html', 'connexion.html', 'onboarding.html', 'offline.html',
@@ -47,36 +50,29 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // CDN : réseau direct
 
-  if (req.mode === 'navigate') {
-    // Network First — toujours la version fraîche si possible
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(req, copy));
-          return res;
-        })
-        .catch(() =>
-          // Repli : la page demandee si deja cachee, sinon la page offline
-          // dediee (servir dashboard.html a la place d'une page inconnue
-          // etait trompeur : l'utilisateur ne savait pas qu'il etait hors ligne).
-          caches.match(req).then((hit) => hit || caches.match('offline.html'))
-        )
-    );
-    return;
-  }
+  const isNavigate = req.mode === 'navigate';
 
-  // Statique : Cache First
+  // Network First pour tout le contenu same-origin (navigation ET assets
+  // statiques) : le réseau gagne toujours quand il est disponible, le cache
+  // ne sert que de repli hors-ligne. Évite qu'un fichier mis en cache une
+  // fois reste figé indéfiniment (voir note v4 en tête de fichier).
   e.respondWith(
-    caches.match(req).then((hit) => {
-      if (hit) return hit;
-      return fetch(req).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(req, copy));
-        }
+    fetch(req)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(VERSION).then((c) => c.put(req, copy));
         return res;
-      });
-    })
+      })
+      .catch(() =>
+        caches.match(req).then((hit) => {
+          if (hit) return hit;
+          // Repli hors-ligne : uniquement pour une navigation de page jamais
+          // mise en cache (servir dashboard.html à la place d'une page
+          // inconnue serait trompeur : l'utilisateur ne saurait pas qu'il
+          // est hors ligne). Un asset statique jamais caché échoue
+          // simplement — comportement identique à avant pour ce cas.
+          return isNavigate ? caches.match('offline.html') : undefined;
+        })
+      )
   );
 });
