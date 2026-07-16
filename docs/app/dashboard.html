@@ -1348,36 +1348,56 @@
       }
     }
 
-    /* Header */
-    const h = new Date().getHours();
-    const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
-    document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
-    document.getElementById('sector-badge').textContent = sectorLabel;
-    document.getElementById('topbar-date').textContent =
-      new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    startClock(biz);
+    /* Filet de sécurité (post-mortem "4 blocs placeholder V2 bloqués en prod") :
+       tout ce bloc dépend de données réelles saisies à la main (biz, demo,
+       localStorage) qu'on ne peut pas garantir bien formées. buildLiveData()
+       est déjà protégé individuellement (voir plus haut), mais un point de
+       plantage encore inconnu ailleurs dans ce bloc aurait le même effet :
+       couper l'exécution avant renderAllV2() et laisser les zones V2
+       (.v2-zone-traitement/activite/finance) figées sur leur texte de
+       squelette brut ("zone-activite-v2"...), sans jamais atteindre
+       clearV2Zone(). Ce try/catch garantit qu'un échec inattendu, où qu'il
+       survienne ici, ne laisse jamais ce texte de dev visible : on vide
+       explicitement les zones dans le catch plutôt que de les laisser
+       intactes. */
+    try {
+      /* Header */
+      const h = new Date().getHours();
+      const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+      document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
+      document.getElementById('sector-badge').textContent = sectorLabel;
+      document.getElementById('topbar-date').textContent =
+        new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      startClock(biz);
 
-    /* Avatar */
-    const av = document.getElementById('avatar');
-    av.style.background = couleur;
-    av.textContent = nom.charAt(0).toUpperCase();
+      /* Avatar */
+      const av = document.getElementById('avatar');
+      av.style.background = couleur;
+      av.textContent = nom.charAt(0).toUpperCase();
 
-    /* Sidebar */
-    const sidebarCompanyEl = document.getElementById('sidebar-company');
-    if (sidebarCompanyEl) sidebarCompanyEl.textContent = nom;
+      /* Sidebar */
+      const sidebarCompanyEl = document.getElementById('sidebar-company');
+      if (sidebarCompanyEl) sidebarCompanyEl.textContent = nom;
 
-    /* Widgets — rendu V2 natif, seul système depuis la bascule (DASHBOARD_V2_MASTER_PLAN.md §7).
-       Plus de grille V1/flag ?v2=1 : renderAllV2() est le seul point d'entrée
-       (détruit les instances WidgetV2 vivantes, remonte les 3 zones + le
-       header, réattache GridManagerV2). */
-    _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
-    window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
-    if (typeof renderAllV2 === 'function') renderAllV2(_ctx, _customizeMode);
-    if (typeof populateActionStream === 'function') populateActionStream(_ctx);
-    if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
-    if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
-    if (typeof renderNotifPanel === 'function') renderNotifPanel(_ctx);
-    setTimeout(animateMetrics, 80);
+      /* Widgets — rendu V2 natif, seul système depuis la bascule (DASHBOARD_V2_MASTER_PLAN.md §7).
+         Plus de grille V1/flag ?v2=1 : renderAllV2() est le seul point d'entrée
+         (détruit les instances WidgetV2 vivantes, remonte les 3 zones + le
+         header, réattache GridManagerV2). */
+      _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
+      window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
+      if (typeof renderAllV2 === 'function') renderAllV2(_ctx, _customizeMode);
+      if (typeof populateActionStream === 'function') populateActionStream(_ctx);
+      if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
+      if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
+      if (typeof renderNotifPanel === 'function') renderNotifPanel(_ctx);
+      setTimeout(animateMetrics, 80);
+    } catch (err) {
+      console.error('[Seba Error Boundary] renderDashboard() a échoué avant renderAllV2() :', err);
+      ['.v2-zone-traitement', '.v2-zone-activite', '.v2-zone-finance'].forEach(sel => {
+        const zone = document.querySelector(sel);
+        if (zone) zone.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-2);font-size:.85rem;">Dashboard temporairement indisponible — rechargez la page.</div>';
+      });
+    }
   }
 
   /* ═══════════════════════════════════════════════════════
