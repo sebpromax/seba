@@ -111,8 +111,15 @@
   text-align: center;
 }
 
+/* Toujours un simple placeholder Phase 1 sans aucune logique de rendu
+ * (confirmé _architecture/DASHBOARD_V2_MASTER_PLAN.md:317-326, "Bandeau de
+ * situation" reporté à un chantier dédié, décision actée avec le fondateur).
+ * Masqué plutôt que réservé en min-height : aucune fonction ne peuple jamais
+ * ce texte de dev ("bandeau-priorite-v2"), qui restait donc visible en
+ * production indéfiniment. Ne pas retirer le noeud DOM (dashboard.html) :
+ * le futur chantier le réutilisera. */
 .v2-bandeau-priorite {
-  min-height: 72px;
+  display: none;
 }
 
 .v2-zone-traitement {
