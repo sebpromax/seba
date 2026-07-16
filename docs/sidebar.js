@@ -29,12 +29,6 @@
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><polyline points="10 6 10 10 13 13"/></svg>',
     reglages:
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>',
-    produits:
-      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="10 2 18 7 10 12 2 7"/><polyline points="2 13 10 18 18 13"/><polyline points="2 10 10 15 18 10"/></svg>',
-    tarifs:
-      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5 2.5 11.5a2 2 0 0 0 0 2.8l3.2 3.2a2 2 0 0 0 2.8 0l9-9A2 2 0 0 0 18 6.5V4a1.5 1.5 0 0 0-1.5-1.5H14a2 2 0 0 0-2.5 0Z"/><circle cx="14" cy="6" r="1" fill="currentColor" stroke="none"/></svg>',
-    faq:
-      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M7.5 7.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2.5-2.5 4"/><circle cx="10" cy="15.5" r=".6" fill="currentColor" stroke="none"/></svg>',
   };
 
   /* ── Structure de navigation ─────────────────────────────────────────────── */
@@ -61,14 +55,6 @@
       label: 'Compte',
       items: [
         { href: 'reglages.html', label: 'Réglages', key: 'reglages', match: ['reglages'] },
-      ],
-    },
-    {
-      label: 'Découvrir',
-      items: [
-        { href: 'product.html', label: 'Produits', key: 'produits', match: ['product'] },
-        { href: 'tarifs.html',  label: 'Tarifs',   key: 'tarifs',  match: ['tarifs'] },
-        { href: 'faq.html',     label: 'FAQ',      key: 'faq',     match: ['faq'] },
       ],
     },
   ];
