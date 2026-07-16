@@ -185,7 +185,12 @@
       </div>
       <div class="client-actions">
         <button class="btn-outline" onclick="location.href='planning.html'">Planifier une intervention</button>
-        <button class="btn-outline" onclick="showFicheToast('Message envoyé au client')">Envoyer un message</button>
+        <!-- Corrigé : ce bouton affichait un faux toast de succès ("Message
+             envoyé au client") sans qu'aucun message ne soit réellement
+             envoyé -- aucune messagerie (SMS/chat) n'existe côté app,
+             contrairement à l'email (email-service.js, réel). Désactivé
+             avec une info-bulle honnête plutôt que de mentir sur son effet. -->
+        <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Envoyer un message</button>
         <button class="btn-em" onclick="location.href='devis-nouveau.html'">+ Nouveau devis</button>
         <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerClient()">Supprimer ce client</button>
       </div>

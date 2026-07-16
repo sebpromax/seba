@@ -263,6 +263,7 @@
 
     if (!prenom || !nom) {
       document.getElementById('ss-prenom').focus();
+      showToast('Prénom et nom sont obligatoires.');
       return;
     }
 

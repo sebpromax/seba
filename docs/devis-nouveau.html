@@ -252,7 +252,7 @@
       <div id="confirm-state" style="display:none;">
         <div class="card confirm-wrap">
           <h2>Devis envoyé.</h2>
-          <p class="sub">Un email a été transmis automatiquement au client.</p>
+          <p class="sub" id="conf-email-status">Envoi de l'email au client…</p>
           <div class="ticket">
             <div class="ticket-head">
               <span class="tnum">#0125</span>
@@ -279,6 +279,7 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="email-service.js"></script>
 <script>
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {
@@ -333,15 +334,33 @@
     return `${parseInt(d)} ${MOIS[parseInt(m)-1]} ${y}`;
   }
 
-  function sendDevis() {
+  /* Toast d'erreur (absent avant ce correctif) : sendDevis() ne faisait que
+     focus()+bordure sur client/service manquants, sans aucun retour visible
+     -- incohérent avec planning.html, qui a déjà showToast() pour la même
+     situation ("Veuillez choisir un client et une prestation."). */
+  function showToast(msg) {
+    const ex = document.getElementById('_toast');
+    if (ex) ex.remove();
+    const t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C1D21;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.style.opacity = '0', 3000);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  async function sendDevis() {
     if (!clientSel.value) {
       clientSel.focus();
-      clientSel.style.borderColor = 'var(--emerald)';
+      clientSel.style.borderColor = 'var(--critical)';
+      showToast('Veuillez sélectionner un client.');
       return;
     }
     if (!serviceSel.value) {
       serviceSel.focus();
-      serviceSel.style.borderColor = 'var(--emerald)';
+      serviceSel.style.borderColor = 'var(--critical)';
+      showToast('Veuillez sélectionner un service.');
       return;
     }
 
@@ -381,6 +400,23 @@
     document.getElementById('form-state').style.display    = 'none';
     document.getElementById('confirm-state').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    /* Envoi réel (corrige : ce texte affirmait un envoi automatique sans
+       jamais appeler le moindre service d'email). email-service.js gère
+       déjà ses propres cas d'échec (pas de session, email invalide) via un
+       toast -- on adapte juste le sous-titre de confirmation au résultat
+       réel plutôt que d'affirmer un succès inconditionnel. */
+    const statusEl = document.getElementById('conf-email-status');
+    if (window.sebaEmail) {
+      const result = await sebaEmail.sendDocument(devis, 'devis');
+      if (statusEl) {
+        statusEl.textContent = result.ok
+          ? 'Un email a été transmis automatiquement au client.'
+          : 'Devis enregistré — l\'envoi automatique de l\'email a échoué. Contactez le client directement.';
+      }
+    } else if (statusEl) {
+      statusEl.textContent = 'Devis enregistré.';
+    }
   }
 
   const avatarBtn = document.getElementById('avatar-btn');

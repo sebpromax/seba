@@ -181,8 +181,13 @@
         </div>
       </div>
       <div class="emp-actions">
-        <button class="btn-outline" onclick="showEmpToast('Droits d\'accès modifiés')">Modifier les accès</button>
-        <button class="btn-outline" onclick="showEmpToast('Message envoyé')">Envoyer un message</button>
+        <!-- "Modifier les accès" et "Envoyer un message" affichaient un faux
+             toast de succès sans rien modifier/envoyer réellement (aucun
+             modèle de permissions granulaire ni messagerie n'existe côté
+             app) -- désactivés avec une info-bulle honnête plutôt que de
+             mentir sur leur effet. -->
+        <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Modifier les accès</button>
+        <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Envoyer un message</button>
         <button class="btn-em" onclick="location.href='planning.html'">+ Assigner une mission</button>
         <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerEmploye()">Retirer de l'équipe</button>
       </div>
@@ -329,6 +334,67 @@
     document.getElementById('emp-avatar').textContent =
       (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
   }
+
+  /* ── Branchement SebaDB (corrige : la fiche affichait toujours les mêmes
+     données factices "Léa Martin" quel que soit l'employé réellement
+     ouvert). Le schéma employé réel (voir equipe.html/seba-data.js) est
+     plus pauvre que celui des clients : ni email, ni téléphone, ni notes,
+     ni planning individuel (les interventions ne sont liées à aucun
+     employé dans SebaDB) -- ces champs sont retirés plutôt que de garder
+     des valeurs inventées qui ne correspondent à aucune donnée réelle. */
+  (function loadRealEmploye() {
+    if (!window.SebaDB || !_id) return;
+    const emp = SebaDB.list('employes').find(e => e.id === _id);
+    if (!emp) return;
+
+    const badgeEl = document.querySelector('.emp-name-row .badge');
+    badgeEl.className = 'badge ' + (emp.actif ? 'actif' : 'repos');
+    badgeEl.textContent = emp.actif ? 'En mission' : 'Au repos';
+    document.querySelector('.status-dot').className = 'status-dot ' + (emp.actif ? 'on' : 'off');
+    document.querySelector('.emp-role').lastChild.textContent = ' ' + (emp.role || 'Employé');
+
+    document.querySelectorAll('.stat-card .svalue')[0].textContent = String(emp.missions || 0);
+    document.querySelectorAll('.stat-card .slabel')[0].textContent = 'Missions au total';
+    document.querySelectorAll('.stat-card')[1].remove(); // pas de répartition semaine/mois dans le modèle réel
+
+    // Planning : aucune intervention n'est liée à un employé dans SebaDB
+    // (les interventions ont un clientId, jamais d'employeId) -- état
+    // honnête plutôt qu'un planning fictif.
+    const planningPanel = document.querySelector('.panel');
+    planningPanel.querySelector('.panel-head h3').textContent = 'Planning de la semaine';
+    const missionItems = planningPanel.querySelectorAll('.mission-item');
+    missionItems.forEach((el, i) => { if (i > 0) el.remove(); });
+    missionItems[0].outerHTML = '<div style="color:var(--text-2);font-size:.88rem;">Aucune mission individuelle assignée pour le moment — l\'assignation par employé n\'est pas encore reliée au planning.</div>';
+
+    // Accès & droits : dérivés du champ réel `acces` (chaîne simple), pas
+    // d'un modèle de permissions granulaire par module.
+    const accessRows = document.querySelectorAll('.access-row');
+    const granted = { planning: true, clients: (emp.acces || '').includes('clients') };
+    const labels = ['planning', 'clients'];
+    accessRows.forEach((row, i) => {
+      const key = labels[i];
+      if (key === undefined) { row.remove(); return; }
+      const statusEl = row.querySelector('.access-status');
+      const ok = granted[key];
+      statusEl.className = 'access-status ' + (ok ? 'granted' : 'denied');
+      statusEl.innerHTML = '<span class="access-icon">' + (ok ? '✓' : '—') + '</span>' + (ok ? 'Accordé' : 'Non accordé');
+    });
+
+    // Colonne latérale : seuls les champs réellement stockés (poste,
+    // ancienneté). Email/téléphone/zone retirés -- aucune valeur réelle.
+    const infoRows = document.querySelectorAll('.info-row');
+    infoRows[0].querySelector('.info-label').textContent = 'Poste';
+    infoRows[0].querySelector('.info-value').textContent = emp.role || '—';
+    infoRows[1].querySelector('.info-label').textContent = 'Dans l\'équipe depuis';
+    infoRows[1].querySelector('.info-value').textContent = emp.createdAt
+      ? new Date(emp.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      : '—';
+    for (let i = 2; i < infoRows.length; i++) infoRows[i].remove();
+
+    // Notes internes : aucun champ `notes` dans le modèle employé réel.
+    const notesArea = document.querySelector('.notes-area');
+    if (notesArea) { notesArea.value = ''; }
+  })();
 
   // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
   function supprimerEmploye() {
