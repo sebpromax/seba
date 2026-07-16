@@ -510,9 +510,13 @@
       : '<tr><td colspan="5" style="color:var(--text-2);">Aucune intervention enregistrée pour ce client.</td></tr>';
 
     // Devis & factures liés, fusionnés et triés par date décroissante.
+    // "Voir" : ni devis.html ni factures.html ne savent pointer vers un
+    // enregistrement précis (pas de deep-link par id/num) -- plutôt qu'un
+    // texte cliquable qui ne mène nulle part (défaut déjà signalé), le lien
+    // renvoie honnêtement vers la liste correspondante.
     const docs = [
-      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente })),
-      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente })),
+      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente, listHref: 'devis.html' })),
+      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente, listHref: 'factures.html' })),
     ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const docsBody = document.querySelectorAll('.panel table tbody')[1];
     docsBody.innerHTML = docs.length
@@ -522,7 +526,7 @@
           '<td>' + esc(d.service || '—') + '</td>' +
           '<td class="amount">' + (d.amount || 0).toLocaleString('fr-FR') + ' €</td>' +
           '<td><span class="badge ' + d.badge[0] + '">' + d.badge[1] + '</span></td>' +
-          '<td class="row-action">—</td>' +
+          '<td class="row-action"><a href="' + d.listHref + '" style="color:inherit;">Voir la liste</a></td>' +
         '</tr>').join('')
       : '<tr><td colspan="6" style="color:var(--text-2);">Aucun devis ni facture pour ce client.</td></tr>';
 
