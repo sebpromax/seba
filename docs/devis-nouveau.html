@@ -163,19 +163,13 @@
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-  <aside class="sidebar">
-    <div class="logo"><span class="logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-    <nav class="nav-section">
-      <a href="app/dashboard.html"><div class="nav-item"><span class="dot"></span>Vue d'ensemble</div></a>
-      <a href="clients.html"><div class="nav-item"><span class="dot"></span>Clients</div></a>
-      <a href="planning.html"><div class="nav-item"><span class="dot"></span>Planning</div></a>
-      <a href="devis.html"><div class="nav-item active"><span class="dot"></span>Devis</div></a>
-      <a href="factures.html"><div class="nav-item"><span class="dot"></span>Factures</div></a>
-      <a href="equipe.html"><div class="nav-item"><span class="dot"></span>Équipe</div></a>
-      <a href="reglages.html"><div class="nav-item"><span class="dot"></span>Réglages</div></a>
-    </nav>
-    <div class="sidebar-footer">Ménage Express Lyon<br>Compte de démonstration</div>
-  </aside>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité), comme les
+       7 autres pages connectées -- avant ce correctif, devis-nouveau.html
+       gardait sa propre copie HTML de la nav (pas de lien "Historique",
+       structure différente), ce qui donnait l'impression de changer
+       d'application au clic sur "+ Nouveau devis". Voir docs/sidebar.js. -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
 
   <main class="main">
     <div class="fiche-topbar">
