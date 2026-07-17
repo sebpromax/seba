@@ -25,8 +25,16 @@
 
     .layout { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
 
-    /* Sidebar */
-    .sidebar { background: #0B0C0E; color: rgba(255,255,255,.92); padding: 24px 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    /* Sidebar : le conteneur .sidebar lui-même (position/top/height/padding)
+       vient uniquement de pro-global.css depuis la conversion sur sidebar.js
+       -- une règle locale ici avait la même spécificité que celle du fichier
+       partagé et gagnait par ordre de cascade (chargée après), ce qui
+       annulait silencieusement le décalage sous #identity-bar sur CETTE
+       page uniquement (trouvé en mesurant .sidebar.scrollHeight/clientHeight
+       réellement, pas en lisant le CSS). Les règles ci-dessous (.logo,
+       .nav-section, .nav-lbl, .nav-item bare) restent : mortes mais sans
+       danger, sidebar.js génère .s-logo/.nav-group/.sidebar .nav-item, pas
+       ces classes -- même choix que clients.html/devis-nouveau.html. */
     .logo { font-weight: 700; font-size: 1.1rem; padding: 0 20px 28px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 16px; }
     .logo-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); margin-right: 8px; flex-shrink: 0; }
     .nav-section { padding: 0 10px; margin-bottom: 8px; }
