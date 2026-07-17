@@ -43,6 +43,7 @@
   const EMPTY = () => ({
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
+    custom_services: [],
     seq: { devis: 118, facture: 93 },
   });
 
@@ -158,6 +159,7 @@
   function loadState() {
     state = adapter.load() || EMPTY();
     if (!state.seq) state.seq = { devis: 118, facture: 93 };
+    if (!state.custom_services) state.custom_services = [];
     return state;
   }
   function persist() {

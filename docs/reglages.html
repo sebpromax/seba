@@ -78,8 +78,12 @@
   .service-check.checked{background:var(--emerald);border-color:var(--emerald);}
   .service-check.checked::after{content:"✓";color:#031A12;font-size:0.75rem;font-weight:700;}
   .service-name{flex:1;font-size:0.92rem;}
+  .service-name input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.88rem;background:var(--white);color:var(--ink);}
+  .service-model select{padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.82rem;background:var(--white);color:var(--ink);max-width:160px;}
   .service-price input{width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.85rem;text-align:right;}
-  .price-suffix{font-size:0.78rem;color:var(--text-2);width:50px;}
+  .price-suffix{font-size:0.78rem;color:var(--text-2);width:56px;}
+  .service-remove{font-size:1rem;color:var(--text-2);cursor:pointer;width:20px;text-align:center;flex-shrink:0;}
+  .service-remove:hover{color:var(--critical);}
   .add-service{font-size:0.84rem;color:var(--emerald);cursor:pointer;margin-top:14px;display:inline-block;}
 
   .btn-em{background:var(--emerald);color:#031A12;border:none;padding:11px 22px;border-radius:var(--rs);font-weight:600;font-size:0.88rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
@@ -112,6 +116,7 @@
 <div id="identity-bar" class="identity-bar"></div>
 <script src="businessTypes.js"></script>
 <script src="identity-bar.js"></script>
+<script src="services/pricing-model-registry.js"></script>
 <div class="layout">
     <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
@@ -190,35 +195,12 @@
 
         <div class="panel tab-content" id="tab-services" style="display:none;">
           <h3>Services proposés</h3>
-          <p class="desc">Cochez vos services et fixez vos tarifs de départ.</p>
+          <p class="desc">Cochez vos services, choisissez leur modèle tarifaire et fixez vos tarifs de départ. Ces réglages alimentent directement le formulaire "Créer un devis".</p>
 
-          <div class="service-row">
-            <div class="service-check checked"></div>
-            <div class="service-name">Ménage standard</div>
-            <div class="service-price"><input type="number" value="25"></div>
-            <div class="price-suffix">€/h</div>
-          </div>
-          <div class="service-row">
-            <div class="service-check checked"></div>
-            <div class="service-name">Repassage</div>
-            <div class="service-price"><input type="number" value="20"></div>
-            <div class="price-suffix">€/h</div>
-          </div>
-          <div class="service-row">
-            <div class="service-check checked"></div>
-            <div class="service-name">Nettoyage de vitres</div>
-            <div class="service-price"><input type="number" value="30"></div>
-            <div class="price-suffix">€/h</div>
-          </div>
-          <div class="service-row">
-            <div class="service-check"></div>
-            <div class="service-name">Nettoyage fin de bail</div>
-            <div class="service-price"><input type="number" value="" disabled></div>
-            <div class="price-suffix">€/h</div>
-          </div>
-          <span class="add-service" onclick="showReglToast('Ajout de service personnalisé — bientôt disponible')">+ Ajouter un service personnalisé</span>
+          <div id="services-list"></div>
+          <span class="add-service" onclick="addCustomServiceRow()">+ Ajouter un service personnalisé</span>
           <br><br>
-          <button class="btn-em" onclick="showReglToast('Services et tarifs enregistrés')">Enregistrer</button>
+          <button class="btn-em" onclick="saveCompanyServices()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-compte" style="display:none;">
@@ -290,17 +272,10 @@
       sw.classList.add('active');
     });
   });
-  document.querySelectorAll('.service-check').forEach(chk=>{
-    chk.addEventListener('click',()=>{
-      chk.classList.toggle('checked');
-      const input = chk.parentElement.querySelector('input');
-      input.disabled = !chk.classList.contains('checked');
-    });
-  });
-
   // Lecture des données d'entreprise depuis localStorage (onboarding)
+  let _ent = null;
   try {
-    const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
     if (_ent && _ent.nom) {
       const _f = document.querySelector('.sidebar-footer');
       if (_f) _f.childNodes[0].textContent = _ent.nom;
@@ -308,6 +283,128 @@
       if (_inp) _inp.value = _ent.nom;
     }
   } catch(e) {}
+
+  /* ── Services & tarifs (réels, alimentent devis-nouveau.html) ──
+     Fallback 'autre', même convention que dashboard.html/devis-nouveau.html. */
+  const secteur = (_ent && _ent.secteur) || 'autre';
+
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  const PRICE_TYPE_TO_MODEL = {
+    heure: 'hourly', forfait: 'fixed', unitaire: 'unit', devis: 'quote_only',
+    abonnement: 'subscription', jour: 'day_rate', inclus: 'included',
+    majoration: 'fixed', // pas de modèle dédié dans le moteur : approximation la plus proche
+  };
+  const MODEL_SUFFIX = { hourly: '€/h', fixed: '€', unit: '€/unité', subscription: '€/mois', day_rate: '€/jour', quote_only: 'sur étude', included: 'inclus' };
+
+  let _servicesState = [];
+  let _servicesAreCustom = false; // true si _servicesState vient déjà de custom_services (pas des défauts du secteur)
+
+  function getCompanyServices() {
+    const custom = SebaDB.list('custom_services');
+    if (custom.length > 0) {
+      _servicesAreCustom = true;
+      return custom.map(s => Object.assign({}, s));
+    }
+    _servicesAreCustom = false;
+    const sectorData = window.businessTypes && window.businessTypes[secteur];
+    const defaults = (sectorData && sectorData.services) || [];
+    return defaults.map((s, idx) => ({
+      id: secteur + '_service_' + idx,
+      name: s.name,
+      pricingModel: PRICE_TYPE_TO_MODEL[s.priceType] || 'fixed',
+      suggestedPrice: s.suggestedPrice || 0,
+      active: true,
+      custom: false,
+    }));
+  }
+
+  function modelOptionsHTML(selected) {
+    return Object.keys(MODEL_SUFFIX).map(m =>
+      `<option value="${m}" ${m === selected ? 'selected' : ''}>${window.SebaQuotes.PRICING_MODELS[m].label}</option>`
+    ).join('');
+  }
+
+  function renderServicesList() {
+    const box = document.getElementById('services-list');
+    if (!_servicesState.length) {
+      box.innerHTML = '<p class="desc">Aucun service pour le moment. Ajoutez-en un ci-dessous.</p>';
+      return;
+    }
+    box.innerHTML = _servicesState.map((s, i) => `
+      <div class="service-row" data-idx="${i}">
+        <div class="service-check ${s.active ? 'checked' : ''}"></div>
+        <div class="service-name">${s.custom
+          ? `<input type="text" class="svc-name-input" value="${escAttr(s.name)}" placeholder="Nom du service">`
+          : escAttr(s.name)}</div>
+        <div class="service-model"><select class="svc-model-select">${modelOptionsHTML(s.pricingModel)}</select></div>
+        <div class="service-price"><input type="number" class="svc-price-input" min="0" step="0.5" value="${s.suggestedPrice || ''}" ${s.active ? '' : 'disabled'}></div>
+        <div class="price-suffix" data-suffix-for="${i}">${MODEL_SUFFIX[s.pricingModel] || '€'}</div>
+        ${s.custom ? '<span class="service-remove" title="Retirer">✕</span>' : '<span style="width:20px;"></span>'}
+      </div>`).join('');
+    wireServiceRowEvents();
+  }
+
+  function wireServiceRowEvents() {
+    document.querySelectorAll('#services-list .service-row').forEach(row => {
+      const idx = Number(row.dataset.idx);
+      const chk = row.querySelector('.service-check');
+      const priceInput = row.querySelector('.svc-price-input');
+      const modelSelect = row.querySelector('.svc-model-select');
+      const nameInput = row.querySelector('.svc-name-input');
+      const removeBtn = row.querySelector('.service-remove');
+      const suffixEl = row.querySelector('.price-suffix');
+
+      chk.addEventListener('click', () => {
+        _servicesState[idx].active = !_servicesState[idx].active;
+        chk.classList.toggle('checked', _servicesState[idx].active);
+        priceInput.disabled = !_servicesState[idx].active;
+      });
+      priceInput.addEventListener('input', () => {
+        _servicesState[idx].suggestedPrice = parseFloat(priceInput.value) || 0;
+      });
+      modelSelect.addEventListener('change', () => {
+        _servicesState[idx].pricingModel = modelSelect.value;
+        suffixEl.textContent = MODEL_SUFFIX[modelSelect.value] || '€';
+      });
+      if (nameInput) {
+        nameInput.addEventListener('input', () => { _servicesState[idx].name = nameInput.value; });
+      }
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          _servicesState.splice(idx, 1);
+          renderServicesList();
+        });
+      }
+    });
+  }
+
+  function addCustomServiceRow() {
+    _servicesState.push({
+      id: 'custom_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      name: '', pricingModel: 'fixed', suggestedPrice: 0, active: true, custom: true,
+    });
+    renderServicesList();
+  }
+
+  function saveCompanyServices() {
+    const existing = SebaDB.list('custom_services');
+    existing.forEach(s => SebaDB.remove('custom_services', s.id));
+    // Ignore les lignes personnalisées laissées sans nom plutôt que d'enregistrer un service vide.
+    _servicesState.filter(s => s.name && s.name.trim()).forEach(s => {
+      SebaDB.create('custom_services', {
+        name: s.name.trim(), pricingModel: s.pricingModel,
+        suggestedPrice: s.suggestedPrice || 0, active: s.active, custom: !!s.custom,
+      });
+    });
+    _servicesAreCustom = true;
+    showReglToast('Services et tarifs enregistrés');
+  }
+
+  _servicesState = getCompanyServices();
+  renderServicesList();
 
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');
