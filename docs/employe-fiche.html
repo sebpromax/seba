@@ -114,6 +114,15 @@
   .notes-area{width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);resize:vertical;min-height:80px;line-height:1.5;}
   .notes-area:focus{border-color:var(--emerald);outline:none;}
 
+  /* MESSAGERIE (journal patron -- pas encore d'accès direct côté employé) */
+  .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
+  .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .msg-bubble{padding:9px 12px;border-radius:8px;font-size:0.85rem;line-height:1.4;background:var(--bg);border:1px solid var(--border);}
+  .msg-bubble .msg-meta{font-size:0.7rem;color:var(--text-2);margin-top:4px;}
+  .msg-input-row{display:flex;gap:8px;}
+  .msg-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;color:var(--ink);background:var(--bg);}
+  .msg-empty{font-size:0.82rem;color:var(--text-2);}
+
   @media(max-width:980px){
     .layout{grid-template-columns:1fr;}
     .sidebar{}
@@ -177,13 +186,15 @@
         </div>
       </div>
       <div class="emp-actions">
-        <!-- "Modifier les accès" et "Envoyer un message" affichaient un faux
-             toast de succès sans rien modifier/envoyer réellement (aucun
-             modèle de permissions granulaire ni messagerie n'existe côté
-             app) -- désactivés avec une info-bulle honnête plutôt que de
-             mentir sur leur effet. -->
+        <!-- "Modifier les accès" affichait un faux toast (aucun modèle de
+             permissions granulaire n'existe côté app) -- reste désactivé.
+             "Message Appli" est désormais réel (journal, voir plus bas).
+             "Appeler" reste désactivé : le schéma employé réel n'a AUCUN
+             champ téléphone (voir loadRealEmploye() ci-dessous) -- inventer
+             un numéro serait pire qu'un bouton honnêtement inerte. -->
         <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Modifier les accès</button>
-        <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Envoyer un message</button>
+        <button class="btn-outline" onclick="document.getElementById('messagerie-panel').scrollIntoView({behavior:'smooth'});document.getElementById('message-input').focus();">Message Appli</button>
+        <button class="btn-outline" disabled title="Aucun numéro de téléphone enregistré pour cet employé" style="opacity:.5;cursor:not-allowed;">Appeler</button>
         <button class="btn-em" onclick="location.href='planning.html'">+ Assigner une mission</button>
         <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerEmploye()">Retirer de l'équipe</button>
       </div>
@@ -300,6 +311,17 @@
           </div>
         </div>
 
+        <!-- MESSAGERIE -->
+        <div class="panel" id="messagerie-panel">
+          <span class="panel-eyebrow">Messages</span>
+          <p class="msg-note">Journal de communication interne (consignes, remontées de terrain). L'employé n'a pas encore de page de connexion pour répondre ici (l'authentification PIN existe côté Supabase mais aucun écran n'a été construit pour s'y connecter).</p>
+          <div class="msg-thread" id="messages-thread"></div>
+          <div class="msg-input-row">
+            <input type="text" class="msg-input" id="message-input" placeholder="Écrire une consigne..." onkeydown="if(event.key==='Enter')envoyerMessageEmploye();">
+            <button class="btn-em" onclick="envoyerMessageEmploye()">Envoyer</button>
+          </div>
+        </div>
+
         <div class="panel">
           <span class="panel-eyebrow">Notes internes</span>
           <textarea class="notes-area" placeholder="Ajouter une note sur cet employé...">Ponctuelle, clients satisfaits. Disponible le samedi matin. Préfère les missions longues (2h+).</textarea>
@@ -311,6 +333,7 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="services/message-log.js"></script>
 <script>
   (function(){
     // Couleur personnalisée (Réglages) : même correctif que client-fiche.html
@@ -393,7 +416,34 @@
     // Notes internes : aucun champ `notes` dans le modèle employé réel.
     const notesArea = document.querySelector('.notes-area');
     if (notesArea) { notesArea.value = ''; }
+
+    renderMessagesThread();
   })();
+
+  /* ── Messagerie (journal patron -- voir note dans le panneau, même
+     principe que client-fiche.html). ── */
+  function renderMessagesThread() {
+    const box = document.getElementById('messages-thread');
+    if (!box || !window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+    const msgs = window.SebaQuotes.messagesFor('employe', _id);
+    box.innerHTML = msgs.length
+      ? msgs.map(m => '<div class="msg-bubble">' + m.texte.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
+          '<div class="msg-meta">' + (m.expediteurRole === 'patron' ? 'Vous' : 'Employé') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
+      : '<div class="msg-empty">Aucun message pour l\'instant.</div>';
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function envoyerMessageEmploye() {
+    const inp = document.getElementById('message-input');
+    const texte = inp.value.trim();
+    if (!texte || !_id) return;
+    window.SebaQuotes.createMessage({
+      employeId: _id, expediteurRole: 'patron', destinataireRole: 'employe', texte,
+    });
+    if (window.SebaDB) SebaDB.log('message', 'Message envoyé à ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
+    inp.value = '';
+    renderMessagesThread();
+  }
 
   // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
   function supprimerEmploye() {

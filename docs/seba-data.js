@@ -43,7 +43,7 @@
   const EMPTY = () => ({
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
-    custom_services: [], contrats: [],
+    custom_services: [], contrats: [], messages: [],
     seq: { devis: 118, facture: 93, contrat: 0 },
   });
 
@@ -162,6 +162,7 @@
     if (!state.seq.contrat) state.seq.contrat = 0;
     if (!state.custom_services) state.custom_services = [];
     if (!state.contrats) state.contrats = [];
+    if (!state.messages) state.messages = [];
     return state;
   }
   function persist() {

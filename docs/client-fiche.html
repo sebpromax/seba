@@ -108,6 +108,18 @@
   .info-label{font-size:0.74rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;}
   .info-value{font-size:0.9rem;}
 
+  /* ALERTE FACTURES IMPAYÉES */
+  .alert-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--badge-error-bg);color:var(--badge-error-txt);margin-left:10px;}
+
+  /* MESSAGERIE (journal patron -- pas encore d'accès direct côté client/employé) */
+  .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
+  .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .msg-bubble{padding:9px 12px;border-radius:8px;font-size:0.85rem;line-height:1.4;background:var(--bg);border:1px solid var(--border);}
+  .msg-bubble .msg-meta{font-size:0.7rem;color:var(--text-2);margin-top:4px;}
+  .msg-input-row{display:flex;gap:8px;}
+  .msg-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;color:var(--ink);background:var(--bg);}
+  .msg-empty{font-size:0.82rem;color:var(--text-2);}
+
   /* NOTES */
   .notes-area{width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);resize:vertical;min-height:90px;line-height:1.5;}
   .notes-area:focus{border-color:var(--emerald);outline:none;}
@@ -187,12 +199,14 @@
       </div>
       <div class="client-actions">
         <button class="btn-outline" onclick="location.href='planning.html'">Planifier une intervention</button>
-        <!-- Corrigé : ce bouton affichait un faux toast de succès ("Message
-             envoyé au client") sans qu'aucun message ne soit réellement
-             envoyé -- aucune messagerie (SMS/chat) n'existe côté app,
-             contrairement à l'email (email-service.js, réel). Désactivé
-             avec une info-bulle honnête plutôt que de mentir sur son effet. -->
-        <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Envoyer un message</button>
+        <!-- "Message Appli" : ouvre le journal de messagerie réel (panneau
+             plus bas) -- remplace l'ancien bouton désactivé. "Écrire un
+             mail"/"Appeler" : n'affichent que l'action possible avec la
+             vraie valeur de client.contact (un seul champ dans SebaDB,
+             email OU téléphone, jamais les deux) -- posé dynamiquement par
+             renderClientFiche(), voir #contact-actions. -->
+        <button class="btn-outline" onclick="document.getElementById('messagerie-panel').scrollIntoView({behavior:'smooth'});document.getElementById('message-input').focus();">Message Appli</button>
+        <span id="contact-actions"></span>
         <button class="btn-em" onclick="location.href='devis-nouveau.html'">+ Nouveau devis</button>
         <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerClient()">Supprimer ce client</button>
       </div>
@@ -208,6 +222,7 @@
         <span class="slabel">Interventions</span>
         <span class="svalue">6</span>
       </div>
+      <span id="unpaid-alert"></span>
     </div>
 
     <div class="content-grid">
@@ -347,6 +362,17 @@
 
         <div id="sector-info-container"></div>
 
+        <!-- MESSAGERIE -->
+        <div class="panel" id="messagerie-panel">
+          <span class="panel-eyebrow">Messages</span>
+          <p class="msg-note">Journal de communication avec ce client. Le client n'a pas encore d'accès direct pour répondre ici (portail client à venir) — pour l'instant, c'est votre historique de messages envoyés.</p>
+          <div class="msg-thread" id="messages-thread"></div>
+          <div class="msg-input-row">
+            <input type="text" class="msg-input" id="message-input" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')envoyerMessageClient();">
+            <button class="btn-em" onclick="envoyerMessageClient()">Envoyer</button>
+          </div>
+        </div>
+
         <!-- NOTES -->
         <div class="panel">
           <span class="panel-eyebrow">Notes internes</span>
@@ -360,14 +386,12 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="services/message-log.js"></script>
 <!-- businessTypes.js déjà chargé plus haut (bandeau d'identité) -->
 <script>
   (function(){
-    // Couleur personnalisée (Réglages) : cette page garde encore sa propre
-    // sidebar figée (pas convertie sur sidebar.js) et n'avait jamais ce
-    // correctif -- même bug que devis-nouveau.html avant lui, trouvé le
-    // même jour. .logo-dot référence déjà var(--emerald) dans le <style>
-    // de cette page, donc mettre à jour la variable CSS suffit.
+    // Couleur personnalisée (Réglages) -- même correctif que les autres
+    // pages connectées, appliqué ici le 2026-07-17.
     const c = localStorage.getItem('user_theme_color');
     if (c) document.documentElement.style.setProperty('--emerald', c);
   })();
@@ -495,9 +519,21 @@
     badgeEl.textContent = bLbl;
     const contactEl = document.querySelector('.client-contact');
     const contact = client.contact || '—';
-    contactEl.innerHTML = contact.includes('@')
+    const contactIsEmail = contact.includes('@');
+    contactEl.innerHTML = contactIsEmail
       ? '<a href="mailto:' + esc(contact) + '">' + esc(contact) + '</a>'
       : (contact !== '—' ? '<a href="tel:' + esc(contact.replace(/\s+/g, '')) + '">' + esc(contact) + '</a>' : '—');
+
+    // Actions rapides "Écrire un mail"/"Appeler" : un seul bouton, celui qui
+    // correspond réellement à client.contact (SebaDB n'a qu'un champ contact
+    // unique, jamais email+téléphone séparés) -- jamais les deux, jamais un
+    // lien qui ne correspond pas à la vraie valeur.
+    const contactActionsEl = document.getElementById('contact-actions');
+    if (contact !== '—') {
+      contactActionsEl.innerHTML = contactIsEmail
+        ? '<button class="btn-outline" onclick="location.href=\'mailto:' + esc(contact) + '\'">Écrire un mail</button>'
+        : '<button class="btn-outline" onclick="location.href=\'tel:' + esc(contact.replace(/\s+/g, '')) + '\'">Appeler</button>';
+    }
 
     // Interventions/devis/factures réellement liés à ce client (clientId).
     const interventions = (SebaDB.list('interventions') || []).filter(i => i.clientId === _id)
@@ -511,6 +547,15 @@
     const caTotal = facturesList.filter(f => f.status === 'payee').reduce((s, f) => s + (f.amount || 0), 0);
     document.querySelector('.stat-card .svalue.moss').textContent = caTotal.toLocaleString('fr-FR') + ' €';
     document.querySelectorAll('.stat-card .svalue')[1].textContent = String(interventions.length);
+
+    // Résumé intelligent : badge d'alerte si au moins une facture en retard.
+    const unpaidCount = facturesList.filter(f => f.status === 'retard').length;
+    document.getElementById('unpaid-alert').innerHTML = unpaidCount
+      ? '<span class="alert-badge">⚠ ' + unpaidCount + ' facture' + (unpaidCount > 1 ? 's' : '') + ' impayée' + (unpaidCount > 1 ? 's' : '') + '</span>'
+      : '';
+
+    // Messagerie (journal patron -- voir note dans le panneau).
+    renderMessagesThread();
 
     // Historique des interventions.
     const histBody = document.querySelectorAll('.panel table tbody')[0];
@@ -576,6 +621,33 @@
     if (notesEl) notesEl.value = client.notes || '';
   }
   renderClientFiche();
+
+  /* ── Messagerie (journal patron -- fondation pour un futur portail client,
+     voir services/message-log.js). Aucun accès direct côté client
+     aujourd'hui : ces messages sont un historique tenu par le patron, pas
+     un aller-retour temps réel. ── */
+  function renderMessagesThread() {
+    const box = document.getElementById('messages-thread');
+    if (!box || !window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+    const msgs = window.SebaQuotes.messagesFor('client', _id);
+    box.innerHTML = msgs.length
+      ? msgs.map(m => '<div class="msg-bubble">' + esc(m.texte) +
+          '<div class="msg-meta">' + (m.expediteurRole === 'patron' ? 'Vous' : 'Client') + ' · ' + fmtDateFr(m.createdAt) + '</div></div>').join('')
+      : '<div class="msg-empty">Aucun message pour l\'instant.</div>';
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function envoyerMessageClient() {
+    const inp = document.getElementById('message-input');
+    const texte = inp.value.trim();
+    if (!texte || !_id) return;
+    window.SebaQuotes.createMessage({
+      clientId: _id, expediteurRole: 'patron', destinataireRole: 'client', texte,
+    });
+    SebaDB.log('message', 'Message envoyé à ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
+    inp.value = '';
+    renderMessagesThread();
+  }
 
   /* ── Pilotage des contrats (actif ⇄ suspendu ➔ terminé) ── */
   function suspendreContrat(contratId) {
