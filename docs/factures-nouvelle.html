@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Seba — L'écosystème des entreprises de terrain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privee : meme verrou que dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="fx-actions.css">
+<script src="fx-actions.js" defer></script>
+<style>
+:root{
+  /* Ombres propres à cette page (dropdown/carte/ticket) -- valeurs
+     identiques à devis-nouveau.html pour rester cohérent visuellement
+     entre les deux formulaires, extraites en token car aucune des
+     --shadow-sm/md/lg de theme.css ne correspond exactement. */
+  --dropdown-shadow: 0 4px 16px rgba(0,0,0,.08);
+  --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --ticket-shadow: 0 20px 40px -16px rgba(0,0,0,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .layout,.app{position:relative;z-index:2;}
+  h1,h2,h3{letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  button,input,select,textarea{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
+
+  /* MAIN */
+  .main{padding:32px 40px;}
+  .fiche-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-2);margin-bottom:0;}
+  .back-link:hover{color:var(--emerald);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:var(--dropdown-shadow);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+  .form-wrap{max-width:640px;}
+
+  /* CARD */
+  .card{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:36px 40px;box-shadow:var(--card-shadow);}
+  .card-ref{font-size:0.75rem;color:var(--emerald);letter-spacing:0.05em;text-transform:uppercase;display:block;margin-bottom:10px;}
+  .card h2{font-size:1.6rem;margin-bottom:6px;}
+  .card .sub{color:var(--text-2);font-size:0.88rem;margin-bottom:30px;}
+
+  /* FIELDS */
+  .field-group{margin-bottom:20px;}
+  .field-group label{display:block;font-size:0.84rem;font-weight:500;margin-bottom:8px;color:var(--ink);}
+  .field-group label .opt{font-weight:400;color:var(--text-2);font-size:0.8rem;}
+  .field-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.92rem;background:var(--bg);color:var(--ink);transition:border-color .15s;}
+  .field-input:focus{border-color:var(--emerald);outline:none;}
+  select.field-input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6A6F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+  textarea.field-input{resize:vertical;min-height:80px;line-height:1.5;}
+
+  /* NEW CLIENT FIELDS */
+  .new-client-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-top:12px;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .state-fade-in{animation:fadeIn .2s ease;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  /* QTY + TOTAL */
+  .qty-total-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;margin-bottom:20px;}
+  .total-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--emerald);color:var(--ink);border-radius:var(--rs);padding:11px 20px;text-align:center;min-width:130px;flex-shrink:0;transition:opacity .15s;}
+  .total-box .total-label{font-size:0.68rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;}
+  .total-box .total-amount{font-size:1.5rem;font-weight:700;color:var(--emerald);}
+  #dyn-fields{animation:fadeIn .18s ease;}
+
+  /* DIVIDER */
+  .divider{border:none;border-top:1px solid var(--border);margin:26px 0;}
+
+  /* ACTIONS */
+  .form-actions{display:flex;justify-content:space-between;align-items:center;margin-top:28px;}
+  .btn-cancel{font-size:0.9rem;color:var(--text-2);padding:11px 20px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);cursor:pointer;}
+  .btn-cancel:hover{border-color:var(--ink);color:var(--ink);}
+  .btn-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:12px 26px;border-radius:var(--rs);font-weight:700;font-size:0.95rem;cursor:pointer;transition:opacity .15s,transform .15s;}
+  .btn-send:hover{opacity:.88;transform:translateY(-1px);}
+
+  /* CHAMPS TARIFAIRES DYNAMIQUES */
+  .dyn-fields{margin-bottom:20px;}
+  .dyn-note{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;font-size:0.85rem;color:var(--text-2);}
+
+  /* CONFIRMATION */
+  .confirm-wrap{text-align:center;padding:20px 0;}
+  .confirm-wrap h2{font-size:1.6rem;margin-bottom:8px;}
+  .confirm-wrap .sub{color:var(--text-2);font-size:0.9rem;margin-bottom:32px;}
+  .ticket{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:24px 26px 20px;max-width:360px;margin:0 auto 32px;text-align:left;position:relative;box-shadow:var(--ticket-shadow);}
+  .ticket-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--border);padding-bottom:12px;margin-bottom:14px;}
+  .ticket-head .tnum{font-size:0.76rem;color:var(--text-2);}
+  .ticket-head .tlabel{font-weight:600;font-size:0.93rem;}
+  .ticket-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:5px 0;color:var(--text-2);}
+  .ticket-row b{color:var(--ink);font-weight:500;}
+  .stamp-check{position:absolute;right:16px;bottom:12px;display:flex;align-items:center;gap:7px;}
+  .stamp-check svg{width:30px;height:30px;}
+  .stamp-check-circle{fill:none;stroke:var(--emerald);stroke-width:2.5;stroke-dasharray:145;stroke-dashoffset:145;animation:stampCircle .5s ease forwards;}
+  .stamp-check-path{fill:none;stroke:var(--emerald);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:stampCheck .35s ease forwards .4s;}
+  .stamp-label{font-weight:700;font-size:.85rem;color:var(--emerald);letter-spacing:.03em;opacity:0;animation:stampLabelIn .3s ease forwards .7s;}
+  @keyframes stampCircle{to{stroke-dashoffset:0;}}
+  @keyframes stampCheck{to{stroke-dashoffset:0;}}
+  @keyframes stampLabelIn{to{opacity:1;}}
+  .btn-back{display:inline-block;background:var(--ink);color:var(--bg);padding:13px 26px;border-radius:var(--rs);font-weight:600;font-size:0.92rem;}
+  .btn-back:hover{opacity:.88;}
+
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .main{padding:24px 20px;}
+    .card{padding:24px 22px;}
+    .field-row{grid-template-columns:1fr;}
+    .qty-total-row{grid-template-columns:1fr;}
+  }
+</style>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050505">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+</head>
+<body>
+<!-- Bandeau d'identité fixe (nom + secteur), cohérent avec le dashboard --
+     voir docs/identity-bar.js. -->
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
+<script src="services/pricing-model-registry.js"></script>
+<script src="services/quote-engine.js"></script>
+<div class="layout">
+
+    <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité), même
+       principe que devis-nouveau.html. Voir docs/sidebar.js. -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
+    })();
+  </script>
+
+  <main class="main">
+    <div class="fiche-topbar">
+      <a href="factures.html" class="back-link">← Retour aux factures</a>
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar-btn">ML</div>
+        <div class="user-menu" id="user-menu">
+          <a href="reglages.html">Mon compte</a>
+          <div class="menu-sep"></div>
+          <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-wrap">
+
+      <!-- FORMULAIRE -->
+      <div id="form-state">
+        <div class="card">
+          <span class="card-ref">Nouvelle facture</span>
+          <h2>Créer une facture</h2>
+          <p class="sub">Pour une prestation déjà réalisée, sans passer par un devis.</p>
+
+          <!-- CLIENT -->
+          <div class="field-group">
+            <label for="client">Client</label>
+            <select id="client" class="field-input">
+              <option value="">— Sélectionnez un client —</option>
+              <!-- clients remplis depuis SebaDB -->
+              <option value="new">+ Nouveau client</option>
+            </select>
+          </div>
+
+          <div id="new-client-block" class="new-client-block" style="display:none;">
+            <div class="field-group" style="margin-bottom:14px;">
+              <label for="new-name">Nom complet</label>
+              <input type="text" id="new-name" class="field-input" placeholder="Prénom Nom">
+            </div>
+            <div class="field-row">
+              <div class="field-group" style="margin-bottom:0;">
+                <label for="new-email">Email</label>
+                <input type="email" id="new-email" class="field-input" placeholder="email@exemple.fr">
+              </div>
+              <div class="field-group" style="margin-bottom:0;">
+                <label for="new-phone">Téléphone</label>
+                <input type="tel" id="new-phone" class="field-input" placeholder="06 00 00 00 00">
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- SERVICE -->
+          <div class="field-group">
+            <label for="service">Service</label>
+            <select id="service" class="field-input">
+              <option value="">— Sélectionnez un service —</option>
+            </select>
+          </div>
+          <div class="field-group" id="service-freetext-group" style="display:none;">
+            <label for="service-freetext">Nom de la prestation</label>
+            <input type="text" id="service-freetext" class="field-input" placeholder="Ex. Prestation sur mesure">
+          </div>
+
+          <!-- MODÈLE TARIFAIRE -->
+          <div class="field-group">
+            <label for="pricing-model">Modèle tarifaire</label>
+            <select id="pricing-model" class="field-input"></select>
+          </div>
+
+          <!-- CHAMPS + TOTAL (dépendent du modèle tarifaire) -->
+          <div class="qty-total-row">
+            <div class="dyn-fields" id="dyn-fields"></div>
+            <div class="total-box">
+              <span class="total-label">Total à facturer</span>
+              <span class="total-amount" id="total">— €</span>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- DATE -->
+          <div class="field-group">
+            <label for="date">Date de la prestation</label>
+            <input type="date" id="date" class="field-input">
+          </div>
+
+          <!-- NOTES -->
+          <div class="field-group">
+            <label for="notes">Notes <span class="opt">(optionnel)</span></label>
+            <textarea id="notes" class="field-input" placeholder="Précisions sur la prestation…"></textarea>
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="form-actions">
+            <a href="factures.html" class="btn-cancel">Annuler</a>
+            <button class="btn-send" onclick="sendFacture()">Créer la facture →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIRMATION -->
+      <div id="confirm-state" style="display:none;">
+        <div class="card confirm-wrap">
+          <h2>Facture créée.</h2>
+          <p class="sub" id="conf-email-status">Envoi de l'email au client…</p>
+          <div class="ticket">
+            <div class="ticket-head">
+              <span class="tnum">#F-0001</span>
+              <span class="tlabel">Facture</span>
+            </div>
+            <div class="ticket-row"><span>Client</span><b id="conf-client">—</b></div>
+            <div class="ticket-row"><span>Service</span><b id="conf-service">—</b></div>
+            <div class="ticket-row"><span>Montant</span><b id="conf-amount">—</b></div>
+            <div class="ticket-row"><span>Date</span><b id="conf-date">—</b></div>
+            <div class="stamp-check">
+              <svg viewBox="0 0 52 52" aria-hidden="true">
+                <circle class="stamp-check-circle" cx="26" cy="26" r="23"/>
+                <path class="stamp-check-path" d="M14 27l7 7 16-16"/>
+              </svg>
+              <span class="stamp-label">Créée</span>
+            </div>
+          </div>
+          <a href="factures.html" class="btn-back">← Retour aux factures</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="seba-data.js"></script>
+<script src="email-service.js"></script>
+<script>
+  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  let _ent = null;
+  try { _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null'); } catch(e) {}
+
+  const clientSel = document.getElementById('client');
+
+  /* Clients réels depuis le moteur de données (insérés avant "+ Nouveau client") */
+  (function fillClients() {
+    const newOpt = clientSel.querySelector('option[value="new"]');
+    SebaDB.list('clients').forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.prenom + ' ' + c.nom;
+      clientSel.insertBefore(o, newOpt);
+    });
+  })();
+  const serviceSel       = document.getElementById('service');
+  const serviceFreeGroup = document.getElementById('service-freetext-group');
+  const serviceFreeInp   = document.getElementById('service-freetext');
+  const pricingModelSel  = document.getElementById('pricing-model');
+  const totalEl          = document.getElementById('total');
+  const newBlock         = document.getElementById('new-client-block');
+
+  clientSel.addEventListener('change', () => {
+    newBlock.style.display = clientSel.value === 'new' ? 'block' : 'none';
+  });
+
+  const secteur = (_ent && _ent.secteur) || 'autre';
+
+  const UNIT_LABELS = { square_meter: 'm²', window: 'vitre', room: 'pièce', km: 'km', item: 'unité', passage: 'passage' };
+  const PREFILL_FIELD = { hourly: 'dyn-hourlyRate', fixed: 'dyn-fixedPrice', unit: 'dyn-unitPrice', day_rate: 'dyn-dayRate' };
+
+  /* Modèles tarifaires disponibles pour une facture directe : contrairement
+     au devis, pas de 'subscription' (les factures récurrentes viennent des
+     contrats, voir services/contract-billing.js) ni de 'quote_only'
+     (facturer "sur étude" n'a pas de sens -- la prestation est déjà faite)
+     ni de 'included' (suppose un contrat/forfait englobant, absent ici). */
+  const FACTURE_PRICING_MODELS = ['hourly', 'fixed', 'unit', 'day_rate'];
+
+  function showState(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.classList.remove('state-fade-in');
+    void el.offsetHeight;
+    el.classList.add('state-fade-in');
+  }
+
+  function currentServiceCatalog() {
+    const custom = (window.SebaDB ? SebaDB.list('custom_services') : []).filter(s => s.active !== false);
+    if (custom.length > 0) return custom;
+    return (window.businessTypes[secteur] || {}).services || [];
+  }
+
+  function fillServices() {
+    const services = currentServiceCatalog();
+    if (services.length === 0) {
+      serviceSel.closest('.field-group').style.display = 'none';
+      serviceFreeGroup.style.display = 'block';
+    } else {
+      serviceSel.closest('.field-group').style.display = 'block';
+      serviceFreeGroup.style.display = 'none';
+      serviceSel.innerHTML = '<option value="">— Sélectionnez un service —</option>' +
+        services.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    }
+  }
+  fillServices();
+
+  function activeServiceName() {
+    return serviceFreeGroup.style.display !== 'none'
+      ? serviceFreeInp.value.trim()
+      : serviceSel.value;
+  }
+
+  serviceSel.addEventListener('change', () => {
+    const services = currentServiceCatalog();
+    const svc = services.find(s => s.name === serviceSel.value);
+    const fieldId = PREFILL_FIELD[pricingModelSel.value];
+    if (svc && svc.suggestedPrice && fieldId) {
+      const el = document.getElementById(fieldId);
+      if (el && !el.value) { el.value = svc.suggestedPrice; calcTotal(); }
+    }
+  });
+
+  function fillPricingModels() {
+    pricingModelSel.innerHTML = FACTURE_PRICING_MODELS.map(id =>
+      `<option value="${id}">${window.SebaQuotes.PRICING_MODELS[id].label}</option>`
+    ).join('');
+    pricingModelSel.value = 'hourly';
+    renderDynFields(pricingModelSel.value);
+  }
+  fillPricingModels();
+
+  pricingModelSel.addEventListener('change', () => renderDynFields(pricingModelSel.value));
+
+  function renderDynFields(modelId) {
+    const box = document.getElementById('dyn-fields');
+    if (modelId === 'hourly') {
+      box.innerHTML = `
+        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-duration">Nombre d'heures</label>
+        <input type="number" id="dyn-duration" class="field-input" min="0.5" step="0.5" placeholder="Ex. 2"></div>
+        <div class="field-group" style="margin-bottom:0;"><label for="dyn-hourlyRate">Taux horaire (€)</label>
+        <input type="number" id="dyn-hourlyRate" class="field-input" min="0" step="0.5" placeholder="Ex. 25"></div>`;
+    } else if (modelId === 'fixed') {
+      box.innerHTML = `
+        <div class="field-group" style="margin-bottom:0;"><label for="dyn-fixedPrice">Prix forfaitaire (€)</label>
+        <input type="number" id="dyn-fixedPrice" class="field-input" min="0" step="1" placeholder="Ex. 120"></div>`;
+    } else if (modelId === 'unit') {
+      box.innerHTML = `
+        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-quantity">Quantité</label>
+        <input type="number" id="dyn-quantity" class="field-input" min="1" step="1" placeholder="Ex. 3"></div>
+        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-unit">Unité</label>
+        <select id="dyn-unit" class="field-input">${Object.entries(UNIT_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div>
+        <div class="field-group" style="margin-bottom:0;"><label for="dyn-unitPrice">Prix unitaire (€)</label>
+        <input type="number" id="dyn-unitPrice" class="field-input" min="0" step="0.5" placeholder="Ex. 10"></div>`;
+    } else if (modelId === 'day_rate') {
+      box.innerHTML = `
+        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-dayCount">Nombre de jours</label>
+        <input type="number" id="dyn-dayCount" class="field-input" min="0.5" step="0.5" placeholder="Ex. 1"></div>
+        <div class="field-group" style="margin-bottom:0;"><label for="dyn-dayRate">Taux journalier (€)</label>
+        <input type="number" id="dyn-dayRate" class="field-input" min="0" step="1" placeholder="Ex. 200"></div>`;
+    }
+    box.querySelectorAll('input,select').forEach(el => el.addEventListener('input', calcTotal));
+    calcTotal();
+    box.style.animation = 'none';
+    void box.offsetHeight;
+    box.style.animation = '';
+  }
+
+  function buildRawLine(model, serviceName) {
+    const val = id => (document.getElementById(id) || {}).value || '';
+    const num = id => parseFloat(val(id)) || 0;
+    const line = { title: serviceName, pricingModel: model };
+    if (model === 'hourly') { line.duration = num('dyn-duration'); line.hourlyRate = num('dyn-hourlyRate'); }
+    else if (model === 'fixed') { line.fixedPrice = num('dyn-fixedPrice'); }
+    else if (model === 'unit') { line.quantity = num('dyn-quantity'); line.unitPrice = num('dyn-unitPrice'); line.unit = val('dyn-unit'); }
+    else if (model === 'day_rate') { line.dayCount = num('dyn-dayCount'); line.dayRate = num('dyn-dayRate'); }
+    return line;
+  }
+
+  function lineDesc(model, serviceName, line) {
+    if (model === 'hourly') return `${serviceName} — ${line.duration}h × ${line.hourlyRate}€`;
+    if (model === 'fixed') return `${serviceName} — forfait ${line.fixedPrice}€`;
+    if (model === 'unit') return `${serviceName} — ${line.quantity} ${UNIT_LABELS[line.unit] || line.unit} × ${line.unitPrice}€`;
+    if (model === 'day_rate') return `${serviceName} — ${line.dayCount}j × ${line.dayRate}€/jour`;
+    return serviceName;
+  }
+
+  function calcTotal() {
+    const model = pricingModelSel.value;
+    const result = window.SebaQuotes.calculateQuoteLine(buildRawLine(model, ''));
+    const total = result.valid ? (result.total || 0) : 0;
+    totalEl.textContent = total ? total + ' €' : '— €';
+  }
+
+  function clientName() {
+    if (clientSel.value === 'new') {
+      return document.getElementById('new-name').value.trim() || 'Nouveau client';
+    }
+    return clientSel.options[clientSel.selectedIndex].text;
+  }
+
+  function formatDate(val) {
+    if (!val) return '—';
+    const [y, m, d] = val.split('-');
+    const MOIS = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    return `${parseInt(d)} ${MOIS[parseInt(m)-1]} ${y}`;
+  }
+
+  function showToast(msg) {
+    const ex = document.getElementById('_toast');
+    if (ex) ex.remove();
+    const t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C1D21;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.style.opacity = '0', 3000);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  async function sendFacture() {
+    if (!clientSel.value) {
+      clientSel.focus();
+      clientSel.style.borderColor = 'var(--critical)';
+      showToast('Veuillez sélectionner un client.');
+      return;
+    }
+    const serviceName = activeServiceName();
+    if (!serviceName) {
+      const target = serviceFreeGroup.style.display !== 'none' ? serviceFreeInp : serviceSel;
+      target.focus();
+      target.style.borderColor = 'var(--critical)';
+      showToast(serviceFreeGroup.style.display !== 'none' ? 'Veuillez indiquer le nom de la prestation.' : 'Veuillez sélectionner un service.');
+      return;
+    }
+
+    const model = pricingModelSel.value;
+    const rawLine = buildRawLine(model, serviceName);
+    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
+    if (!calc.valid) {
+      showToast(calc.errors[0]);
+      return;
+    }
+    const total = calc.total;
+    const name  = clientName();
+
+    let clientId = clientSel.value;
+    if (clientSel.value === 'new') {
+      const created = SebaDB.create('clients', {
+        prenom: name.split(' ')[0] || name, nom: name.split(' ').slice(1).join(' ') || '',
+        contact: (document.getElementById('new-email') || {}).value || '—',
+        service: serviceName, ca: 0, statut: 'attente',
+      });
+      clientId = created.id;
+      SebaDB.log('client', 'Nouveau client — ' + name, 'clients.html');
+    }
+    const localDate = (function(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+    const dateChoisie = document.getElementById('date').value || localDate;
+    const facture = SebaDB.create('factures', {
+      num: SebaDB.nextNum('facture'), clientId, clientName: name,
+      service: lineDesc(model, serviceName, rawLine),
+      amount: total || 0, status: 'attente', date: dateChoisie, paidAt: null,
+    });
+    SebaDB.log('facture', 'Facture créée ' + facture.num + ' — ' + name + (total ? ' · ' + total + ' €' : ''), 'factures.html');
+
+    document.querySelector('#confirm-state .tnum').textContent = facture.num;
+    document.getElementById('conf-client').textContent  = name;
+    document.getElementById('conf-service').textContent = serviceName;
+    document.getElementById('conf-amount').textContent  = (total || 0) + ' €';
+    document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);
+
+    document.getElementById('form-state').style.display = 'none';
+    showState('confirm-state');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const statusEl = document.getElementById('conf-email-status');
+    if (window.sebaEmail) {
+      const result = await sebaEmail.sendDocument(facture, 'facture');
+      if (statusEl) {
+        statusEl.textContent = result.ok
+          ? 'Un email a été transmis automatiquement au client.'
+          : 'Facture enregistrée — l\'envoi automatique de l\'email a échoué. Contactez le client directement.';
+      }
+    } else if (statusEl) {
+      statusEl.textContent = 'Facture enregistrée.';
+    }
+  }
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    userMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+
+<script>
+  function toggleSidebar() {
+    const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+</body>
+</html>

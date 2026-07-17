@@ -19,7 +19,7 @@ const CORE = [
   './',
   'index.html', 'connexion.html', 'onboarding.html', 'offline.html',
   'app/dashboard.html', 'clients.html', 'planning.html', 'devis.html',
-  'devis-nouveau.html', 'factures.html', 'equipe.html', 'reglages.html', 'historique.html',
+  'devis-nouveau.html', 'factures.html', 'factures-nouvelle.html', 'equipe.html', 'reglages.html', 'historique.html',
   'pro-global.css', 'sidebar.js', 'businessTypes.js', 'widgets.js', 'seba-data.js',
   'services/config-dashboard.js', 'services/widget-data-api.js',
   'auth.js', 'guard.js', 'theme.js',
