@@ -72,17 +72,17 @@
   .color-swatch{width:38px;height:38px;border-radius:8px;cursor:pointer;border:2px solid transparent;}
   .color-swatch.active{border-color:var(--ink);transform:scale(1.1);}
 
-  .service-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .service-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
   .service-row:last-child{border-bottom:none;}
-  .service-check{width:20px;height:20px;border:1.5px solid var(--border);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .service-check{width:20px;height:20px;margin-top:6px;border:1.5px solid var(--border);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .service-check.checked{background:var(--emerald);border-color:var(--emerald);}
   .service-check.checked::after{content:"✓";color:#031A12;font-size:0.75rem;font-weight:700;}
-  .service-name{flex:1;font-size:0.92rem;}
+  .service-name{flex:1;font-size:0.92rem;padding-top:8px;}
   .service-name input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.88rem;background:var(--white);color:var(--ink);}
-  .service-model select{padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.82rem;background:var(--white);color:var(--ink);max-width:160px;}
-  .service-price input{width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.85rem;text-align:right;}
-  .price-suffix{font-size:0.78rem;color:var(--text-2);width:56px;}
-  .service-remove{font-size:1rem;color:var(--text-2);cursor:pointer;width:20px;text-align:center;flex-shrink:0;}
+  .service-model select{padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.82rem;background:var(--white);color:var(--ink);max-width:200px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+  .service-price input{width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:0.85rem;text-align:right;background:var(--white);color:var(--ink);}
+  .price-suffix{font-size:0.78rem;color:var(--text-2);width:56px;padding-top:8px;}
+  .service-remove{font-size:1rem;color:var(--text-2);cursor:pointer;width:20px;text-align:center;flex-shrink:0;margin-top:6px;}
   .service-remove:hover{color:var(--critical);}
   .add-service{font-size:0.84rem;color:var(--emerald);cursor:pointer;margin-top:14px;display:inline-block;}
 
@@ -102,6 +102,16 @@
     .settings-layout{grid-template-columns:1fr;}
     .settings-nav{flex-direction:row;overflow-x:auto;}
     .field-row{grid-template-columns:1fr;}
+  }
+  @media (max-width:600px){
+    /* Sans ce bloc, la rangée de service reste un flex sur une seule ligne :
+       le nom se compresse sur 2-3 lignes pendant que select/prix gardent
+       leur largeur fixe -- ici, checkbox+nom restent groupés, le reste
+       (modèle/prix/suffixe/suppression) passe naturellement à la ligne. */
+    .service-row{flex-wrap:wrap;row-gap:8px;}
+    .service-name{flex:1 1 160px;padding-top:0;}
+    .service-check{margin-top:0;}
+    .service-model select{max-width:130px;}
   }
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">

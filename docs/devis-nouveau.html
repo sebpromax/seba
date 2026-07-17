@@ -72,14 +72,15 @@
   /* NEW CLIENT FIELDS */
   .new-client-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-top:12px;animation:fadeIn .2s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .state-fade-in{animation:fadeIn .2s ease;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
   /* QTY + TOTAL */
-  .qty-total-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:20px;}
-  .qty-total-row .total-box{margin-top:28px;}
-  .total-box{background:var(--ink);color:var(--bg);border-radius:var(--rs);padding:11px 20px;text-align:center;min-width:130px;flex-shrink:0;}
-  .total-box .total-label{font-size:0.68rem;color:rgba(5,5,5,.6);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;}
+  .qty-total-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;margin-bottom:20px;}
+  .total-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--emerald);color:var(--ink);border-radius:var(--rs);padding:11px 20px;text-align:center;min-width:130px;flex-shrink:0;transition:opacity .15s;}
+  .total-box .total-label{font-size:0.68rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;}
   .total-box .total-amount{font-size:1.5rem;font-weight:700;color:var(--emerald);}
+  #dyn-fields{animation:fadeIn .18s ease;}
 
   /* DIVIDER */
   .divider{border:none;border-top:1px solid var(--border);margin:26px 0;}
@@ -93,8 +94,9 @@
 
   /* CHOIX DU FORMAT */
   .template-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
-  .template-card{text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;cursor:pointer;transition:border-color .15s,transform .15s;font-family:inherit;}
+  .template-card{text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;font-family:inherit;}
   .template-card:hover{border-color:var(--emerald);transform:translateY(-1px);}
+  .template-card:active{transform:scale(.98);background:var(--white);}
   .template-card .tpl-name{font-weight:600;font-size:0.94rem;margin-bottom:4px;}
   .template-card .tpl-desc{font-size:0.8rem;color:var(--text-2);line-height:1.4;}
   @media (max-width:980px){.template-grid{grid-template-columns:1fr;}}
@@ -362,6 +364,17 @@
 
   let selectedTemplateId = null;
 
+  /* Affiche un des 3 écrans (picker/form/confirm) avec un fondu léger --
+     avant ce correctif le passage d'un écran à l'autre était un display
+     binaire instantané, seul le défilement était adouci. */
+  function showState(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.classList.remove('state-fade-in');
+    void el.offsetHeight;
+    el.classList.add('state-fade-in');
+  }
+
   /* Catalogue réel : tarifs personnalisés (reglages.html) si l'entreprise en
      a enregistré, sinon les services par défaut du secteur (businessTypes.js).
      Mêmes clés name/suggestedPrice dans les deux cas -- le formulaire ne
@@ -435,14 +448,14 @@
     document.getElementById('active-template-name').textContent = tpl.name;
     fillPricingModels(tpl);
     document.getElementById('picker-state').style.display = 'none';
-    document.getElementById('form-state').style.display = 'block';
+    showState('form-state');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   document.getElementById('change-template-link').addEventListener('click', e => {
     e.preventDefault();
     document.getElementById('form-state').style.display = 'none';
-    document.getElementById('picker-state').style.display = 'block';
+    showState('picker-state');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -488,6 +501,10 @@
     }
     box.querySelectorAll('input,select').forEach(el => el.addEventListener('input', calcTotal));
     calcTotal();
+    // Rejoue le fondu (innerHTML seul ne relance pas une animation déjà terminée sur ce même nœud).
+    box.style.animation = 'none';
+    void box.offsetHeight;
+    box.style.animation = '';
   }
 
   /* Ligne "brute" (sans desc/total) à partir des champs affichés -- le
@@ -617,7 +634,7 @@
     document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);
 
     document.getElementById('form-state').style.display    = 'none';
-    document.getElementById('confirm-state').style.display = 'block';
+    showState('confirm-state');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     /* Envoi réel (corrige : ce texte affirmait un envoi automatique sans
