@@ -107,6 +107,11 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
+<!-- Bandeau d'identité fixe (nom + secteur), cohérent avec le dashboard --
+     voir docs/identity-bar.js. -->
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
 <div class="layout">
     <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>

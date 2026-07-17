@@ -130,6 +130,11 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
+<!-- Bandeau d'identité fixe (nom + secteur), cohérent avec le dashboard --
+     voir docs/identity-bar.js. -->
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
 <div class="layout">
 
     <div class="mobile-header">
@@ -358,7 +363,7 @@
 </div>
 
 <script src="seba-data.js"></script>
-<script src="businessTypes.js"></script>
+<!-- businessTypes.js déjà chargé plus haut (bandeau d'identité) -->
 <script>
   // ── SECTEUR ACTIF ─────────────────────────────────────────────────────────
   // Valeur par défaut. Remplacé au chargement par localStorage si disponible.

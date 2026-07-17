@@ -29,6 +29,46 @@ button,
 button:hover,  .btn:hover,  [class*="btn-"]:hover { transform: translateY(-1px); }
 button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) scale(0.98); }
 
+/* ── 2bis. Bandeau d'identité fixe (nom + secteur) ──────────────────────────
+ * Ajouté pour que le positionnement initial du contenu soit identique en
+ * naviguant entre le dashboard (bandeau riche, dashboard-v2.css) et les 10
+ * autres pages connectées (bandeau léger ici) -- demande fondateur, avant ce
+ * correctif seul le dashboard avait un bandeau fixe en haut de page.
+ * --identity-bar-height doit rester égal à --v2-fixed-header-space
+ * (dashboard-v2.css, 105px) : une seule valeur, dupliquée par nécessité
+ * technique (fichiers CSS chargés indépendamment), pas par choix. */
+:root {
+  --identity-bar-height: 105px;
+}
+.identity-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: var(--identity-bar-height);
+  box-sizing: border-box;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.identity-bar-name { font-weight: 700; font-size: 1rem; color: var(--ink); }
+.identity-bar-sector { font-size: .78rem; color: var(--text-2); padding: 3px 10px; border: 1px solid var(--border); border-radius: 20px; }
+@media (max-width: 840px) {
+  /* Le bandeau mobile existant (.mobile-header, logo + hamburger) porte déjà
+     l'identité visuelle sur petit écran -- éviter d'empiler un second
+     bandeau fixe (dette déjà connue sur le dashboard lui-même, pas à
+     reproduire ici). */
+  .identity-bar { display: none; }
+}
+@media (min-width: 841px) {
+  /* .layout est déclaré localement dans chaque page (display/grid-template-
+     columns) -- cette règle ne fait qu'ajouter la marge nécessaire pour
+     laisser la place au bandeau fixe, sans dupliquer le reste. */
+  .layout { margin-top: var(--identity-bar-height); }
+}
+
 /* ── 3. Sidebar — hauteur, nav-items, footer (unifié sur toutes les pages) ─ */
 .sidebar {
   /* Rail de navigation toujours sombre, quel que soit le theme du canvas
@@ -44,6 +84,14 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   overflow-y: auto;
   /* largeur imposée par la grille de chaque page,
      mais min/max alignent le contenu correctement */
+}
+@media (min-width: 841px) {
+  /* Décalage sous .identity-bar (même principe que dashboard.html/
+     dashboard-v2.css pour .v2-header-bar) -- dashboard.html a sa propre
+     surcharge plus spécifique (voir son <style> inline), donc cette règle ne
+     s'applique qu'aux 10 autres pages, qui n'avaient aucun bandeau fixe
+     avant ce correctif. */
+  .sidebar { top: var(--identity-bar-height); height: calc(100vh - var(--identity-bar-height)); }
 }
 
 /* Logo (compatible .s-logo dashboard + .logo clients/autres) */
