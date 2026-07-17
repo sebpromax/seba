@@ -93,6 +93,27 @@
   .dyn-fields{margin-bottom:20px;}
   .dyn-note{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;font-size:0.85rem;color:var(--text-2);}
 
+  /* CHOIX DU TYPE (même patron que devis-nouveau.html) */
+  .template-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  .template-card{text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;font-family:inherit;}
+  .template-card:hover{border-color:var(--emerald);transform:translateY(-1px);}
+  .template-card:active{transform:scale(.98);background:var(--white);}
+  .template-card .tpl-name{font-weight:600;font-size:0.94rem;margin-bottom:4px;}
+  .template-card .tpl-desc{font-size:0.8rem;color:var(--text-2);line-height:1.4;}
+  @media (max-width:980px){.template-grid{grid-template-columns:1fr;}}
+  .active-template{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:10px 16px;margin-bottom:22px;font-size:0.84rem;}
+  .active-template b{color:var(--ink);}
+  .active-template a{color:var(--emerald);font-weight:500;}
+  #type-fields{animation:fadeIn .18s ease;}
+
+  /* FACTURE GROUPÉE */
+  .groupee-line{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+  .groupee-line .gl-desc{flex:1;margin-bottom:0;}
+  .groupee-line .gl-amount{width:110px;margin-bottom:0;}
+  .groupee-line .gl-remove{cursor:pointer;color:var(--text-2);font-size:1.2rem;flex-shrink:0;line-height:1;}
+  .groupee-line .gl-remove:hover{color:var(--critical);}
+  .add-line{font-size:0.84rem;color:var(--emerald);cursor:pointer;display:inline-block;margin-top:2px;margin-bottom:20px;}
+
   /* CONFIRMATION */
   .confirm-wrap{text-align:center;padding:20px 0;}
   .confirm-wrap h2{font-size:1.6rem;margin-bottom:8px;}
@@ -171,12 +192,27 @@
 
     <div class="form-wrap">
 
+      <!-- CHOIX DU TYPE -->
+      <div id="picker-state">
+        <div class="card">
+          <span class="card-ref">Nouvelle facture</span>
+          <h2>Quel type de facture ?</h2>
+          <p class="sub">Le formulaire s'adapte au type choisi.</p>
+          <div class="template-grid" id="template-grid"></div>
+        </div>
+      </div>
+
       <!-- FORMULAIRE -->
-      <div id="form-state">
+      <div id="form-state" style="display:none;">
         <div class="card">
           <span class="card-ref">Nouvelle facture</span>
           <h2>Créer une facture</h2>
           <p class="sub">Pour une prestation déjà réalisée, sans passer par un devis.</p>
+
+          <div class="active-template">
+            <span>Type : <b id="active-type-name">—</b></span>
+            <a href="#" id="change-type-link">← Changer de type</a>
+          </div>
 
           <!-- CLIENT -->
           <div class="field-group">
@@ -207,32 +243,8 @@
 
           <hr class="divider">
 
-          <!-- SERVICE -->
-          <div class="field-group">
-            <label for="service">Service</label>
-            <select id="service" class="field-input">
-              <option value="">— Sélectionnez un service —</option>
-            </select>
-          </div>
-          <div class="field-group" id="service-freetext-group" style="display:none;">
-            <label for="service-freetext">Nom de la prestation</label>
-            <input type="text" id="service-freetext" class="field-input" placeholder="Ex. Prestation sur mesure">
-          </div>
-
-          <!-- MODÈLE TARIFAIRE -->
-          <div class="field-group">
-            <label for="pricing-model">Modèle tarifaire</label>
-            <select id="pricing-model" class="field-input"></select>
-          </div>
-
-          <!-- CHAMPS + TOTAL (dépendent du modèle tarifaire) -->
-          <div class="qty-total-row">
-            <div class="dyn-fields" id="dyn-fields"></div>
-            <div class="total-box">
-              <span class="total-label">Total à facturer</span>
-              <span class="total-amount" id="total">— €</span>
-            </div>
-          </div>
+          <!-- CHAMPS PROPRES AU TYPE CHOISI -->
+          <div id="type-fields"></div>
 
           <hr class="divider">
 
@@ -305,12 +317,7 @@
       clientSel.insertBefore(o, newOpt);
     });
   })();
-  const serviceSel       = document.getElementById('service');
-  const serviceFreeGroup = document.getElementById('service-freetext-group');
-  const serviceFreeInp   = document.getElementById('service-freetext');
-  const pricingModelSel  = document.getElementById('pricing-model');
-  const totalEl          = document.getElementById('total');
-  const newBlock         = document.getElementById('new-client-block');
+  const newBlock = document.getElementById('new-client-block');
 
   clientSel.addEventListener('change', () => {
     newBlock.style.display = clientSel.value === 'new' ? 'block' : 'none';
@@ -321,12 +328,24 @@
   const UNIT_LABELS = { square_meter: 'm²', window: 'vitre', room: 'pièce', km: 'km', item: 'unité', passage: 'passage' };
   const PREFILL_FIELD = { hourly: 'dyn-hourlyRate', fixed: 'dyn-fixedPrice', unit: 'dyn-unitPrice', day_rate: 'dyn-dayRate' };
 
-  /* Modèles tarifaires disponibles pour une facture directe : contrairement
+  /* Modèles tarifaires disponibles pour la facture "standard" : contrairement
      au devis, pas de 'subscription' (les factures récurrentes viennent des
      contrats, voir services/contract-billing.js) ni de 'quote_only'
      (facturer "sur étude" n'a pas de sens -- la prestation est déjà faite)
      ni de 'included' (suppose un contrat/forfait englobant, absent ici). */
   const FACTURE_PRICING_MODELS = ['hourly', 'fixed', 'unit', 'day_rate'];
+
+  /* ── Types de facture (même esprit que le sélecteur de format de
+     devis-nouveau.html, mais pas lié au secteur -- ce sont des scénarios de
+     facturation, pas des métiers) ── */
+  const FACTURE_TYPES = {
+    standard: { id: 'standard', name: 'Facture standard', description: 'Une prestation, facturée en une fois.' },
+    acompte: { id: 'acompte', name: "Facture d'acompte", description: 'Une avance sur un montant total à venir.' },
+    solde: { id: 'solde', name: 'Facture de solde', description: 'Le reste dû après un acompte déjà versé.' },
+    groupee: { id: 'groupee', name: 'Facture groupée', description: 'Plusieurs prestations réunies sur une seule facture (ex. fin de mois).' },
+  };
+  let activeType = null;
+  let groupeeLineSeq = 0;
 
   function showState(id) {
     const el = document.getElementById(id);
@@ -336,52 +355,148 @@
     el.classList.add('state-fade-in');
   }
 
+  function renderTypeGrid() {
+    const grid = document.getElementById('template-grid');
+    grid.innerHTML = Object.values(FACTURE_TYPES).map(t => `
+      <button type="button" class="template-card" data-id="${t.id}">
+        <div class="tpl-name">${t.name}</div>
+        <div class="tpl-desc">${t.description}</div>
+      </button>`).join('');
+    grid.querySelectorAll('.template-card').forEach(card => {
+      card.addEventListener('click', () => applyType(FACTURE_TYPES[card.dataset.id]));
+    });
+  }
+  renderTypeGrid();
+
+  function applyType(type) {
+    activeType = type.id;
+    document.getElementById('active-type-name').textContent = type.name;
+    renderTypeFields(type.id);
+    document.getElementById('picker-state').style.display = 'none';
+    showState('form-state');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('change-type-link').addEventListener('click', e => {
+    e.preventDefault();
+    document.getElementById('form-state').style.display = 'none';
+    showState('picker-state');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   function currentServiceCatalog() {
     const custom = (window.SebaDB ? SebaDB.list('custom_services') : []).filter(s => s.active !== false);
     if (custom.length > 0) return custom;
     return (window.businessTypes[secteur] || {}).services || [];
   }
 
-  function fillServices() {
+  /* ── Rendu des champs propres à chaque type, dans #type-fields ── */
+  function renderTypeFields(typeId) {
+    const box = document.getElementById('type-fields');
+    if (typeId === 'standard') {
+      box.innerHTML = `
+        <div class="field-group">
+          <label for="service">Service</label>
+          <select id="service" class="field-input"><option value="">— Sélectionnez un service —</option></select>
+        </div>
+        <div class="field-group" id="service-freetext-group" style="display:none;">
+          <label for="service-freetext">Nom de la prestation</label>
+          <input type="text" id="service-freetext" class="field-input" placeholder="Ex. Prestation sur mesure">
+        </div>
+        <div class="field-group">
+          <label for="pricing-model">Modèle tarifaire</label>
+          <select id="pricing-model" class="field-input"></select>
+        </div>
+        <div class="qty-total-row">
+          <div class="dyn-fields" id="dyn-fields"></div>
+          <div class="total-box"><span class="total-label">Total à facturer</span><span class="total-amount" id="total">— €</span></div>
+        </div>`;
+      initStandardFields();
+    } else if (typeId === 'acompte') {
+      box.innerHTML = `
+        <div class="field-group"><label for="ac-desc">Description</label>
+        <input type="text" id="ac-desc" class="field-input" placeholder="Ex. Rénovation salle de bain"></div>
+        <div class="field-group"><label for="ac-total">Montant total de la prestation (€)</label>
+        <input type="number" id="ac-total" class="field-input" min="0" step="1" placeholder="Ex. 2000"></div>
+        <div class="field-group"><label for="ac-mode">Type d'acompte</label>
+        <select id="ac-mode" class="field-input">
+          <option value="percent">Pourcentage du total</option>
+          <option value="fixed">Montant fixe</option>
+        </select></div>
+        <div class="field-group" id="ac-percent-group">
+          <label for="ac-percent">Pourcentage (%)</label>
+          <input type="number" id="ac-percent" class="field-input" min="1" max="100" step="1" value="30"></div>
+        <div class="field-group" id="ac-fixed-group" style="display:none;">
+          <label for="ac-fixed">Montant de l'acompte (€)</label>
+          <input type="number" id="ac-fixed" class="field-input" min="0" step="1" placeholder="Ex. 600"></div>
+        <div class="qty-total-row" style="grid-template-columns:1fr auto;">
+          <div></div>
+          <div class="total-box"><span class="total-label">Acompte à facturer</span><span class="total-amount" id="total">— €</span></div>
+        </div>`;
+      initAcompteFields();
+    } else if (typeId === 'solde') {
+      box.innerHTML = `
+        <div class="field-group"><label for="so-desc">Description</label>
+        <input type="text" id="so-desc" class="field-input" placeholder="Ex. Rénovation salle de bain"></div>
+        <div class="field-group"><label for="so-total">Montant total de la prestation (€)</label>
+        <input type="number" id="so-total" class="field-input" min="0" step="1" placeholder="Ex. 2000"></div>
+        <div class="field-group"><label for="so-acompte">Acompte déjà versé (€)</label>
+        <input type="number" id="so-acompte" class="field-input" min="0" step="1" placeholder="Ex. 600"></div>
+        <div class="qty-total-row" style="grid-template-columns:1fr auto;">
+          <div></div>
+          <div class="total-box"><span class="total-label">Solde restant dû</span><span class="total-amount" id="total">— €</span></div>
+        </div>`;
+      initSoldeFields();
+    } else if (typeId === 'groupee') {
+      box.innerHTML = `
+        <div class="field-group"><label>Prestations à regrouper</label></div>
+        <div id="groupee-lines"></div>
+        <span class="add-line" onclick="addGroupeeLine()">+ Ajouter une ligne</span>
+        <div class="qty-total-row" style="grid-template-columns:1fr auto;margin-top:0;">
+          <div></div>
+          <div class="total-box"><span class="total-label">Total de la facture</span><span class="total-amount" id="total">— €</span></div>
+        </div>`;
+      groupeeLineSeq = 0;
+      document.getElementById('groupee-lines').innerHTML = '';
+      addGroupeeLine();
+      addGroupeeLine();
+    }
+    box.style.animation = 'none';
+    void box.offsetHeight;
+    box.style.animation = '';
+  }
+
+  /* ── Type "standard" : identique au formulaire d'origine ── */
+  function initStandardFields() {
+    const serviceSel = document.getElementById('service');
+    const serviceFreeGroup = document.getElementById('service-freetext-group');
+    const pricingModelSel = document.getElementById('pricing-model');
+
     const services = currentServiceCatalog();
     if (services.length === 0) {
       serviceSel.closest('.field-group').style.display = 'none';
       serviceFreeGroup.style.display = 'block';
     } else {
-      serviceSel.closest('.field-group').style.display = 'block';
-      serviceFreeGroup.style.display = 'none';
       serviceSel.innerHTML = '<option value="">— Sélectionnez un service —</option>' +
         services.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
     }
-  }
-  fillServices();
 
-  function activeServiceName() {
-    return serviceFreeGroup.style.display !== 'none'
-      ? serviceFreeInp.value.trim()
-      : serviceSel.value;
-  }
+    serviceSel.addEventListener('change', () => {
+      const svc = services.find(s => s.name === serviceSel.value);
+      const fieldId = PREFILL_FIELD[pricingModelSel.value];
+      if (svc && svc.suggestedPrice && fieldId) {
+        const el = document.getElementById(fieldId);
+        if (el && !el.value) { el.value = svc.suggestedPrice; calcStandardTotal(); }
+      }
+    });
 
-  serviceSel.addEventListener('change', () => {
-    const services = currentServiceCatalog();
-    const svc = services.find(s => s.name === serviceSel.value);
-    const fieldId = PREFILL_FIELD[pricingModelSel.value];
-    if (svc && svc.suggestedPrice && fieldId) {
-      const el = document.getElementById(fieldId);
-      if (el && !el.value) { el.value = svc.suggestedPrice; calcTotal(); }
-    }
-  });
-
-  function fillPricingModels() {
     pricingModelSel.innerHTML = FACTURE_PRICING_MODELS.map(id =>
       `<option value="${id}">${window.SebaQuotes.PRICING_MODELS[id].label}</option>`
     ).join('');
     pricingModelSel.value = 'hourly';
+    pricingModelSel.addEventListener('change', () => renderDynFields(pricingModelSel.value));
     renderDynFields(pricingModelSel.value);
   }
-  fillPricingModels();
-
-  pricingModelSel.addEventListener('change', () => renderDynFields(pricingModelSel.value));
 
   function renderDynFields(modelId) {
     const box = document.getElementById('dyn-fields');
@@ -410,11 +525,15 @@
         <div class="field-group" style="margin-bottom:0;"><label for="dyn-dayRate">Taux journalier (€)</label>
         <input type="number" id="dyn-dayRate" class="field-input" min="0" step="1" placeholder="Ex. 200"></div>`;
     }
-    box.querySelectorAll('input,select').forEach(el => el.addEventListener('input', calcTotal));
-    calcTotal();
-    box.style.animation = 'none';
-    void box.offsetHeight;
-    box.style.animation = '';
+    box.querySelectorAll('input,select').forEach(el => el.addEventListener('input', calcStandardTotal));
+    calcStandardTotal();
+  }
+
+  function activeServiceName() {
+    const freeGroup = document.getElementById('service-freetext-group');
+    return freeGroup.style.display !== 'none'
+      ? document.getElementById('service-freetext').value.trim()
+      : document.getElementById('service').value;
   }
 
   function buildRawLine(model, serviceName) {
@@ -436,11 +555,71 @@
     return serviceName;
   }
 
-  function calcTotal() {
-    const model = pricingModelSel.value;
+  function calcStandardTotal() {
+    const model = document.getElementById('pricing-model').value;
     const result = window.SebaQuotes.calculateQuoteLine(buildRawLine(model, ''));
     const total = result.valid ? (result.total || 0) : 0;
-    totalEl.textContent = total ? total + ' €' : '— €';
+    document.getElementById('total').textContent = total ? total + ' €' : '— €';
+  }
+
+  /* ── Type "acompte" ── */
+  function initAcompteFields() {
+    const modeSel = document.getElementById('ac-mode');
+    modeSel.addEventListener('change', () => {
+      const isPercent = modeSel.value === 'percent';
+      document.getElementById('ac-percent-group').style.display = isPercent ? 'block' : 'none';
+      document.getElementById('ac-fixed-group').style.display = isPercent ? 'none' : 'block';
+      calcAcompteTotal();
+    });
+    ['ac-total', 'ac-percent', 'ac-fixed'].forEach(id => document.getElementById(id).addEventListener('input', calcAcompteTotal));
+    calcAcompteTotal();
+  }
+  function calcAcompteTotal() {
+    const total = parseFloat(document.getElementById('ac-total').value) || 0;
+    const mode = document.getElementById('ac-mode').value;
+    const amount = mode === 'percent'
+      ? total * ((parseFloat(document.getElementById('ac-percent').value) || 0) / 100)
+      : (parseFloat(document.getElementById('ac-fixed').value) || 0);
+    document.getElementById('total').textContent = amount ? Math.round(amount * 100) / 100 + ' €' : '— €';
+  }
+
+  /* ── Type "solde" ── */
+  function initSoldeFields() {
+    ['so-total', 'so-acompte'].forEach(id => document.getElementById(id).addEventListener('input', calcSoldeTotal));
+    calcSoldeTotal();
+  }
+  function calcSoldeTotal() {
+    const total = parseFloat(document.getElementById('so-total').value) || 0;
+    const acompte = parseFloat(document.getElementById('so-acompte').value) || 0;
+    const solde = Math.max(0, total - acompte);
+    document.getElementById('total').textContent = solde ? solde + ' €' : '— €';
+  }
+
+  /* ── Type "groupée" ── */
+  function addGroupeeLine() {
+    groupeeLineSeq++;
+    const id = 'gl-' + groupeeLineSeq;
+    const container = document.getElementById('groupee-lines');
+    const row = document.createElement('div');
+    row.className = 'groupee-line';
+    row.id = id;
+    row.innerHTML = `
+      <input type="text" class="field-input gl-desc" placeholder="Description de la prestation">
+      <input type="number" class="field-input gl-amount" min="0" step="1" placeholder="Montant €">
+      <span class="gl-remove" onclick="removeGroupeeLine('${id}')" title="Retirer">✕</span>`;
+    container.appendChild(row);
+    row.querySelector('.gl-amount').addEventListener('input', calcGroupeeTotal);
+  }
+  function removeGroupeeLine(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+    calcGroupeeTotal();
+  }
+  function calcGroupeeTotal() {
+    const total = Array.from(document.querySelectorAll('#groupee-lines .gl-amount'))
+      .reduce((s, el) => s + (parseFloat(el.value) || 0), 0);
+    const totalEl = document.getElementById('total');
+    if (totalEl) totalEl.textContent = total ? total + ' €' : '— €';
   }
 
   function clientName() {
@@ -469,6 +648,69 @@
     setTimeout(() => t.remove(), 3500);
   }
 
+  /* Construit {service, amount} selon le type actif -- une seule fonction par
+     type, chacune renvoie null (+ un toast) si la saisie est invalide plutôt
+     que de laisser passer une facture à 0€ ou sans description. */
+  function buildStandardContent() {
+    const serviceName = activeServiceName();
+    if (!serviceName) {
+      const freeGroup = document.getElementById('service-freetext-group');
+      const target = freeGroup.style.display !== 'none' ? document.getElementById('service-freetext') : document.getElementById('service');
+      target.focus();
+      target.style.borderColor = 'var(--critical)';
+      showToast(freeGroup.style.display !== 'none' ? 'Veuillez indiquer le nom de la prestation.' : 'Veuillez sélectionner un service.');
+      return null;
+    }
+    const model = document.getElementById('pricing-model').value;
+    const rawLine = buildRawLine(model, serviceName);
+    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
+    if (!calc.valid) { showToast(calc.errors[0]); return null; }
+    return { service: lineDesc(model, serviceName, rawLine), amount: calc.total || 0 };
+  }
+
+  function buildAcompteContent() {
+    const desc = document.getElementById('ac-desc').value.trim();
+    const total = parseFloat(document.getElementById('ac-total').value) || 0;
+    if (!desc) { document.getElementById('ac-desc').focus(); document.getElementById('ac-desc').style.borderColor = 'var(--critical)'; showToast('Veuillez décrire la prestation.'); return null; }
+    if (!total) { document.getElementById('ac-total').focus(); document.getElementById('ac-total').style.borderColor = 'var(--critical)'; showToast('Veuillez indiquer le montant total de la prestation.'); return null; }
+    const mode = document.getElementById('ac-mode').value;
+    const percent = parseFloat(document.getElementById('ac-percent').value) || 0;
+    const fixed = parseFloat(document.getElementById('ac-fixed').value) || 0;
+    const amount = Math.round((mode === 'percent' ? total * (percent / 100) : fixed) * 100) / 100;
+    if (!amount) { showToast('Veuillez indiquer un montant d\'acompte supérieur à 0.'); return null; }
+    const label = mode === 'percent' ? `Acompte ${percent}%` : 'Acompte';
+    return { service: `${label} — ${desc} (total prévu ${total} €)`, amount };
+  }
+
+  function buildSoldeContent() {
+    const desc = document.getElementById('so-desc').value.trim();
+    const total = parseFloat(document.getElementById('so-total').value) || 0;
+    if (!desc) { document.getElementById('so-desc').focus(); document.getElementById('so-desc').style.borderColor = 'var(--critical)'; showToast('Veuillez décrire la prestation.'); return null; }
+    if (!total) { document.getElementById('so-total').focus(); document.getElementById('so-total').style.borderColor = 'var(--critical)'; showToast('Veuillez indiquer le montant total de la prestation.'); return null; }
+    const acompte = parseFloat(document.getElementById('so-acompte').value) || 0;
+    const solde = Math.max(0, total - acompte);
+    if (!solde) { showToast('Le solde calculé est nul — vérifiez le montant total et l\'acompte déjà versé.'); return null; }
+    return { service: `Solde — ${desc} (total ${total} €, acompte ${acompte} € déjà versé)`, amount: solde };
+  }
+
+  function buildGroupeeContent() {
+    const rows = Array.from(document.querySelectorAll('#groupee-lines .groupee-line')).map(row => ({
+      desc: row.querySelector('.gl-desc').value.trim(),
+      amount: parseFloat(row.querySelector('.gl-amount').value) || 0,
+    })).filter(r => r.desc && r.amount > 0);
+    if (rows.length === 0) { showToast('Ajoutez au moins une ligne avec une description et un montant.'); return null; }
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    return { service: rows.length + ' prestations groupées : ' + rows.map(r => r.desc).join(', '), amount: Math.round(total * 100) / 100 };
+  }
+
+  function buildFactureContent() {
+    if (activeType === 'standard') return buildStandardContent();
+    if (activeType === 'acompte') return buildAcompteContent();
+    if (activeType === 'solde') return buildSoldeContent();
+    if (activeType === 'groupee') return buildGroupeeContent();
+    return null;
+  }
+
   async function sendFacture() {
     if (!clientSel.value) {
       clientSel.focus();
@@ -476,24 +718,10 @@
       showToast('Veuillez sélectionner un client.');
       return;
     }
-    const serviceName = activeServiceName();
-    if (!serviceName) {
-      const target = serviceFreeGroup.style.display !== 'none' ? serviceFreeInp : serviceSel;
-      target.focus();
-      target.style.borderColor = 'var(--critical)';
-      showToast(serviceFreeGroup.style.display !== 'none' ? 'Veuillez indiquer le nom de la prestation.' : 'Veuillez sélectionner un service.');
-      return;
-    }
-
-    const model = pricingModelSel.value;
-    const rawLine = buildRawLine(model, serviceName);
-    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
-    if (!calc.valid) {
-      showToast(calc.errors[0]);
-      return;
-    }
-    const total = calc.total;
-    const name  = clientName();
+    const content = buildFactureContent();
+    if (!content) return;
+    const { service: serviceName, amount: total } = content;
+    const name = clientName();
 
     let clientId = clientSel.value;
     if (clientSel.value === 'new') {
@@ -509,7 +737,7 @@
     const dateChoisie = document.getElementById('date').value || localDate;
     const facture = SebaDB.create('factures', {
       num: SebaDB.nextNum('facture'), clientId, clientName: name,
-      service: lineDesc(model, serviceName, rawLine),
+      service: serviceName,
       amount: total || 0, status: 'attente', date: dateChoisie, paidAt: null,
     });
     SebaDB.log('facture', 'Facture créée ' + facture.num + ' — ' + name + (total ? ' · ' + total + ' €' : ''), 'factures.html');
