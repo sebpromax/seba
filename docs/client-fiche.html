@@ -97,6 +97,10 @@
   .num{font-size:0.8rem;color:var(--text-2);}
   .amount{font-weight:600;}
   .row-action{font-size:0.78rem;color:var(--emerald);cursor:pointer;}
+  .btn-mini{font-size:0.76rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font-weight:500;}
+  .btn-mini:hover{border-color:var(--emerald);color:var(--emerald);}
+  .btn-mini-danger{color:var(--critical);border-color:var(--critical);}
+  .btn-mini-danger:hover{background:var(--critical);color:var(--ink-inverse);}
 
   /* INFO LIST */
   .info-list{display:flex;flex-direction:column;gap:14px;}
@@ -277,7 +281,7 @@
         <!-- DEVIS & FACTURES -->
         <div class="panel">
           <div class="panel-head">
-            <h3>Devis & Factures liés</h3>
+            <h3>Devis, Factures & Contrats liés</h3>
           </div>
           <table>
             <thead>
@@ -473,8 +477,11 @@
   const STATUT_BADGE = { actif: ['actif', 'Actif'], attente: ['attente', 'Devis envoyé'], relance: ['relance', 'Facture en retard'] };
   const FACT_BADGE = { payee: ['signe', 'Payée'], attente: ['attente', 'En attente'], retard: ['relance', 'En retard'] };
   const DEVIS_BADGE = { signe: ['signe', 'Signé'], attente: ['attente', 'En attente'], expire: ['expire', 'Expiré'] };
+  // Réutilise les classes de badge existantes (aucune couleur "suspendu"/"terminé"
+  // dédiée) : attente (orange) pour suspendu, expire (gris) pour terminé.
+  const CONTRAT_BADGE = { actif: ['actif', 'Actif'], suspendu: ['attente', 'Suspendu'], termine: ['expire', 'Terminé'] };
 
-  (function loadRealClient() {
+  function renderClientFiche() {
     if (!window.SebaDB || !_id) return; // pas d'id -> reste le squelette de démo statique
     const client = SebaDB.list('clients').find(c => c.id === _id);
     if (!client) return;
@@ -495,6 +502,7 @@
       .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
     const devisList = (SebaDB.list('devis') || []).filter(d => d.clientId === _id);
     const facturesList = (SebaDB.list('factures') || []).filter(f => f.clientId === _id);
+    const contratsList = (SebaDB.list('contrats') || []).filter(c => c.clientId === _id);
 
     // Stats : CA total = somme des factures payées (plus fiable que client.ca,
     // qui n'est mis à jour nulle part au fil des paiements).
@@ -519,9 +527,24 @@
     // enregistrement précis (pas de deep-link par id/num) -- plutôt qu'un
     // texte cliquable qui ne mène nulle part (défaut déjà signalé), le lien
     // renvoie honnêtement vers la liste correspondante.
+    // Actions contextuelles d'un contrat : Pause/Résilier (actif),
+    // Réactiver/Résilier (suspendu), rien (terminé — figé définitivement).
+    function contratActionsHtml(c) {
+      if (c.status === 'actif') {
+        return '<button class="btn-mini" onclick="suspendreContrat(\'' + c.id + '\')" title="Suspendre les prochaines factures">Pause</button>' +
+          ' <button class="btn-mini btn-mini-danger" onclick="resilierContrat(\'' + c.id + '\')" title="Résilier définitivement">Résilier</button>';
+      }
+      if (c.status === 'suspendu') {
+        return '<button class="btn-mini" onclick="reactiverContrat(\'' + c.id + '\')">Réactiver</button>' +
+          ' <button class="btn-mini btn-mini-danger" onclick="resilierContrat(\'' + c.id + '\')">Résilier</button>';
+      }
+      return '<span style="color:var(--text-2);font-size:0.8rem;">Contrat clôturé</span>';
+    }
+
     const docs = [
-      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente, listHref: 'devis.html' })),
-      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente, listHref: 'factures.html' })),
+      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente, action: '<a href="devis.html" style="color:inherit;">Voir la liste</a>' })),
+      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente, action: '<a href="factures.html" style="color:inherit;">Voir la liste</a>' })),
+      ...contratsList.map(c => ({ num: c.num, type: 'Contrat', service: (c.lines && c.lines[0] && c.lines[0].title) || 'Abonnement', amount: c.amount, date: c.createdAt, badge: CONTRAT_BADGE[c.status] || CONTRAT_BADGE.actif, action: contratActionsHtml(c) })),
     ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const docsBody = document.querySelectorAll('.panel table tbody')[1];
     docsBody.innerHTML = docs.length
@@ -531,9 +554,9 @@
           '<td>' + esc(d.service || '—') + '</td>' +
           '<td class="amount">' + (d.amount || 0).toLocaleString('fr-FR') + ' €</td>' +
           '<td><span class="badge ' + d.badge[0] + '">' + d.badge[1] + '</span></td>' +
-          '<td class="row-action"><a href="' + d.listHref + '" style="color:inherit;">Voir la liste</a></td>' +
+          '<td class="row-action">' + d.action + '</td>' +
         '</tr>').join('')
-      : '<tr><td colspan="6" style="color:var(--text-2);">Aucun devis ni facture pour ce client.</td></tr>';
+      : '<tr><td colspan="6" style="color:var(--text-2);">Aucun devis, facture ou contrat pour ce client.</td></tr>';
 
     // Colonne latérale : adresse réelle, date de premier contact réelle.
     const infoValues = document.querySelectorAll('.content-grid > div:last-child .info-value');
@@ -549,7 +572,41 @@
     // Notes internes réelles (vide si le client n'en a pas).
     const notesEl = document.querySelector('.notes-area');
     if (notesEl) notesEl.value = client.notes || '';
-  })();
+  }
+  renderClientFiche();
+
+  /* ── Pilotage des contrats (actif ⇄ suspendu ➔ terminé) ── */
+  function suspendreContrat(contratId) {
+    const c = SebaDB.get('contrats', contratId);
+    if (!c) return;
+    SebaDB.update('contrats', contratId, { status: 'suspendu' });
+    SebaDB.log('contrat', 'Contrat ' + c.num + ' suspendu — ' + c.clientName, 'client-fiche.html');
+    showFicheToast('Contrat ' + c.num + ' mis en pause');
+    renderClientFiche();
+  }
+
+  function reactiverContrat(contratId) {
+    const c = SebaDB.get('contrats', contratId);
+    if (!c) return;
+    const today = new Date().toISOString().slice(0, 10);
+    // Si le contrat a pris du retard pendant sa suspension, on repart de
+    // aujourd'hui plutôt que de générer des factures fantômes du passé.
+    const nouvelleEcheance = today > c.nextBillingDate ? today : c.nextBillingDate;
+    SebaDB.update('contrats', contratId, { status: 'actif', nextBillingDate: nouvelleEcheance });
+    SebaDB.log('contrat', 'Contrat ' + c.num + ' réactivé — ' + c.clientName, 'client-fiche.html');
+    showFicheToast('Contrat ' + c.num + ' réactivé');
+    renderClientFiche();
+  }
+
+  function resilierContrat(contratId) {
+    if (!confirm('Confirmer la résiliation définitive de ce contrat ? Cette action ne pourra pas être annulée.')) return;
+    const c = SebaDB.get('contrats', contratId);
+    if (!c) return;
+    SebaDB.update('contrats', contratId, { status: 'termine' });
+    SebaDB.log('contrat', 'Contrat ' + c.num + ' résilié — ' + c.clientName, 'client-fiche.html');
+    showFicheToast('Contrat ' + c.num + ' résilié');
+    renderClientFiche();
+  }
 
   // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
   function supprimerClient() {
