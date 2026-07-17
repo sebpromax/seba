@@ -56,8 +56,13 @@ self.addEventListener('fetch', (e) => {
   // statiques) : le réseau gagne toujours quand il est disponible, le cache
   // ne sert que de repli hors-ligne. Évite qu'un fichier mis en cache une
   // fois reste figé indéfiniment (voir note v4 en tête de fichier).
+  // { cache: 'no-store' } : sans ça, ce fetch() reste soumis au cache HTTP
+  // normal du navigateur (Cache-Control: max-age=600 sur GitHub Pages) --
+  // "Network First" ne gagnait donc pas toujours vraiment le réseau, juste
+  // le cache du Service Worker ; le cache HTTP pouvait encore servir une
+  // version vieille de 10 min sans la moindre requête réseau réelle.
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-store' })
       .then((res) => {
         const copy = res.clone();
         caches.open(VERSION).then((c) => c.put(req, copy));
