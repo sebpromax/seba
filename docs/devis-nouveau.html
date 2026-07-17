@@ -172,6 +172,17 @@
        d'application au clic sur "+ Nouveau devis". Voir docs/sidebar.js. -->
   <nav class="sidebar"></nav>
   <script src="sidebar.js"></script>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      /* Même correctif que clients.html/devis.html/etc. -- oublié lors de la
+         conversion de cette page sur sidebar.js : la couleur personnalisée
+         (reglages.html) ne s'appliquait qu'aux 7 autres pages connectées,
+         jamais ici, donnant l'impression que la couleur "changeait" en
+         cliquant sur "+ Nouveau devis". */
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
+    })();
+  </script>
 
   <main class="main">
     <div class="fiche-topbar">
