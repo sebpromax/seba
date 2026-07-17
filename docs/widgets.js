@@ -474,7 +474,10 @@ class LotPipelineWidget extends WidgetV2 {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8L4 4z"/></svg>',
         'Aucun dossier en cours',
         'Suivez vos devis jusqu\'à l\'encaissement, du premier RDV au paiement.',
-        'Créer un RDV', 'mutation-contextuelle.html'
+        /* '#' volontaire, pas un oubli : mutation-contextuelle.html fait partie
+           du cluster "Lot" neutralisé WM-007 (mockup sans auth/SebaDB) --
+           même traitement que lot-impayes/lot-pipeline dans WIDGET_CATALOG. */
+        'Créer un RDV', '#'
       );
       return;
     }
@@ -502,7 +505,8 @@ class LotTourneeWidget extends WidgetV2 {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
         'Optimisez vos trajets du jour',
         'Ajoutez vos arrêts et Seba calcule l\'ordre le plus rapide.',
-        'Ajouter des points', 'haversine-engine.html'
+        /* '#' volontaire (cluster "Lot" neutralisé WM-007), voir LotPipelineWidget ci-dessus. */
+        'Ajouter des points', '#'
       );
       return;
     }
@@ -1860,13 +1864,18 @@ const RULES = [
       const late = ctx.creances.filter(c => c.relanceStep >= 2);
       const n = late.length;
       const total = late.reduce((s, c) => s + c.montant, 0);
-      return { cls: 'am', title: n + ' facture(s) en retard sérieux', desc: total.toLocaleString('fr-FR') + ' € en attente depuis plus de 60 jours. Relancez maintenant.', cta: 'Relancer', href: '../contentieux-recouvrement.html' };
+      // href '#' volontaire : contentieux-recouvrement.html fait partie du
+      // cluster "Lot" neutralisé WM-007 (mockup sans auth/SebaDB) -- ce
+      // CTA dynamique avait été oublié lors du passage href:'#' sur les
+      // widgets par défaut du catalogue (2026-07-15).
+      return { cls: 'am', title: n + ' facture(s) en retard sérieux', desc: total.toLocaleString('fr-FR') + ' € en attente depuis plus de 60 jours. Relancez maintenant.', cta: 'Relancer', href: '#' };
     } },
   { id: 'devis-stuck', priority: 60,
     when: ctx => (ctx.mutationDocs || []).some(d => d.stage === 'devis' && daysSince(parseFrDate(d.date)) > 7),
     build: ctx => {
       const stuck = ctx.mutationDocs.filter(d => d.stage === 'devis' && daysSince(parseFrDate(d.date)) > 7);
-      return { cls: 'em', title: stuck.length + ' devis en attente depuis +7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher — relancez le client.', cta: 'Voir le pipeline', href: '../mutation-contextuelle.html' };
+      // href '#' volontaire, même raison que 'late-invoices' ci-dessus (WM-007).
+      return { cls: 'em', title: stuck.length + ' devis en attente depuis +7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher — relancez le client.', cta: 'Voir le pipeline', href: '#' };
     } },
   { id: 'sector-seed', priority: 10,
     /* DEMO['autre'].recos ("Personnalisez votre espace", "Créez votre
