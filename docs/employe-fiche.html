@@ -321,6 +321,15 @@
 
 <script src="seba-data.js"></script>
 <script>
+  (function(){
+    // Couleur personnalisée (Réglages) : même correctif que client-fiche.html
+    // -- cette page garde sa propre sidebar figée, jamais convertie sur
+    // sidebar.js, et n'appliquait jamais la couleur choisie.
+    const c = localStorage.getItem('user_theme_color');
+    if (c) document.documentElement.style.setProperty('--emerald', c);
+  })();
+</script>
+<script>
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {
     const _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');

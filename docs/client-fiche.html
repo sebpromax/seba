@@ -369,6 +369,17 @@
 <script src="seba-data.js"></script>
 <!-- businessTypes.js déjà chargé plus haut (bandeau d'identité) -->
 <script>
+  (function(){
+    // Couleur personnalisée (Réglages) : cette page garde encore sa propre
+    // sidebar figée (pas convertie sur sidebar.js) et n'avait jamais ce
+    // correctif -- même bug que devis-nouveau.html avant lui, trouvé le
+    // même jour. .logo-dot référence déjà var(--emerald) dans le <style>
+    // de cette page, donc mettre à jour la variable CSS suffit.
+    const c = localStorage.getItem('user_theme_color');
+    if (c) document.documentElement.style.setProperty('--emerald', c);
+  })();
+</script>
+<script>
   // ── SECTEUR ACTIF ─────────────────────────────────────────────────────────
   // Valeur par défaut. Remplacé au chargement par localStorage si disponible.
   let currentSector = 'menage';
