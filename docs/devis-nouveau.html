@@ -153,6 +153,7 @@
 <script src="identity-bar.js"></script>
 <script src="services/pricing-model-registry.js"></script>
 <script src="services/quote-template-registry.js"></script>
+<script src="services/quote-engine.js"></script>
 <div class="layout">
 
     <div class="mobile-header">
@@ -367,11 +368,22 @@
 
   let selectedTemplateId = null;
 
-  /* Service : liste réelle du secteur (businessTypes.js). Si le secteur n'a
-     aucun service catalogué ('autre'), on bascule sur un champ libre plutôt
-     que de forcer une liste vide ou des services d'un autre métier. */
+  /* Catalogue réel : tarifs personnalisés (reglages.html) si l'entreprise en
+     a enregistré, sinon les services par défaut du secteur (businessTypes.js).
+     Mêmes clés name/suggestedPrice dans les deux cas -- le formulaire ne
+     distingue pas la provenance. */
+  function currentServiceCatalog() {
+    const custom = (window.SebaDB ? SebaDB.list('custom_services') : []).filter(s => s.active !== false);
+    if (custom.length > 0) return custom;
+    return (window.businessTypes[secteur] || {}).services || [];
+  }
+
+  /* Service : liste réelle du secteur (businessTypes.js), ou tarifs
+     personnalisés s'ils existent. Si le secteur n'a aucun service catalogué
+     ('autre') et aucun tarif personnalisé, on bascule sur un champ libre
+     plutôt que de forcer une liste vide ou des services d'un autre métier. */
   function fillServices() {
-    const services = (window.businessTypes[secteur] || {}).services || [];
+    const services = currentServiceCatalog();
     if (services.length === 0) {
       serviceSel.closest('.field-group').style.display = 'none';
       serviceFreeGroup.style.display = 'block';
@@ -393,7 +405,7 @@
   /* Préremplit le champ de tarif du modèle courant avec le suggestedPrice
      du service choisi (businessTypes.js), sans écraser une saisie existante. */
   serviceSel.addEventListener('change', () => {
-    const services = (window.businessTypes[secteur] || {}).services || [];
+    const services = currentServiceCatalog();
     const svc = services.find(s => s.name === serviceSel.value);
     const fieldId = PREFILL_FIELD[pricingModelSel.value];
     if (svc && svc.suggestedPrice && fieldId) {
@@ -484,54 +496,40 @@
     calcTotal();
   }
 
-  function computeTotal(model) {
-    const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
-    if (model === 'hourly')       return num('dyn-duration') * num('dyn-hourlyRate');
-    if (model === 'fixed')        return num('dyn-fixedPrice');
-    if (model === 'unit')         return num('dyn-quantity') * num('dyn-unitPrice');
-    if (model === 'subscription') return num('dyn-recurringPrice');
-    if (model === 'day_rate')     return num('dyn-dayCount') * num('dyn-dayRate');
-    return 0; // quote_only, included
+  /* Ligne "brute" (sans desc/total) à partir des champs affichés -- le
+     calcul et la validation viennent tous deux de services/quote-engine.js
+     (source unique de vérité, partagée avec toute page qui en aura besoin),
+     jamais recalculés ici en double. */
+  function buildRawLine(model, serviceName) {
+    const val = id => (document.getElementById(id) || {}).value || '';
+    const num = id => parseFloat(val(id)) || 0;
+    const line = { title: serviceName, pricingModel: model };
+    if (model === 'hourly') { line.duration = num('dyn-duration'); line.hourlyRate = num('dyn-hourlyRate'); }
+    else if (model === 'fixed') { line.fixedPrice = num('dyn-fixedPrice'); }
+    else if (model === 'unit') { line.quantity = num('dyn-quantity'); line.unitPrice = num('dyn-unitPrice'); line.unit = val('dyn-unit'); }
+    else if (model === 'subscription') { line.recurringPrice = num('dyn-recurringPrice'); line.frequency = val('dyn-frequency'); }
+    else if (model === 'day_rate') { line.dayCount = num('dyn-dayCount'); line.dayRate = num('dyn-dayRate'); }
+    return line;
+  }
+
+  function lineDesc(model, serviceName, line) {
+    if (model === 'hourly') return `${serviceName} — ${line.duration}h × ${line.hourlyRate}€`;
+    if (model === 'fixed') return `${serviceName} — forfait ${line.fixedPrice}€`;
+    if (model === 'unit') return `${serviceName} — ${line.quantity} ${UNIT_LABELS[line.unit] || line.unit} × ${line.unitPrice}€`;
+    if (model === 'subscription') return `${serviceName} — ${line.recurringPrice}€/${FREQ_LABELS[line.frequency] || line.frequency}`;
+    if (model === 'day_rate') return `${serviceName} — ${line.dayCount}j × ${line.dayRate}€/jour`;
+    if (model === 'quote_only') return `${serviceName} — sur devis après étude`;
+    if (model === 'included') return `${serviceName} — inclus`;
+    return serviceName;
   }
 
   function calcTotal() {
     const model = pricingModelSel.value;
-    const total = computeTotal(model);
+    const result = window.SebaQuotes.calculateQuoteLine(buildRawLine(model, ''));
+    const total = result.valid ? (result.total || 0) : 0;
     totalEl.textContent = model === 'quote_only' ? 'Sur devis'
       : model === 'included' ? 'Inclus'
       : (total ? total + ' €' : '— €');
-  }
-
-  function buildLineFromFields(model, serviceName) {
-    const val = id => (document.getElementById(id) || {}).value || '';
-    const total = computeTotal(model);
-    const line = { title: serviceName, pricingModel: model, total };
-    if (model === 'hourly') {
-      line.duration = parseFloat(val('dyn-duration')) || 0;
-      line.hourlyRate = parseFloat(val('dyn-hourlyRate')) || 0;
-      line.desc = `${serviceName} — ${line.duration}h × ${line.hourlyRate}€`;
-    } else if (model === 'fixed') {
-      line.fixedPrice = parseFloat(val('dyn-fixedPrice')) || 0;
-      line.desc = `${serviceName} — forfait ${line.fixedPrice}€`;
-    } else if (model === 'unit') {
-      line.quantity = parseFloat(val('dyn-quantity')) || 0;
-      line.unitPrice = parseFloat(val('dyn-unitPrice')) || 0;
-      line.unit = val('dyn-unit');
-      line.desc = `${serviceName} — ${line.quantity} ${UNIT_LABELS[line.unit] || line.unit} × ${line.unitPrice}€`;
-    } else if (model === 'subscription') {
-      line.recurringPrice = parseFloat(val('dyn-recurringPrice')) || 0;
-      line.frequency = val('dyn-frequency');
-      line.desc = `${serviceName} — ${line.recurringPrice}€/${FREQ_LABELS[line.frequency] || line.frequency}`;
-    } else if (model === 'day_rate') {
-      line.dayCount = parseFloat(val('dyn-dayCount')) || 0;
-      line.dayRate = parseFloat(val('dyn-dayRate')) || 0;
-      line.desc = `${serviceName} — ${line.dayCount}j × ${line.dayRate}€/jour`;
-    } else if (model === 'quote_only') {
-      line.desc = `${serviceName} — sur devis après étude`;
-    } else if (model === 'included') {
-      line.desc = `${serviceName} — inclus`;
-    }
-    return line;
   }
 
   renderTemplateGrid();
@@ -583,12 +581,13 @@
     }
 
     const model = pricingModelSel.value;
-    const line = buildLineFromFields(model, serviceName);
-    const validation = window.SebaQuotes.PRICING_MODELS[model].validate(line);
-    if (!validation.valid) {
-      showToast(validation.errors[0]);
+    const rawLine = buildRawLine(model, serviceName);
+    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
+    if (!calc.valid) {
+      showToast(calc.errors[0]);
       return;
     }
+    const line = Object.assign({}, rawLine, { desc: lineDesc(model, serviceName, rawLine), total: calc.total });
 
     const total  = line.total;
     const amount = model === 'quote_only' ? 'Sur devis' : model === 'included' ? 'Inclus' : (total ? total + ' €' : '—');

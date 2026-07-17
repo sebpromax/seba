@@ -23,9 +23,11 @@
       legacyQuote.lines.forEach(function (line, index) {
         var qty = line.qty || 1;
         var rate = line.u || legacyQuote.hourlyRate || 0;
+        var title = line.desc || legacyQuote.service || 'Prestation de service';
         adaptedLines.push({
           id: line.id || ('line_' + Date.now() + '_' + index),
-          title: line.desc || legacyQuote.service || 'Prestation de service',
+          title: title,
+          desc: title,
           pricingModel: 'hourly',
           quantity: qty,
           unit: 'hour',
@@ -38,9 +40,11 @@
     } else {
       var duration = legacyQuote.duration || 1;
       var hourlyRate = legacyQuote.hourlyRate || 0;
+      var title0 = legacyQuote.service || 'Prestation de service';
       adaptedLines.push({
         id: 'line_' + Date.now() + '_0',
-        title: legacyQuote.service || 'Prestation de service',
+        title: title0,
+        desc: title0,
         pricingModel: 'hourly',
         quantity: duration,
         unit: 'hour',

@@ -273,10 +273,11 @@
 </aside>
 
 <script src="seba-data.js"></script>
+<script src="services/legacy-quote-adapter.js"></script>
 <script src="email-service.js"></script>
 <script>
   /* ── Devis — lus depuis le moteur de données partagé ── */
-  let DEVIS_DATA = SebaDB.list('devis').map(d => Object.assign({}, d, { client: d.clientName }));
+  let DEVIS_DATA = SebaDB.list('devis').map(window.SebaQuotes.adaptLegacyQuote).map(d => Object.assign({}, d, { client: d.clientName }));
 
   const STATUS_LABEL = {signe:'Signé',attente:'En attente',expire:'Expiré'};
   let _biz = {};
@@ -297,9 +298,16 @@
   }
 
   function buildReceipt(d) {
-    const lines = d.lines.map(l =>
-      `<tr><td>${esc(l.desc)}</td><td>${esc(l.qty)}</td><td class="td-r">${esc(l.u)} ${_sym}</td></tr>`
-    ).join('');
+    /* d.lines peut être au format v1 (desc/qty/u) ou au format moteur
+       multi-format (desc/quantity ou duration/total) selon la date de
+       création du devis -- voir services/legacy-quote-adapter.js. Lecture
+       tolérante aux deux plutôt que de dépendre d'un seul jeu de clés. */
+    const lines = d.lines.map(l => {
+      const desc = l.desc || l.title || '—';
+      const qty  = l.qty !== undefined ? l.qty : (l.quantity !== undefined ? l.quantity : 1);
+      const amt  = l.u !== undefined ? l.u : (l.total !== undefined ? l.total : 0);
+      return `<tr><td>${esc(desc)}</td><td>${esc(qty)}</td><td class="td-r">${esc(amt)} ${_sym}</td></tr>`;
+    }).join('');
     const hist = d.history.map(h =>
       `<div class="hist-item"><div class="hist-dot ${h.cls}"></div><span>${h.label}</span><span class="hist-date">${h.date}</span></div>`
     ).join('');
@@ -397,7 +405,7 @@
 
   /* ── Rendu du tableau depuis le store ── */
   function refreshFromDB() {
-    DEVIS_DATA = SebaDB.list('devis').map(d => Object.assign({}, d, { client: d.clientName }));
+    DEVIS_DATA = SebaDB.list('devis').map(window.SebaQuotes.adaptLegacyQuote).map(d => Object.assign({}, d, { client: d.clientName }));
     renderTable();
     renderTabs();
   }
