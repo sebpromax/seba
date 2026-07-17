@@ -123,6 +123,15 @@
         </div>
       </div>
     </div>
+    <div class="panel" id="contrats-a-facturer-panel" style="display:none;margin-bottom:20px;padding:20px 22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:1.05rem;">Contrats à facturer</h3>
+          <p id="contrats-a-facturer-desc" style="margin:0;color:var(--text-2);font-size:0.85rem;"></p>
+        </div>
+        <button class="btn-em" id="btn-generer-factures-contrats">Générer les factures</button>
+      </div>
+    </div>
     <div class="tabs">
       <div class="tab active" data-filter="all">Toutes (5)</div>
       <div class="tab" data-filter="signe">Payées (3)</div>
@@ -139,10 +148,49 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="services/contract-billing.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="pdf-generator.js" defer></script>
 <script src="stripe-service.js"></script>
 <script src="email-service.js"></script>
+<script>
+  /* ── Contrats d'abonnement arrivés à échéance (pas de serveur/cron : la
+     seule "détection" possible est au chargement de cette page, quand
+     l'artisan l'ouvre). Génère une facture par contrat dû et avance son
+     échéance du même intervalle que sa fréquence -- jamais depuis
+     aujourd'hui (éviterait un décalage si l'artisan génère en retard). ── */
+  (function renderContratsAFacturer() {
+    if (!window.SebaQuotes || !window.SebaQuotes.contractsDueForBilling) return;
+    const due = window.SebaQuotes.contractsDueForBilling();
+    const panel = document.getElementById('contrats-a-facturer-panel');
+    if (!due.length) return;
+    panel.style.display = 'block';
+    document.getElementById('contrats-a-facturer-desc').textContent =
+      due.length + ' contrat' + (due.length > 1 ? 's' : '') + " d'abonnement " + (due.length > 1 ? 'ont' : 'a') + ' atteint leur échéance de facturation.';
+    const btn = document.getElementById('btn-generer-factures-contrats');
+    btn.textContent = 'Générer les ' + due.length + ' facture' + (due.length > 1 ? 's' : '');
+    btn.addEventListener('click', () => genererFacturesContrats(due));
+  })();
+
+  function genererFacturesContrats(due) {
+    const sym = (function(){ try { return JSON.parse(localStorage.getItem('sebaEntreprise')||'{}').deviseSymbole || '€'; } catch(e){ return '€'; } })();
+    const today = new Date().toISOString().slice(0,10);
+    due.forEach(c => {
+      const fact = SebaDB.create('factures', {
+        num: SebaDB.nextNum('facture'), clientId: c.clientId, clientName: c.clientName,
+        service: (c.lines[0] && c.lines[0].title) || 'Abonnement', amount: c.amount, status: 'attente', date: today, paidAt: null,
+      });
+      const frequency = (c.lines[0] && c.lines[0].frequency) || 'month';
+      SebaDB.update('contrats', c.id, {
+        lastInvoicedDate: today,
+        nextBillingDate: window.SebaQuotes.addBillingInterval(c.nextBillingDate, frequency),
+      });
+      SebaDB.log('facture', "Facture d'abonnement générée " + fact.num + ' — ' + c.clientName + ' · ' + c.amount + ' ' + sym, 'factures.html');
+    });
+    if (window.showFactToast) showFactToast(due.length + ' facture(s) générée(s) ✓');
+    setTimeout(() => location.reload(), 700);
+  }
+</script>
 <script>
   /* ── Rendu des factures depuis le moteur de données partagé ── */
   (function renderFactures() {

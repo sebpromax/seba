@@ -173,8 +173,8 @@
       panel.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-2);">Aucune activité pour le moment. Vos actions (clients, devis, factures, interventions) apparaîtront ici.</div>';
       return;
     }
-    const PILL = { client: 'Client', paiement: 'Paiement', devis: 'Devis', intervention: 'Intervention', facture: 'Paiement' };
-    const DOT = { facture: 'paiement' };
+    const PILL = { client: 'Client', paiement: 'Paiement', devis: 'Devis', intervention: 'Intervention', facture: 'Paiement', contrat: 'Contrat' };
+    const DOT = { facture: 'paiement', contrat: 'devis' };
     const dayKey = ts => new Date(ts).toDateString();
     const dayLabel = ts => {
       const d = new Date(ts), now = new Date();

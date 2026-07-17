@@ -43,8 +43,8 @@
   const EMPTY = () => ({
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
-    custom_services: [],
-    seq: { devis: 118, facture: 93 },
+    custom_services: [], contrats: [],
+    seq: { devis: 118, facture: 93, contrat: 0 },
   });
 
   /* ── Adaptateur localStorage (défaut) ── */
@@ -159,7 +159,9 @@
   function loadState() {
     state = adapter.load() || EMPTY();
     if (!state.seq) state.seq = { devis: 118, facture: 93 };
+    if (!state.seq.contrat) state.seq.contrat = 0;
     if (!state.custom_services) state.custom_services = [];
+    if (!state.contrats) state.contrats = [];
     return state;
   }
   function persist() {
@@ -477,6 +479,7 @@
     nextNum(kind) {
       if (!state) loadState();
       if (kind === 'facture') return '#F-' + String(++state.seq.facture).padStart(4, '0');
+      if (kind === 'contrat') return '#C-' + String(++state.seq.contrat).padStart(4, '0');
       return '#' + String(++state.seq.devis).padStart(4, '0');
     },
 

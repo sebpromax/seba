@@ -274,6 +274,7 @@
 
 <script src="seba-data.js"></script>
 <script src="services/legacy-quote-adapter.js"></script>
+<script src="services/contract-billing.js"></script>
 <script src="email-service.js"></script>
 <script>
   /* ── Devis — lus depuis le moteur de données partagé ── */
@@ -393,14 +394,53 @@
     showToast('Devis renouvelé — nouveau devis créé.'); closeSheet();
   }
 
+  /* Bouton intelligent (signature = conversion automatique) : les lignes
+     "subscription" d'un devis deviennent un contrat récurrent, les autres
+     lignes (ou tout le devis si aucune ligne n'est un abonnement) partent
+     directement en facture -- l'artisan n'a qu'une seule action à faire,
+     jamais un choix "facture ou contrat ?" à comprendre. Un devis mixte
+     (une partie ponctuelle + une partie abonnement) produit les deux : le
+     contrat pour la partie récurrente, une facture immédiate pour le reste. */
   function marquerSigne(num) {
     const d = SebaDB.list('devis').find(x => x.num === num);
     if (!d) return;
     const today = new Date().toISOString().slice(0,10);
     SebaDB.update('devis', d.id, { status: 'signe', history: [{ label: 'Devis signé', date: today, cls: 'g' }].concat(d.history || []) });
     SebaDB.log('devis', 'Devis signé — ' + d.clientName + ' · ' + d.amount + ' ' + _sym, 'devis.html');
+
+    const lines = d.lines || [];
+    const subLines = lines.filter(l => l.pricingModel === 'subscription');
+    const otherLines = lines.filter(l => l.pricingModel !== 'subscription');
+
+    let contratCree = null;
+    if (subLines.length > 0) {
+      const subTotal = subLines.reduce((s, l) => s + (Number(l.total) || 0), 0);
+      const frequency = subLines[0].frequency || 'month';
+      contratCree = SebaDB.create('contrats', {
+        num: SebaDB.nextNum('contrat'),
+        quoteId: d.id, clientId: d.clientId, clientName: d.clientName,
+        status: 'actif', amount: subTotal, lines: subLines,
+        lastInvoicedDate: null,
+        nextBillingDate: window.SebaQuotes.addBillingInterval(today, frequency),
+      });
+      SebaDB.log('contrat', 'Contrat créé ' + contratCree.num + ' — ' + d.clientName + ' · ' + subTotal + ' ' + _sym + '/' + frequency, 'factures.html');
+    }
+
+    let factureCreee = null;
+    if (otherLines.length > 0 || subLines.length === 0) {
+      const factTotal = otherLines.length > 0 ? otherLines.reduce((s, l) => s + (Number(l.total) || 0), 0) : d.amount;
+      factureCreee = SebaDB.create('factures', {
+        num: SebaDB.nextNum('facture'), clientId: d.clientId, clientName: d.clientName,
+        service: d.service, amount: factTotal, status: 'attente', date: today, paidAt: null,
+      });
+      SebaDB.log('facture', 'Facture générée ' + factureCreee.num + ' — ' + d.clientName + ' · ' + factTotal + ' ' + _sym, 'factures.html');
+    }
+
     refreshFromDB();
-    showToast('Devis ' + num + ' marqué comme signé ✓'); closeSheet();
+    const suite = contratCree && factureCreee ? ' — contrat + facture créés'
+      : contratCree ? ' — contrat créé'
+      : ' — facture générée';
+    showToast('Devis ' + num + ' marqué comme signé ✓' + suite); closeSheet();
   }
 
   /* ── Rendu du tableau depuis le store ── */

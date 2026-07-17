@@ -1843,6 +1843,17 @@ function buildLiveData(demoFallback, sym) {
    proactives triées par priorité, avec repli sur DEMO[secteur].recos
 ═══════════════════════════════════════════════════════════════ */
 const RULES = [
+  { id: 'contrats-a-facturer', priority: 80,
+    /* Pas de serveur/cron : la seule "detection" possible est a l'ouverture
+       du dashboard. Le bouton de generation reelle vit sur factures.html
+       (une carte de recommandation ne peut que lier vers une page, pas
+       executer une action en place -- voir services/contract-billing.js). */
+    when: ctx => window.SebaQuotes && window.SebaQuotes.contractsDueForBilling && window.SebaQuotes.contractsDueForBilling().length > 0,
+    build: ctx => {
+      const due = window.SebaQuotes.contractsDueForBilling();
+      const n = due.length;
+      return { cls: 'em', title: n + ' contrat' + (n > 1 ? 's' : '') + ' à facturer', desc: 'Des échéances de facturation récurrente sont arrivées à terme.', cta: 'Générer les factures', href: '../factures.html' };
+    } },
   { id: 'late-invoices', priority: 90,
     when: ctx => (ctx.creances || []).some(c => c.relanceStep >= 2),
     build: ctx => {
