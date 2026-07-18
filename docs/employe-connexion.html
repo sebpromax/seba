@@ -36,7 +36,6 @@ input,button,select{font-family:'Inter',sans-serif;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
 .logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
 .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
-.nav-tag{font-size:.88rem;color:var(--mist);font-weight:500;}
 .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
 
 /* ── Page layout ── */
@@ -151,6 +150,14 @@ input:-webkit-autofill:active,
 .foot a{color:var(--db-teal);font-weight:600;transition:opacity .2s;}
 .foot a:hover{opacity:.75;}
 
+/* Boutons pied de page (Retour / PIN oublié) -- .btn-ghost-nav est la
+   classe "bouton secondaire fantôme" du design system sombre (voir
+   connexion.html, nav-right) : reprise ici à l'identique plutôt que
+   réinventée. */
+.btn-ghost-nav{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--w-a85);border:1px solid var(--w-a18);font-weight:600;font-size:.84rem;border-radius:10px;padding:8px 18px;transition:border-color .2s,color .2s,background .2s;cursor:pointer;width:100%;}
+.btn-ghost-nav:hover{border-color:var(--dt-a50);color:var(--db-teal);background:var(--dt-a04);}
+.foot-links{display:flex;flex-direction:column;gap:10px;}
+
 .error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .error-msg.visible{display:block;}
 .success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
@@ -174,7 +181,7 @@ p{letter-spacing:-0.02em;}
 <!-- ── Navigation ── -->
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
-  <div class="nav-center"><span class="nav-tag">Espace terrain</span></div>
+  <div class="nav-center"></div>
   <div class="nav-right"></div>
 </nav>
 
@@ -195,12 +202,12 @@ p{letter-spacing:-0.02em;}
 
     <div id="ec-form">
       <div class="field" id="employe-field">
-        <label for="ec-employe">Vous êtes</label>
+        <label for="ec-employe">Identifiant</label>
         <select id="ec-employe"></select>
       </div>
 
       <div class="field field-pin" id="pin-field">
-        <label for="ec-pin">Code PIN (4 chiffres)</label>
+        <label for="ec-pin">Mot de passe</label>
         <div class="field-pw-wrap">
           <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="new-password">
           <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
@@ -220,7 +227,12 @@ p{letter-spacing:-0.02em;}
 
     <hr class="divider">
 
-    <p class="foot">Vous êtes le patron ? <a href="app/dashboard.html">Tableau de bord</a></p>
+    <div class="success-msg" id="forgot-pin-msg"></div>
+
+    <div class="foot-links">
+      <button type="button" class="btn-ghost-nav" onclick="history.back()">Retour</button>
+      <button type="button" class="btn-ghost-nav" onclick="handleForgotPin()">Code PIN oublié ?</button>
+    </div>
   </div>
 </div>
 
@@ -292,6 +304,16 @@ async function handleEmployeeLogin(){
     btnText.textContent = 'Se connecter';
     document.getElementById('ec-pin').value = '';
   }
+}
+
+/* Pas de flux d'auto-recuperation : seul le patron peut reinitialiser un
+   PIN oublie (voir employe-fiche.html -- panneau "Code PIN terrain",
+   deja en place). Message honnete plutot qu'un lien mort ou un flux
+   inexistant -- meme logique que "Espace Client" sur connexion.html. */
+function handleForgotPin(){
+  const el = document.getElementById('forgot-pin-msg');
+  el.textContent = 'Demandez à votre patron de réinitialiser votre code depuis votre fiche employé.';
+  el.classList.add('visible');
 }
 
 function togglePinVisibility(){
