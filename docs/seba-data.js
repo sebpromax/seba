@@ -494,6 +494,100 @@
     },
     journal(limit) { if (!state) loadState(); return state.journal.slice(0, limit || 50); },
 
+    /* ── Messagerie (seba_messages, table Supabase dediee -- PAS le
+       mecanisme generique state[coll]/entity_versions utilise par
+       contrats/custom_services). Seule collection SebaDB qui parle
+       directement a une vraie table : un fil de messages a besoin d'un
+       tri/index par date et d'ecritures independantes, pas d'un blob
+       JSONB unique a reecrire en entier a chaque message.
+       API asynchrone (contrairement au reste de SebaDB, synchrone) : ces
+       deux methodes peuvent faire un aller-retour reseau reel. Repli
+       local automatique (state.messages, deja dans EMPTY()) des que
+       Supabase n'est pas configure ou qu'aucune session n'existe --
+       fonctionne donc identiquement en mode demo/file://.
+       RLS : auth.uid() = user_id, comme seba_state/clients/devis. Le PIN
+       employe (employe-auth.ts) ne cree jamais de session Supabase
+       independante -- il badge un employe sur l'appareil DEJA
+       authentifie du patron, donc chaque ecriture (patron ou employe)
+       passe par le MEME auth.uid(). employeId/clientId sont des champs
+       descriptifs, jamais une frontiere de securite. ── */
+    messages: {
+      async list(filter) {
+        if (!state) loadState();
+        if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+          try {
+            const cfg = window.SEBA_CONFIG;
+            const account = adapter._accountId();
+            let url = cfg.supabaseUrl + '/rest/v1/seba_messages?account=eq.' + encodeURIComponent(account) + '&order=created_at.asc';
+            if (filter && filter.clientId) url += '&client_id=eq.' + encodeURIComponent(filter.clientId);
+            if (filter && filter.employeId) url += '&employe_id=eq.' + encodeURIComponent(filter.employeId);
+            const res = await fetch(url, { headers: adapter._headers() });
+            // Normalise snake_case (colonnes Postgres) -> camelCase (convention
+            // JS du reste de SebaDB) : sans ca, un appelant lisant m.clientId
+            // trouverait undefined sur les messages venus de Supabase alors que
+            // ca marcherait sur ceux du repli local (meme bug de forme que
+            // mutation_docs vs SebaDB trouve en Phase 0 de ce chantier).
+            if (res.ok) {
+              const rows = await res.json();
+              return rows.map(r => ({
+                id: r.id, createdAt: r.created_at, clientId: r.client_id, employeId: r.employe_id,
+                expediteurRole: r.expediteur_role, destinataireRole: r.destinataire_role,
+                texte: r.texte, lu: r.lu,
+              }));
+            }
+            console.warn('[seba-data] lecture messages distante en echec (HTTP ' + res.status + ') — repli local.');
+          } catch (e) {
+            console.warn('[seba-data] lecture messages distante impossible (reseau) — repli local.', e.message);
+          }
+        }
+        return state.messages.filter(m =>
+          (!filter || !filter.clientId || m.clientId === filter.clientId) &&
+          (!filter || !filter.employeId || m.employeId === filter.employeId)
+        );
+      },
+      async send(obj) {
+        if (!state) loadState();
+        if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+          try {
+            const cfg = window.SEBA_CONFIG;
+            const body = {
+              account: adapter._accountId(),
+              client_id: obj.clientId || null,
+              employe_id: obj.employeId || null,
+              expediteur_role: obj.expediteurRole,
+              destinataire_role: obj.destinataireRole,
+              texte: obj.texte,
+            };
+            const res = await fetch(cfg.supabaseUrl + '/rest/v1/seba_messages', {
+              method: 'POST',
+              headers: adapter._headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+              body: JSON.stringify(body),
+            });
+            if (res.ok) {
+              const rows = await res.json();
+              const r = rows[0];
+              // Meme normalisation snake_case -> camelCase que list() ci-dessus.
+              return {
+                id: r.id, createdAt: r.created_at, clientId: r.client_id, employeId: r.employe_id,
+                expediteurRole: r.expediteur_role, destinataireRole: r.destinataire_role,
+                texte: r.texte, lu: r.lu,
+              };
+            }
+            console.warn('[seba-data] envoi message distant en echec (HTTP ' + res.status + ') — enregistre localement seulement.');
+          } catch (e) {
+            console.warn('[seba-data] envoi message distant impossible (reseau) — enregistre localement seulement.', e.message);
+          }
+        }
+        // Repli local (pas de Supabase configure, pas de session, ou echec
+        // reseau) : meme collection generique que les autres, pour que la
+        // messagerie reste utilisable en mode demo/file://.
+        const localMsg = Object.assign({ id: uid(), createdAt: todayISO(0), lu: false }, obj);
+        state.messages.unshift(localMsg);
+        persist();
+        return localMsg;
+      },
+    },
+
     /* Chiffres réels calculés — consommés par le dashboard */
     metrics() {
       if (!state) loadState();

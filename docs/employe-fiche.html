@@ -403,7 +403,12 @@
     // Planning : aucune intervention n'est liée à un employé dans SebaDB
     // (les interventions ont un clientId, jamais d'employeId) -- état
     // honnête plutôt qu'un planning fictif.
-    const planningPanel = document.querySelector('.panel');
+    // .content-grid .panel, pas .panel seul : le panneau "Employé introuvable"
+    // (ajouté le 2026-07-18) a aussi class="panel" et vit AVANT .emp-header
+    // dans le DOM -- un querySelector('.panel') nu l'attrapait en premier,
+    // provoquant un crash (querySelector('.panel-head h3') sur ce panneau
+    // ne trouve rien, .textContent sur null lève une exception).
+    const planningPanel = document.querySelector('.content-grid .panel');
     planningPanel.querySelector('.panel-head h3').textContent = 'Planning de la semaine';
     const missionItems = planningPanel.querySelectorAll('.mission-item');
     missionItems.forEach((el, i) => { if (i > 0) el.remove(); });
@@ -443,10 +448,12 @@
 
   /* ── Messagerie (journal patron -- voir note dans le panneau, même
      principe que client-fiche.html). ── */
-  function renderMessagesThread() {
+  /* Asynchrone depuis que seba_messages est une vraie table Supabase --
+     voir client-fiche.html pour le meme correctif et le pourquoi. */
+  async function renderMessagesThread() {
     const box = document.getElementById('messages-thread');
     if (!box || !window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
-    const msgs = window.SebaQuotes.messagesFor('employe', _id);
+    const msgs = await window.SebaQuotes.messagesFor('employe', _id);
     box.innerHTML = msgs.length
       ? msgs.map(m => '<div class="msg-bubble">' + m.texte.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
           '<div class="msg-meta">' + (m.expediteurRole === 'patron' ? 'Vous' : 'Employé') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
@@ -454,11 +461,11 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function envoyerMessageEmploye() {
+  async function envoyerMessageEmploye() {
     const inp = document.getElementById('message-input');
     const texte = inp.value.trim();
     if (!texte || !_id) return;
-    window.SebaQuotes.createMessage({
+    await window.SebaQuotes.createMessage({
       employeId: _id, expediteurRole: 'patron', destinataireRole: 'employe', texte,
     });
     if (window.SebaDB) SebaDB.log('message', 'Message envoyé à ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);

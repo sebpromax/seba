@@ -652,10 +652,14 @@
      voir services/message-log.js). Aucun accès direct côté client
      aujourd'hui : ces messages sont un historique tenu par le patron, pas
      un aller-retour temps réel. ── */
-  function renderMessagesThread() {
+  /* Asynchrone depuis que seba_messages est une vraie table Supabase (peut
+     faire un aller-retour reseau reel) -- appelee sans await depuis
+     renderClientFiche() (elle gere sa propre zone du DOM, pas besoin de
+     bloquer le reste du rendu de la fiche dessus). */
+  async function renderMessagesThread() {
     const box = document.getElementById('messages-thread');
     if (!box || !window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
-    const msgs = window.SebaQuotes.messagesFor('client', _id);
+    const msgs = await window.SebaQuotes.messagesFor('client', _id);
     box.innerHTML = msgs.length
       ? msgs.map(m => '<div class="msg-bubble">' + esc(m.texte) +
           '<div class="msg-meta">' + (m.expediteurRole === 'patron' ? 'Vous' : 'Client') + ' · ' + fmtDateFr(m.createdAt) + '</div></div>').join('')
@@ -663,11 +667,11 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function envoyerMessageClient() {
+  async function envoyerMessageClient() {
     const inp = document.getElementById('message-input');
     const texte = inp.value.trim();
     if (!texte || !_id) return;
-    window.SebaQuotes.createMessage({
+    await window.SebaQuotes.createMessage({
       clientId: _id, expediteurRole: 'patron', destinataireRole: 'client', texte,
     });
     SebaDB.log('message', 'Message envoyé à ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
