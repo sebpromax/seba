@@ -35,6 +35,10 @@
      SebaDB.exportJSON() / importJSON(str)
      SebaDB.eraseAllData()             -> efface tout (local + ligne cloud), Art. 17 RGPD
      SebaDB.hasData()                  -> vrai si le compte a des données
+     SebaDB.messages.list(filter) / .send(obj)  -> async, table seba_messages dédiée
+     SebaDB.setEmployePin(employeId, pin)       -> async, Edge Function employe-set-pin.ts
+     SebaDB.employeLogin(employeId, pin)        -> async, Edge Function employe-auth.ts, pose la session terrain
+     SebaDB.employeSession() / employeLogout()  -> lecture/effacement de la session terrain locale
 ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -586,6 +590,110 @@
         persist();
         return localMsg;
       },
+    },
+
+    /* Definit/change le PIN terrain (4 chiffres) d'un employe. Chemin
+       Supabase : appelle l'Edge Function employe-set-pin.ts (service_role),
+       car employe_credentials n'a AUCUNE policy RLS -- pin_hash ne doit
+       jamais transiter par le REST public, meme proprietaire du compte
+       (voir supabase-schema.sql section 10a). Repli local (file://, pas
+       de session) : stocke le PIN EN CLAIR sur l'employe local -- honnete
+       pour du mode demo sans backend, jamais utilise si Supabase est
+       configure et une session existe. Retourne {ok:true} ou {ok:false,
+       error}. */
+    async setEmployePin(employeId, pin) {
+      if (!state) loadState();
+      if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
+      if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-set-pin', {
+            method: 'POST',
+            headers: adapter._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, pin }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (res.ok) return { ok: true };
+          return { ok: false, error: body.error || ('Erreur serveur (HTTP ' + res.status + ')') };
+        } catch (e) {
+          return { ok: false, error: 'Connexion impossible : ' + e.message };
+        }
+      }
+      const emp = state.employes.find(e => e.id === employeId);
+      if (!emp) return { ok: false, error: 'Employé introuvable.' };
+      emp.pinLocal = pin; // clair, mode demo/file:// uniquement -- jamais le chemin utilisé une fois Supabase configuré
+      persist();
+      return { ok: true };
+    },
+
+    /* Badge un employé sur l'appareil (employe-connexion.html), PIN 4
+       chiffres verifie contre setEmployePin() ci-dessus. Chemin Supabase :
+       appelle l'Edge Function employe-auth.ts (deja deployee/documentee,
+       verifie le PIN cote serveur via pin_hash -- jamais transmis au
+       client), stocke le token de session retourne. Repli local : compare
+       au pinLocal en clair pose par setEmployePin() en mode demo/file://.
+       Dans les deux cas, persiste la session dans localStorage sous
+       seba_employee_token (deja lu par syncWorker/sync-push plus haut) et
+       seba_employee_active (identite affichee par l'espace terrain). */
+    async employeLogin(employeId, pin) {
+      if (!state) loadState();
+      if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
+      const emp = state.employes.find(e => e.id === employeId);
+      if (!emp) return { ok: false, error: 'Employé introuvable.' };
+
+      if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-auth', {
+            method: 'POST',
+            headers: adapter._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, pin, device_id: getDeviceId() }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) return { ok: false, error: body.error || 'Identifiants invalides.' };
+          try {
+            localStorage.setItem('seba_employee_token', body.token);
+            localStorage.setItem('seba_employee_active', JSON.stringify({ id: emp.id, prenom: emp.prenom, nom: emp.nom, expiresAt: body.expires_at }));
+          } catch (e) {}
+          return { ok: true, employe: emp };
+        } catch (e) {
+          return { ok: false, error: 'Connexion impossible : ' + e.message };
+        }
+      }
+
+      if (emp.pinLocal !== pin) return { ok: false, error: 'PIN incorrect.' };
+      try {
+        const expiresAt = new Date(Date.now() + 7 * 24 * 3600e3).toISOString(); // 7 jours, mode demo/file:// uniquement
+        localStorage.setItem('seba_employee_token', 'local-' + uid());
+        localStorage.setItem('seba_employee_active', JSON.stringify({ id: emp.id, prenom: emp.prenom, nom: emp.nom, expiresAt }));
+      } catch (e) {}
+      return { ok: true, employe: emp };
+    },
+
+    /* État de badge courant (lu par l'espace terrain) -- null si aucune
+       session employé active ou expirée. Ne vérifie jamais le token côté
+       serveur ici (juste sa présence/fraîcheur locale) : toute requête
+       Supabase réelle (X-Employee-Token) est de toute façon revalidée
+       côté serveur, cette fonction ne sert qu'à l'affichage. */
+    employeSession() {
+      try {
+        const raw = localStorage.getItem('seba_employee_active');
+        if (!raw) return null;
+        const active = JSON.parse(raw);
+        if (active.expiresAt && new Date(active.expiresAt) < new Date()) {
+          localStorage.removeItem('seba_employee_active');
+          localStorage.removeItem('seba_employee_token');
+          return null;
+        }
+        return active;
+      } catch (e) { return null; }
+    },
+
+    employeLogout() {
+      try {
+        localStorage.removeItem('seba_employee_active');
+        localStorage.removeItem('seba_employee_token');
+      } catch (e) {}
     },
 
     /* Chiffres réels calculés — consommés par le dashboard */

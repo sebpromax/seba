@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
+:root{--danger-text:#EF4444;}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -289,6 +290,16 @@
             </div>
           </div>
         </div>
+
+        <div class="panel" id="pin-panel">
+          <div class="panel-head"><h3>Connexion terrain (PIN)</h3></div>
+          <p class="msg-note">Code à 4 chiffres pour badger cet employé sur l'appareil depuis <strong>l'espace terrain</strong> (tablette partagée). Le code n'est jamais affiché une fois enregistré — redéfinissez-le pour le changer.</p>
+          <div class="msg-input-row">
+            <input type="password" class="msg-input" id="pin-input" placeholder="4 chiffres" maxlength="4" inputmode="numeric" pattern="\d{4}" style="max-width:120px;">
+            <button class="btn-em" onclick="definirPinEmploye()">Enregistrer</button>
+          </div>
+          <p class="msg-note" id="pin-status" style="margin-top:8px;"></p>
+        </div>
       </div>
 
       <!-- COLONNE LATÉRALE -->
@@ -322,7 +333,7 @@
         <!-- MESSAGERIE -->
         <div class="panel" id="messagerie-panel">
           <span class="panel-eyebrow">Messages</span>
-          <p class="msg-note">Journal de communication interne (consignes, remontées de terrain). L'employé n'a pas encore de page de connexion pour répondre ici (l'authentification PIN existe côté Supabase mais aucun écran n'a été construit pour s'y connecter).</p>
+          <p class="msg-note">Journal de communication interne (consignes, remontées de terrain). L'employé répond depuis son espace terrain (badge PIN sur <a href="employe-connexion.html" style="color:var(--emerald);">employe-connexion.html</a>).</p>
           <div class="msg-thread" id="messages-thread"></div>
           <div class="msg-input-row">
             <input type="text" class="msg-input" id="message-input" placeholder="Écrire une consigne..." onkeydown="if(event.key==='Enter')envoyerMessageEmploye();">
@@ -471,6 +482,33 @@
     if (window.SebaDB) SebaDB.log('message', 'Message envoyé à ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
     inp.value = '';
     renderMessagesThread();
+  }
+
+  // Définition du PIN terrain (voir seba-data.js: setEmployePin -- Edge
+  // Function employe-set-pin.ts si Supabase+session, sinon repli local
+  // en clair sur emp.pinLocal, mode demo/file:// uniquement).
+  async function definirPinEmploye() {
+    const inp = document.getElementById('pin-input');
+    const status = document.getElementById('pin-status');
+    const pin = inp.value.trim();
+    if (!_id || !window.SebaDB) return;
+    if (!/^\d{4}$/.test(pin)) {
+      status.textContent = 'Le PIN doit contenir exactement 4 chiffres.';
+      status.style.color = 'var(--danger-text)';
+      return;
+    }
+    status.textContent = 'Enregistrement…';
+    status.style.color = '';
+    const res = await SebaDB.setEmployePin(_id, pin);
+    if (res.ok) {
+      status.textContent = 'PIN enregistré.';
+      status.style.color = 'var(--emerald)';
+      inp.value = '';
+      SebaDB.log('employe', 'PIN terrain défini — ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
+    } else {
+      status.textContent = res.error || 'Échec de l\'enregistrement.';
+      status.style.color = 'var(--danger-text)';
+    }
   }
 
   // Suppression individuelle (Art. 17 RGPD — droit à l'effacement)
