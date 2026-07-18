@@ -291,6 +291,16 @@
           </div>
         </div>
 
+        <div class="panel" id="email-panel">
+          <div class="panel-head"><h3>Email de connexion</h3></div>
+          <p class="msg-note">Identifiant utilisé pour badger cet employé depuis <strong>l'espace terrain</strong> (avec son PIN ci-dessous). Sans email, l'employé ne peut pas s'y connecter.</p>
+          <div class="msg-input-row">
+            <input type="email" class="msg-input" id="email-input" placeholder="vous@equipe.fr">
+            <button class="btn-em" onclick="definirEmailEmploye()">Enregistrer</button>
+          </div>
+          <p class="msg-note" id="email-status" style="margin-top:8px;"></p>
+        </div>
+
         <div class="panel" id="pin-panel">
           <div class="panel-head"><h3>Connexion terrain (PIN)</h3></div>
           <p class="msg-note">Code à 4 chiffres pour badger cet employé sur l'appareil depuis <strong>l'espace terrain</strong> (tablette partagée). Le code n'est jamais affiché une fois enregistré — redéfinissez-le pour le changer.</p>
@@ -439,18 +449,21 @@
       statusEl.innerHTML = '<span class="access-icon">' + (ok ? '✓' : '—') + '</span>' + (ok ? 'Accordé' : 'Non accordé');
     });
 
-    // Colonne latérale : email desormais reel depuis equipe.html (identifiant
-    // de connexion terrain) -- affiche s'il existe, retire sinon. Téléphone/
-    // zone toujours retires -- aucune valeur reelle dans le modele employe.
-    const [rowEmail, rowTel, rowPoste, rowDepuis, rowZone] = document.querySelectorAll('.info-row');
-    if (emp.email) rowEmail.querySelector('.info-value').textContent = emp.email;
-    else rowEmail.remove();
-    rowTel.remove();
-    rowPoste.querySelector('.info-value').textContent = emp.role || '—';
-    rowDepuis.querySelector('.info-value').textContent = emp.createdAt
+    // Colonne latérale : seuls les champs réellement stockés (poste,
+    // ancienneté). Email affiché/modifiable dans le panneau dédié
+    // #email-panel plus bas (identifiant de connexion terrain), pas ici --
+    // une seule source évite un affichage désynchronisé après edition.
+    // Téléphone/zone retirés -- aucune valeur réelle.
+    const infoRows = document.querySelectorAll('.info-row');
+    infoRows[0].querySelector('.info-label').textContent = 'Poste';
+    infoRows[0].querySelector('.info-value').textContent = emp.role || '—';
+    infoRows[1].querySelector('.info-label').textContent = 'Dans l\'équipe depuis';
+    infoRows[1].querySelector('.info-value').textContent = emp.createdAt
       ? new Date(emp.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
       : '—';
-    rowZone.remove();
+    for (let i = 2; i < infoRows.length; i++) infoRows[i].remove();
+
+    document.getElementById('email-input').value = emp.email || '';
 
     // Notes internes : aucun champ `notes` dans le modèle employé réel.
     const notesArea = document.querySelector('.notes-area');
@@ -484,6 +497,26 @@
     if (window.SebaDB) SebaDB.log('message', 'Message envoyé à ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
     inp.value = '';
     renderMessagesThread();
+  }
+
+  // Email de connexion terrain -- SebaDB.update() classique (pas de nouvelle
+  // methode dediee, contrairement au PIN : l'email n'est pas un secret,
+  // meme mecanisme de sync que les autres champs employe).
+  function definirEmailEmploye() {
+    const inp = document.getElementById('email-input');
+    const status = document.getElementById('email-status');
+    const email = inp.value.trim().toLowerCase();
+    if (!_id || !window.SebaDB) return;
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      status.textContent = 'Format d\'email invalide.';
+      status.style.color = 'var(--danger-text)';
+      return;
+    }
+    SebaDB.update('employes', _id, { email });
+    inp.value = email;
+    status.textContent = 'Email enregistré.';
+    status.style.color = 'var(--emerald)';
+    SebaDB.log('employe', 'Email de connexion défini — ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
   }
 
   // Définition du PIN terrain (voir seba-data.js: setEmployePin -- Edge
