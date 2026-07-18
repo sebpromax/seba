@@ -439,16 +439,18 @@
       statusEl.innerHTML = '<span class="access-icon">' + (ok ? '✓' : '—') + '</span>' + (ok ? 'Accordé' : 'Non accordé');
     });
 
-    // Colonne latérale : seuls les champs réellement stockés (poste,
-    // ancienneté). Email/téléphone/zone retirés -- aucune valeur réelle.
-    const infoRows = document.querySelectorAll('.info-row');
-    infoRows[0].querySelector('.info-label').textContent = 'Poste';
-    infoRows[0].querySelector('.info-value').textContent = emp.role || '—';
-    infoRows[1].querySelector('.info-label').textContent = 'Dans l\'équipe depuis';
-    infoRows[1].querySelector('.info-value').textContent = emp.createdAt
+    // Colonne latérale : email desormais reel depuis equipe.html (identifiant
+    // de connexion terrain) -- affiche s'il existe, retire sinon. Téléphone/
+    // zone toujours retires -- aucune valeur reelle dans le modele employe.
+    const [rowEmail, rowTel, rowPoste, rowDepuis, rowZone] = document.querySelectorAll('.info-row');
+    if (emp.email) rowEmail.querySelector('.info-value').textContent = emp.email;
+    else rowEmail.remove();
+    rowTel.remove();
+    rowPoste.querySelector('.info-value').textContent = emp.role || '—';
+    rowDepuis.querySelector('.info-value').textContent = emp.createdAt
       ? new Date(emp.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
       : '—';
-    for (let i = 2; i < infoRows.length; i++) infoRows[i].remove();
+    rowZone.remove();
 
     // Notes internes : aucun champ `notes` dans le modèle employé réel.
     const notesArea = document.querySelector('.notes-area');

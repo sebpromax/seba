@@ -267,6 +267,7 @@
     const prenom = document.getElementById('ss-prenom').value.trim();
     const nom    = document.getElementById('ss-nom').value.trim();
     const role   = document.getElementById('ss-role').value.trim() || 'Employé';
+    const email  = document.getElementById('ss-email').value.trim().toLowerCase();
     const acces  = document.getElementById('ss-acces').value;
 
     if (!prenom || !nom) {
@@ -274,8 +275,17 @@
       showToast('Prénom et nom sont obligatoires.');
       return;
     }
+    // Email desormais obligatoire : c'est l'identifiant utilise pour se
+    // badger sur l'espace terrain (employe-connexion.html), plus le nom
+    // choisi dans une liste -- un employe sans email ne pourrait jamais
+    // s'y connecter.
+    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      document.getElementById('ss-email').focus();
+      showToast('Un email valide est obligatoire (utilisé pour la connexion terrain).');
+      return;
+    }
 
-    SebaDB.create('employes', { prenom, nom, role, missions: 0, actif: false, acces });
+    SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: false, acces });
     SebaDB.log('client', 'Nouvel employé — ' + prenom + ' ' + nom, 'equipe.html');
     EMPLOYES = SebaDB.list('employes');
     render();

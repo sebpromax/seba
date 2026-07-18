@@ -190,8 +190,8 @@ p{letter-spacing:-0.02em;}
 
     <div id="ec-form">
       <div class="field" id="employe-field">
-        <label for="ec-employe">Vous êtes</label>
-        <select id="ec-employe"></select>
+        <label for="ec-email">Email</label>
+        <input type="email" id="ec-email" placeholder="vous@equipe.fr" autocomplete="email">
       </div>
 
       <div class="field field-pin" id="pin-field">
@@ -211,7 +211,7 @@ p{letter-spacing:-0.02em;}
       </button>
     </div>
 
-    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
+    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif avec un email enregistré. Ajoutez-en un (ou complétez son email) depuis <a href="equipe.html">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
 
     <hr class="divider">
 
@@ -223,21 +223,22 @@ p{letter-spacing:-0.02em;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="bg-shader.js"></script>
 <script>
-(function fillEmployeSelect(){
-  const sel = document.getElementById('ec-employe');
+/* L'identifiant de connexion terrain est desormais l'email (equipe.html
+   le rend obligatoire a la creation d'un employe -- voir submitEmploye()),
+   plus le nom choisi dans une liste deroulante : evite qu'un employe
+   parcoure les noms de ses collegues pour tenter leur PIN, et reste
+   coherent avec un identifiant+secret classique. La resolution email ->
+   employeId reste 100% locale (SebaDB.list('employes') est deja charge
+   cote client pour ce compte) -- SebaDB.employeLogin(employeId, pin) et
+   l'Edge Function employe-auth.ts n'ont pas change, seul CE lookup est
+   nouveau. */
+(function checkAnyEmployeeHasEmail(){
   if (!window.SebaDB) return;
-  const emps = SebaDB.list('employes').filter(e => e.actif !== false);
+  const emps = SebaDB.list('employes').filter(e => e.actif !== false && e.email);
   if (!emps.length) {
     document.getElementById('ec-form').style.display = 'none';
     document.getElementById('ec-empty').style.display = 'block';
-    return;
   }
-  emps.forEach(e => {
-    const o = document.createElement('option');
-    o.value = e.id;
-    o.textContent = e.prenom + ' ' + e.nom;
-    sel.appendChild(o);
-  });
 })();
 
 function shakeCard(){
@@ -248,14 +249,24 @@ function shakeCard(){
 }
 
 async function handleEmployeeLogin(){
-  const employeId = document.getElementById('ec-employe').value;
+  const email = document.getElementById('ec-email').value.trim().toLowerCase();
   const pin = document.getElementById('ec-pin').value.trim();
   const err = document.getElementById('error-msg');
   err.classList.remove('visible');
 
-  if (!employeId || !/^\d{4}$/.test(pin)) {
+  if (!email || !/^\d{4}$/.test(pin)) {
     shakeCard();
-    err.textContent = 'Choisissez votre nom et saisissez les 4 chiffres de votre PIN.';
+    err.textContent = 'Saisissez votre email et les 4 chiffres de votre PIN.';
+    err.classList.add('visible');
+    return;
+  }
+
+  const emp = (SebaDB.list('employes') || []).find(e => e.actif !== false && (e.email || '').trim().toLowerCase() === email);
+  if (!emp) {
+    shakeCard();
+    // Message generique (pas "email introuvable") -- meme logique
+    // anti-enumeration que employe-auth.ts pour un mauvais PIN.
+    err.textContent = 'Identifiants invalides.';
     err.classList.add('visible');
     return;
   }
@@ -266,7 +277,7 @@ async function handleEmployeeLogin(){
   btn.disabled = true;
   btnText.textContent = 'Connexion…';
 
-  const res = await SebaDB.employeLogin(employeId, pin);
+  const res = await SebaDB.employeLogin(emp.id, pin);
 
   if (res.ok) {
     if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
