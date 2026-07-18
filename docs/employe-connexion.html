@@ -188,14 +188,16 @@ p{letter-spacing:-0.02em;}
 
     <div class="error-msg" id="error-msg"></div>
 
+    <div class="success-msg" id="first-time-msg">Première connexion : choisissez un code à 4 chiffres, il vous sera redemandé à chaque connexion suivante.</div>
+
     <div id="ec-form">
       <div class="field" id="employe-field">
-        <label for="ec-email">Email</label>
-        <input type="email" id="ec-email" placeholder="vous@equipe.fr" autocomplete="email">
+        <label for="ec-employe">Vous êtes</label>
+        <select id="ec-employe" onchange="onEmployeChange()"></select>
       </div>
 
       <div class="field field-pin" id="pin-field">
-        <label for="ec-pin">Code PIN (4 chiffres)</label>
+        <label for="ec-pin" id="ec-pin-label">Code PIN (4 chiffres)</label>
         <div class="field-pw-wrap">
           <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
           <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
@@ -211,7 +213,7 @@ p{letter-spacing:-0.02em;}
       </button>
     </div>
 
-    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif avec un email enregistré. Ajoutez-en un (ou complétez son email) depuis <a href="equipe.html">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
+    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a> — le patron donne le nom, l'employé choisit son propre code PIN à sa première connexion ici.</p>
 
     <hr class="divider">
 
@@ -223,23 +225,41 @@ p{letter-spacing:-0.02em;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="bg-shader.js"></script>
 <script>
-/* L'identifiant de connexion terrain est desormais l'email (equipe.html
-   le rend obligatoire a la creation d'un employe -- voir submitEmploye()),
-   plus le nom choisi dans une liste deroulante : evite qu'un employe
-   parcoure les noms de ses collegues pour tenter leur PIN, et reste
-   coherent avec un identifiant+secret classique. La resolution email ->
-   employeId reste 100% locale (SebaDB.list('employes') est deja charge
-   cote client pour ce compte) -- SebaDB.employeLogin(employeId, pin) et
-   l'Edge Function employe-auth.ts n'ont pas change, seul CE lookup est
-   nouveau. */
-(function checkAnyEmployeeHasEmail(){
+/* Identifiant = le nom donné par le patron (fiche employé, equipe.html),
+   choisi dans une liste plutôt que tapé -- plus sûr sur un écran tactile
+   partagé, aucun risque de faute de frappe. Le PIN, lui, appartient
+   entièrement à l'employé : au lieu d'être pré-défini par le patron, il
+   est CRÉÉ ici même, à la première connexion (emp.pinSet encore absent
+   -> SebaDB.setEmployePin() avant employeLogin()). Aux connexions
+   suivantes (emp.pinSet === true), ce même champ PIN redevient une
+   simple vérification. */
+(function fillEmployeSelect(){
+  const sel = document.getElementById('ec-employe');
   if (!window.SebaDB) return;
-  const emps = SebaDB.list('employes').filter(e => e.actif !== false && e.email);
+  const emps = SebaDB.list('employes').filter(e => e.actif !== false);
   if (!emps.length) {
     document.getElementById('ec-form').style.display = 'none';
     document.getElementById('ec-empty').style.display = 'block';
+    return;
   }
+  emps.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id;
+    o.textContent = e.prenom + ' ' + e.nom;
+    o.dataset.pinSet = e.pinSet ? '1' : '';
+    sel.appendChild(o);
+  });
+  onEmployeChange();
 })();
+
+function onEmployeChange(){
+  const sel = document.getElementById('ec-employe');
+  const opt = sel.options[sel.selectedIndex];
+  const firstTime = opt && opt.dataset.pinSet !== '1';
+  document.getElementById('first-time-msg').classList.toggle('visible', !!firstTime);
+  document.getElementById('ec-pin-label').textContent = firstTime ? 'Choisissez votre code PIN (4 chiffres)' : 'Code PIN (4 chiffres)';
+  document.getElementById('btn-connect-text').textContent = firstTime ? 'Créer mon code et me connecter' : 'Se connecter';
+}
 
 function shakeCard(){
   const card=document.querySelector('.card');
@@ -249,35 +269,42 @@ function shakeCard(){
 }
 
 async function handleEmployeeLogin(){
-  const email = document.getElementById('ec-email').value.trim().toLowerCase();
+  const sel = document.getElementById('ec-employe');
+  const employeId = sel.value;
   const pin = document.getElementById('ec-pin').value.trim();
   const err = document.getElementById('error-msg');
   err.classList.remove('visible');
 
-  if (!email || !/^\d{4}$/.test(pin)) {
+  if (!employeId || !/^\d{4}$/.test(pin)) {
     shakeCard();
-    err.textContent = 'Saisissez votre email et les 4 chiffres de votre PIN.';
+    err.textContent = 'Choisissez votre nom et saisissez les 4 chiffres de votre PIN.';
     err.classList.add('visible');
     return;
   }
 
-  const emp = (SebaDB.list('employes') || []).find(e => e.actif !== false && (e.email || '').trim().toLowerCase() === email);
-  if (!emp) {
-    shakeCard();
-    // Message generique (pas "email introuvable") -- meme logique
-    // anti-enumeration que employe-auth.ts pour un mauvais PIN.
-    err.textContent = 'Identifiants invalides.';
-    err.classList.add('visible');
-    return;
-  }
+  const emp = (SebaDB.list('employes') || []).find(e => e.id === employeId);
+  const firstTime = emp && !emp.pinSet;
 
   const btn = document.getElementById('btn-connect');
   const btnText = document.getElementById('btn-connect-text');
   btn.classList.add('loading');
   btn.disabled = true;
-  btnText.textContent = 'Connexion…';
+  btnText.textContent = firstTime ? 'Création du code…' : 'Connexion…';
 
-  const res = await SebaDB.employeLogin(emp.id, pin);
+  if (firstTime) {
+    const setRes = await SebaDB.setEmployePin(employeId, pin);
+    if (!setRes.ok) {
+      err.textContent = setRes.error || 'Impossible de créer le code.';
+      err.classList.add('visible');
+      shakeCard();
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      onEmployeChange();
+      return;
+    }
+  }
+
+  const res = await SebaDB.employeLogin(employeId, pin);
 
   if (res.ok) {
     if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
@@ -288,7 +315,7 @@ async function handleEmployeeLogin(){
     shakeCard();
     btn.classList.remove('loading');
     btn.disabled = false;
-    btnText.textContent = 'Se connecter';
+    onEmployeChange();
     document.getElementById('ec-pin').value = '';
   }
 }

@@ -275,13 +275,13 @@
       showToast('Prénom et nom sont obligatoires.');
       return;
     }
-    // Email desormais obligatoire : c'est l'identifiant utilise pour se
-    // badger sur l'espace terrain (employe-connexion.html), plus le nom
-    // choisi dans une liste -- un employe sans email ne pourrait jamais
-    // s'y connecter.
-    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    // Email optionnel (simple info de contact) : l'espace terrain
+    // (employe-connexion.html) badge desormais par nom choisi dans une
+    // liste + PIN cree par l'employe lui-meme a sa premiere connexion,
+    // plus par email.
+    if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       document.getElementById('ss-email').focus();
-      showToast('Un email valide est obligatoire (utilisé pour la connexion terrain).');
+      showToast('Format d\'email invalide.');
       return;
     }
 

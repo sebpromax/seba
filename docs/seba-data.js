@@ -604,6 +604,8 @@
     async setEmployePin(employeId, pin) {
       if (!state) loadState();
       if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
+      const emp = state.employes.find(e => e.id === employeId);
+      if (!emp) return { ok: false, error: 'Employé introuvable.' };
       if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
         try {
           const cfg = window.SEBA_CONFIG;
@@ -613,15 +615,22 @@
             body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, pin }),
           });
           const body = await res.json().catch(() => ({}));
-          if (res.ok) return { ok: true };
-          return { ok: false, error: body.error || ('Erreur serveur (HTTP ' + res.status + ')') };
+          if (!res.ok) return { ok: false, error: body.error || ('Erreur serveur (HTTP ' + res.status + ')') };
+          // pinSet : marqueur non-secret (jamais le PIN lui-meme) permettant
+          // a employe-connexion.html de savoir localement si c'est une
+          // premiere connexion (creation) ou une connexion normale
+          // (verification) -- pin_hash reste dans employe_credentials,
+          // inaccessible en lecture (RLS sans policy).
+          emp.pinSet = true;
+          persist();
+          pushOp('employes', employeId, 'update', { pinSet: true });
+          return { ok: true };
         } catch (e) {
           return { ok: false, error: 'Connexion impossible : ' + e.message };
         }
       }
-      const emp = state.employes.find(e => e.id === employeId);
-      if (!emp) return { ok: false, error: 'Employé introuvable.' };
       emp.pinLocal = pin; // clair, mode demo/file:// uniquement -- jamais le chemin utilisé une fois Supabase configuré
+      emp.pinSet = true;
       persist();
       return { ok: true };
     },

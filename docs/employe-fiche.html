@@ -292,8 +292,8 @@
         </div>
 
         <div class="panel" id="email-panel">
-          <div class="panel-head"><h3>Email de connexion</h3></div>
-          <p class="msg-note">Identifiant utilisé pour badger cet employé depuis <strong>l'espace terrain</strong> (avec son PIN ci-dessous). Sans email, l'employé ne peut pas s'y connecter.</p>
+          <div class="panel-head"><h3>Email</h3></div>
+          <p class="msg-note">Coordonnée facultative (n'est plus utilisée pour la connexion terrain — voir ci-dessous).</p>
           <div class="msg-input-row">
             <input type="email" class="msg-input" id="email-input" placeholder="vous@equipe.fr">
             <button class="btn-em" onclick="definirEmailEmploye()">Enregistrer</button>
@@ -302,11 +302,11 @@
         </div>
 
         <div class="panel" id="pin-panel">
-          <div class="panel-head"><h3>Connexion terrain (PIN)</h3></div>
-          <p class="msg-note">Code à 4 chiffres pour badger cet employé sur l'appareil depuis <strong>l'espace terrain</strong> (tablette partagée). Le code n'est jamais affiché une fois enregistré — redéfinissez-le pour le changer.</p>
+          <div class="panel-head"><h3>Code PIN terrain</h3></div>
+          <p class="msg-note">L'employé choisit lui-même son code à sa première connexion sur <strong>l'espace terrain</strong> (nom + PIN). Utilisez ce champ uniquement pour <strong>réinitialiser</strong> un code oublié — l'employé devra alors en recréer un.</p>
           <div class="msg-input-row">
             <input type="password" class="msg-input" id="pin-input" placeholder="4 chiffres" maxlength="4" inputmode="numeric" pattern="\d{4}" style="max-width:120px;">
-            <button class="btn-em" onclick="definirPinEmploye()">Enregistrer</button>
+            <button class="btn-em" onclick="definirPinEmploye()">Réinitialiser</button>
           </div>
           <p class="msg-note" id="pin-status" style="margin-top:8px;"></p>
         </div>
