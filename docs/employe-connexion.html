@@ -47,7 +47,7 @@ input,button,select{font-family:'Inter',sans-serif;}
   background:var(--card-base);
   border:1px solid var(--w-a08);
   border-radius:20px;
-  padding:40px;
+  padding:32px;
   width:100%;max-width:400px;
   position:relative;overflow:hidden;isolation:isolate;
   box-shadow:0 32px 80px var(--blk-a40);
@@ -80,7 +80,7 @@ input,button,select{font-family:'Inter',sans-serif;}
 
 /* ── Champs (identique connexion.html) ── */
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
-.field label{font-size:.78rem;font-weight:600;color:var(--w-a06);letter-spacing:.02em;text-transform:uppercase;}
+.field label{font-size:.68rem;font-weight:600;color:var(--w-a06);letter-spacing:.03em;text-transform:uppercase;}
 .field input,.field select{
   padding:12px 14px;
   background:var(--w-a05);
@@ -144,19 +144,19 @@ input:-webkit-autofill:active,
 .btn-connect.loading .btn-spinner{display:block;}
 @keyframes btnSpin{to{transform:rotate(360deg);}}
 
-.divider{border:none;border-top:1px solid var(--w-a07);margin:22px 0;}
+.divider{border:none;border-top:1px solid var(--w-a07);margin:28px 0 16px;}
 
 .foot{text-align:center;font-size:.84rem;color:var(--w-a35);}
 .foot a{color:var(--db-teal);font-weight:600;transition:opacity .2s;}
 .foot a:hover{opacity:.75;}
 
-/* Boutons pied de page (Retour / PIN oublié) -- .btn-ghost-nav est la
-   classe "bouton secondaire fantôme" du design system sombre (voir
-   connexion.html, nav-right) : reprise ici à l'identique plutôt que
-   réinventée. */
-.btn-ghost-nav{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--w-a85);border:1px solid var(--w-a18);font-weight:600;font-size:.84rem;border-radius:10px;padding:8px 18px;transition:border-color .2s,color .2s,background .2s;cursor:pointer;width:100%;}
-.btn-ghost-nav:hover{border-color:var(--dt-a50);color:var(--db-teal);background:var(--dt-a04);}
-.foot-links{display:flex;flex-direction:column;gap:10px;}
+/* Pied de page (Retour / Mot de passe oublié) : liens texte discrets,
+   volontairement SANS bordure/fond -- ne doivent jamais rivaliser
+   visuellement avec .btn-connect (seule action dominante du formulaire). */
+.foot-links{display:flex;justify-content:center;align-items:center;gap:14px;}
+.foot-link{background:none;border:none;padding:2px;color:var(--w-a40);font-size:.78rem;font-weight:500;cursor:pointer;transition:color .2s;}
+.foot-link:hover{color:var(--db-teal);}
+.foot-sep{color:var(--w-a20);font-size:.78rem;}
 
 .error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .error-msg.visible{display:block;}
@@ -230,8 +230,9 @@ p{letter-spacing:-0.02em;}
     <div class="success-msg" id="forgot-pin-msg"></div>
 
     <div class="foot-links">
-      <button type="button" class="btn-ghost-nav" onclick="history.back()">Retour</button>
-      <button type="button" class="btn-ghost-nav" onclick="handleForgotPin()">Mot de passe oublié ?</button>
+      <button type="button" class="foot-link" onclick="history.back()">Retour</button>
+      <span class="foot-sep">·</span>
+      <button type="button" class="foot-link" onclick="handleForgotPin()">Mot de passe oublié ?</button>
     </div>
   </div>
 </div>
