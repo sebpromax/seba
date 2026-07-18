@@ -3,100 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Connexion employé — Seba</title>
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="pro-global.css">
-<script src="theme.js"></script>
-<!-- Page privée : l'appareil doit déjà être authentifié PATRON (voir
-     employe-auth.ts, en-tête) -- le PIN badge un employé sur cette
-     session existante, il n'en crée jamais une nouvelle. Sans ce verrou,
-     n'importe qui pourrait tenter des PIN depuis un appareil non
-     authentifié -- guard.js redirige vers connexion.html si aucune
-     session patron n'existe (mode démo : aucun blocage, voir guard.js). -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Page privee : l'appareil doit deja etre authentifie PATRON (voir
+     employe-auth.ts, en-tete) -- le PIN badge un employe sur cette
+     session existante, il n'en cree jamais une nouvelle. guard.js
+     redirige vers connexion.html si aucune session patron n'existe
+     (mode demo : aucun blocage, voir guard.js). -->
 <script src="auth.js"></script>
 <script src="guard.js"></script>
 <style>
-:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--on-emerald-a30:rgba(3,26,18,.3);}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+/* Meme systeme visuel que connexion.html ("carte" Encre Vivante) --
+   demande explicite : la carte Espace Employe doit etre identique a la
+   carte de connexion patron. Tokens/structure copies a l'identique,
+   seul le CONTENU de la carte change (select employe + PIN au lieu de
+   email + mot de passe). */
+:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--w-a06:rgba(255,255,255,.6);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+#gl-canvas{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;display:block;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;animation:pgFadeIn .35s ease;}
+@keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 a{color:inherit;text-decoration:none;}
-button,input,select{font-family:'Inter',sans-serif;}
+input,button,select{font-family:'Inter',sans-serif;}
 
-.ec-card{width:100%;max-width:400px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:32px 28px;box-shadow:var(--shadow-md);}
-.ec-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:22px;font-weight:800;font-size:1.15rem;}
-.ec-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);}
-.ec-head{text-align:center;margin-bottom:26px;}
-.ec-head h1{font-size:1.25rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;}
-.ec-head p{font-size:.86rem;color:var(--text-2);}
+/* ── Nav identique au reste du site ── */
+.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;justify-self:start;}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
+.logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
+.nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
+.nav-tag{font-size:.88rem;color:var(--mist);font-weight:500;}
+.nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
 
-.ec-field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
-.ec-field label{font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;}
-.ec-field select,.ec-field input{
-  padding:14px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);
-  font-size:1rem;color:var(--ink);width:100%;
+/* ── Page layout ── */
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
+
+/* ── Carte opaque (isole le fluide de fond) + lave interne -- identique
+   a connexion.html ── */
+.card{
+  background:var(--card-base);
+  border:1px solid var(--w-a08);
+  border-radius:20px;
+  padding:40px;
+  width:100%;max-width:400px;
+  position:relative;overflow:hidden;isolation:isolate;
+  box-shadow:0 32px 80px var(--blk-a40);
 }
-.ec-field select:focus,.ec-field input:focus{border-color:var(--emerald);outline:none;}
-.ec-pin-input{letter-spacing:.5em;font-weight:700;text-align:center;font-size:1.3rem !important;}
-
-.ec-btn{
-  width:100%;padding:15px;border:none;border-radius:var(--rs);background:var(--emerald);color:var(--on-emerald);
-  font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:opacity .15s,transform .15s;
+.card::before{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:280px;height:180px;
+  background:radial-gradient(ellipse,var(--dt-a08) 0%,transparent 70%);
+  pointer-events:none;
+  z-index:1;
 }
-.ec-btn:hover{opacity:.9;}
-.ec-btn:disabled{opacity:.5;cursor:not-allowed;}
-.ec-spinner{width:15px;height:15px;border:2px solid var(--on-emerald-a30);border-top-color:var(--on-emerald);border-radius:50%;animation:ecSpin .7s linear infinite;display:none;}
-.ec-btn.loading .ec-spinner{display:block;}
-@keyframes ecSpin{to{transform:rotate(360deg);}}
+.card-lava{position:absolute;inset:-60px;z-index:0;pointer-events:none;}
+.card-lava span{position:absolute;border-radius:50%;opacity:.65;mix-blend-mode:screen;filter:blur(40px);will-change:transform;}
+.card-lava span:nth-child(1){width:220px;height:220px;left:-50px;top:-40px;background:var(--lava-1);animation:lavaDrift1 9s ease-in-out infinite;}
+.card-lava span:nth-child(2){width:190px;height:190px;right:-60px;top:80px;background:var(--lava-2);animation:lavaDrift2 11s ease-in-out infinite;}
+.card-lava span:nth-child(3){width:210px;height:210px;left:25%;bottom:-90px;background:var(--lava-3);animation:lavaDrift3 13s ease-in-out infinite;}
+.card-lava span:nth-child(4){width:150px;height:150px;left:40%;top:20%;background:var(--lava-2);animation:lavaDrift4 8s ease-in-out infinite;}
+@keyframes lavaDrift1{0%,100%{transform:translate(0,0) scale(1);}25%{transform:translate(110px,70px) scale(1.3);}50%{transform:translate(40px,140px) scale(.85);}75%{transform:translate(-60px,60px) scale(1.15);}}
+@keyframes lavaDrift2{0%,100%{transform:translate(0,0) scale(1);}30%{transform:translate(-120px,-60px) scale(1.35);}60%{transform:translate(-40px,90px) scale(.8);}}
+@keyframes lavaDrift3{0%,100%{transform:translate(0,0) scale(1);}35%{transform:translate(90px,-100px) scale(1.25);}70%{transform:translate(-80px,-40px) scale(.9);}}
+@keyframes lavaDrift4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-70px,90px) scale(1.4);}}
+@media (prefers-reduced-motion: reduce){
+  .card-lava span{animation:none;}
+}
+.card>*:not(.card-lava){position:relative;z-index:1;}
 
-.ec-error{font-size:.82rem;color:var(--danger-text);background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:10px 12px;margin-bottom:16px;display:none;}
-.ec-error.visible{display:block;}
-.ec-empty{font-size:.86rem;color:var(--text-2);text-align:center;margin-bottom:16px;}
+.card-head{margin-bottom:28px;}
+.card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:6px;}
+.card-head p{font-size:.88rem;color:var(--mist);}
 
-.ec-foot{text-align:center;margin-top:20px;font-size:.8rem;color:var(--text-2);}
-.ec-foot a{color:var(--emerald);font-weight:600;}
+/* ── Champs (identique connexion.html) ── */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field label{font-size:.78rem;font-weight:600;color:var(--w-a06);letter-spacing:.02em;text-transform:uppercase;}
+.field input,.field select{
+  padding:12px 14px;
+  background:var(--w-a05);
+  border:1px solid var(--w-a10);
+  border-radius:10px;
+  font-size:.9rem;color:var(--pure-white);
+  width:100%;
+  transition:border-color .2s,background .2s;
+}
+.field select{appearance:none;-webkit-appearance:none;}
+.field input::placeholder{color:var(--w-a20);}
+.field input:focus,.field select:focus{border-color:var(--dt-a50);background:var(--dt-a04);outline:none;}
+.field-pin input{letter-spacing:.5em;text-align:center;font-weight:700;font-size:1.1rem;}
+
+.field.has-error input,.field.has-error select{border-color:var(--err) !important;box-shadow:0 0 0 3px var(--err-a08);}
+.field-error{font-size:.76rem;color:var(--err);margin-top:2px;display:none;}
+.field.has-error .field-error{display:block;}
+@keyframes cardShake{
+  0%,100%{transform:translateX(0);}
+  25%{transform:translateX(-6px);}
+  75%{transform:translateX(6px);}
+}
+.card.shake{animation:cardShake .32s ease;}
+
+.field-pw-wrap{position:relative;}
+.field-pw-wrap input{width:100%;padding-right:42px;}
+.toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:10;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--w-a40);transition:color .2s;}
+.toggle-pw:hover{color:var(--db-teal);}
+.toggle-pw svg{width:18px;height:18px;}
+.toggle-pw .eye-off{display:none;}
+.toggle-pw.showing .eye{display:none;}
+.toggle-pw.showing .eye-off{display:block;}
+
+input::-ms-reveal, input::-ms-clear { display: none !important; }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--autofill-bg) inset !important;
+  -webkit-text-fill-color: var(--autofill-text) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.btn-connect{
+  width:100%;padding:13px;border:none;border-radius:12px;
+  background:var(--db-teal);color:var(--btn-ink);
+  font-weight:700;font-size:.95rem;
+  cursor:pointer;
+  transition:box-shadow .25s,transform .2s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-connect:hover{box-shadow:0 0 28px var(--dt-a45);transform:translateY(-2px);}
+.btn-connect:active{transform:none;}
+.btn-connect:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-spinner{width:15px;height:15px;border:2px solid var(--btn-ink-a30);border-top-color:var(--btn-ink);border-radius:50%;animation:btnSpin .7s linear infinite;display:none;flex-shrink:0;}
+.btn-connect.loading .btn-spinner{display:block;}
+@keyframes btnSpin{to{transform:rotate(360deg);}}
+
+.divider{border:none;border-top:1px solid var(--w-a07);margin:22px 0;}
+
+.foot{text-align:center;font-size:.84rem;color:var(--w-a35);}
+.foot a{color:var(--db-teal);font-weight:600;transition:opacity .2s;}
+.foot a:hover{opacity:.75;}
+
+.error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg.visible{display:block;}
+.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.success-msg.visible{display:block;}
+
+#cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
+@media(hover:none){#cursor-trail{display:none;}}
+
+@media(max-width:768px){
+  .nav-wrap{grid-template-columns:1fr auto;}
+  .nav-center,.nav-right{display:none;}
+}
+body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+h1{letter-spacing:-0.04em;}
+p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
+<canvas id="gl-canvas" data-fx="calm" aria-hidden="true"></canvas>
 
-<div class="ec-card">
-  <div class="ec-logo"><span class="ec-logo-dot"></span><span>Seba — Espace terrain</span></div>
-  <div class="ec-head">
-    <h1>Connexion employé</h1>
-    <p>Badgez-vous pour accéder à votre planning du jour.</p>
-  </div>
+<!-- ── Navigation ── -->
+<nav class="nav-wrap">
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
+  <div class="nav-center"><span class="nav-tag">Espace terrain</span></div>
+  <div class="nav-right"></div>
+</nav>
 
-  <div class="ec-error" id="ec-error"></div>
+<!-- Halo de fond -->
+<div style="position:fixed;top:0;left:50%;transform:translateX(-50%);width:min(700px,100vw);height:480px;background:radial-gradient(ellipse at 50% 0%,var(--dt-a07) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
 
-  <div id="ec-form">
-    <div class="ec-field">
-      <label for="ec-employe">Vous êtes</label>
-      <select id="ec-employe"></select>
+<!-- ── Formulaire ── -->
+<div class="page">
+  <div class="card" style="position:relative;z-index:1;">
+    <div class="card-lava" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <div class="card-head">
+      <h1>Connexion employé</h1>
+      <p>Badgez-vous pour accéder à votre planning du jour.</p>
     </div>
-    <div class="ec-field">
-      <label for="ec-pin">Code PIN (4 chiffres)</label>
-      <input type="password" id="ec-pin" class="ec-pin-input" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div id="ec-form">
+      <div class="field" id="employe-field">
+        <label for="ec-employe">Vous êtes</label>
+        <select id="ec-employe"></select>
+      </div>
+
+      <div class="field field-pin" id="pin-field">
+        <label for="ec-pin">Code PIN (4 chiffres)</label>
+        <div class="field-pw-wrap">
+          <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
+          <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
+            <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-connect" id="btn-connect" onclick="handleEmployeeLogin()">
+        <span class="btn-spinner" id="btn-spinner"></span>
+        <span id="btn-connect-text">Se connecter</span>
+      </button>
     </div>
-    <button class="ec-btn" id="ec-btn" onclick="handleEmployeeLogin()">
-      <span class="ec-spinner" id="ec-spinner"></span>
-      <span id="ec-btn-text">Se connecter</span>
-    </button>
+
+    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
+
+    <hr class="divider">
+
+    <p class="foot">Vous êtes le patron ? <a href="app/dashboard.html">Tableau de bord</a></p>
   </div>
-
-  <p class="ec-empty" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html" style="color:var(--emerald);font-weight:600;">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
-
-  <div class="ec-foot"><a href="app/dashboard.html">← Retour au tableau de bord</a></div>
 </div>
 
 <script src="seba-data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="bg-shader.js"></script>
 <script>
-(function(){
-  const c = localStorage.getItem('user_theme_color');
-  if (c) document.documentElement.style.setProperty('--emerald', c);
-})();
-
 (function fillEmployeSelect(){
   const sel = document.getElementById('ec-employe');
   if (!window.SebaDB) return;
@@ -114,20 +240,28 @@ button,input,select{font-family:'Inter',sans-serif;}
   });
 })();
 
+function shakeCard(){
+  const card=document.querySelector('.card');
+  card.classList.remove('shake');
+  void card.offsetWidth;
+  card.classList.add('shake');
+}
+
 async function handleEmployeeLogin(){
   const employeId = document.getElementById('ec-employe').value;
   const pin = document.getElementById('ec-pin').value.trim();
-  const err = document.getElementById('ec-error');
+  const err = document.getElementById('error-msg');
   err.classList.remove('visible');
 
   if (!employeId || !/^\d{4}$/.test(pin)) {
+    shakeCard();
     err.textContent = 'Choisissez votre nom et saisissez les 4 chiffres de votre PIN.';
     err.classList.add('visible');
     return;
   }
 
-  const btn = document.getElementById('ec-btn');
-  const btnText = document.getElementById('ec-btn-text');
+  const btn = document.getElementById('btn-connect');
+  const btnText = document.getElementById('btn-connect-text');
   btn.classList.add('loading');
   btn.disabled = true;
   btnText.textContent = 'Connexion…';
@@ -135,10 +269,12 @@ async function handleEmployeeLogin(){
   const res = await SebaDB.employeLogin(employeId, pin);
 
   if (res.ok) {
+    if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
     window.location.href = 'espace-terrain.html';
   } else {
     err.textContent = res.error || 'Connexion impossible.';
     err.classList.add('visible');
+    shakeCard();
     btn.classList.remove('loading');
     btn.disabled = false;
     btnText.textContent = 'Se connecter';
@@ -146,7 +282,18 @@ async function handleEmployeeLogin(){
   }
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmployeeLogin(); });
+function togglePinVisibility(){
+  const inp=document.getElementById('ec-pin');
+  const btn=document.getElementById('toggle-pin');
+  const showing=inp.type==='password';
+  inp.type=showing?'text':'password';
+  btn.classList.toggle('showing',showing);
+  btn.setAttribute('aria-label',showing?'Masquer le PIN':'Afficher le PIN');
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleEmployeeLogin();});
+(function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
+document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
 </body>
 </html>
