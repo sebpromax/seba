@@ -129,8 +129,9 @@ Trois briques livrées le 2026-07-09 (PR #32/#33/#34), 4 nouvelles Edge Function
 2. **`sync-push`** : reçoit les modifications en attente d'un appareil (patch par patch, pas le blob entier) et les applique. Déploie **`supabase-functions/sync-push.ts`** sous le nom `sync-push`, même principe, aucune clé supplémentaire.
 3. **`vision-qa`** : analyse une photo de fin d'intervention avec Gemini Vision (conformité/non-conformité/incertain). Déploie **`supabase-functions/vision-qa.ts`** sous le nom `vision-qa` — réutilise **`GEMINI_API_KEY`** (déjà configurée en 1b si l'assistant IA est actif ; sinon, même étape que 1b : [ai.google.dev](https://ai.google.dev/) → clé gratuite → Secrets de la fonction).
 4. **`notify-alert`** : relais de notification d'alerte (stub aujourd'hui — enregistre l'alerte, n'envoie pas encore d'email/push réel). Déploie **`supabase-functions/notify-alert.ts`** sous le nom `notify-alert`.
+5. **`employe-set-pin`** *(ajouté 2026-07-16, module messagerie/espace terrain)* : permet au patron de définir/changer le PIN 4 chiffres d'un employé depuis `employe-fiche.html` (complète `employe-auth` ci-dessus, qui ne fait que le vérifier). Déploie **`supabase-functions/employe-set-pin.ts`** sous le nom `employe-set-pin`. Aucune nouvelle clé.
 
-Pour que le bucket photo et le trigger d'alerte fonctionnent, `supabase-schema.sql` doit être exécuté en entier (voir Section 2 ci-dessous) — les 4 fonctions ci-dessus ne suffisent pas seules.
+Pour que le bucket photo et le trigger d'alerte fonctionnent, `supabase-schema.sql` doit être exécuté en entier (voir Section 2 ci-dessous) — les fonctions ci-dessus ne suffisent pas seules. La table `seba_messages` (module messagerie, ajoutée 2026-07-16) fait aussi partie de `supabase-schema.sql` — si le schéma complet a déjà été exécuté avant cette date, rejoue au minimum **`migrations/20260716_create_seba_messages.sql`**.
 
 ---
 
