@@ -601,11 +601,19 @@
        pour du mode demo sans backend, jamais utilise si Supabase est
        configure et une session existe. Retourne {ok:true} ou {ok:false,
        error}. */
-    async setEmployePin(employeId, pin) {
+    async setEmployePin(employeId, pin, opts) {
       if (!state) loadState();
       if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
       const emp = state.employes.find(e => e.id === employeId);
       if (!emp) return { ok: false, error: 'Employé introuvable.' };
+      // pinIsDefault : marqueur non-secret (jamais le PIN lui-meme) --
+      // true uniquement quand equipe.html pose le code de depart '1234' a
+      // la creation (opts.isDefault). Un changement ulterieur (par
+      // l'employe depuis l'espace terrain, ou une reinitialisation par le
+      // patron) passe toujours opts.isDefault a false/absent, meme si le
+      // nouveau code choisi est accidentellement '1234' -- ce n'est plus
+      // LE code de depart connu de tous, c'est un choix explicite.
+      const isDefault = !!(opts && opts.isDefault);
       if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
         try {
           const cfg = window.SEBA_CONFIG;
@@ -616,14 +624,10 @@
           });
           const body = await res.json().catch(() => ({}));
           if (!res.ok) return { ok: false, error: body.error || ('Erreur serveur (HTTP ' + res.status + ')') };
-          // pinSet : marqueur non-secret (jamais le PIN lui-meme) permettant
-          // a employe-connexion.html de savoir localement si c'est une
-          // premiere connexion (creation) ou une connexion normale
-          // (verification) -- pin_hash reste dans employe_credentials,
-          // inaccessible en lecture (RLS sans policy).
           emp.pinSet = true;
+          emp.pinIsDefault = isDefault;
           persist();
-          pushOp('employes', employeId, 'update', { pinSet: true });
+          pushOp('employes', employeId, 'update', { pinSet: true, pinIsDefault: isDefault });
           return { ok: true };
         } catch (e) {
           return { ok: false, error: 'Connexion impossible : ' + e.message };
@@ -631,6 +635,7 @@
       }
       emp.pinLocal = pin; // clair, mode demo/file:// uniquement -- jamais le chemin utilisé une fois Supabase configuré
       emp.pinSet = true;
+      emp.pinIsDefault = isDefault;
       persist();
       return { ok: true };
     },

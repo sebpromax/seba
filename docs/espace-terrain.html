@@ -67,6 +67,11 @@ button,input{font-family:'Inter',sans-serif;}
 .et-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;}
 .et-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
 .et-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
+
+.et-banner{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:12px 16px;font-size:.86rem;margin-bottom:20px;color:var(--ink);}
+.et-banner a{color:var(--danger-text);font-weight:700;}
+.et-pin-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.et-pin-row input{flex:1;min-width:120px;}
 </style>
 </head>
 <body>
@@ -80,6 +85,8 @@ button,input{font-family:'Inter',sans-serif;}
     <button class="et-logout" onclick="handleLogout()">Se déconnecter</button>
   </div>
 
+  <div class="et-banner" id="et-pin-banner" style="display:none;">Vous utilisez encore le code de départ. <a href="#et-pin-panel">Changez-le maintenant →</a></div>
+
   <div class="et-section-title">Planning du jour</div>
   <div id="et-missions"></div>
 
@@ -90,6 +97,17 @@ button,input{font-family:'Inter',sans-serif;}
       <input type="text" class="et-msg-input" id="et-msg-input" placeholder="Écrire à votre patron..." onkeydown="if(event.key==='Enter')envoyerMessagePatron();">
       <button class="et-msg-send" onclick="envoyerMessagePatron()">Envoyer</button>
     </div>
+  </div>
+
+  <div class="et-messaging" id="et-pin-panel">
+    <div class="et-section-title" style="margin-bottom:14px;">Mon code PIN</div>
+    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre code à 4 chiffres à tout moment.</p>
+    <div class="et-pin-row">
+      <input type="password" class="et-msg-input" id="et-pin-new" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Nouveau code">
+      <input type="password" class="et-msg-input" id="et-pin-confirm" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Confirmez">
+    </div>
+    <button class="et-msg-send" style="width:100%;padding:11px;" onclick="modifierMonPin()">Modifier mon code</button>
+    <p id="et-pin-status" style="font-size:.82rem;margin-top:8px;"></p>
   </div>
 </div>
 
@@ -131,9 +149,44 @@ let _missionContext = null; // intervention ciblee par le modal Message
   document.getElementById('et-greeting').textContent = 'Bonjour ' + _session.prenom;
   document.getElementById('et-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  const emp = SebaDB.get('employes', _session.id);
+  if (emp && emp.pinIsDefault) document.getElementById('et-pin-banner').style.display = 'block';
+
   renderMissions();
   renderMessages();
 })();
+
+// Auto-service : l'employe change son propre code depuis ici, a tout
+// moment (pas seulement quand pinIsDefault) -- voir seba-data.js:
+// setEmployePin. opts omis -> pinIsDefault repasse a false.
+async function modifierMonPin() {
+  const newPin = document.getElementById('et-pin-new').value.trim();
+  const confirmPin = document.getElementById('et-pin-confirm').value.trim();
+  const status = document.getElementById('et-pin-status');
+  if (!/^\d{4}$/.test(newPin)) {
+    status.textContent = 'Le code doit contenir 4 chiffres.';
+    status.style.color = 'var(--danger-text)';
+    return;
+  }
+  if (newPin !== confirmPin) {
+    status.textContent = 'Les deux codes ne correspondent pas.';
+    status.style.color = 'var(--danger-text)';
+    return;
+  }
+  status.textContent = 'Enregistrement…';
+  status.style.color = '';
+  const res = await SebaDB.setEmployePin(_session.id, newPin);
+  if (res.ok) {
+    status.textContent = 'Code modifié.';
+    status.style.color = 'var(--emerald)';
+    document.getElementById('et-pin-new').value = '';
+    document.getElementById('et-pin-confirm').value = '';
+    document.getElementById('et-pin-banner').style.display = 'none';
+  } else {
+    status.textContent = res.error || 'Échec de la modification.';
+    status.style.color = 'var(--danger-text)';
+  }
+}
 
 /* Planning du jour filtre sur employeId (voir planning.html -- assignation
    ajoutee le 2026-07-18). Interventions n'ont AUCUN champ financier

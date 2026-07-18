@@ -263,7 +263,7 @@
     document.body.style.overflow = '';
   }
 
-  function submitEmploye() {
+  async function submitEmploye() {
     const prenom = document.getElementById('ss-prenom').value.trim();
     const nom    = document.getElementById('ss-nom').value.trim();
     const role   = document.getElementById('ss-role').value.trim() || 'Employé';
@@ -277,15 +277,19 @@
     }
     // Email optionnel (simple info de contact) : l'espace terrain
     // (employe-connexion.html) badge desormais par nom choisi dans une
-    // liste + PIN cree par l'employe lui-meme a sa premiere connexion,
-    // plus par email.
+    // liste + PIN, plus par email.
     if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       document.getElementById('ss-email').focus();
       showToast('Format d\'email invalide.');
       return;
     }
 
-    SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: false, acces });
+    const emp = SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: false, acces });
+    // Code de depart '1234' pose automatiquement -- l'employe le change
+    // lui-meme depuis l'espace terrain a sa premiere connexion (voir
+    // seba-data.js: setEmployePin, opts.isDefault trace ce code comme
+    // "encore le defaut" tant qu'il n'a pas ete change).
+    await SebaDB.setEmployePin(emp.id, '1234', { isDefault: true });
     SebaDB.log('client', 'Nouvel employé — ' + prenom + ' ' + nom, 'equipe.html');
     EMPLOYES = SebaDB.list('employes');
     render();

@@ -188,16 +188,14 @@ p{letter-spacing:-0.02em;}
 
     <div class="error-msg" id="error-msg"></div>
 
-    <div class="success-msg" id="first-time-msg">Première connexion : choisissez un code à 4 chiffres, il vous sera redemandé à chaque connexion suivante.</div>
-
     <div id="ec-form">
       <div class="field" id="employe-field">
         <label for="ec-employe">Vous êtes</label>
-        <select id="ec-employe" onchange="onEmployeChange()"></select>
+        <select id="ec-employe"></select>
       </div>
 
       <div class="field field-pin" id="pin-field">
-        <label for="ec-pin" id="ec-pin-label">Code PIN (4 chiffres)</label>
+        <label for="ec-pin">Code PIN (4 chiffres)</label>
         <div class="field-pw-wrap">
           <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
           <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
@@ -213,7 +211,7 @@ p{letter-spacing:-0.02em;}
       </button>
     </div>
 
-    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a> — le patron donne le nom, l'employé choisit son propre code PIN à sa première connexion ici.</p>
+    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a> — un code de départ <strong>1234</strong> lui sera attribué automatiquement, à changer depuis l'espace terrain.</p>
 
     <hr class="divider">
 
@@ -227,12 +225,11 @@ p{letter-spacing:-0.02em;}
 <script>
 /* Identifiant = le nom donné par le patron (fiche employé, equipe.html),
    choisi dans une liste plutôt que tapé -- plus sûr sur un écran tactile
-   partagé, aucun risque de faute de frappe. Le PIN, lui, appartient
-   entièrement à l'employé : au lieu d'être pré-défini par le patron, il
-   est CRÉÉ ici même, à la première connexion (emp.pinSet encore absent
-   -> SebaDB.setEmployePin() avant employeLogin()). Aux connexions
-   suivantes (emp.pinSet === true), ce même champ PIN redevient une
-   simple vérification. */
+   partagé, aucun risque de faute de frappe. Le PIN est toujours déjà
+   défini : equipe.html pose un code de départ '1234' à la création
+   (voir SebaDB.setEmployePin(..., {isDefault:true})) -- l'employé le
+   change lui-même depuis l'espace terrain (voir espace-terrain.html),
+   pas ici. Cette page ne fait donc plus que VÉRIFIER un PIN existant. */
 (function fillEmployeSelect(){
   const sel = document.getElementById('ec-employe');
   if (!window.SebaDB) return;
@@ -246,20 +243,9 @@ p{letter-spacing:-0.02em;}
     const o = document.createElement('option');
     o.value = e.id;
     o.textContent = e.prenom + ' ' + e.nom;
-    o.dataset.pinSet = e.pinSet ? '1' : '';
     sel.appendChild(o);
   });
-  onEmployeChange();
 })();
-
-function onEmployeChange(){
-  const sel = document.getElementById('ec-employe');
-  const opt = sel.options[sel.selectedIndex];
-  const firstTime = opt && opt.dataset.pinSet !== '1';
-  document.getElementById('first-time-msg').classList.toggle('visible', !!firstTime);
-  document.getElementById('ec-pin-label').textContent = firstTime ? 'Choisissez votre code PIN (4 chiffres)' : 'Code PIN (4 chiffres)';
-  document.getElementById('btn-connect-text').textContent = firstTime ? 'Créer mon code et me connecter' : 'Se connecter';
-}
 
 function shakeCard(){
   const card=document.querySelector('.card');
@@ -269,8 +255,7 @@ function shakeCard(){
 }
 
 async function handleEmployeeLogin(){
-  const sel = document.getElementById('ec-employe');
-  const employeId = sel.value;
+  const employeId = document.getElementById('ec-employe').value;
   const pin = document.getElementById('ec-pin').value.trim();
   const err = document.getElementById('error-msg');
   err.classList.remove('visible');
@@ -282,27 +267,11 @@ async function handleEmployeeLogin(){
     return;
   }
 
-  const emp = (SebaDB.list('employes') || []).find(e => e.id === employeId);
-  const firstTime = emp && !emp.pinSet;
-
   const btn = document.getElementById('btn-connect');
   const btnText = document.getElementById('btn-connect-text');
   btn.classList.add('loading');
   btn.disabled = true;
-  btnText.textContent = firstTime ? 'Création du code…' : 'Connexion…';
-
-  if (firstTime) {
-    const setRes = await SebaDB.setEmployePin(employeId, pin);
-    if (!setRes.ok) {
-      err.textContent = setRes.error || 'Impossible de créer le code.';
-      err.classList.add('visible');
-      shakeCard();
-      btn.classList.remove('loading');
-      btn.disabled = false;
-      onEmployeChange();
-      return;
-    }
-  }
+  btnText.textContent = 'Connexion…';
 
   const res = await SebaDB.employeLogin(employeId, pin);
 
@@ -315,7 +284,7 @@ async function handleEmployeeLogin(){
     shakeCard();
     btn.classList.remove('loading');
     btn.disabled = false;
-    onEmployeChange();
+    btnText.textContent = 'Se connecter';
     document.getElementById('ec-pin').value = '';
   }
 }
