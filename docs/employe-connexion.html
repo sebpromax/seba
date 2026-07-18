@@ -119,9 +119,14 @@ input::-ms-reveal, input::-ms-clear { display: none !important; }
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+input:-webkit-autofill:active,
+#ec-pin:-webkit-autofill,
+#ec-pin:-webkit-autofill:hover,
+#ec-pin:-webkit-autofill:focus,
+#ec-pin:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px var(--autofill-bg) inset !important;
   -webkit-text-fill-color: var(--autofill-text) !important;
+  caret-color: var(--autofill-text);
   transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -197,7 +202,7 @@ p{letter-spacing:-0.02em;}
       <div class="field field-pin" id="pin-field">
         <label for="ec-pin">Code PIN (4 chiffres)</label>
         <div class="field-pw-wrap">
-          <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
+          <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="new-password">
           <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
             <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
