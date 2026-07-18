@@ -231,7 +231,7 @@ p{letter-spacing:-0.02em;}
 
     <div class="foot-links">
       <button type="button" class="btn-ghost-nav" onclick="history.back()">Retour</button>
-      <button type="button" class="btn-ghost-nav" onclick="handleForgotPin()">Code PIN oublié ?</button>
+      <button type="button" class="btn-ghost-nav" onclick="handleForgotPin()">Mot de passe oublié ?</button>
     </div>
   </div>
 </div>
@@ -256,6 +256,11 @@ p{letter-spacing:-0.02em;}
     document.getElementById('ec-empty').style.display = 'block';
     return;
   }
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = '';
+  empty.selected = true;
+  sel.appendChild(empty);
   emps.forEach(e => {
     const o = document.createElement('option');
     o.value = e.id;
