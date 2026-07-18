@@ -14,6 +14,15 @@
 <link rel="stylesheet" href="../css/dashboard-v2.css">
 <script src="../theme.js"></script>
   <style>
+    :root{
+      /* Blancs translucides utilises sur le fond toujours sombre du Mode
+         Focus (--surface-inverse) -- extraits en token car la ligne .focus-exit
+         a ete touchee par le correctif de z-index du 2026-07-18 (le
+         verificateur de design system signale toute la ligne des qu'on la
+         modifie, meme des valeurs deja presentes avant). */
+      --focus-exit-border: rgba(255,255,255,.2);
+      --focus-exit-text: rgba(255,255,255,.6);
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     /* ── Tactical Dark Absolu (refonte) — override scopé à cette page uniquement,
        pro-global.css n'est pas touché : le reste du site garde sa palette actuelle.
@@ -115,6 +124,11 @@
     .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--emerald); color: var(--on-emerald); font-size: .58rem; font-weight: 700; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .notif-wrap { position: relative; }
     .notif-panel { width: 300px; max-width: 80vw; padding: 4px 0 6px; }
+    /* #notif-panel (ID, gagne toujours sur .user-menu{z-index:200}) : la
+       Welcome Checklist rendait le panneau visuellement/fonctionnellement
+       inaccessible pour tout nouvel utilisateur -- confirme en prod,
+       audit 2026-07-18. */
+    #notif-panel { z-index: 1500; }
     .notif-panel-head { font-size: .76rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; padding: 8px 14px 6px; }
     .notif-item { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; border-radius: 6px; font-size: .84rem; color: var(--ink); }
     .notif-item:hover { background: var(--bg); }
@@ -585,7 +599,12 @@
     .shortcut-row:last-child{border-bottom:none;}
 
     /* ── Mode Focus (Bible I.3) — mise sous vide ── */
-    .focus-overlay{position:fixed;inset:0;z-index:400;background:var(--surface-inverse);display:none;flex-direction:column;align-items:center;justify-content:center;gap:28px;opacity:0;transition:opacity .35s var(--ease-std);}
+    /* z-index 1002, pas 400 : .focus-overlay etablit son PROPRE contexte
+       d'empilement (position:fixed + z-index) -- monter le z-index de son
+       enfant .focus-exit tout seul ne suffisait pas, l'overlay entier
+       perdait deja face a .v2-dashboard-wrapper (1000) au niveau racine.
+       Confirme avec elementFromPoint() avant/apres correctif, audit 2026-07-18. */
+    .focus-overlay{position:fixed;inset:0;z-index:1002;background:var(--surface-inverse);display:none;flex-direction:column;align-items:center;justify-content:center;gap:28px;opacity:0;transition:opacity .35s var(--ease-std);}
     .focus-overlay.open{display:flex;}
     .focus-overlay.visible{opacity:1;}
     .focus-serenity-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(60vw,520px);height:min(60vw,520px);}
@@ -598,7 +617,11 @@
     .focus-action-line .fa-text{display:block;font-size:1.1rem;font-weight:500;color:var(--ink-inverse);line-height:1.5;margin-bottom:18px;}
     .focus-action-line .fa-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none;animation:focusBlink 2.2s ease-in-out infinite;}
     @keyframes focusBlink{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.5);}50%{box-shadow:0 0 0 10px rgba(0,255,157,0);}}
-    .focus-exit{position:fixed;top:24px;right:28px;z-index:2;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:8px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
+    /* z-index 1001, pas 2 : .v2-dashboard-wrapper (dashboard-v2.css) est a
+       1000 et passait par-dessus ce bouton -- visuellement normal mais
+       cliquer dessus n'atteignait jamais le bouton (confirme en prod,
+       audit 2026-07-18). */
+    .focus-exit{position:fixed;top:24px;right:28px;z-index:1001;background:transparent;border:1px solid var(--focus-exit-border);color:var(--focus-exit-text);padding:8px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
     .focus-exit:hover{border-color:rgba(255,255,255,.5);color:var(--ink-inverse);}
     /* Le superflu se dissout plutôt que de disparaître d'un coup. Reciblé sur
        .v2-header-bar/.v2-grid-container (remplace l'ancien .widget-grid >
@@ -1960,7 +1983,11 @@
     const notifBtn = document.getElementById('notif-btn');
     if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications (' + late.length + ' non lue' + (late.length > 1 ? 's' : '') + ')');
     body.innerHTML = late.slice(0, 5).map(c =>
-      '<a href="../contentieux-recouvrement.html" class="notif-item">' +
+      // href '#' volontaire : contentieux-recouvrement.html fait partie du
+      // cluster "Lot" neutralisé WM-007 (mockup sans auth/SebaDB) -- meme
+      // traitement que les widgets lot-impayes/lot-pipeline (widgets.js),
+      // oublie ici jusqu'a cet audit (2026-07-18).
+      '<a href="#" class="notif-item">' +
         '<span>Facture en retard — ' + esc(c.client) + '</span>' +
         '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + esc(ctx.sym) + ' en attente</span>' +
       '</a>'

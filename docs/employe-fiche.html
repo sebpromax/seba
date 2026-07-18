@@ -170,6 +170,14 @@
       </div>
     </div>
 
+    <!-- EMPLOYÉ INTROUVABLE (id absent ou ne correspondant à aucun employé réel) --
+         masqué par défaut, affiché à la place du reste par showEmployeNotFound(). -->
+    <div class="panel" id="employe-not-found" style="display:none;text-align:center;padding:48px 24px;">
+      <h2 style="margin-bottom:8px;">Employé introuvable</h2>
+      <p style="color:var(--text-2);margin-bottom:20px;">Cet employé n'existe plus, ou le lien utilisé n'est plus valide.</p>
+      <a href="equipe.html" class="btn-em" style="display:inline-flex;">← Retour à l'équipe</a>
+    </div>
+
     <!-- EMPLOYEE HEADER -->
     <div class="emp-header">
       <div class="emp-header-left">
@@ -349,12 +357,13 @@
 
   const _n = new URLSearchParams(window.location.search).get('nom');
   const _id = new URLSearchParams(window.location.search).get('id');
-  if (_n) {
-    document.title = _n + ' — Seba';
-    document.getElementById('emp-name').textContent = _n;
-    const _p = _n.trim().split(/\s+/);
-    document.getElementById('emp-avatar').textContent =
-      (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
+
+  function showEmployeNotFound() {
+    document.title = 'Employé introuvable — Seba';
+    document.querySelector('.emp-header').style.display = 'none';
+    document.querySelector('.stats-row').style.display = 'none';
+    document.querySelector('.content-grid').style.display = 'none';
+    document.getElementById('employe-not-found').style.display = 'block';
   }
 
   /* ── Branchement SebaDB (corrige : la fiche affichait toujours les mêmes
@@ -363,11 +372,23 @@
      plus pauvre que celui des clients : ni email, ni téléphone, ni notes,
      ni planning individuel (les interventions ne sont liées à aucun
      employé dans SebaDB) -- ces champs sont retirés plutôt que de garder
-     des valeurs inventées qui ne correspondent à aucune donnée réelle. */
+     des valeurs inventées qui ne correspondent à aucune donnée réelle.
+     Correctif 2026-07-18 (audit) : même principe que client-fiche.html --
+     le nom vient TOUJOURS de emp.prenom/emp.nom une fois l'employé
+     réellement trouvé (plus jamais du ?nom= brut de l'URL), et un id
+     absent/invalide affiche "Employé introuvable" au lieu du squelette de
+     démo statique "Léa Martin" sous un faux nom. */
   (function loadRealEmploye() {
-    if (!window.SebaDB || !_id) return;
+    if (!window.SebaDB || !_id) { showEmployeNotFound(); return; }
     const emp = SebaDB.list('employes').find(e => e.id === _id);
-    if (!emp) return;
+    if (!emp) { showEmployeNotFound(); return; }
+
+    const fullName = (emp.prenom + ' ' + emp.nom).trim() || _n || 'Employé';
+    document.title = fullName + ' — Seba';
+    document.getElementById('emp-name').textContent = fullName;
+    const _p = fullName.split(/\s+/);
+    document.getElementById('emp-avatar').textContent =
+      ((_p[0] && _p[0][0] || '') + (_p[1] && _p[1][0] || '')).toUpperCase();
 
     const badgeEl = document.querySelector('.emp-name-row .badge');
     badgeEl.className = 'badge ' + (emp.actif ? 'actif' : 'repos');

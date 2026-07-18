@@ -82,6 +82,10 @@
   .ss-backdrop{position:fixed;inset:0;z-index:499;background:rgba(20,22,26,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s ease;}
   .ss-backdrop.open{opacity:1;pointer-events:auto;}
   .ss-panel{position:fixed;right:0;top:0;bottom:0;z-index:500;width:min(480px,92vw);background:var(--white);box-shadow:-8px 0 48px rgba(0,0,0,.13);transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+  /* .identity-bar (z-index:1000) recouvrait le haut du tiroir (top:0 tous
+     les deux) -- decale sous le bandeau au lieu de jouer au plus fort en
+     z-index, meme token que .sidebar (pro-global.css). Audit 2026-07-18. */
+  @media (min-width:841px){ .ss-panel{ top: var(--identity-bar-height); } }
   .ss-panel.open{transform:translateX(0);}
   .ss-hdr{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
   .ss-hdr h2{font-size:1.15rem;letter-spacing:-.01em;}

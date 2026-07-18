@@ -79,7 +79,7 @@ function buildBentoChartHTML(goal, sym) {
       '<div class="bc-empty-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg></div>' +
       '<div class="bc-empty-title">Prêt pour vos premiers encaissements</div>' +
       '<div class="bc-empty-sub">Vos revenus apparaîtront ici dès la création de votre première facture.</div>' +
-      '<button class="bc-empty-btn" onclick="window.location.href=\'factures.html\'">+ Créer une demande de paiement</button>' +
+      '<button class="bc-empty-btn" onclick="window.location.href=\'../factures.html\'">+ Créer une demande de paiement</button>' +
       '</div>';
   }
   const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
@@ -543,7 +543,7 @@ class GenericMediaReportWidget extends WidgetV2 {
         ext.emptyIcon || '📷',
         ext.emptyTitle || 'Aucun rapport photo',
         ext.emptySub || 'Ajoutez des photos avant/après à vos interventions pour rassurer vos clients.',
-        'Voir les interventions', 'planning.html');
+        'Voir les interventions', '../planning.html');
       return;
     }
     this.container.innerHTML = '<div class="bc-pad">' +
@@ -684,7 +684,7 @@ const TYPE_PILL_LABEL = { intervention: 'Intervention', devis: 'Devis', client: 
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
 function buildTimelineHTML(timeline) {
-  if (!timeline.length) return '<div class="tl-empty">Aucune tâche planifiée. <a href="planning.html" style="color:var(--emerald)">Planifier →</a></div>';
+  if (!timeline.length) return '<div class="tl-empty">Aucune tâche planifiée. <a href="../planning.html" style="color:var(--emerald)">Planifier →</a></div>';
   return timeline.map(t =>
     '<a href="' + t.href + '" class="tl-item' + (t.done ? ' done' : '') + '">' +
     '<div class="tl-time-col"><span class="tl-time">' + t.time + '</span><div class="tl-dot' + (t.done ? ' done' : '') + '"></div></div>' +
@@ -1623,7 +1623,7 @@ window.WIDGET_CATALOG = {
     render(ctx, el) {
       const real = buildRealTeamStatus(ctx.rhEmployees, ctx.rhPointages);
       const list = real.length ? real : ctx.demo.team;
-      if (!list.length) { el.innerHTML = '<div class="tl-empty">Aucun employé. <a href="equipe.html" style="color:var(--emerald)">Ajouter →</a></div>'; return; }
+      if (!list.length) { el.innerHTML = '<div class="tl-empty">Aucun employé. <a href="../equipe.html" style="color:var(--emerald)">Ajouter →</a></div>'; return; }
       el.innerHTML = '';
       list.forEach(t => el.appendChild(buildTeamItemEl(t, ctx.couleur)));
     } },

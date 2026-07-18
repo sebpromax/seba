@@ -181,6 +181,14 @@
       </div>
     </div>
 
+    <!-- CLIENT INTROUVABLE (id absent ou ne correspondant à aucun client réel) --
+         masqué par défaut, affiché à la place du reste par showClientNotFound(). -->
+    <div class="panel" id="client-not-found" style="display:none;text-align:center;padding:48px 24px;">
+      <h2 style="margin-bottom:8px;">Client introuvable</h2>
+      <p style="color:var(--text-2);margin-bottom:20px;">Ce client n'existe plus, ou le lien utilisé n'est plus valide.</p>
+      <a href="clients.html" class="btn-em" style="display:inline-flex;">← Retour à la liste des clients</a>
+    </div>
+
     <!-- CLIENT HEADER -->
     <div class="client-header">
       <div class="client-header-left">
@@ -480,19 +488,20 @@
 
   const _n = new URLSearchParams(window.location.search).get('nom');
   const _id = new URLSearchParams(window.location.search).get('id');
-  if (_n) {
-    document.title = _n + ' — Seba';
-    document.querySelector('.client-name-row h1').textContent = _n;
-    const _p = _n.trim().split(/\s+/);
-    document.querySelector('.client-avatar').textContent =
-      (_p[0][0] + (_p[1] ? _p[1][0] : '')).toUpperCase();
-  }
 
   /* ── Branchement SebaDB (corrige : la fiche affichait toujours les mêmes
      données factices "Sophie Lacroix" quel que soit le client réellement
      ouvert — CA, historique, devis/factures, adresse, statut). Seule la
      suppression touchait déjà SebaDB ; tout le reste vient maintenant du
-     client réel identifié par ?id=. ── */
+     client réel identifié par ?id=.
+     Correctif 2026-07-18 (audit) : le titre/h1 étaient auparavant posés une
+     fois pour toutes depuis le paramètre d'URL ?nom= AVANT même de savoir si
+     ce client existe -- un lien périmé/mal formé affichait un nom brut sous
+     lequel se cachait tout le squelette de démo statique (CA, historique,
+     notes fabriqués), donnant l'illusion de vraies données. Le nom vient
+     maintenant TOUJOURS de client.prenom/client.nom une fois le client
+     réellement trouvé ; sinon un état "Client introuvable" honnête
+     remplace tout le contenu au lieu de laisser le squelette de démo. ── */
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function fmtDateFr(iso) {
     if (!iso) return '—';
@@ -507,10 +516,27 @@
   // dédiée) : attente (orange) pour suspendu, expire (gris) pour terminé.
   const CONTRAT_BADGE = { actif: ['actif', 'Actif'], suspendu: ['attente', 'Suspendu'], termine: ['expire', 'Terminé'] };
 
+  function showClientNotFound() {
+    document.title = 'Client introuvable — Seba';
+    document.querySelector('.client-header').style.display = 'none';
+    document.querySelector('.stats-row').style.display = 'none';
+    document.querySelector('.content-grid').style.display = 'none';
+    document.getElementById('client-not-found').style.display = 'block';
+  }
+
   function renderClientFiche() {
-    if (!window.SebaDB || !_id) return; // pas d'id -> reste le squelette de démo statique
+    if (!window.SebaDB || !_id) { showClientNotFound(); return; }
     const client = SebaDB.list('clients').find(c => c.id === _id);
-    if (!client) return;
+    if (!client) { showClientNotFound(); return; }
+
+    // Nom réel : écrase toujours le paramètre d'URL ?nom= (qui peut être mal
+    // formé ou périmé si le client a été renommé depuis la création du lien).
+    const fullName = (client.prenom + ' ' + client.nom).trim() || _n || 'Client';
+    document.title = fullName + ' — Seba';
+    document.querySelector('.client-name-row h1').textContent = fullName;
+    const _p = fullName.split(/\s+/);
+    document.querySelector('.client-avatar').textContent =
+      ((_p[0] && _p[0][0] || '') + (_p[1] && _p[1][0] || '')).toUpperCase();
 
     // En-tête : badge de statut réel + contact réel (email si @ dedans, sinon tel).
     const badgeEl = document.querySelector('.client-name-row .badge');
