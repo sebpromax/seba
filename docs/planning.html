@@ -364,11 +364,11 @@
         </select>
       </div>
       <div class="ss-field">
-        <label for="ss-employee">Employé(e)</label>
+        <label for="ss-employee">Employé(e) <span style="font-weight:400;color:var(--text-2);">(optionnel)</span></label>
         <select id="ss-employee">
-          <option>Léa Martin</option>
-          <option>Karim Diallo</option>
-          <option>Marie Lefebvre</option>
+          <option value="">— Non assigné —</option>
+          <!-- options remplies depuis SebaDB (etaient codees en dur et
+               jamais lues a la creation avant ce correctif) -->
         </select>
       </div>
     </div>
@@ -430,8 +430,22 @@
     });
   })();
 
+  /* Remplit la liste des employés (étaient 3 noms codés en dur, jamais
+     lus par submitIntervention() -- aucune intervention n'a jamais pu
+     être réellement assignée à un employé avant ce correctif). */
+  (function fillEmployees() {
+    const sel = document.getElementById('ss-employee');
+    (SebaDB.list('employes') || []).forEach(e => {
+      const o = document.createElement('option');
+      o.textContent = e.prenom + ' ' + e.nom;
+      o.value = e.id;
+      sel.appendChild(o);
+    });
+  })();
+
   function submitIntervention() {
     const sel     = document.getElementById('ss-client');
+    const empSel  = document.getElementById('ss-employee');
     const service = document.getElementById('ss-service').value;
     const date    = document.getElementById('ss-date').value;
     const time    = document.getElementById('ss-time').value || '09:00';
@@ -440,8 +454,10 @@
       return;
     }
     const clientName = sel.options[sel.selectedIndex].text;
-    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false });
-    SebaDB.log('intervention', 'Intervention planifiée — ' + clientName + ' · ' + service, 'planning.html');
+    const employeId = empSel.value || null;
+    const employeName = employeId ? empSel.options[empSel.selectedIndex].text : null;
+    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false, employeId, employeName });
+    SebaDB.log('intervention', 'Intervention planifiée — ' + clientName + ' · ' + service + (employeName ? ' · ' + employeName : ''), 'planning.html');
     closeSheet();
     renderWeek(weekOffset);
     showToast('Intervention créée avec succès !');
