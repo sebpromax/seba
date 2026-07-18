@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Connexion employé — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privée : l'appareil doit déjà être authentifié PATRON (voir
+     employe-auth.ts, en-tête) -- le PIN badge un employé sur cette
+     session existante, il n'en crée jamais une nouvelle. Sans ce verrou,
+     n'importe qui pourrait tenter des PIN depuis un appareil non
+     authentifié -- guard.js redirige vers connexion.html si aucune
+     session patron n'existe (mode démo : aucun blocage, voir guard.js). -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<style>
+:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--on-emerald-a30:rgba(3,26,18,.3);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+a{color:inherit;text-decoration:none;}
+button,input,select{font-family:'Inter',sans-serif;}
+
+.ec-card{width:100%;max-width:400px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:32px 28px;box-shadow:var(--shadow-md);}
+.ec-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:22px;font-weight:800;font-size:1.15rem;}
+.ec-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);}
+.ec-head{text-align:center;margin-bottom:26px;}
+.ec-head h1{font-size:1.25rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;}
+.ec-head p{font-size:.86rem;color:var(--text-2);}
+
+.ec-field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+.ec-field label{font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;}
+.ec-field select,.ec-field input{
+  padding:14px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);
+  font-size:1rem;color:var(--ink);width:100%;
+}
+.ec-field select:focus,.ec-field input:focus{border-color:var(--emerald);outline:none;}
+.ec-pin-input{letter-spacing:.5em;font-weight:700;text-align:center;font-size:1.3rem !important;}
+
+.ec-btn{
+  width:100%;padding:15px;border:none;border-radius:var(--rs);background:var(--emerald);color:var(--on-emerald);
+  font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s,transform .15s;
+}
+.ec-btn:hover{opacity:.9;}
+.ec-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ec-spinner{width:15px;height:15px;border:2px solid var(--on-emerald-a30);border-top-color:var(--on-emerald);border-radius:50%;animation:ecSpin .7s linear infinite;display:none;}
+.ec-btn.loading .ec-spinner{display:block;}
+@keyframes ecSpin{to{transform:rotate(360deg);}}
+
+.ec-error{font-size:.82rem;color:var(--danger-text);background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:10px 12px;margin-bottom:16px;display:none;}
+.ec-error.visible{display:block;}
+.ec-empty{font-size:.86rem;color:var(--text-2);text-align:center;margin-bottom:16px;}
+
+.ec-foot{text-align:center;margin-top:20px;font-size:.8rem;color:var(--text-2);}
+.ec-foot a{color:var(--emerald);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="ec-card">
+  <div class="ec-logo"><span class="ec-logo-dot"></span><span>Seba — Espace terrain</span></div>
+  <div class="ec-head">
+    <h1>Connexion employé</h1>
+    <p>Badgez-vous pour accéder à votre planning du jour.</p>
+  </div>
+
+  <div class="ec-error" id="ec-error"></div>
+
+  <div id="ec-form">
+    <div class="ec-field">
+      <label for="ec-employe">Vous êtes</label>
+      <select id="ec-employe"></select>
+    </div>
+    <div class="ec-field">
+      <label for="ec-pin">Code PIN (4 chiffres)</label>
+      <input type="password" id="ec-pin" class="ec-pin-input" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="off">
+    </div>
+    <button class="ec-btn" id="ec-btn" onclick="handleEmployeeLogin()">
+      <span class="ec-spinner" id="ec-spinner"></span>
+      <span id="ec-btn-text">Se connecter</span>
+    </button>
+  </div>
+
+  <p class="ec-empty" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html" style="color:var(--emerald);font-weight:600;">l'équipe</a>, puis définissez son PIN sur sa fiche.</p>
+
+  <div class="ec-foot"><a href="app/dashboard.html">← Retour au tableau de bord</a></div>
+</div>
+
+<script src="seba-data.js"></script>
+<script>
+(function(){
+  const c = localStorage.getItem('user_theme_color');
+  if (c) document.documentElement.style.setProperty('--emerald', c);
+})();
+
+(function fillEmployeSelect(){
+  const sel = document.getElementById('ec-employe');
+  if (!window.SebaDB) return;
+  const emps = SebaDB.list('employes').filter(e => e.actif !== false);
+  if (!emps.length) {
+    document.getElementById('ec-form').style.display = 'none';
+    document.getElementById('ec-empty').style.display = 'block';
+    return;
+  }
+  emps.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id;
+    o.textContent = e.prenom + ' ' + e.nom;
+    sel.appendChild(o);
+  });
+})();
+
+async function handleEmployeeLogin(){
+  const employeId = document.getElementById('ec-employe').value;
+  const pin = document.getElementById('ec-pin').value.trim();
+  const err = document.getElementById('ec-error');
+  err.classList.remove('visible');
+
+  if (!employeId || !/^\d{4}$/.test(pin)) {
+    err.textContent = 'Choisissez votre nom et saisissez les 4 chiffres de votre PIN.';
+    err.classList.add('visible');
+    return;
+  }
+
+  const btn = document.getElementById('ec-btn');
+  const btnText = document.getElementById('ec-btn-text');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btnText.textContent = 'Connexion…';
+
+  const res = await SebaDB.employeLogin(employeId, pin);
+
+  if (res.ok) {
+    window.location.href = 'espace-terrain.html';
+  } else {
+    err.textContent = res.error || 'Connexion impossible.';
+    err.classList.add('visible');
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    btnText.textContent = 'Se connecter';
+    document.getElementById('ec-pin').value = '';
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmployeeLogin(); });
+</script>
+</body>
+</html>

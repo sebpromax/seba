@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Espace terrain — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Meme verrou que employe-connexion.html : l'appareil doit deja etre
+     authentifie PATRON (guard.js). En plus de ca, cette page verifie sa
+     PROPRE session (SebaDB.employeSession()) -- si aucun employe n'est
+     badge, retour a l'ecran de badge plutot qu'un espace vide. -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<style>
+:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button,input{font-family:'Inter',sans-serif;}
+
+.et-wrap{max-width:640px;margin:0 auto;padding:24px 20px 60px;}
+
+.et-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;}
+.et-greeting h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
+.et-greeting p{font-size:.86rem;color:var(--text-2);}
+.et-logout{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);padding:9px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+.et-logout:hover{opacity:.85;}
+
+.et-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
+
+.et-mission{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;}
+.et-mission-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.et-mission-time{font-size:.82rem;font-weight:700;color:var(--emerald);}
+.et-mission-badge{font-size:.72rem;padding:3px 9px;border-radius:12px;font-weight:600;background:var(--bg);color:var(--text-2);}
+.et-mission-badge.done{background:var(--badge-success-bg);color:var(--emerald);}
+.et-mission-client{font-weight:600;font-size:1rem;margin-bottom:2px;}
+.et-mission-service{font-size:.86rem;color:var(--text-2);margin-bottom:12px;}
+.et-mission-actions{display:flex;gap:8px;}
+.et-btn-msg{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;cursor:pointer;}
+.et-btn-msg:hover{border-color:var(--emerald);color:var(--emerald);}
+
+.et-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
+
+.et-messaging{margin-top:32px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
+.et-msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.et-msg-bubble{background:var(--bg);border-radius:10px;padding:9px 12px;font-size:.86rem;}
+.et-msg-meta{font-size:.72rem;color:var(--text-2);margin-top:3px;}
+.et-msg-empty{font-size:.84rem;color:var(--text-2);text-align:center;padding:12px 0;}
+.et-msg-row{display:flex;gap:8px;}
+.et-msg-input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;}
+.et-msg-input:focus{border-color:var(--emerald);outline:none;}
+.et-msg-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;}
+
+/* Modal message rapide par intervention */
+.et-modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.et-modal-overlay.open{display:flex;}
+.et-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:360px;}
+.et-modal h3{font-size:1rem;margin-bottom:4px;}
+.et-modal p{font-size:.82rem;color:var(--text-2);margin-bottom:14px;}
+.et-modal textarea{width:100%;min-height:90px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;resize:vertical;margin-bottom:14px;font-family:'Inter',sans-serif;}
+.et-modal textarea:focus{border-color:var(--emerald);outline:none;}
+.et-modal-actions{display:flex;gap:10px;}
+.et-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;}
+.et-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
+.et-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
+</style>
+</head>
+<body>
+
+<div class="et-wrap">
+  <div class="et-header">
+    <div class="et-greeting">
+      <h1 id="et-greeting">Bonjour</h1>
+      <p id="et-date"></p>
+    </div>
+    <button class="et-logout" onclick="handleLogout()">Se déconnecter</button>
+  </div>
+
+  <div class="et-section-title">Planning du jour</div>
+  <div id="et-missions"></div>
+
+  <div class="et-messaging">
+    <div class="et-section-title" style="margin-bottom:14px;">Messages</div>
+    <div class="et-msg-thread" id="et-msg-thread"></div>
+    <div class="et-msg-row">
+      <input type="text" class="et-msg-input" id="et-msg-input" placeholder="Écrire à votre patron..." onkeydown="if(event.key==='Enter')envoyerMessagePatron();">
+      <button class="et-msg-send" onclick="envoyerMessagePatron()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<div class="et-modal-overlay" id="et-modal-overlay">
+  <div class="et-modal">
+    <h3 id="et-modal-title">Message</h3>
+    <p id="et-modal-sub">À propos de cette intervention.</p>
+    <textarea id="et-modal-text" placeholder="Votre message..."></textarea>
+    <div class="et-modal-actions">
+      <button class="et-modal-cancel" onclick="closeMissionModal()">Annuler</button>
+      <button class="et-modal-send" onclick="envoyerMessageMission()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script src="seba-data.js"></script>
+<script src="services/message-log.js"></script>
+<script>
+(function(){
+  const c = localStorage.getItem('user_theme_color');
+  if (c) document.documentElement.style.setProperty('--emerald', c);
+})();
+
+/* Date ISO en heure LOCALE, meme convention que seba-data.js (localISO) --
+   jamais toISOString() qui peut basculer au jour precedent en UTC. */
+function todayISOLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+let _session = null;
+let _missionContext = null; // intervention ciblee par le modal Message
+
+(function init() {
+  if (!window.SebaDB) return;
+  _session = SebaDB.employeSession();
+  if (!_session) { window.location.href = 'employe-connexion.html'; return; }
+
+  document.getElementById('et-greeting').textContent = 'Bonjour ' + _session.prenom;
+  document.getElementById('et-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  renderMissions();
+  renderMessages();
+})();
+
+/* Planning du jour filtre sur employeId (voir planning.html -- assignation
+   ajoutee le 2026-07-18). Interventions n'ont AUCUN champ financier
+   (clientId/clientName/service/date/time/done/employeId uniquement) : le
+   CA est donc structurellement absent de cette vue, jamais masque a la
+   volee -- il n'y a rien a retirer. */
+function renderMissions() {
+  const box = document.getElementById('et-missions');
+  const today = todayISOLocal();
+  const missions = SebaDB.list('interventions')
+    .filter(i => i.employeId === _session.id && i.date === today)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+  if (!missions.length) {
+    box.innerHTML = '<div class="et-empty">Aucune mission assignée pour aujourd\'hui.</div>';
+    return;
+  }
+
+  box.innerHTML = missions.map(m => (
+    '<div class="et-mission">' +
+      '<div class="et-mission-top">' +
+        '<span class="et-mission-time">' + (m.time || '') + '</span>' +
+        '<span class="et-mission-badge' + (m.done ? ' done' : '') + '">' + (m.done ? 'Terminée' : 'À faire') + '</span>' +
+      '</div>' +
+      '<div class="et-mission-client">' + escapeHtml(m.clientName || 'Client') + '</div>' +
+      '<div class="et-mission-service">' + escapeHtml(m.service || '') + '</div>' +
+      '<div class="et-mission-actions">' +
+        '<button class="et-btn-msg" onclick="openMissionModal(\'' + m.id + '\',\'' + escapeHtml(m.clientName || '').replace(/'/g, "\\'") + '\')">Message</button>' +
+      '</div>' +
+    '</div>'
+  )).join('');
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function openMissionModal(interventionId, clientName) {
+  _missionContext = { interventionId, clientName };
+  document.getElementById('et-modal-title').textContent = 'Message — ' + clientName;
+  document.getElementById('et-modal-sub').textContent = 'Ce message est envoyé à votre patron, pas au client.';
+  document.getElementById('et-modal-text').value = '';
+  document.getElementById('et-modal-overlay').classList.add('open');
+}
+function closeMissionModal() {
+  document.getElementById('et-modal-overlay').classList.remove('open');
+  _missionContext = null;
+}
+async function envoyerMessageMission() {
+  const texte = document.getElementById('et-modal-text').value.trim();
+  if (!texte || !_missionContext) return;
+  const prefixed = '[' + _missionContext.clientName + '] ' + texte;
+  await window.SebaQuotes.createMessage({
+    employeId: _session.id, expediteurRole: 'employe', destinataireRole: 'patron', texte: prefixed,
+  });
+  closeMissionModal();
+  renderMessages();
+}
+
+async function renderMessages() {
+  const box = document.getElementById('et-msg-thread');
+  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+  const msgs = await window.SebaQuotes.messagesFor('employe', _session.id);
+  box.innerHTML = msgs.length
+    ? msgs.map(m => '<div class="et-msg-bubble">' + escapeHtml(m.texte) +
+        '<div class="et-msg-meta">' + (m.expediteurRole === 'patron' ? 'Votre patron' : 'Vous') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
+    : '<div class="et-msg-empty">Aucun message pour l\'instant.</div>';
+  box.scrollTop = box.scrollHeight;
+}
+
+async function envoyerMessagePatron() {
+  const inp = document.getElementById('et-msg-input');
+  const texte = inp.value.trim();
+  if (!texte) return;
+  await window.SebaQuotes.createMessage({
+    employeId: _session.id, expediteurRole: 'employe', destinataireRole: 'patron', texte,
+  });
+  inp.value = '';
+  renderMessages();
+}
+
+function handleLogout() {
+  SebaDB.employeLogout();
+  window.location.href = 'employe-connexion.html';
+}
+</script>
+</body>
+</html>

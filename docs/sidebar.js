@@ -29,6 +29,8 @@
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><polyline points="10 6 10 10 13 13"/></svg>',
     reglages:
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>',
+    terrain:
+      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="12" height="16" rx="2"/><circle cx="10" cy="13" r="2"/><line x1="8" y1="5" x2="12" y2="5"/></svg>',
   };
 
   /* ── Structure de navigation ─────────────────────────────────────────────── */
@@ -47,8 +49,13 @@
       label: 'Équipe',
       gapBefore: true, // grand espace pour séparer "opérations" du reste ("système")
       items: [
-        { href: 'equipe.html',     label: 'Équipe',     key: 'equipe',     match: ['equipe', 'employe'] },
+        { href: 'equipe.html',     label: 'Équipe',     key: 'equipe',     match: ['equipe', 'employe-fiche'] },
         { href: 'historique.html', label: 'Historique', key: 'historique', match: ['historique'] },
+        // Sur cet appareil deja authentifie PATRON, badge un employe pour
+        // l'espace terrain (planning du jour, sans CA). Volontairement PAS
+        // dans index.html (page publique non authentifiee) : employe-auth.ts
+        // exige un JWT patron deja valide -- voir employe-connexion.html.
+        { href: 'employe-connexion.html', label: 'Espace terrain', key: 'terrain', match: ['employe-connexion', 'espace-terrain'] },
       ],
     },
     {

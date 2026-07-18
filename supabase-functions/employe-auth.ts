@@ -23,7 +23,7 @@ import { compare } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
-const SESSION_HOURS = 12;
+const SESSION_HOURS = 24 * 7; // session persistante multi-jours (espace terrain, tablette partagee) -- 12h a l'origine, remonte 2026-07-18
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
