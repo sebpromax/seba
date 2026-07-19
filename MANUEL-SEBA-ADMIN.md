@@ -133,6 +133,8 @@ Trois briques livrées le 2026-07-09 (PR #32/#33/#34), 4 nouvelles Edge Function
 
 Pour que le bucket photo et le trigger d'alerte fonctionnent, `supabase-schema.sql` doit être exécuté en entier (voir Section 2 ci-dessous) — les fonctions ci-dessus ne suffisent pas seules. La table `seba_messages` (module messagerie, ajoutée 2026-07-16) fait aussi partie de `supabase-schema.sql` — si le schéma complet a déjà été exécuté avant cette date, rejoue au minimum **`migrations/20260716_create_seba_messages.sql`**.
 
+**Espace Client** *(ajouté 2026-07-19)* : tables `client_accounts`/`client_requests` + fonctions RPC `link_client_account`/`get_my_client_profile`, plus une **réécriture des policies `seba_messages`** (un client authentifié a désormais son propre `auth.uid()`, distinct de celui du patron — l'ancienne policy `auth.uid() = user_id` seule ne suffit plus). Si le schéma complet a déjà été exécuté avant cette date, rejoue **`migrations/20260719_client_espace.sql`** — idempotent, sûr à rejouer même si une partie existe déjà. Aucune nouvelle Edge Function : tout passe par des RPC Postgres (`sebaAuth.rpc(...)`, même mécanisme que `create_profile_and_company` de l'onboarding).
+
 ---
 
 ## Section 2 — Base de données (tables + sécurité RLS)

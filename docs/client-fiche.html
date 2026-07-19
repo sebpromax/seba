@@ -111,12 +111,20 @@
   /* ALERTE FACTURES IMPAYÉES */
   .alert-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--badge-error-bg);color:var(--badge-error-txt);margin-left:10px;}
 
-  /* MESSAGERIE (journal patron -- pas encore d'accès direct côté client/employé) */
+  /* MESSAGERIE (journal patron + reponses du client depuis son Espace Client) */
   .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
   .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
   .msg-bubble{padding:9px 12px;border-radius:8px;font-size:0.85rem;line-height:1.4;background:var(--bg);border:1px solid var(--border);}
   .msg-bubble .msg-meta{font-size:0.7rem;color:var(--text-2);margin-top:4px;}
   .msg-input-row{display:flex;gap:8px;}
+
+  /* DEMANDES (Espace Client -- client-espace.html "+ Nouvelle demande") */
+  .demande-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .demande-row:last-child{border-bottom:none;}
+  .demande-titre{font-weight:500;font-size:0.88rem;flex:1;min-width:140px;}
+  .demande-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .demande-controls select{font-size:0.78rem;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--ink);}
+  .demande-empty{font-size:0.85rem;color:var(--text-2);}
   .msg-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;color:var(--ink);background:var(--bg);}
   .msg-empty{font-size:0.82rem;color:var(--text-2);}
 
@@ -370,10 +378,16 @@
 
         <div id="sector-info-container"></div>
 
+        <!-- DEMANDES (Espace Client) -->
+        <div class="panel" id="demandes-panel">
+          <div class="panel-head"><h3>Demandes</h3></div>
+          <div id="demandes-list"></div>
+        </div>
+
         <!-- MESSAGERIE -->
         <div class="panel" id="messagerie-panel">
           <span class="panel-eyebrow">Messages</span>
-          <p class="msg-note">Journal de communication avec ce client. Le client n'a pas encore d'accès direct pour répondre ici (portail client à venir) — pour l'instant, c'est votre historique de messages envoyés.</p>
+          <p class="msg-note">Journal de communication avec ce client, qui répond désormais depuis son propre <a href="client-connexion.html" style="color:var(--emerald);">Espace Client</a>.</p>
           <div class="msg-thread" id="messages-thread"></div>
           <div class="msg-input-row">
             <input type="text" class="msg-input" id="message-input" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')envoyerMessageClient();">
@@ -582,6 +596,7 @@
 
     // Messagerie (journal patron -- voir note dans le panneau).
     renderMessagesThread();
+    renderDemandes();
 
     // Historique des interventions.
     const histBody = document.querySelectorAll('.panel table tbody')[0];
@@ -648,10 +663,49 @@
   }
   renderClientFiche();
 
-  /* ── Messagerie (journal patron -- fondation pour un futur portail client,
-     voir services/message-log.js). Aucun accès direct côté client
-     aujourd'hui : ces messages sont un historique tenu par le patron, pas
-     un aller-retour temps réel. ── */
+  /* ── Demandes (Espace Client -- client-espace.html "+ Nouvelle demande").
+     Lecture + modification statut/intervenant cote patron. RLS
+     client_requests_update reserve ce PATCH au proprietaire du compte --
+     voir supabase-schema.sql section 31. ── */
+  const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+  async function renderDemandes() {
+    const box = document.getElementById('demandes-list');
+    if (!box || !window.SebaDB || !window.SebaDB.clientPortal) return;
+    const demandes = await SebaDB.clientPortal.requests.list(null, _id);
+    if (!demandes.length) {
+      box.innerHTML = '<p class="demande-empty">Aucune demande de ce client pour l\'instant.</p>';
+      return;
+    }
+    const employes = SebaDB.list('employes') || [];
+    box.innerHTML = demandes.map(d => (
+      '<div class="demande-row" data-id="' + d.id + '">' +
+        '<span class="demande-titre">' + esc(d.titre) + '</span>' +
+        '<div class="demande-controls">' +
+          '<select onchange="updateDemandeStatut(\'' + d.id + '\', this.value)">' +
+            Object.keys(STATUT_LABELS).map(s => '<option value="' + s + '"' + (s === d.statut ? ' selected' : '') + '>' + STATUT_LABELS[s] + '</option>').join('') +
+          '</select>' +
+          '<select onchange="updateDemandeIntervenant(\'' + d.id + '\', this.value)">' +
+            '<option value="">— Non assigné —</option>' +
+            employes.map(e => '<option value="' + e.id + '"' + (e.id === d.intervenantId ? ' selected' : '') + '>' + esc(e.prenom + ' ' + e.nom) + '</option>').join('') +
+          '</select>' +
+        '</div>' +
+      '</div>'
+    )).join('');
+  }
+  async function updateDemandeStatut(requestId, statut) {
+    await SebaDB.clientPortal.requests.update(requestId, { statut });
+    SebaDB.log('client', 'Demande client mise à jour — ' + STATUT_LABELS[statut], 'client-fiche.html?id=' + _id);
+  }
+  async function updateDemandeIntervenant(requestId, employeId) {
+    const emp = (SebaDB.list('employes') || []).find(e => e.id === employeId);
+    await SebaDB.clientPortal.requests.update(requestId, {
+      intervenantId: employeId || null,
+      intervenantNom: emp ? (emp.prenom + ' ' + emp.nom) : null,
+    });
+  }
+
+  /* ── Messagerie (journal patron + reponses du client depuis son Espace
+     Client -- voir services/message-log.js). ── */
   /* Asynchrone depuis que seba_messages est une vraie table Supabase (peut
      faire un aller-retour reseau reel) -- appelee sans await depuis
      renderClientFiche() (elle gere sa propre zone du DOM, pas besoin de
