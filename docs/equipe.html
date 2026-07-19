@@ -284,7 +284,11 @@
       return;
     }
 
-    const emp = SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: false, acces });
+    // actif:true -- aucune UI (ici ou sur employe-fiche.html) ne permet de
+    // basculer ce champ apres coup : un employe cree "actif:false" ne
+    // pouvait donc plus jamais se connecter (employe-connexion.html filtre
+    // sur actif !== false). Trouve lors de l'audit mobile 2026-07-19.
+    const emp = SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: true, acces });
     // Code de depart '1234' pose automatiquement -- l'employe le change
     // lui-meme depuis l'espace terrain a sa premiere connexion (voir
     // seba-data.js: setEmployePin, opts.isDefault trace ce code comme

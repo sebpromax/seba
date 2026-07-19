@@ -31,7 +31,10 @@
 #kinetic-grid{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;contain:strict;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;animation:pgFadeIn .35s ease;}
+/* overflow-x:hidden -- meme correctif que index.html : un halo decoratif
+   (width:500px fixe, position:absolute) deborde le viewport sur mobile,
+   rendant toute la page scrollable horizontalement. Audit mobile 2026-07-19. */
+body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;animation:pgFadeIn .35s ease;overflow-x:hidden;}
 @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 a{color:inherit;text-decoration:none;}
 

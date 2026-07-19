@@ -143,7 +143,13 @@
     .layout{grid-template-columns:1fr;}
     .sidebar{}
     .main{padding:24px 20px;}
-    .content-grid{grid-template-columns:1fr;}
+    /* minmax(0,1fr), pas 1fr seul : sans ca la piste garde son min-content
+       implicite (les tables internes ont min-width:560px, voir pro-global.css
+       section 13) et grandit jusqu'a cette largeur au lieu de tenir dans le
+       viewport -- le panneau Demandes (et tout le reste de la colonne)
+       depassait a droite sur mobile. Meme piege deja documente dans
+       CLAUDE.md (trouve 2026-07-08, retrouve ici 2026-07-19). */
+    .content-grid{grid-template-columns:minmax(0,1fr);}
     .client-header{flex-direction:column;align-items:flex-start;}
   }
 </style>

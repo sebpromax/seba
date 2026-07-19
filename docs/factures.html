@@ -16,6 +16,7 @@
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
 <style>
+:root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -76,6 +77,12 @@
     .topbar-right .btn-em{width:auto!important;max-width:none!important;}
     table{font-size:0.8rem;}
     th,td{padding:10px 8px;}
+  }
+  /* Meme correctif que devis.html : indice visuel de scroll horizontal
+     sur mobile, sinon la colonne "Statut" coupee se lit comme casse.
+     Audit mobile 2026-07-19. */
+  @media (max-width:640px){
+    .panel:has(table){box-shadow:0 1px 3px var(--panel-shadow), inset -24px 0 16px -16px var(--edge-shadow);}
   }
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">

@@ -128,7 +128,9 @@
     .layout{grid-template-columns:1fr;}
     .sidebar{}
     .main{padding:24px 20px;}
-    .content-grid{grid-template-columns:1fr;}
+    /* minmax(0,1fr), pas 1fr seul -- meme piege que client-fiche.html
+       (deja documente dans CLAUDE.md, trouve ici par diff sibling 2026-07-19). */
+    .content-grid{grid-template-columns:minmax(0,1fr);}
     .emp-header{flex-direction:column;align-items:flex-start;}
   }
 </style>
