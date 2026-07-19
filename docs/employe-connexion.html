@@ -45,12 +45,18 @@ input,button,select{font-family:'Inter',sans-serif;}
    a connexion.html ── */
 .card{
   background:var(--card-base);
-  border:1px solid var(--w-a08);
+  border:1px solid var(--dt-a18);
   border-radius:20px;
   padding:32px;
   width:100%;max-width:400px;
   position:relative;overflow:hidden;isolation:isolate;
-  box-shadow:0 32px 80px var(--blk-a40);
+  /* Ombre noire (profondeur) + halo teal large et tres doux (0.08) qui
+     deborde du bord de la carte -- box-shadow n'est jamais coupe par
+     overflow:hidden de son propre element, donc ce halo se fond
+     reellement dans les lignes du fond au lieu de s'arreter net a la
+     bordure. Bordure elle-meme teintee teal (au lieu d'un gris neutre)
+     pour la meme raison : moins de rupture de teinte avec le fond. */
+  box-shadow:0 32px 80px var(--blk-a40), 0 0 140px var(--dt-a18), 0 0 50px var(--dt-a08);
 }
 .card::before{
   content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
@@ -185,8 +191,11 @@ p{letter-spacing:-0.02em;}
   <div class="nav-right"></div>
 </nav>
 
-<!-- Halo de fond -->
-<div style="position:fixed;top:0;left:50%;transform:translateX(-50%);width:min(700px,100vw);height:480px;background:radial-gradient(ellipse at 50% 0%,var(--dt-a07) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
+<!-- Halo de fond -- centre sur la carte (elle-meme centree par .page),
+     pas sur le haut du viewport : evite que le halo s'arrete avant
+     d'atteindre la carte sur les viewports hauts, ce qui cassait la
+     continuite visuelle entre le fond et la carte. -->
+<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,100vw);height:min(760px,100vh);background:radial-gradient(ellipse,var(--dt-a07) 0%,transparent 65%);pointer-events:none;z-index:0;"></div>
 
 <!-- ── Formulaire ── -->
 <div class="page">
