@@ -4,6 +4,15 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 
 ---
 
+## ⚠️ Actions en attente (fondateur) — à ne pas oublier
+
+Ces actions ne peuvent être faites que par toi (accès au dashboard Supabase) — sans elles, les fonctionnalités correspondantes restent en mode démo local uniquement sur le site en production. Coche au fur et à mesure.
+
+- [ ] **Espace Client (2026-07-19)** : rejouer `migrations/20260719_client_espace.sql` (ou le schéma complet `supabase-schema.sql`) sur ta base Supabase → SQL Editor.
+- [ ] **Espace Client (2026-07-19)** : déployer la nouvelle Edge Function **`client-provision`** — voir section 1k, point 6 ci-dessous.
+
+---
+
 ## Section 1 — Configuration des clés API
 
 **Le principe — deux couches** :
