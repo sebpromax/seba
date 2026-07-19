@@ -214,9 +214,9 @@ $$ language plpgsql;
 -- Postgres échouerait puisque ces lignes n'existent nulle part côté
 -- serveur aujourd'hui (seba_state contient tout dans un seul JSONB).
 -- Seules les clés primaires des tables CRÉÉES ICI (id des lignes de
--- sync_operations/sync_conflicts/employe_sessions elles-mêmes) sont
--- des uuid générés serveur — ce ne sont pas des identifiants qui
--- doivent correspondre au format client.
+-- sync_operations/sync_conflicts elles-mêmes) sont des uuid générés
+-- serveur — ce ne sont pas des identifiants qui doivent correspondre au
+-- format client.
 -- ═══════════════════════════════════════════════════════════════
 
 -- ── 7. Journal d'opérations (append-only, source de vérité en écriture) ──
@@ -229,7 +229,7 @@ create table if not exists sync_operations (
   op text not null check (op in ('create','update','delete')),
   patch jsonb not null,                       -- uniquement les champs modifiés, jamais l'objet entier
   device_id text not null,
-  employee_id text,                           -- résolu SERVEUR par sync-push.ts via employe_sessions, jamais déclaré tel quel par le client
+  employee_id text,                           -- LEGACY (modele PIN retire 2026-07-19) -- toujours null aujourd'hui, aucune UI employe ne pousse d'ecriture via ce chemin (lecture + messagerie uniquement, voir employe_accounts). A reprendre si un futur besoin d'ecriture cote employe apparait (sync-push.ts devrait alors resoudre via employe_accounts, pas l'ancien employe_sessions).
   client_seq int not null,                    -- séquence locale de l'appareil, jamais une horloge
   created_at timestamptz default now(),
   unique (account, device_id, client_seq)     -- idempotence : rejouer le même paquet après coupure ne duplique rien
@@ -278,44 +278,32 @@ create policy "sync_conflicts_resolve" on sync_conflicts for update using (
   exists (select 1 from seba_state s where s.account = sync_conflicts.account and s.user_id = auth.uid())
 ) with check (resolved = true);   -- le client ne peut que MARQUER résolu, jamais réécrire l'historique du conflit lui-même
 
--- ── 10a. Identifiants PIN durables par employé — table dédiée, distincte des
--- sessions (10b). `employes` (table réelle, section 5) n'est pas écrite
--- aujourd'hui (Pilier 2, employés vivent dans le blob state.employes[]) :
--- impossible d'y ajouter pin_hash et de la lire par cette voie, d'où une
--- table séparée, keyed sur le meme id texte que le blob.
--- failed_attempts/locked_until : verrou anti brute-force -- un PIN a 4
--- chiffres n'a que 10 000 combinaisons, un compteur est indispensable, pas
--- optionnel. RLS actif SANS AUCUNE policy = bloque tout sauf service_role
--- (meme pattern que api_usage) : pin_hash n'est JAMAIS lisible via l'API
--- REST publique, meme par le proprietaire du compte.
-create table if not exists employe_credentials (
-  employe_id text primary key,                -- id_xxxxx du registre RH (state.employes[].id, dans le blob)
+-- ── 10. Compte Supabase Auth de l'employé (2026-07-19, authentification
+-- universelle) -- REMPLACE le modele PIN/badge-sur-appareil-patron
+-- (employe_credentials/employe_sessions, employe-auth.ts/employe-set-pin.ts,
+-- retires) : sur demande explicite, l'employe doit pouvoir se connecter
+-- depuis N'IMPORTE QUEL appareil avec identifiant+mot de passe, comme le
+-- patron et le client -- pas seulement badger un appareil deja
+-- authentifie. Exactement le meme modele que client_accounts : compte
+-- cree par invitation (Edge Function employe-provision.ts, service_role,
+-- auth.admin.inviteUserByEmail), l'employe choisit son mot de passe via
+-- le lien recu (reset-password.html gere deja ce flux, voir section
+-- suivante). `employes` (table reelle, section 5) n'est pas ecrite
+-- aujourd'hui (Pilier 2, employes vivent dans le blob state.employes[]) :
+-- impossible d'y stocker ce lien directement, d'ou une table separee,
+-- keyee sur le meme id texte que le blob -- meme raison que
+-- client_accounts pour client_id.
+create table if not exists employe_accounts (
+  employe_user_id uuid primary key references auth.users (id) on delete cascade,
   account text not null references seba_state (account) on delete cascade,
-  pin_hash text not null,
-  failed_attempts int not null default 0,
-  locked_until timestamptz,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  employe_id text not null,
+  email text not null,
+  linked_at timestamptz default now()
 );
-create index if not exists idx_employe_credentials_account on employe_credentials (account);
-alter table employe_credentials enable row level security;
-
--- ── 10b. Sessions légères par code PIN (identité terrain, sans compte Supabase Auth par employé) ──
--- Ne porte JAMAIS le secret (pin_hash) : seulement la preuve qu'une
--- authentification a reussi. RLS actif SANS AUCUNE policy, meme raison
--- que 10a. Gérée exclusivement par supabase-functions/employe-auth.ts.
-create table if not exists employe_sessions (
-  id uuid primary key default gen_random_uuid(),
-  account text not null references seba_state (account) on delete cascade,
-  employe_id text not null references employe_credentials (employe_id) on delete cascade,
-  device_id text not null,
-  token text unique not null,
-  expires_at timestamptz not null,
-  revoked boolean not null default false,
-  created_at timestamptz default now()
-);
-create index if not exists idx_employe_sessions_token on employe_sessions (token) where not revoked;
-alter table employe_sessions enable row level security;
+alter table employe_accounts enable row level security;
+drop policy if exists "employe_accounts_select_own" on employe_accounts;
+create policy "employe_accounts_select_own" on employe_accounts for select using (auth.uid() = employe_user_id);
+create index if not exists idx_employe_accounts_account on employe_accounts (account, employe_id);
 
 -- ── 11. Application atomique d'un patch sur une entité (sync-push.ts) ──
 create or replace function apply_entity_patch(
@@ -690,7 +678,7 @@ create table if not exists ai_context_hash (
 );
 alter table ai_context_hash enable row level security;
 -- RLS actif SANS AUCUNE policy = bloque tout sauf service_role, meme
--- pattern que api_usage/employe_credentials/employe_sessions : le cache
+-- pattern que api_usage : le cache
 -- peut contenir des extraits de donnees metier, jamais expose en lecture
 -- publique meme au proprietaire du compte (il n'a aucun besoin d'y
 -- acceder directement, seul conscience-seba.ts le consulte).
@@ -920,20 +908,31 @@ create index if not exists idx_seba_messages_employe on seba_messages (account, 
 revoke execute on function increment_api_usage() from public, anon, authenticated;
 
 -- ═══════════════════════════════════════════════════════════════
--- ESPACE CLIENT (2026-07-19, calque sur le modele employe le
--- 2026-07-19b) -- premier acteur (hors patron) avec une vraie session
--- Supabase Auth INDEPENDANTE (contrairement a l'employe, qui badge sur
--- l'appareil deja authentifie du patron -- voir employe-auth.ts). Meme
--- philosophie que l'employe malgre tout : le patron PROVISIONNE l'acces
--- (Edge Function client-provision.ts, mot de passe de depart '1234'),
--- plus d'auto-inscription ouverte -- donc plus besoin de rechercher un
+-- AUTHENTIFICATION UNIVERSELLE -- CLIENT + EMPLOYE (2026-07-19)
+-- Client (2026-07-19) puis employe (meme jour, revision demandee
+-- explicitement) : les DEUX ont desormais une vraie session Supabase
+-- Auth INDEPENDANTE, exactement comme le patron -- identifiant+mot de
+-- passe, valide depuis N'IMPORTE QUEL appareil. Retire le modele PIN/
+-- badge-sur-appareil-patron de l'employe (employe_credentials/
+-- employe_sessions, employe-auth.ts/employe-set-pin.ts, section 10
+-- precedente de ce fichier) : c'etait plus leger a construire mais
+-- limitait l'employe a un appareil deja authentifie comme patron, jugé
+-- trop contraignant a l'usage reel.
+-- Le patron PROVISIONNE l'acces des deux roles par INVITATION (Edge
+-- Functions client-provision.ts / employe-provision.ts,
+-- auth.admin.inviteUserByEmail, service_role) -- le compte n'a jamais de
+-- mot de passe impose, la personne invitee choisit le sien via le lien
+-- recu (reset-password.html gere deja ce flux). Pas d'auto-inscription
+-- ouverte pour aucun des deux roles -- donc pas besoin de rechercher un
 -- email a travers tous les comptes (client_emails/link_client_account
--- de la version precedente de ce fichier sont retires, le patron connait
--- deja son propre account/client_id au moment de provisionner).
+-- d'une version precedente de ce fichier restent retires, le patron
+-- connait deja son propre account/client_id ou employe_id au moment de
+-- provisionner).
 -- Consequence directe : seba_messages_select/insert/update (section 29
 -- ci-dessus) supposaient un seul auth.uid() proprietaire par ligne
--- (celui du patron) -- desormais FAUX des qu'un client ecrit un message
--- avec SON PROPRE auth.uid(). Les 3 policies sont donc REECRITES ici
+-- (celui du patron) -- desormais FAUX des qu'un client OU un employe
+-- ecrit un message avec SON PROPRE auth.uid(). Les 3 policies sont donc
+-- REECRITES ici
 -- (drop+create, idempotent que la section 29 ait deja tourne ou non) :
 -- patron OU client lie a ce client_id peuvent lire/ecrire une ligne.
 -- ═══════════════════════════════════════════════════════════════
@@ -943,15 +942,17 @@ revoke execute on function increment_api_usage() from public, anon, authenticate
 -- Cree exclusivement par l'Edge Function client-provision.ts (service_role,
 -- contourne RLS) -- RLS sans policy insert/update pour le role
 -- authenticated, seul un client peut lire SA PROPRE ligne.
--- pw_is_default : marqueur non-secret (jamais le mot de passe lui-meme)
--- -- true tant que le client n'a jamais change son mot de passe de
--- depart, bascule a false via mark_client_password_changed() plus bas.
+-- Authentification universelle (2026-07-19) : client-provision.ts utilise
+-- desormais auth.admin.inviteUserByEmail (email d'invitation Supabase, le
+-- client choisit lui-meme son mot de passe via le lien recu, jamais un
+-- mot de passe de depart impose) -- plus de notion de "mot de passe par
+-- defaut", donc plus de colonne pw_is_default ni de RPC
+-- mark_client_password_changed (retires).
 create table if not exists client_accounts (
   client_user_id uuid primary key references auth.users (id) on delete cascade,
   account text not null references seba_state (account) on delete cascade,
   client_id text not null,          -- id de l'entree dans state.clients[] (pas une PK Postgres -- vit dans le blob JSONB du patron)
   email text not null,
-  pw_is_default boolean not null default true,
   linked_at timestamptz default now()
 );
 alter table client_accounts enable row level security;
@@ -999,11 +1000,14 @@ create policy "client_requests_update" on client_requests for update using (
 create index if not exists idx_client_requests_account on client_requests (account, created_at);
 create index if not exists idx_client_requests_client on client_requests (account, client_id, created_at);
 
--- ── 32. seba_messages : policies reecrites pour un 2e auth.uid() possible ──
+-- ── 32. seba_messages : policies reecrites pour un 2e/3e auth.uid() possible ──
+-- Patron OU client lie (client_accounts) OU employe lie (employe_accounts,
+-- authentification universelle 2026-07-19) peuvent lire/ecrire une ligne.
 drop policy if exists "seba_messages_select" on seba_messages;
 create policy "seba_messages_select" on seba_messages for select using (
   exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
+  or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
 );
 drop policy if exists "seba_messages_insert" on seba_messages;
 create policy "seba_messages_insert" on seba_messages for insert with check (
@@ -1011,12 +1015,14 @@ create policy "seba_messages_insert" on seba_messages for insert with check (
   and (
     exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
     or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
+    or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
   )
 );
 drop policy if exists "seba_messages_update" on seba_messages;
 create policy "seba_messages_update" on seba_messages for update using (
   exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
+  or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
 );
 
 -- ── 33. Lit le profil client (fiche complete) du compte connecte ──
@@ -1024,9 +1030,7 @@ create policy "seba_messages_update" on seba_messages for update using (
 -- un client authentifie ne peut pas le lire via REST direct (RLS de
 -- seba_state exige auth.uid() = user_id, qui est celui du PATRON, pas du
 -- client) -- cette RPC extrait UNIQUEMENT sa propre entree, jamais le
--- blob entier ni les autres clients. Retourne aussi pw_is_default (voir
--- section 30) pour que client-espace.html sache afficher la banniere
--- "code de depart encore actif", miroir de emp.pinIsDefault.
+-- blob entier ni les autres clients.
 create or replace function get_my_client_profile()
 returns jsonb
 language plpgsql
@@ -1048,29 +1052,75 @@ begin
   where s.account = v_link.account and c ->> 'id' = v_link.client_id
   limit 1;
 
-  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id, 'pw_is_default', v_link.pw_is_default);
+  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id);
 end;
 $$;
 revoke all on function get_my_client_profile() from public;
 grant execute on function get_my_client_profile() to authenticated;
 
--- ── 34. Marque le mot de passe du client connecte comme change ──
--- Appelee juste apres sebaAuth.updatePassword() (le SDK Supabase gere
--- deja le vrai changement de mot de passe cote auth.users -- cette RPC
--- ne fait que basculer le marqueur non-secret pw_is_default a false).
--- SECURITY DEFINER necessaire car client_accounts n'a aucune policy
--- update pour le role authenticated (evite qu'un client re-ecrive
--- account/client_id/email de sa propre ligne via un PATCH REST direct).
-create or replace function mark_client_password_changed()
+-- ── 34. Lit le profil employe (fiche complete) du compte connecte ──
+-- Miroir exact de get_my_client_profile() -- meme raison (RLS de
+-- seba_state bloque un employe authentifie, auth.uid() != user_id du
+-- patron proprietaire de la ligne).
+create or replace function get_my_employee_profile()
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_uid uuid := auth.uid();
+  v_link employe_accounts;
+  v_employe jsonb;
 begin
-  update client_accounts set pw_is_default = false where client_user_id = auth.uid();
-  return jsonb_build_object('ok', true);
+  select * into v_link from employe_accounts where employe_user_id = v_uid;
+  if v_link is null then
+    return jsonb_build_object('ok', false, 'error', 'Compte non relié à une fiche employé.');
+  end if;
+
+  select e into v_employe
+  from seba_state s, jsonb_array_elements(s.state -> 'employes') e
+  where s.account = v_link.account and e ->> 'id' = v_link.employe_id
+  limit 1;
+
+  return jsonb_build_object('ok', true, 'employe', v_employe, 'account', v_link.account, 'employe_id', v_link.employe_id);
 end;
 $$;
-revoke all on function mark_client_password_changed() from public;
-grant execute on function mark_client_password_changed() to authenticated;
+revoke all on function get_my_employee_profile() from public;
+grant execute on function get_my_employee_profile() to authenticated;
+
+-- ── 35. Planning du jour de l'employe connecte (espace-terrain.html) ──
+-- interventions vit dans le meme blob JSONB du patron -- meme raison que
+-- 33/34, extraction scopee a CET employe et CETTE date uniquement, jamais
+-- le blob entier. _date est fourni par le CLIENT (sa propre date locale,
+-- format YYYY-MM-DD, meme convention que todayISOLocal() cote JS) --
+-- jamais calcule cote serveur : now() par defaut est en UTC, comparer a
+-- une date locale pres de minuit deciderait le mauvais jour (piege deja
+-- rencontre sur ce projet, voir CLAUDE.md).
+create or replace function get_my_employee_interventions(_date text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_link employe_accounts;
+  v_result jsonb;
+begin
+  select * into v_link from employe_accounts where employe_user_id = v_uid;
+  if v_link is null then
+    return jsonb_build_object('ok', false, 'error', 'Compte non relié à une fiche employé.');
+  end if;
+
+  select coalesce(jsonb_agg(i), '[]'::jsonb) into v_result
+  from seba_state s, jsonb_array_elements(coalesce(s.state -> 'interventions', '[]'::jsonb)) i
+  where s.account = v_link.account
+    and i ->> 'employeId' = v_link.employe_id
+    and i ->> 'date' = _date;
+
+  return jsonb_build_object('ok', true, 'interventions', v_result, 'account', v_link.account, 'employe_id', v_link.employe_id);
+end;
+$$;
+revoke all on function get_my_employee_interventions(text) from public;
+grant execute on function get_my_employee_interventions(text) to authenticated;
