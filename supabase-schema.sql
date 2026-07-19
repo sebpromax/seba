@@ -920,9 +920,16 @@ create index if not exists idx_seba_messages_employe on seba_messages (account, 
 revoke execute on function increment_api_usage() from public, anon, authenticated;
 
 -- ═══════════════════════════════════════════════════════════════
--- ESPACE CLIENT (2026-07-19) -- premier acteur avec une vraie session
+-- ESPACE CLIENT (2026-07-19, calque sur le modele employe le
+-- 2026-07-19b) -- premier acteur (hors patron) avec une vraie session
 -- Supabase Auth INDEPENDANTE (contrairement a l'employe, qui badge sur
--- l'appareil deja authentifie du patron -- voir employe-auth.ts).
+-- l'appareil deja authentifie du patron -- voir employe-auth.ts). Meme
+-- philosophie que l'employe malgre tout : le patron PROVISIONNE l'acces
+-- (Edge Function client-provision.ts, mot de passe de depart '1234'),
+-- plus d'auto-inscription ouverte -- donc plus besoin de rechercher un
+-- email a travers tous les comptes (client_emails/link_client_account
+-- de la version precedente de ce fichier sont retires, le patron connait
+-- deja son propre account/client_id au moment de provisionner).
 -- Consequence directe : seba_messages_select/insert/update (section 29
 -- ci-dessus) supposaient un seul auth.uid() proprietaire par ligne
 -- (celui du patron) -- desormais FAUX des qu'un client ecrit un message
@@ -933,14 +940,18 @@ revoke execute on function increment_api_usage() from public, anon, authenticate
 
 -- ── 30. Rattachement compte Supabase Auth client -> fiche client existante ──
 -- Ne contient JAMAIS le mot de passe (gere par auth.users, Supabase).
--- Cree exclusivement par la RPC link_client_account() ci-dessous (RLS
--- sans policy insert/update pour le role authenticated -- seule la
--- fonction SECURITY DEFINER peut y ecrire, elle contourne RLS).
+-- Cree exclusivement par l'Edge Function client-provision.ts (service_role,
+-- contourne RLS) -- RLS sans policy insert/update pour le role
+-- authenticated, seul un client peut lire SA PROPRE ligne.
+-- pw_is_default : marqueur non-secret (jamais le mot de passe lui-meme)
+-- -- true tant que le client n'a jamais change son mot de passe de
+-- depart, bascule a false via mark_client_password_changed() plus bas.
 create table if not exists client_accounts (
   client_user_id uuid primary key references auth.users (id) on delete cascade,
   account text not null references seba_state (account) on delete cascade,
   client_id text not null,          -- id de l'entree dans state.clients[] (pas une PK Postgres -- vit dans le blob JSONB du patron)
   email text not null,
+  pw_is_default boolean not null default true,
   linked_at timestamptz default now()
 );
 alter table client_accounts enable row level security;
@@ -1008,107 +1019,14 @@ create policy "seba_messages_update" on seba_messages for update using (
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
 );
 
--- ── 33a. Index email -> (account, client_id), maintenu par trigger ──
--- link_client_account() ci-dessous cherchait initialement un email a
--- travers TOUS les comptes par un scan complet (seba_state x
--- jsonb_array_elements) -- correct mais O(nombre total de clients, tous
--- comptes confondus) a CHAQUE tentative de connexion. Sur un site
--- dimensionne pour des milliers d'utilisateurs (patrons+employes+clients
--- confondus), ce scan grossit avec la base entiere au lieu de rester
--- O(1) -- corrige ici par un index maintenu automatiquement (trigger),
--- jamais ecrit directement par le client (RLS sans policy = accessible
--- seulement via SECURITY DEFINER, meme principe que employe_credentials).
-create table if not exists client_emails (
-  email text primary key,           -- lowercase
-  account text not null references seba_state (account) on delete cascade,
-  client_id text not null,
-  updated_at timestamptz default now()
-);
-alter table client_emails enable row level security;
-create index if not exists idx_client_emails_account on client_emails (account);
-
-create or replace function sync_client_emails()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  -- Court-circuite si la liste de clients n'a pas change (la plupart des
-  -- ecritures sur seba_state concernent devis/factures/interventions/etc,
-  -- pas les clients) -- evite un DELETE+INSERT inutile a chaque sauvegarde.
-  if TG_OP = 'UPDATE' and old.state -> 'clients' is not distinct from new.state -> 'clients' then
-    return new;
-  end if;
-  delete from client_emails where account = new.account;
-  insert into client_emails (email, account, client_id)
-  select lower(c ->> 'email'), new.account, c ->> 'id'
-  from jsonb_array_elements(coalesce(new.state -> 'clients', '[]'::jsonb)) c
-  where c ->> 'email' is not null and c ->> 'email' <> ''
-  on conflict (email) do update set account = excluded.account, client_id = excluded.client_id, updated_at = now();
-  return new;
-end;
-$$;
-drop trigger if exists trg_sync_client_emails on seba_state;
-create trigger trg_sync_client_emails
-after insert or update of state on seba_state
-for each row execute function sync_client_emails();
-
--- Backfill unique pour les comptes deja existants (idempotent -- ON
--- CONFLICT gere le rejeu). Sans ca, un compte cree AVANT ce correctif ne
--- serait indexe qu'a sa PROCHAINE ecriture sur seba_state.
-insert into client_emails (email, account, client_id)
-select lower(c ->> 'email'), s.account, c ->> 'id'
-from seba_state s, jsonb_array_elements(coalesce(s.state -> 'clients', '[]'::jsonb)) c
-where c ->> 'email' is not null and c ->> 'email' <> ''
-on conflict (email) do update set account = excluded.account, client_id = excluded.client_id, updated_at = now();
-
--- ── 33b. Rattache un compte Supabase Auth client a une fiche existante ──
--- SECURITY DEFINER : necessaire pour lire client_emails (RLS sans
--- policy). Ne retourne jamais que account/client_id (jamais le contenu
--- d'un autre client), et n'ecrit que dans client_accounts pour le
--- auth.uid() de l'appelant -- ne peut donc pas etre utilisee pour
--- usurper un autre client_user_id. Lookup desormais O(1) (cle primaire
--- de client_emails) au lieu du scan complet precedent.
-create or replace function link_client_account(_email text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_row client_emails;
-begin
-  if v_uid is null then
-    return jsonb_build_object('ok', false, 'error', 'Authentification requise');
-  end if;
-
-  if exists (select 1 from client_accounts where client_user_id = v_uid) then
-    return jsonb_build_object('ok', true, 'already_linked', true);
-  end if;
-
-  select * into v_row from client_emails where email = lower(_email);
-
-  if v_row is null then
-    return jsonb_build_object('ok', false, 'error', 'Aucune fiche client trouvée avec cet email. Contactez votre prestataire.');
-  end if;
-
-  insert into client_accounts (client_user_id, account, client_id, email)
-  values (v_uid, v_row.account, v_row.client_id, lower(_email));
-
-  return jsonb_build_object('ok', true, 'already_linked', false);
-end;
-$$;
-revoke all on function link_client_account(text) from public;
-grant execute on function link_client_account(text) to authenticated;
-
--- ── 34. Lit le profil client (fiche complete) du compte connecte ──
+-- ── 33. Lit le profil client (fiche complete) du compte connecte ──
 -- state.clients vit dans le blob JSONB du PATRON (seba_state.state) :
 -- un client authentifie ne peut pas le lire via REST direct (RLS de
 -- seba_state exige auth.uid() = user_id, qui est celui du PATRON, pas du
 -- client) -- cette RPC extrait UNIQUEMENT sa propre entree, jamais le
--- blob entier ni les autres clients.
+-- blob entier ni les autres clients. Retourne aussi pw_is_default (voir
+-- section 30) pour que client-espace.html sache afficher la banniere
+-- "code de depart encore actif", miroir de emp.pinIsDefault.
 create or replace function get_my_client_profile()
 returns jsonb
 language plpgsql
@@ -1130,8 +1048,29 @@ begin
   where s.account = v_link.account and c ->> 'id' = v_link.client_id
   limit 1;
 
-  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id);
+  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id, 'pw_is_default', v_link.pw_is_default);
 end;
 $$;
 revoke all on function get_my_client_profile() from public;
 grant execute on function get_my_client_profile() to authenticated;
+
+-- ── 34. Marque le mot de passe du client connecte comme change ──
+-- Appelee juste apres sebaAuth.updatePassword() (le SDK Supabase gere
+-- deja le vrai changement de mot de passe cote auth.users -- cette RPC
+-- ne fait que basculer le marqueur non-secret pw_is_default a false).
+-- SECURITY DEFINER necessaire car client_accounts n'a aucune policy
+-- update pour le role authenticated (evite qu'un client re-ecrive
+-- account/client_id/email de sa propre ligne via un PATCH REST direct).
+create or replace function mark_client_password_changed()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update client_accounts set pw_is_default = false where client_user_id = auth.uid();
+  return jsonb_build_object('ok', true);
+end;
+$$;
+revoke all on function mark_client_password_changed() from public;
+grant execute on function mark_client_password_changed() to authenticated;

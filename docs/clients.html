@@ -384,7 +384,7 @@
     document.body.style.overflow = '';
   }
 
-  function submitClient() {
+  async function submitClient() {
     const prenom  = document.getElementById('ss-prenom').value.trim();
     const nom     = document.getElementById('ss-nom').value.trim();
     const email   = document.getElementById('ss-email').value.trim();
@@ -396,9 +396,17 @@
       return;
     }
 
+    // email desormais stocke a part de `contact` (affichage combine
+    // email/tel existant, inchange) -- l'Espace Client (SebaDB.clientPortal)
+    // a besoin d'un champ .email dedie et non ambigu pour provisionner un
+    // acces de connexion ; sans lui, un client cree par ce formulaire reel
+    // ne pouvait jamais s'y connecter (seuls mes clients de test, crees
+    // via SebaDB.create() en console avec .email en dur, fonctionnaient).
+    // Trouve 2026-07-19.
     const nouveau = SebaDB.create('clients', {
       prenom, nom,
       contact: email || tel || '—',
+      email: email || null,
       adresse: document.getElementById('ss-adresse').value.trim(),
       notes: document.getElementById('ss-notes').value.trim(),
       service: 'Aucun service encore',
@@ -406,6 +414,16 @@
       statut: 'attente'
     });
     SebaDB.log('client', 'Nouveau client — ' + prenom + ' ' + nom, 'clients.html');
+    // Provisionne immediatement l'acces de connexion (mot de passe de
+    // depart '1234', comme le PIN employe pose par equipe.html) des qu'un
+    // email existe -- le client se connecte directement, change son mot
+    // de passe lui-meme depuis client-espace.html. Echec silencieux pour
+    // l'UI (le patron pourra reessayer depuis client-fiche.html) : ne
+    // bloque jamais la creation de la fiche elle-meme.
+    if (email) {
+      const prov = await SebaDB.clientPortal.provision(nouveau.id, email);
+      if (!prov.ok) console.warn('[clients] provisionnement acces client differe :', prov.error);
+    }
     CLIENTS = SebaDB.list('clients');
     updateCounts();
     render();

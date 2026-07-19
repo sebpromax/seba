@@ -1,15 +1,21 @@
--- Espace Client : rattachement de compte, demandes, RPC.
--- Idempotent : peut etre rejoue sans risque. Voir supabase-schema.sql
--- sections 30-34 pour la version de reference tenue a jour.
--- Reecrit aussi les policies seba_messages (section 29 de
+-- Espace Client : provisionne par le patron (calque sur le modele
+-- employe), demandes, RPC. Idempotent : peut etre rejoue sans risque.
+-- Voir supabase-schema.sql sections 30-34 pour la version de reference
+-- tenue a jour. Reecrit aussi les policies seba_messages (section 29 de
 -- supabase-schema.sql) pour supporter un client authentifie de facon
 -- independante (2e auth.uid() possible par conversation).
+--
+-- Necessite en plus le deploiement de l'Edge Function
+-- supabase-functions/client-provision.ts (voir MANUEL-SEBA-ADMIN.md) --
+-- c'est elle qui cree le compte Supabase Auth du client avec le mot de
+-- passe de depart '1234', jamais un signUp() cote navigateur du patron.
 
 create table if not exists client_accounts (
   client_user_id uuid primary key references auth.users (id) on delete cascade,
   account text not null references seba_state (account) on delete cascade,
   client_id text not null,
   email text not null,
+  pw_is_default boolean not null default true,
   linked_at timestamptz default now()
 );
 alter table client_accounts enable row level security;
@@ -69,83 +75,6 @@ create policy "seba_messages_update" on seba_messages for update using (
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
 );
 
--- Index email -> (account, client_id), maintenu par trigger -- evite un
--- scan complet de tous les comptes a chaque tentative de connexion
--- client (necessaire des que le site sert des milliers d'utilisateurs
--- confondus). RLS sans policy : accessible uniquement via SECURITY
--- DEFINER (le trigger et link_client_account ci-dessous).
-create table if not exists client_emails (
-  email text primary key,
-  account text not null references seba_state (account) on delete cascade,
-  client_id text not null,
-  updated_at timestamptz default now()
-);
-alter table client_emails enable row level security;
-create index if not exists idx_client_emails_account on client_emails (account);
-
-create or replace function sync_client_emails()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if TG_OP = 'UPDATE' and old.state -> 'clients' is not distinct from new.state -> 'clients' then
-    return new;
-  end if;
-  delete from client_emails where account = new.account;
-  insert into client_emails (email, account, client_id)
-  select lower(c ->> 'email'), new.account, c ->> 'id'
-  from jsonb_array_elements(coalesce(new.state -> 'clients', '[]'::jsonb)) c
-  where c ->> 'email' is not null and c ->> 'email' <> ''
-  on conflict (email) do update set account = excluded.account, client_id = excluded.client_id, updated_at = now();
-  return new;
-end;
-$$;
-drop trigger if exists trg_sync_client_emails on seba_state;
-create trigger trg_sync_client_emails
-after insert or update of state on seba_state
-for each row execute function sync_client_emails();
-
-insert into client_emails (email, account, client_id)
-select lower(c ->> 'email'), s.account, c ->> 'id'
-from seba_state s, jsonb_array_elements(coalesce(s.state -> 'clients', '[]'::jsonb)) c
-where c ->> 'email' is not null and c ->> 'email' <> ''
-on conflict (email) do update set account = excluded.account, client_id = excluded.client_id, updated_at = now();
-
-create or replace function link_client_account(_email text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_row client_emails;
-begin
-  if v_uid is null then
-    return jsonb_build_object('ok', false, 'error', 'Authentification requise');
-  end if;
-
-  if exists (select 1 from client_accounts where client_user_id = v_uid) then
-    return jsonb_build_object('ok', true, 'already_linked', true);
-  end if;
-
-  select * into v_row from client_emails where email = lower(_email);
-
-  if v_row is null then
-    return jsonb_build_object('ok', false, 'error', 'Aucune fiche client trouvée avec cet email. Contactez votre prestataire.');
-  end if;
-
-  insert into client_accounts (client_user_id, account, client_id, email)
-  values (v_uid, v_row.account, v_row.client_id, lower(_email));
-
-  return jsonb_build_object('ok', true, 'already_linked', false);
-end;
-$$;
-revoke all on function link_client_account(text) from public;
-grant execute on function link_client_account(text) to authenticated;
-
 create or replace function get_my_client_profile()
 returns jsonb
 language plpgsql
@@ -167,8 +96,22 @@ begin
   where s.account = v_link.account and c ->> 'id' = v_link.client_id
   limit 1;
 
-  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id);
+  return jsonb_build_object('ok', true, 'client', v_client, 'account', v_link.account, 'client_id', v_link.client_id, 'pw_is_default', v_link.pw_is_default);
 end;
 $$;
 revoke all on function get_my_client_profile() from public;
 grant execute on function get_my_client_profile() to authenticated;
+
+create or replace function mark_client_password_changed()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update client_accounts set pw_is_default = false where client_user_id = auth.uid();
+  return jsonb_build_object('ok', true);
+end;
+$$;
+revoke all on function mark_client_password_changed() from public;
+grant execute on function mark_client_password_changed() to authenticated;

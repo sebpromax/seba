@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
+:root{--danger-text:#EF4444;}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -384,6 +385,17 @@
 
         <div id="sector-info-container"></div>
 
+        <!-- EMAIL DE CONNEXION (Espace Client) -->
+        <div class="panel" id="email-panel">
+          <div class="panel-head"><h3>Email de connexion</h3></div>
+          <p class="msg-note">Identifiant utilisé par le client pour se connecter à son <strong>Espace Client</strong>. Dès qu'un email est enregistré, un accès est créé automatiquement avec un mot de passe de départ que le client change lui-même.</p>
+          <div class="msg-input-row">
+            <input type="email" class="msg-input" id="client-email-input" placeholder="vous@email.fr">
+            <button class="btn-em" onclick="definirEmailClient()">Enregistrer</button>
+          </div>
+          <p class="msg-note" id="client-email-status" style="margin-top:8px;"></p>
+        </div>
+
         <!-- DEMANDES (Espace Client) -->
         <div class="panel" id="demandes-panel">
           <div class="panel-head"><h3>Demandes</h3></div>
@@ -603,6 +615,8 @@
     // Messagerie (journal patron -- voir note dans le panneau).
     renderMessagesThread();
     renderDemandes();
+    const emailInput = document.getElementById('client-email-input');
+    if (emailInput) emailInput.value = client.email || '';
 
     // Historique des interventions.
     const histBody = document.querySelectorAll('.panel table tbody')[0];
@@ -708,6 +722,34 @@
       intervenantId: employeId || null,
       intervenantNom: emp ? (emp.prenom + ' ' + emp.nom) : null,
     });
+  }
+
+  // Email de connexion -- SebaDB.update() classique pour la fiche +
+  // provision() pour creer/retrofitter l'acces de connexion (mot de
+  // passe de depart '1234', voir seba-data.js). Meme pattern que
+  // definirPinEmploye() sur employe-fiche.html.
+  async function definirEmailClient() {
+    const inp = document.getElementById('client-email-input');
+    const status = document.getElementById('client-email-status');
+    const email = inp.value.trim().toLowerCase();
+    if (!_id || !window.SebaDB) return;
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      status.textContent = 'Format d\'email invalide.';
+      status.style.color = 'var(--danger-text)';
+      return;
+    }
+    status.textContent = 'Enregistrement…';
+    status.style.color = '';
+    SebaDB.update('clients', _id, { email });
+    const prov = await SebaDB.clientPortal.provision(_id, email);
+    if (prov.ok) {
+      status.textContent = prov.already_provisioned ? 'Email enregistré (accès déjà existant).' : 'Email enregistré, accès de connexion créé.';
+      status.style.color = 'var(--emerald)';
+      SebaDB.log('client', 'Email de connexion défini — ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
+    } else {
+      status.textContent = 'Email enregistré, mais accès non créé : ' + (prov.error || 'erreur inconnue.');
+      status.style.color = 'var(--danger-text)';
+    }
   }
 
   /* ── Messagerie (journal patron + reponses du client depuis son Espace
