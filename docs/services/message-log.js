@@ -7,15 +7,18 @@
  * modifier client-fiche.html/employe-fiche.html, qui appellent déjà
  * messagesFor()/createMessage().
  *
- * Toujours pas un vrai aller-retour temps réel pour le client : aucun
- * portail client n'existe pour qu'il lise/réponde. Côté employé, le PIN
- * (employe-auth.ts) badge un employé sur l'appareil déjà authentifié du
- * patron plutôt que de créer une session indépendante -- voir seba-data.js
- * pour le détail RLS.
+ * Depuis l'Espace Client (2026-07-19), un vrai aller-retour existe :
+ * client-espace.html appelle messagesFor('client', clientId, account) --
+ * le 3e argument est necessaire car un client authentifie a SON PROPRE
+ * auth.uid(), distinct de account (SebaDB.messages.list ne peut donc
+ * plus deriver account depuis le JWT de l'appelant comme il le fait pour
+ * le patron/employe -- voir seba-data.js pour le detail). Cote employe,
+ * le PIN (employe-auth.ts) badge toujours un employe sur l'appareil deja
+ * authentifie du patron plutot que de creer une session independante --
+ * account reste dans ce cas derive normalement, le 3e argument est omis.
  *
- * API désormais ASYNCHRONE (peut faire un aller-retour réseau réel) --
- * les appelants (client-fiche.html/employe-fiche.html) doivent await ces
- * deux fonctions.
+ * API ASYNCHRONE (peut faire un aller-retour réseau réel) -- les
+ * appelants doivent await ces deux fonctions.
  *
  * Script classique (voir pricing-model-registry.js pour le pourquoi).
  * Expose window.SebaQuotes.messagesFor / createMessage.
@@ -23,9 +26,10 @@
 (function () {
   'use strict';
 
-  async function messagesFor(kind, id) {
+  async function messagesFor(kind, id, account) {
     if (!window.SebaDB || !id) return [];
     const filter = kind === 'employe' ? { employeId: id } : { clientId: id };
+    if (account) filter.account = account;
     try {
       return await SebaDB.messages.list(filter);
     } catch (e) {

@@ -39,6 +39,8 @@
      SebaDB.setEmployePin(employeId, pin)       -> async, Edge Function employe-set-pin.ts
      SebaDB.employeLogin(employeId, pin)        -> async, Edge Function employe-auth.ts, pose la session terrain
      SebaDB.employeSession() / employeLogout()  -> lecture/effacement de la session terrain locale
+     SebaDB.clientPortal.signup/login/logout/session/profile()  -> async, vraie session Supabase Auth independante (RPC link_client_account/get_my_client_profile)
+     SebaDB.clientPortal.requests.list/create/update()          -> async, table client_requests dediee
 ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -47,7 +49,7 @@
   const EMPTY = () => ({
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
-    custom_services: [], contrats: [], messages: [],
+    custom_services: [], contrats: [], messages: [], clientRequests: [],
     seq: { devis: 118, facture: 93, contrat: 0 },
   });
 
@@ -167,6 +169,7 @@
     if (!state.custom_services) state.custom_services = [];
     if (!state.contrats) state.contrats = [];
     if (!state.messages) state.messages = [];
+    if (!state.clientRequests) state.clientRequests = [];
     return state;
   }
   function persist() {
@@ -509,19 +512,23 @@
        local automatique (state.messages, deja dans EMPTY()) des que
        Supabase n'est pas configure ou qu'aucune session n'existe --
        fonctionne donc identiquement en mode demo/file://.
-       RLS : auth.uid() = user_id, comme seba_state/clients/devis. Le PIN
-       employe (employe-auth.ts) ne cree jamais de session Supabase
-       independante -- il badge un employe sur l'appareil DEJA
-       authentifie du patron, donc chaque ecriture (patron ou employe)
-       passe par le MEME auth.uid(). employeId/clientId sont des champs
-       descriptifs, jamais une frontiere de securite. ── */
+       RLS (voir supabase-schema.sql section 32, reecrite pour l'Espace
+       Client) : patron proprietaire du compte OU client lie a ce
+       client_id via client_accounts. adapter._accountId() ne donne le
+       BON account que pour le patron (extrait de SON JWT) -- un client
+       authentifie a son PROPRE auth.uid(), qui n'est PAS l'account.
+       filter.account/obj.account (fournis par l'appelant via
+       clientPortal.profile().account) prevalent donc sur
+       adapter._accountId() des qu'ils sont presents. employeId/clientId
+       restent des champs descriptifs, jamais une frontiere de securite
+       (RLS fait tout le travail cote serveur). ── */
     messages: {
       async list(filter) {
         if (!state) loadState();
         if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
           try {
             const cfg = window.SEBA_CONFIG;
-            const account = adapter._accountId();
+            const account = (filter && filter.account) || adapter._accountId();
             let url = cfg.supabaseUrl + '/rest/v1/seba_messages?account=eq.' + encodeURIComponent(account) + '&order=created_at.asc';
             if (filter && filter.clientId) url += '&client_id=eq.' + encodeURIComponent(filter.clientId);
             if (filter && filter.employeId) url += '&employe_id=eq.' + encodeURIComponent(filter.employeId);
@@ -555,7 +562,7 @@
           try {
             const cfg = window.SEBA_CONFIG;
             const body = {
-              account: adapter._accountId(),
+              account: obj.account || adapter._accountId(),
               client_id: obj.clientId || null,
               employe_id: obj.employeId || null,
               expediteur_role: obj.expediteurRole,
@@ -708,6 +715,168 @@
         localStorage.removeItem('seba_employee_active');
         localStorage.removeItem('seba_employee_token');
       } catch (e) {}
+    },
+
+    /* ── Espace Client (2026-07-19) ──────────────────────────────────────
+       Seul acteur avec une VRAIE session Supabase Auth independante
+       (contrairement a l'employe, badge sur l'appareil du patron -- voir
+       employeLogin ci-dessus). Reutilise sebaAuth.signUp/signIn (deja
+       generiques, pas specifiques au patron) pour la vraie session, MAIS
+       jamais sebaAuth's DEMO_KEY partage en mode demo : un patron et un
+       client "connectes" en demo sur le meme navigateur se marcheraient
+       dessus sinon. seba_client_session_demo est une cle distincte.
+       Rattachement compte<->fiche existante : RPC link_client_account
+       (recherche cross-tenant par email, SECURITY DEFINER cote serveur --
+       voir supabase-schema.sql section 33) ; en demo, meme recherche mais
+       100% locale (state.clients). ── */
+    clientPortal: {
+      async signup(email, password) {
+        email = (email || '').trim().toLowerCase();
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.signUp(email, password);
+          if (!res.ok) return res;
+          if (res.needsConfirm) return { ok: true, needsConfirm: true };
+          const link = await sebaAuth.rpc('link_client_account', { _email: email });
+          if (link.error) return { ok: false, error: link.error.message || 'Erreur de rattachement.' };
+          if (!link.data || !link.data.ok) return { ok: false, error: (link.data && link.data.error) || 'Aucune fiche trouvée.' };
+          return { ok: true };
+        }
+        if (!state) loadState();
+        const client = state.clients.find(c => (c.email || '').trim().toLowerCase() === email);
+        if (!client) return { ok: false, error: 'Aucune fiche client trouvée avec cet email. Contactez votre prestataire.' };
+        try { localStorage.setItem('seba_client_session_demo', JSON.stringify({ email, clientId: client.id })); } catch (e) {}
+        return { ok: true };
+      },
+
+      async login(email, password) {
+        email = (email || '').trim().toLowerCase();
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.signIn(email, password);
+          if (!res.ok) return res;
+          // Rattache si pas deja fait (ex: confirmation email differee au
+          // signup) -- idempotent, already_linked:true sinon.
+          const link = await sebaAuth.rpc('link_client_account', { _email: email });
+          if (link.data && !link.data.ok) return { ok: false, error: link.data.error };
+          return { ok: true };
+        }
+        return SebaDB.clientPortal.signup(email, password); // demo : meme recherche, pas de vrai mot de passe a verifier
+      },
+
+      async logout() {
+        try { localStorage.removeItem('seba_client_session_demo'); } catch (e) {}
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) return sebaAuth.signOut();
+        return { ok: true };
+      },
+
+      async session() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const s = await sebaAuth.getSession();
+          return s ? { supabase: true } : null;
+        }
+        try {
+          const raw = localStorage.getItem('seba_client_session_demo');
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      },
+
+      /* Profil complet (fiche) du client connecte -- jamais lu directement
+         depuis seba_state (RLS refuse : auth.uid() du client != user_id du
+         patron proprietaire de la ligne), toujours via la RPC dediee. */
+      async profile() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_profile', {});
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_client_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const client = state.clients.find(c => c.id === demo.clientId);
+          if (!client) return { ok: false, error: 'Fiche introuvable.' };
+          return { ok: true, client, account: 'demo', client_id: client.id };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Demandes ("Nouvelle demande", client-espace.html). Accessible cote
+         client (ses propres demandes) ET cote patron (client-fiche.html --
+         RLS client_requests_select autorise les deux, voir schema). */
+      requests: {
+        /* account optionnel : un client fournit toujours le sien (via
+           clientPortal.profile().account, distinct de son propre
+           auth.uid()) ; le patron peut l'omettre, il retombe alors sur
+           adapter._accountId() (correct pour LUI -- meme defaut que
+           messages.send/list plus haut). */
+        async list(account, clientId) {
+          if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+            try {
+              const cfg = window.SEBA_CONFIG;
+              account = account || adapter._accountId();
+              const url = cfg.supabaseUrl + '/rest/v1/client_requests?account=eq.' + encodeURIComponent(account) + '&client_id=eq.' + encodeURIComponent(clientId) + '&order=created_at.desc';
+              const res = await fetch(url, { headers: adapter._headers() });
+              if (res.ok) {
+                const rows = await res.json();
+                return rows.map(r => ({
+                  id: r.id, clientId: r.client_id, titre: r.titre, statut: r.statut,
+                  intervenantId: r.intervenant_id, intervenantNom: r.intervenant_nom, createdAt: r.created_at,
+                }));
+              }
+              console.warn('[seba-data] lecture demandes distante en echec (HTTP ' + res.status + ') — repli local.');
+            } catch (e) { console.warn('[seba-data] lecture demandes distante impossible (reseau)', e.message); }
+          }
+          if (!state) loadState();
+          return state.clientRequests.filter(r => r.clientId === clientId);
+        },
+        async create(account, clientId, titre) {
+          if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+            try {
+              const cfg = window.SEBA_CONFIG;
+              const res = await fetch(cfg.supabaseUrl + '/rest/v1/client_requests', {
+                method: 'POST',
+                headers: adapter._headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+                body: JSON.stringify({ account, client_id: clientId, titre }),
+              });
+              if (res.ok) {
+                const rows = await res.json();
+                const r = rows[0];
+                return { id: r.id, clientId: r.client_id, titre: r.titre, statut: r.statut, intervenantId: r.intervenant_id, intervenantNom: r.intervenant_nom, createdAt: r.created_at };
+              }
+              console.warn('[seba-data] creation demande distante en echec (HTTP ' + res.status + ') — enregistree localement seulement.');
+            } catch (e) { console.warn('[seba-data] creation demande distante impossible (reseau)', e.message); }
+          }
+          if (!state) loadState();
+          const item = { id: uid(), clientId, titre, statut: 'nouvelle', intervenantId: null, intervenantNom: null, createdAt: todayISO(0) };
+          state.clientRequests.unshift(item);
+          persist();
+          return item;
+        },
+        /* Cote patron uniquement (client-fiche.html) : assigner un
+           intervenant / changer le statut. RLS client_requests_update
+           n'autorise que le proprietaire du compte (voir schema). */
+        async update(requestId, patch) {
+          if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+            try {
+              const cfg = window.SEBA_CONFIG;
+              const body = {};
+              if (patch.statut !== undefined) body.statut = patch.statut;
+              if (patch.intervenantId !== undefined) body.intervenant_id = patch.intervenantId;
+              if (patch.intervenantNom !== undefined) body.intervenant_nom = patch.intervenantNom;
+              body.updated_at = new Date().toISOString();
+              const res = await fetch(cfg.supabaseUrl + '/rest/v1/client_requests?id=eq.' + encodeURIComponent(requestId), {
+                method: 'PATCH',
+                headers: adapter._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify(body),
+              });
+              return { ok: res.ok };
+            } catch (e) { return { ok: false, error: e.message }; }
+          }
+          if (!state) loadState();
+          const item = state.clientRequests.find(r => r.id === requestId);
+          if (item) { Object.assign(item, patch); persist(); }
+          return { ok: !!item };
+        },
+      },
     },
 
     /* Chiffres réels calculés — consommés par le dashboard */
