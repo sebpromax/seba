@@ -970,6 +970,7 @@ create table if not exists client_requests (
   statut text not null default 'nouvelle' check (statut in ('nouvelle', 'en_cours', 'terminee', 'annulee')),
   intervenant_id text,              -- id dans state.employes[], nullable (pas encore assigne)
   intervenant_nom text,
+  intervention_id text,             -- id dans state.interventions[] une fois transformee en mission (assignation.html, 2026-07-19)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
