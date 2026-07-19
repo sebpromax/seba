@@ -31,6 +31,8 @@
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>',
     terrain:
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="12" height="16" rx="2"/><circle cx="10" cy="13" r="2"/><line x1="8" y1="5" x2="12" y2="5"/></svg>',
+    assignation:
+      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h14v9H8l-3 3v-3H3z"/><path d="M7 8h6M7 5.5h6"/></svg>',
   };
 
   /* ── Structure de navigation ─────────────────────────────────────────────── */
@@ -40,6 +42,7 @@
       items: [
         { href: 'dashboard.html', label: 'Tableau de bord', key: 'dashboard', match: ['dashboard'], appDir: true },
         { href: 'clients.html',   label: 'Clients',         key: 'clients',   match: ['client'],  shortcut: 'C' },
+        { href: 'assignation.html', label: 'Assignation',   key: 'assignation', match: ['assignation'], shortcut: 'A' },
         { href: 'planning.html',  label: 'Planning',        key: 'planning',  match: ['planning'], shortcut: 'P' },
         { href: 'devis.html',     label: 'Devis',           key: 'devis',     match: ['devis'],    shortcut: 'D' },
         { href: 'factures.html',  label: 'Factures',        key: 'factures',  match: ['factures'], shortcut: 'F' },

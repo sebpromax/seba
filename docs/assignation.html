@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Assignation — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privee : meme verrou que equipe.html/dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<!-- Drag & drop desktop (>=900px) -- deja utilise sur app/dashboard.html
+     (reordonnancement des widgets), meme CDN/version ici. forceFallback:true
+     (voir plus bas) : mode souris/tactile simule plutot que l'API HTML5
+     native, plus fiable a tester et evite les bizarreries mobile Safari --
+     sans consequence ici puisque le drag est de toute facon desactive sous
+     900px (voir cahier des charges). -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<style>
+:root{--modal-overlay-bg:rgba(0,0,0,.5);}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{overflow-x:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;min-height:100vh;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.layout,.app{position:relative;z-index:2;}
+a{color:inherit;text-decoration:none;}
+button,input,textarea,select{font-family:'Inter',sans-serif;}
+:focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh;min-height:100dvh;}
+/* .sidebar background/color/display/padding : deja fournis par
+   pro-global.css section 3 (".sidebar — hauteur, nav-items, footer
+   (unifié sur toutes les pages)") -- pas de redeclaration locale ici,
+   contrairement aux pages plus anciennes qui la dupliquent encore
+   (dette pre-existante, pas reproduite dans une page neuve). */
+.main{padding:32px 40px;padding-bottom:max(40px, calc(24px + env(safe-area-inset-bottom, 0px)));}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:14px;}
+.topbar h1{font-size:1.5rem;}
+.topbar-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+
+.assign-date-input{padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--white);color:var(--ink);font-size:.86rem;min-height:48px;-webkit-appearance:none;appearance:none;}
+.assign-date-input:focus{border-color:var(--emerald);outline:none;}
+
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.85rem;cursor:pointer;user-select:none;}
+.avatar-wrap{position:relative;}
+.user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:var(--shadow-md);display:none;}
+.user-menu.open{display:block;}
+.user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:.88rem;color:var(--ink);}
+@media (hover:hover){.user-menu a:hover{background:var(--bg);}}
+.user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+.user-menu .menu-deconnect{color:var(--text-2);}
+
+/* ── Split view : Inbox (gauche) + Le Terrain (droite) ──
+   Mobile-first : une colonne fluide, "Le Terrain" masque (le drag & drop
+   n'existe pas en dessous de 900px -- l'assignation passe uniquement par
+   la modale au tap, voir cahier des charges point 3). */
+.assign-grid{display:flex;flex-direction:column;gap:28px;}
+.assign-col-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.assign-count{background:var(--badge-success-bg);color:var(--emerald);font-size:.72rem;padding:2px 9px;border-radius:10px;font-weight:700;}
+
+.assign-inbox-list{display:flex;flex-direction:column;gap:12px;}
+.assign-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:border-color var(--t-std,.25s) var(--ease-std,ease),box-shadow var(--t-std,.25s) var(--ease-std,ease);min-height:48px;}
+@media (hover:hover){.assign-card:hover{border-color:var(--module-hover-border);box-shadow:var(--shadow-glow);}}
+@media (hover:none){.assign-card:active{border-color:var(--module-hover-border);}}
+.assign-card-title{font-weight:600;font-size:.92rem;margin-bottom:4px;}
+.assign-card-client{font-size:.8rem;color:var(--emerald);margin-bottom:2px;}
+.assign-card-date{font-size:.76rem;color:var(--text-2);}
+.sortable-ghost{opacity:.35;}
+.sortable-fallback{opacity:.9 !important;box-shadow:var(--shadow-lg);}
+
+.assign-empty{text-align:center;padding:32px 16px;color:var(--text-2);font-size:.86rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
+
+.assign-col-terrain{display:none;}
+.assign-emp-list{display:flex;flex-direction:column;gap:14px;}
+.assign-emp-col{background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);padding:14px;min-height:90px;transition:border-color var(--t-std,.25s) var(--ease-std,ease),background var(--t-std,.25s) var(--ease-std,ease);}
+.assign-emp-name{font-weight:600;font-size:.92rem;margin-bottom:2px;}
+.assign-emp-role{font-size:.78rem;color:var(--text-2);margin-bottom:8px;}
+.assign-emp-hint{font-size:.76rem;color:var(--text-2);}
+
+@media (min-width:900px){
+  .assign-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:start;}
+  .assign-col-terrain{display:block;}
+}
+
+/* ── Modale "Transformer en mission" (mobile : flux principal ; desktop :
+   confirmation apres un drop) ── */
+.assign-modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.assign-modal-overlay.open{display:flex;}
+.assign-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:400px;}
+.assign-modal h3{font-size:1.05rem;margin-bottom:4px;}
+.assign-modal p{font-size:.84rem;color:var(--text-2);margin-bottom:16px;}
+.assign-modal-field{margin-bottom:14px;}
+.assign-modal-field label{display:block;font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px;}
+.assign-modal-field select,.assign-modal-field input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.9rem;min-height:48px;-webkit-appearance:none;appearance:none;}
+.assign-modal-field select:focus,.assign-modal-field input:focus{border-color:var(--emerald);outline:none;}
+.assign-modal-row{display:flex;gap:12px;}
+.assign-modal-row .assign-modal-field{flex:1;min-width:0;}
+.assign-modal-actions{display:flex;gap:10px;margin-top:6px;}
+.assign-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;min-height:48px;}
+.assign-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
+.assign-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
+.assign-modal-send:disabled{opacity:.5;cursor:not-allowed;}
+
+@media (max-width:768px){
+  .assign-modal-field select,.assign-modal-field input{font-size:16px;}
+  .main{padding:20px 16px;}
+}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050505">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+</head>
+<body>
+<!-- Bandeau d'identité fixe (nom + secteur), cohérent avec les autres pages
+     connectées -- voir docs/identity-bar.js. -->
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
+<div class="layout">
+  <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité). -->
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
+    })();
+  </script>
+
+  <main class="main">
+    <div class="topbar">
+      <h1>Assignation</h1>
+      <div class="topbar-right">
+        <input type="date" id="assign-date" class="assign-date-input" aria-label="Date de mission par défaut">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="user-menu" id="user-menu">
+            <a href="reglages.html">Mon compte</a>
+            <div class="menu-sep"></div>
+            <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assign-grid">
+      <div class="assign-col-inbox">
+        <div class="assign-col-title">Nouvelles demandes <span class="assign-count" id="assign-inbox-count">0</span></div>
+        <div id="assign-inbox-list" class="assign-inbox-list"></div>
+      </div>
+
+      <div class="assign-col-terrain" id="assign-col-terrain">
+        <div class="assign-col-title">Le terrain</div>
+        <div id="assign-emp-list" class="assign-emp-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modale "Transformer en mission" -->
+<div class="assign-modal-overlay" id="assign-modal-overlay">
+  <div class="assign-modal" role="dialog" aria-modal="true" aria-label="Transformer en mission">
+    <h3>Transformer en mission</h3>
+    <p id="assign-modal-sub"></p>
+    <div class="assign-modal-field">
+      <label for="assign-modal-employe">Employé</label>
+      <select id="assign-modal-employe"></select>
+    </div>
+    <div class="assign-modal-row">
+      <div class="assign-modal-field">
+        <label for="assign-modal-date">Date</label>
+        <input type="date" id="assign-modal-date">
+      </div>
+      <div class="assign-modal-field">
+        <label for="assign-modal-time">Heure</label>
+        <input type="time" id="assign-modal-time">
+      </div>
+    </div>
+    <div class="assign-modal-actions">
+      <button class="assign-modal-cancel" onclick="closeAssignModal()">Annuler</button>
+      <button class="assign-modal-send" id="assign-modal-valider" onclick="validerAssignation()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<script src="seba-data.js"></script>
+<script>
+// Echappe les champs saisis par l'utilisateur avant injection dans innerHTML.
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function todayISOLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+let _inboxRequests = [];
+let _employees = [];
+let _clientsById = {};
+let _dragContext = null; // { requestId } -- l'employe est deja pre-selectionne dans le select si issu d'un drop
+let _sortables = [];
+const DESKTOP_MQ = window.matchMedia('(min-width: 900px)');
+
+function clientLabel(clientId) {
+  const c = _clientsById[clientId];
+  return c ? (c.prenom + ' ' + c.nom) : 'Client';
+}
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); } catch (e) { return ''; }
+}
+
+async function loadData() {
+  const clients = SebaDB.list('clients') || [];
+  _clientsById = {};
+  clients.forEach(c => { _clientsById[c.id] = c; });
+  _employees = (SebaDB.list('employes') || []).filter(e => e.actif !== false);
+
+  // account + clientId omis : le patron voit TOUTES les demandes de son
+  // compte (RLS client_requests_select l'autorise deja -- voir
+  // supabase-schema.sql). "Inbox" = statut encore 'nouvelle' OU pas
+  // encore d'intervenant, jamais terminee/annulee.
+  const all = await SebaDB.clientPortal.requests.list();
+  _inboxRequests = all.filter(r => (r.statut === 'nouvelle' || !r.intervenantId) && r.statut !== 'terminee' && r.statut !== 'annulee');
+}
+
+function renderInbox() {
+  const box = document.getElementById('assign-inbox-list');
+  document.getElementById('assign-inbox-count').textContent = String(_inboxRequests.length);
+  if (!_inboxRequests.length) {
+    box.innerHTML = '<div class="assign-empty">Aucune nouvelle demande pour l\'instant.</div>';
+    return;
+  }
+  box.innerHTML = _inboxRequests.map(r => (
+    '<div class="assign-card" data-id="' + r.id + '" tabindex="0" role="button" ' +
+      'onclick="openAssignModal(\'' + r.id + '\')" onkeydown="if(event.key===\'Enter\')openAssignModal(\'' + r.id + '\')">' +
+      '<div class="assign-card-title">' + esc(r.titre) + '</div>' +
+      '<div class="assign-card-client">' + esc(clientLabel(r.clientId)) + '</div>' +
+      '<div class="assign-card-date">' + fmtDate(r.createdAt) + '</div>' +
+    '</div>'
+  )).join('');
+}
+
+function renderTerrain() {
+  const box = document.getElementById('assign-emp-list');
+  if (!_employees.length) {
+    box.innerHTML = '<div class="assign-empty">Aucun employé actif.</div>';
+    return;
+  }
+  box.innerHTML = _employees.map(e => (
+    '<div class="assign-emp-col" data-employee-id="' + e.id + '">' +
+      '<div class="assign-emp-name">' + esc(e.prenom + ' ' + e.nom) + '</div>' +
+      '<div class="assign-emp-role">' + esc(e.role || 'Employé') + '</div>' +
+      '<div class="assign-emp-hint">Glissez une demande ici</div>' +
+    '</div>'
+  )).join('');
+}
+
+function destroySortables() {
+  _sortables.forEach(s => { try { s.destroy(); } catch (e) {} });
+  _sortables = [];
+}
+
+// Drag & drop uniquement >=900px (cahier des charges, point 3) -- en
+// dessous, aucune instance Sortable n'est créée, les cartes ne répondent
+// qu'au clic (voir renderInbox -- onclick toujours présent, aussi utile
+// en accessibilité clavier/lecteur d'écran sur desktop).
+function initDragDrop() {
+  destroySortables();
+  if (!DESKTOP_MQ.matches || typeof Sortable === 'undefined') return;
+
+  const inboxEl = document.getElementById('assign-inbox-list');
+  if (inboxEl) {
+    _sortables.push(Sortable.create(inboxEl, {
+      group: { name: 'dispatch', pull: 'clone', put: false },
+      sort: false,
+      forceFallback: true,
+      animation: 150,
+    }));
+  }
+  document.querySelectorAll('.assign-emp-col').forEach(col => {
+    _sortables.push(Sortable.create(col, {
+      group: { name: 'dispatch', pull: false, put: true },
+      sort: false,
+      forceFallback: true,
+      animation: 150,
+      onAdd(evt) {
+        const item = evt.item;
+        const requestId = item.dataset.id;
+        const employeId = evt.to.dataset.employeeId;
+        // Le clone deposé ne reste JAMAIS visuellement dans la colonne
+        // employé : le drop ouvre la modale de confirmation (heure
+        // notamment, que le geste de glisser ne peut pas transmettre),
+        // rien n'est écrit tant que "Valider" n'est pas cliqué.
+        item.remove();
+        openAssignModal(requestId, employeId);
+      },
+    }));
+  });
+}
+DESKTOP_MQ.addEventListener('change', initDragDrop);
+
+function openAssignModal(requestId, employeId) {
+  const req = _inboxRequests.find(r => r.id === requestId);
+  if (!req) return;
+  _dragContext = { requestId };
+  document.getElementById('assign-modal-sub').textContent = req.titre + ' — ' + clientLabel(req.clientId);
+  const sel = document.getElementById('assign-modal-employe');
+  sel.innerHTML = _employees.map(e => '<option value="' + e.id + '"' + (e.id === employeId ? ' selected' : '') + '>' + esc(e.prenom + ' ' + e.nom) + '</option>').join('');
+  document.getElementById('assign-modal-date').value = document.getElementById('assign-date').value || todayISOLocal();
+  document.getElementById('assign-modal-time').value = '09:00';
+  document.getElementById('assign-modal-overlay').classList.add('open');
+}
+function closeAssignModal() {
+  document.getElementById('assign-modal-overlay').classList.remove('open');
+  _dragContext = null;
+}
+
+async function validerAssignation() {
+  if (!_dragContext) return;
+  const employeId = document.getElementById('assign-modal-employe').value;
+  const date = document.getElementById('assign-modal-date').value;
+  const time = document.getElementById('assign-modal-time').value;
+  if (!employeId || !date || !time) return;
+
+  const btn = document.getElementById('assign-modal-valider');
+  if (btn.disabled) return; // anti double-tap : requête déjà en vol
+  btn.disabled = true;
+
+  const req = _inboxRequests.find(r => r.id === _dragContext.requestId);
+  const emp = _employees.find(e => e.id === employeId);
+  if (!req || !emp) { btn.disabled = false; return; }
+  const client = _clientsById[req.clientId];
+  const employeNom = emp.prenom + ' ' + emp.nom;
+
+  // A. Vraie mission planifiée dans state.interventions[].
+  const intervention = SebaDB.create('interventions', {
+    clientId: req.clientId,
+    clientName: client ? (client.prenom + ' ' + client.nom) : 'Client',
+    service: req.titre,
+    date, time,
+    employeId: emp.id,
+    done: false,
+  });
+
+  // B. La demande d'origine passe "en_cours", intervenant renseigné, et
+  // reliée à la mission créée (intervention_id -- voir migration
+  // 20260719d_client_requests_intervention_link.sql).
+  await SebaDB.clientPortal.requests.update(req.id, {
+    statut: 'en_cours',
+    intervenantId: emp.id,
+    intervenantNom: employeNom,
+    interventionId: intervention.id,
+  });
+
+  SebaDB.log('client', 'Demande transformée en mission — ' + req.titre + ' (' + employeNom + ')', 'assignation.html');
+
+  btn.disabled = false;
+  closeAssignModal();
+  // C. Retrait visuel de l'inbox : le prochain filtre ne la remonte plus
+  // (statut 'en_cours' + intervenantId renseigné).
+  await refreshInbox();
+}
+
+async function refreshInbox() {
+  await loadData();
+  renderInbox();
+  initDragDrop();
+}
+
+// ── Avatar menu ──
+const avatarBtn = document.getElementById('avatar-btn');
+const userMenu = document.getElementById('user-menu');
+avatarBtn.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+// ── Sidebar mobile ──
+function toggleSidebar() {
+  const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('assign-date').addEventListener('change', () => {}); // valeur simplement relue à l'ouverture de la modale
+
+(async function init() {
+  document.getElementById('assign-date').value = todayISOLocal();
+  await loadData();
+  renderInbox();
+  renderTerrain();
+  initDragDrop();
+})();
+</script>
+</body>
+</html>
