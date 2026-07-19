@@ -275,9 +275,10 @@
       showToast('Prénom et nom sont obligatoires.');
       return;
     }
-    // Email optionnel (simple info de contact) : l'espace terrain
-    // (employe-connexion.html) badge desormais par nom choisi dans une
-    // liste + PIN, plus par email.
+    // Email requis pour l'authentification universelle (2026-07-19) :
+    // c'est l'identifiant de connexion a employe-connexion.html. Reste
+    // "optionnel" niveau formulaire (un employe sans email n'a pas encore
+    // d'acces a l'espace terrain, ajoutable plus tard depuis sa fiche).
     if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       document.getElementById('ss-email').focus();
       showToast('Format d\'email invalide.');
@@ -289,12 +290,14 @@
     // pouvait donc plus jamais se connecter (employe-connexion.html filtre
     // sur actif !== false). Trouve lors de l'audit mobile 2026-07-19.
     const emp = SebaDB.create('employes', { prenom, nom, role, email, missions: 0, actif: true, acces });
-    // Code de depart '1234' pose automatiquement -- l'employe le change
-    // lui-meme depuis l'espace terrain a sa premiere connexion (voir
-    // seba-data.js: setEmployePin, opts.isDefault trace ce code comme
-    // "encore le defaut" tant qu'il n'a pas ete change).
-    await SebaDB.setEmployePin(emp.id, '1234', { isDefault: true });
     SebaDB.log('client', 'Nouvel employé — ' + prenom + ' ' + nom, 'equipe.html');
+    // Authentification universelle (2026-07-19) : si un email est fourni,
+    // on invite immediatement l'employe (auth.admin.inviteUserByEmail cote
+    // serveur) -- il choisit lui-meme son mot de passe via le lien recu.
+    if (email) {
+      const prov = await SebaDB.employeePortal.provision(emp.id, email);
+      if (!prov.ok) console.warn('[equipe] provisionnement acces employe differe :', prov.error);
+    }
     EMPLOYES = SebaDB.list('employes');
     render();
     closeSheet();

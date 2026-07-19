@@ -51,10 +51,12 @@
       items: [
         { href: 'equipe.html',     label: 'Équipe',     key: 'equipe',     match: ['equipe', 'employe-fiche'] },
         { href: 'historique.html', label: 'Historique', key: 'historique', match: ['historique'] },
-        // Sur cet appareil deja authentifie PATRON, badge un employe pour
-        // l'espace terrain (planning du jour, sans CA). Volontairement PAS
-        // dans index.html (page publique non authentifiee) : employe-auth.ts
-        // exige un JWT patron deja valide -- voir employe-connexion.html.
+        // Raccourci pratique pour le patron qui veut verifier l'espace
+        // terrain d'un employe -- authentification universelle
+        // (2026-07-19) : employe-connexion.html est une page publique,
+        // l'employe s'y connecte lui-meme avec son email + mot de passe
+        // depuis n'importe quel appareil, pas besoin d'etre badge par le
+        // patron.
         { href: 'employe-connexion.html', label: 'Espace terrain', key: 'terrain', match: ['employe-connexion', 'espace-terrain'] },
       ],
     },

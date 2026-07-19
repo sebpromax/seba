@@ -3,45 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Connexion employé — Seba</title>
+<title>Connexion Employé — Seba</title>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Page privee : l'appareil doit deja etre authentifie PATRON (voir
-     employe-auth.ts, en-tete) -- le PIN badge un employe sur cette
-     session existante, il n'en cree jamais une nouvelle. guard.js
-     redirige vers connexion.html si aucune session patron n'existe
-     (mode demo : aucun blocage, voir guard.js). -->
+<!-- Page PUBLIQUE (pas de guard.js) : authentification universelle
+     (2026-07-19) -- l'employe a desormais sa PROPRE session Supabase
+     Auth independante, exactement comme le client (voir
+     client-connexion.html, structure identique) -- plus de badge sur un
+     appareil deja authentifie patron (ancien modele PIN, retire). auth.js
+     fournit sebaAuth (signIn generique, deja utilise par connexion.html,
+     pas specifique au patron). -->
 <script src="auth.js"></script>
-<script src="guard.js"></script>
 <style>
-/* Meme systeme visuel que connexion.html ("carte" Encre Vivante) --
-   demande explicite : la carte Espace Employe doit etre identique a la
-   carte de connexion patron. Tokens/structure copies a l'identique,
-   seul le CONTENU de la carte change (select employe + PIN au lieu de
-   email + mot de passe). */
-:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--w-a06:rgba(255,255,255,.6);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
+/* Meme systeme visuel "Encre Vivante" que connexion.html/
+   client-connexion.html (carte + halo + bordure teal qui fond dans le
+   fond), et desormais meme STRUCTURE que client-connexion.html --
+   authentification universelle, les deux roles suivent exactement le
+   meme modele (email + mot de passe, provisionne par invitation). */
+:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--w-a06:rgba(255,255,255,.6);--nav-bg:rgba(10,10,12,.88);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;animation:pgFadeIn .35s ease;}
 @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 a{color:inherit;text-decoration:none;}
-input,button,select{font-family:'Inter',sans-serif;}
+input,button{font-family:'Inter',sans-serif;}
 
-/* ── Nav identique au reste du site ── */
-.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
-.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;justify-self:start;}
+.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;display:flex;align-items:center;padding:0 24px;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
 .logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
-.nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
-.nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
 
-/* ── Page layout ── */
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
 
-/* ── Carte opaque (isole le fluide de fond) + lave interne -- identique
-   a connexion.html ── */
 .card{
   background:var(--card-base);
   border:1px solid var(--dt-a18);
@@ -49,12 +44,6 @@ input,button,select{font-family:'Inter',sans-serif;}
   padding:32px;
   width:100%;max-width:400px;
   position:relative;overflow:hidden;isolation:isolate;
-  /* Ombre noire (profondeur) + halo teal large et tres doux (0.08) qui
-     deborde du bord de la carte -- box-shadow n'est jamais coupe par
-     overflow:hidden de son propre element, donc ce halo se fond
-     reellement dans les lignes du fond au lieu de s'arreter net a la
-     bordure. Bordure elle-meme teintee teal (au lieu d'un gris neutre)
-     pour la meme raison : moins de rupture de teinte avec le fond. */
   box-shadow:0 32px 80px var(--blk-a40), 0 0 140px var(--dt-a18), 0 0 50px var(--dt-a08);
 }
 .card::before{
@@ -74,41 +63,21 @@ input,button,select{font-family:'Inter',sans-serif;}
 @keyframes lavaDrift2{0%,100%{transform:translate(0,0) scale(1);}30%{transform:translate(-120px,-60px) scale(1.35);}60%{transform:translate(-40px,90px) scale(.8);}}
 @keyframes lavaDrift3{0%,100%{transform:translate(0,0) scale(1);}35%{transform:translate(90px,-100px) scale(1.25);}70%{transform:translate(-80px,-40px) scale(.9);}}
 @keyframes lavaDrift4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-70px,90px) scale(1.4);}}
-@media (prefers-reduced-motion: reduce){
-  .card-lava span{animation:none;}
-}
+@media (prefers-reduced-motion: reduce){.card-lava span{animation:none;}}
 .card>*:not(.card-lava){position:relative;z-index:1;}
 
-.card-head{margin-bottom:28px;}
+.card-head{margin-bottom:22px;}
 .card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:6px;}
 .card-head p{font-size:.88rem;color:var(--mist);}
 
-/* ── Champs (identique connexion.html) ── */
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
 .field label{font-size:.68rem;font-weight:600;color:var(--w-a06);letter-spacing:.03em;text-transform:uppercase;}
-.field input,.field select{
-  padding:12px 14px;
-  background:var(--w-a05);
-  border:1px solid var(--w-a10);
-  border-radius:10px;
-  font-size:.9rem;color:var(--pure-white);
-  width:100%;
-  transition:border-color .2s,background .2s;
+.field input{
+  padding:12px 14px;background:var(--w-a05);border:1px solid var(--w-a10);border-radius:10px;
+  font-size:.9rem;color:var(--pure-white);width:100%;transition:border-color .2s,background .2s;
 }
-.field select{appearance:none;-webkit-appearance:none;}
 .field input::placeholder{color:var(--w-a20);}
-.field input:focus,.field select:focus{border-color:var(--dt-a50);background:var(--dt-a04);outline:none;}
-.field-pin input{letter-spacing:.5em;text-align:center;font-weight:700;font-size:1.1rem;}
-
-.field.has-error input,.field.has-error select{border-color:var(--err) !important;box-shadow:0 0 0 3px var(--err-a08);}
-.field-error{font-size:.76rem;color:var(--err);margin-top:2px;display:none;}
-.field.has-error .field-error{display:block;}
-@keyframes cardShake{
-  0%,100%{transform:translateX(0);}
-  25%{transform:translateX(-6px);}
-  75%{transform:translateX(6px);}
-}
-.card.shake{animation:cardShake .32s ease;}
+.field input:focus{border-color:var(--dt-a50);background:var(--dt-a04);outline:none;}
 
 .field-pw-wrap{position:relative;}
 .field-pw-wrap input{width:100%;padding-right:42px;}
@@ -120,26 +89,18 @@ input,button,select{font-family:'Inter',sans-serif;}
 .toggle-pw.showing .eye-off{display:block;}
 
 input::-ms-reveal, input::-ms-clear { display: none !important; }
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active,
-#ec-pin:-webkit-autofill,
-#ec-pin:-webkit-autofill:hover,
-#ec-pin:-webkit-autofill:focus,
-#ec-pin:-webkit-autofill:active {
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus,input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px var(--autofill-bg) inset !important;
   -webkit-text-fill-color: var(--autofill-text) !important;
-  caret-color: var(--autofill-text);
   transition: background-color 5000s ease-in-out 0s;
 }
 
+@keyframes cardShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+.card.shake{animation:cardShake .32s ease;}
+
 .btn-connect{
-  width:100%;padding:13px;border:none;border-radius:12px;
-  background:var(--db-teal);color:var(--btn-ink);
-  font-weight:700;font-size:.95rem;
-  cursor:pointer;
-  transition:box-shadow .25s,transform .2s;
+  width:100%;padding:13px;border:none;border-radius:12px;background:var(--db-teal);color:var(--btn-ink);
+  font-weight:700;font-size:.95rem;cursor:pointer;transition:box-shadow .25s,transform .2s;
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .btn-connect:hover{box-shadow:0 0 28px var(--dt-a45);transform:translateY(-2px);}
@@ -149,32 +110,21 @@ input:-webkit-autofill:active,
 .btn-connect.loading .btn-spinner{display:block;}
 @keyframes btnSpin{to{transform:rotate(360deg);}}
 
+.error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg.visible{display:block;}
+
 .divider{border:none;border-top:1px solid var(--w-a07);margin:28px 0 16px;}
 
-.foot{text-align:center;font-size:.84rem;color:var(--w-a35);}
-.foot a{color:var(--db-teal);font-weight:600;transition:opacity .2s;}
-.foot a:hover{opacity:.75;}
-
-/* Pied de page (Retour / Mot de passe oublié) : liens texte discrets,
-   volontairement SANS bordure/fond -- ne doivent jamais rivaliser
-   visuellement avec .btn-connect (seule action dominante du formulaire). */
 .foot-links{display:flex;justify-content:center;align-items:center;gap:14px;}
 .foot-link{background:none;border:none;padding:2px;color:var(--w-a40);font-size:.78rem;font-weight:500;cursor:pointer;transition:color .2s;}
 .foot-link:hover{color:var(--db-teal);}
 .foot-sep{color:var(--w-a20);font-size:.78rem;}
-
-.error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
-.error-msg.visible{display:block;}
-.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-top:14px;display:none;}
 .success-msg.visible{display:block;}
 
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
 @media(hover:none){#cursor-trail{display:none;}}
 
-@media(max-width:768px){
-  .nav-wrap{grid-template-columns:1fr auto;}
-  .nav-center,.nav-right{display:none;}
-}
 body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
 h1{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
@@ -182,115 +132,78 @@ p{letter-spacing:-0.02em;}
 </head>
 <body>
 
-<!-- ── Navigation ── -->
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
-  <div class="nav-center"></div>
-  <div class="nav-right"></div>
 </nav>
 
-<!-- Halo de fond -- centre sur la carte (elle-meme centree par .page),
-     pas sur le haut du viewport : evite que le halo s'arrete avant
-     d'atteindre la carte sur les viewports hauts, ce qui cassait la
-     continuite visuelle entre le fond et la carte. -->
+<!-- Halo de fond, centre sur la carte (meme correctif que
+     connexion.html/client-connexion.html). -->
 <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,100vw);height:min(760px,100vh);background:radial-gradient(ellipse,var(--dt-a07) 0%,transparent 65%);pointer-events:none;z-index:0;"></div>
 
-<!-- ── Formulaire ── -->
 <div class="page">
   <div class="card" style="position:relative;z-index:1;">
     <div class="card-lava" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 
     <div class="card-head">
-      <h1>Connexion employé</h1>
-      <p>Badgez-vous pour accéder à votre planning du jour.</p>
+      <h1>Connexion Employé</h1>
+      <p>Accédez à votre planning du jour.</p>
     </div>
 
     <div class="error-msg" id="error-msg"></div>
 
-    <div id="ec-form">
-      <div class="field" id="employe-field">
-        <label for="ec-employe">Identifiant</label>
-        <select id="ec-employe"></select>
-      </div>
-
-      <div class="field field-pin" id="pin-field">
-        <label for="ec-pin">Mot de passe</label>
-        <div class="field-pw-wrap">
-          <input type="password" id="ec-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="••••" autocomplete="new-password">
-          <button type="button" class="toggle-pw" id="toggle-pin" onclick="togglePinVisibility()" aria-label="Afficher le PIN" title="Afficher/masquer le PIN">
-            <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <button class="btn-connect" id="btn-connect" onclick="handleEmployeeLogin()">
-        <span class="btn-spinner" id="btn-spinner"></span>
-        <span id="btn-connect-text">Se connecter</span>
-      </button>
+    <div class="field" id="identifiant-field">
+      <label for="identifiant">Identifiant</label>
+      <input type="email" id="identifiant" placeholder="vous@email.fr" autocomplete="email">
     </div>
 
-    <p class="foot" id="ec-empty" style="display:none;">Aucun employé actif n'est encore enregistré. Ajoutez-en un depuis <a href="equipe.html">l'équipe</a> — un code de départ <strong>1234</strong> lui sera attribué automatiquement, à changer depuis l'espace terrain.</p>
+    <div class="field" id="password-field">
+      <label for="password">Mot de passe</label>
+      <div class="field-pw-wrap">
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePasswordVisibility()" aria-label="Afficher le mot de passe">
+          <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">
+      <span class="btn-spinner" id="btn-spinner"></span>
+      <span id="btn-connect-text">Se connecter</span>
+    </button>
+
+    <div class="success-msg" id="forgot-msg"></div>
 
     <hr class="divider">
-
-    <div class="success-msg" id="forgot-pin-msg"></div>
 
     <div class="foot-links">
       <button type="button" class="foot-link" onclick="history.back()">Retour</button>
       <span class="foot-sep">·</span>
-      <button type="button" class="foot-link" onclick="handleForgotPin()">Mot de passe oublié ?</button>
+      <button type="button" class="foot-link" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
     </div>
   </div>
 </div>
 
 <script src="seba-data.js"></script>
 <script>
-/* Identifiant = le nom donné par le patron (fiche employé, equipe.html),
-   choisi dans une liste plutôt que tapé -- plus sûr sur un écran tactile
-   partagé, aucun risque de faute de frappe. Le PIN est toujours déjà
-   défini : equipe.html pose un code de départ '1234' à la création
-   (voir SebaDB.setEmployePin(..., {isDefault:true})) -- l'employé le
-   change lui-même depuis l'espace terrain (voir espace-terrain.html),
-   pas ici. Cette page ne fait donc plus que VÉRIFIER un PIN existant. */
-(function fillEmployeSelect(){
-  const sel = document.getElementById('ec-employe');
-  if (!window.SebaDB) return;
-  const emps = SebaDB.list('employes').filter(e => e.actif !== false);
-  if (!emps.length) {
-    document.getElementById('ec-form').style.display = 'none';
-    document.getElementById('ec-empty').style.display = 'block';
-    return;
-  }
-  const empty = document.createElement('option');
-  empty.value = '';
-  empty.textContent = '';
-  empty.selected = true;
-  sel.appendChild(empty);
-  emps.forEach(e => {
-    const o = document.createElement('option');
-    o.value = e.id;
-    o.textContent = e.prenom + ' ' + e.nom;
-    sel.appendChild(o);
-  });
-})();
-
 function shakeCard(){
-  const card=document.querySelector('.card');
+  const card = document.querySelector('.card');
   card.classList.remove('shake');
   void card.offsetWidth;
   card.classList.add('shake');
 }
 
-async function handleEmployeeLogin(){
-  const employeId = document.getElementById('ec-employe').value;
-  const pin = document.getElementById('ec-pin').value.trim();
+function isValidEmailFormat(v){ return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v); }
+
+async function handleLogin(){
+  const email = document.getElementById('identifiant').value.trim();
+  const password = document.getElementById('password').value;
   const err = document.getElementById('error-msg');
   err.classList.remove('visible');
 
-  if (!employeId || !/^\d{4}$/.test(pin)) {
+  if (!isValidEmailFormat(email) || !password) {
     shakeCard();
-    err.textContent = 'Choisissez votre nom et saisissez les 4 chiffres de votre PIN.';
+    err.textContent = 'Saisissez votre identifiant et votre mot de passe.';
     err.classList.add('visible');
     return;
   }
@@ -301,44 +214,41 @@ async function handleEmployeeLogin(){
   btn.disabled = true;
   btnText.textContent = 'Connexion…';
 
-  const res = await SebaDB.employeLogin(employeId, pin);
+  const res = await SebaDB.employeePortal.login(email, password);
 
   if (res.ok) {
-    if(window.SebaFX&&window.SebaFX.enabled){SebaFX.wave();await new Promise(r=>setTimeout(r,450));}
     window.location.href = 'espace-terrain.html';
-  } else {
-    err.textContent = res.error || 'Connexion impossible.';
-    err.classList.add('visible');
-    shakeCard();
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    btnText.textContent = 'Se connecter';
-    document.getElementById('ec-pin').value = '';
+    return;
   }
+
+  err.textContent = res.error || 'Connexion impossible.';
+  err.classList.add('visible');
+  shakeCard();
+  btn.classList.remove('loading');
+  btn.disabled = false;
+  btnText.textContent = 'Se connecter';
 }
 
-/* Pas de flux d'auto-recuperation : seul le patron peut reinitialiser un
-   PIN oublie (voir employe-fiche.html -- panneau "Code PIN terrain",
-   deja en place). Message honnete plutot qu'un lien mort ou un flux
-   inexistant -- meme logique que "Espace Client" sur connexion.html. */
-function handleForgotPin(){
-  const el = document.getElementById('forgot-pin-msg');
-  el.textContent = 'Demandez à votre patron de réinitialiser votre code depuis votre fiche employé.';
+/* Pas de flux d'auto-recuperation : seul le patron peut definir/corriger
+   l'email et provisionner un nouvel acces depuis employe-fiche.html.
+   Message honnete plutot qu'un lien mort -- meme logique que
+   client-connexion.html. */
+function handleForgotPassword(){
+  const el = document.getElementById('forgot-msg');
+  el.textContent = 'Demandez à votre patron de vérifier votre accès depuis votre fiche employé.';
   el.classList.add('visible');
 }
 
-function togglePinVisibility(){
-  const inp=document.getElementById('ec-pin');
-  const btn=document.getElementById('toggle-pin');
-  const showing=inp.type==='password';
-  inp.type=showing?'text':'password';
-  btn.classList.toggle('showing',showing);
-  btn.setAttribute('aria-label',showing?'Masquer le PIN':'Afficher le PIN');
+function togglePasswordVisibility(){
+  const inp = document.getElementById('password');
+  const btn = document.getElementById('toggle-pw');
+  const showing = inp.type === 'password';
+  inp.type = showing ? 'text' : 'password';
+  btn.classList.toggle('showing', showing);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.closest('.card'))handleEmployeeLogin();});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement.closest('.card')) handleLogin(); });
 (function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
-document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
 </body>
 </html>

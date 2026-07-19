@@ -9,12 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
-<!-- Meme verrou que employe-connexion.html : l'appareil doit deja etre
-     authentifie PATRON (guard.js). En plus de ca, cette page verifie sa
-     PROPRE session (SebaDB.employeSession()) -- si aucun employe n'est
-     badge, retour a l'ecran de badge plutot qu'un espace vide. -->
+<!-- Page PRIVEE mais PAS guard.js : authentification universelle
+     (2026-07-19) -- l'employe a sa PROPRE session Supabase Auth
+     independante (comme client-espace.html), la verification se fait
+     plus bas via SebaDB.employeePortal.session()/profile(), pas via un
+     pre-requis de session patron sur cet appareil (ancien modele PIN,
+     retire). -->
 <script src="auth.js"></script>
-<script src="guard.js"></script>
 <style>
 :root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -68,15 +69,13 @@ button,input{font-family:'Inter',sans-serif;}
 .et-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
 .et-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
 
-.et-banner{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:12px 16px;font-size:.86rem;margin-bottom:20px;color:var(--ink);}
-.et-banner a{color:var(--danger-text);font-weight:700;}
-.et-pin-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-.et-pin-row input{flex:1;min-width:120px;}
+.et-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.et-pw-row input{flex:1;min-width:120px;}
 </style>
 </head>
 <body>
 
-<div class="et-wrap">
+<div class="et-wrap" id="et-wrap" style="display:none;">
   <div class="et-header">
     <div class="et-greeting">
       <h1 id="et-greeting">Bonjour</h1>
@@ -84,8 +83,6 @@ button,input{font-family:'Inter',sans-serif;}
     </div>
     <button class="et-logout" onclick="handleLogout()">Se déconnecter</button>
   </div>
-
-  <div class="et-banner" id="et-pin-banner" style="display:none;">Vous utilisez encore le code de départ. <a href="#et-pin-panel">Changez-le maintenant →</a></div>
 
   <div class="et-section-title">Planning du jour</div>
   <div id="et-missions"></div>
@@ -99,17 +96,19 @@ button,input{font-family:'Inter',sans-serif;}
     </div>
   </div>
 
-  <div class="et-messaging" id="et-pin-panel">
-    <div class="et-section-title" style="margin-bottom:14px;">Mon code PIN</div>
-    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre code à 4 chiffres à tout moment.</p>
-    <div class="et-pin-row">
-      <input type="password" class="et-msg-input" id="et-pin-new" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Nouveau code">
-      <input type="password" class="et-msg-input" id="et-pin-confirm" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Confirmez">
+  <div class="et-messaging" id="et-pw-panel">
+    <div class="et-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
+    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
+    <div class="et-pw-row">
+      <input type="password" class="et-msg-input" id="et-pw-new" placeholder="Nouveau mot de passe" minlength="6">
+      <input type="password" class="et-msg-input" id="et-pw-confirm" placeholder="Confirmez" minlength="6">
     </div>
-    <button class="et-msg-send" style="width:100%;padding:11px;" onclick="modifierMonPin()">Modifier mon code</button>
-    <p id="et-pin-status" style="font-size:.82rem;margin-top:8px;"></p>
+    <button class="et-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
+    <p id="et-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
   </div>
 </div>
+
+<div class="et-loading" id="et-loading" style="text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;">Chargement…</div>
 
 <div class="et-modal-overlay" id="et-modal-overlay">
   <div class="et-modal">
@@ -138,67 +137,71 @@ function todayISOLocal() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-let _session = null;
+let _profile = null; // { employe, account, employe_id }
 let _missionContext = null; // intervention ciblee par le modal Message
 
-(function init() {
+(async function init() {
   if (!window.SebaDB) return;
-  _session = SebaDB.employeSession();
-  if (!_session) { window.location.href = 'employe-connexion.html'; return; }
+  const session = await SebaDB.employeePortal.session();
+  if (!session) { window.location.href = 'employe-connexion.html'; return; }
 
-  document.getElementById('et-greeting').textContent = 'Bonjour ' + _session.prenom;
+  _profile = await SebaDB.employeePortal.profile();
+  if (!_profile || !_profile.ok) {
+    window.location.href = 'employe-connexion.html';
+    return;
+  }
+
+  document.getElementById('et-loading').style.display = 'none';
+  document.getElementById('et-wrap').style.display = 'block';
+
+  const emp = _profile.employe || {};
+  document.getElementById('et-greeting').textContent = 'Bonjour ' + (emp.prenom || '');
   document.getElementById('et-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  const emp = SebaDB.get('employes', _session.id);
-  if (emp && emp.pinIsDefault) document.getElementById('et-pin-banner').style.display = 'block';
 
   renderMissions();
   renderMessages();
 })();
 
-// Auto-service : l'employe change son propre code depuis ici, a tout
-// moment (pas seulement quand pinIsDefault) -- voir seba-data.js:
-// setEmployePin. opts omis -> pinIsDefault repasse a false.
-async function modifierMonPin() {
-  const newPin = document.getElementById('et-pin-new').value.trim();
-  const confirmPin = document.getElementById('et-pin-confirm').value.trim();
-  const status = document.getElementById('et-pin-status');
-  if (!/^\d{4}$/.test(newPin)) {
-    status.textContent = 'Le code doit contenir 4 chiffres.';
+async function modifierMonMotDePasse() {
+  const newPw = document.getElementById('et-pw-new').value;
+  const confirmPw = document.getElementById('et-pw-confirm').value;
+  const status = document.getElementById('et-pw-status');
+  if (newPw.length < 6) {
+    status.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
     status.style.color = 'var(--danger-text)';
     return;
   }
-  if (newPin !== confirmPin) {
-    status.textContent = 'Les deux codes ne correspondent pas.';
+  if (newPw !== confirmPw) {
+    status.textContent = 'Les deux mots de passe ne correspondent pas.';
     status.style.color = 'var(--danger-text)';
     return;
   }
   status.textContent = 'Enregistrement…';
   status.style.color = '';
-  const res = await SebaDB.setEmployePin(_session.id, newPin);
+  const res = await SebaDB.employeePortal.setPassword(newPw);
   if (res.ok) {
-    status.textContent = 'Code modifié.';
+    status.textContent = 'Mot de passe modifié.';
     status.style.color = 'var(--emerald)';
-    document.getElementById('et-pin-new').value = '';
-    document.getElementById('et-pin-confirm').value = '';
-    document.getElementById('et-pin-banner').style.display = 'none';
+    document.getElementById('et-pw-new').value = '';
+    document.getElementById('et-pw-confirm').value = '';
   } else {
     status.textContent = res.error || 'Échec de la modification.';
     status.style.color = 'var(--danger-text)';
   }
 }
 
-/* Planning du jour filtre sur employeId (voir planning.html -- assignation
-   ajoutee le 2026-07-18). Interventions n'ont AUCUN champ financier
-   (clientId/clientName/service/date/time/done/employeId uniquement) : le
-   CA est donc structurellement absent de cette vue, jamais masque a la
-   volee -- il n'y a rien a retirer. */
-function renderMissions() {
+/* Planning du jour -- via employeePortal.interventionsForDate() (RPC
+   get_my_employee_interventions cote Supabase, l'employe ne peut pas lire
+   le blob JSONB du patron directement -- filtre local en mode demo).
+   Interventions n'ont AUCUN champ financier (clientId/clientName/service/
+   date/time/done/employeId uniquement) : le CA est donc structurellement
+   absent de cette vue, jamais masque a la volee -- il n'y a rien a
+   retirer. */
+async function renderMissions() {
   const box = document.getElementById('et-missions');
   const today = todayISOLocal();
-  const missions = SebaDB.list('interventions')
-    .filter(i => i.employeId === _session.id && i.date === today)
-    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const res = await SebaDB.employeePortal.interventionsForDate(today);
+  const missions = ((res && res.interventions) || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
   if (!missions.length) {
     box.innerHTML = '<div class="et-empty">Aucune mission assignée pour aujourd\'hui.</div>';
@@ -240,7 +243,7 @@ async function envoyerMessageMission() {
   if (!texte || !_missionContext) return;
   const prefixed = '[' + _missionContext.clientName + '] ' + texte;
   await window.SebaQuotes.createMessage({
-    employeId: _session.id, expediteurRole: 'employe', destinataireRole: 'patron', texte: prefixed,
+    account: _profile.account, employeId: _profile.employe_id, expediteurRole: 'employe', destinataireRole: 'patron', texte: prefixed,
   });
   closeMissionModal();
   renderMessages();
@@ -249,7 +252,7 @@ async function envoyerMessageMission() {
 async function renderMessages() {
   const box = document.getElementById('et-msg-thread');
   if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
-  const msgs = await window.SebaQuotes.messagesFor('employe', _session.id);
+  const msgs = await window.SebaQuotes.messagesFor('employe', _profile.employe_id, _profile.account);
   box.innerHTML = msgs.length
     ? msgs.map(m => '<div class="et-msg-bubble">' + escapeHtml(m.texte) +
         '<div class="et-msg-meta">' + (m.expediteurRole === 'patron' ? 'Votre patron' : 'Vous') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
@@ -262,14 +265,14 @@ async function envoyerMessagePatron() {
   const texte = inp.value.trim();
   if (!texte) return;
   await window.SebaQuotes.createMessage({
-    employeId: _session.id, expediteurRole: 'employe', destinataireRole: 'patron', texte,
+    account: _profile.account, employeId: _profile.employe_id, expediteurRole: 'employe', destinataireRole: 'patron', texte,
   });
   inp.value = '';
   renderMessages();
 }
 
-function handleLogout() {
-  SebaDB.employeLogout();
+async function handleLogout() {
+  await SebaDB.employeePortal.logout();
   window.location.href = 'employe-connexion.html';
 }
 </script>

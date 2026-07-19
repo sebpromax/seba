@@ -293,24 +293,15 @@
           </div>
         </div>
 
+        <!-- EMAIL DE CONNEXION (Espace Terrain) -->
         <div class="panel" id="email-panel">
-          <div class="panel-head"><h3>Email</h3></div>
-          <p class="msg-note">Coordonnée facultative (n'est plus utilisée pour la connexion terrain — voir ci-dessous).</p>
+          <div class="panel-head"><h3>Email de connexion</h3></div>
+          <p class="msg-note">Identifiant utilisé par l'employé pour se connecter à son <strong>Espace Terrain</strong>. Dès qu'un email est enregistré, une invitation lui est envoyée pour choisir lui-même son mot de passe.</p>
           <div class="msg-input-row">
             <input type="email" class="msg-input" id="email-input" placeholder="vous@equipe.fr">
             <button class="btn-em" onclick="definirEmailEmploye()">Enregistrer</button>
           </div>
           <p class="msg-note" id="email-status" style="margin-top:8px;"></p>
-        </div>
-
-        <div class="panel" id="pin-panel">
-          <div class="panel-head"><h3>Code PIN terrain</h3></div>
-          <p class="msg-note">Un code de départ <strong>1234</strong> a été attribué automatiquement à la création — l'employé le change lui-même depuis <strong>l'espace terrain</strong>. Utilisez ce champ uniquement pour <strong>réinitialiser</strong> un code oublié.</p>
-          <div class="msg-input-row">
-            <input type="password" class="msg-input" id="pin-input" placeholder="4 chiffres" maxlength="4" inputmode="numeric" pattern="\d{4}" style="max-width:120px;">
-            <button class="btn-em" onclick="definirPinEmploye()">Réinitialiser</button>
-          </div>
-          <p class="msg-note" id="pin-status" style="margin-top:8px;"></p>
         </div>
       </div>
 
@@ -345,7 +336,7 @@
         <!-- MESSAGERIE -->
         <div class="panel" id="messagerie-panel">
           <span class="panel-eyebrow">Messages</span>
-          <p class="msg-note">Journal de communication interne (consignes, remontées de terrain). L'employé répond depuis son espace terrain (badge PIN sur <a href="employe-connexion.html" style="color:var(--emerald);">employe-connexion.html</a>).</p>
+          <p class="msg-note">Journal de communication interne (consignes, remontées de terrain). L'employé répond depuis son espace terrain (connexion par email sur <a href="employe-connexion.html" style="color:var(--emerald);">employe-connexion.html</a>).</p>
           <div class="msg-thread" id="messages-thread"></div>
           <div class="msg-input-row">
             <input type="text" class="msg-input" id="message-input" placeholder="Écrire une consigne..." onkeydown="if(event.key==='Enter')envoyerMessageEmploye();">
@@ -501,10 +492,11 @@
     renderMessagesThread();
   }
 
-  // Email de connexion terrain -- SebaDB.update() classique (pas de nouvelle
-  // methode dediee, contrairement au PIN : l'email n'est pas un secret,
-  // meme mecanisme de sync que les autres champs employe).
-  function definirEmailEmploye() {
+  // Email de connexion terrain -- authentification universelle
+  // (2026-07-19) : enregistre l'email puis invite l'employe (Edge Function
+  // employe-provision.ts, service_role, n'affecte jamais la session du
+  // patron) -- miroir exact de client-fiche.html: definirEmailClient().
+  async function definirEmailEmploye() {
     const inp = document.getElementById('email-input');
     const status = document.getElementById('email-status');
     const email = inp.value.trim().toLowerCase();
@@ -514,36 +506,17 @@
       status.style.color = 'var(--danger-text)';
       return;
     }
-    SebaDB.update('employes', _id, { email });
-    inp.value = email;
-    status.textContent = 'Email enregistré.';
-    status.style.color = 'var(--emerald)';
-    SebaDB.log('employe', 'Email de connexion défini — ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
-  }
-
-  // Définition du PIN terrain (voir seba-data.js: setEmployePin -- Edge
-  // Function employe-set-pin.ts si Supabase+session, sinon repli local
-  // en clair sur emp.pinLocal, mode demo/file:// uniquement).
-  async function definirPinEmploye() {
-    const inp = document.getElementById('pin-input');
-    const status = document.getElementById('pin-status');
-    const pin = inp.value.trim();
-    if (!_id || !window.SebaDB) return;
-    if (!/^\d{4}$/.test(pin)) {
-      status.textContent = 'Le PIN doit contenir exactement 4 chiffres.';
-      status.style.color = 'var(--danger-text)';
-      return;
-    }
     status.textContent = 'Enregistrement…';
     status.style.color = '';
-    const res = await SebaDB.setEmployePin(_id, pin);
-    if (res.ok) {
-      status.textContent = 'PIN enregistré.';
+    SebaDB.update('employes', _id, { email });
+    const prov = await SebaDB.employeePortal.provision(_id, email);
+    if (prov.ok) {
+      inp.value = email;
+      status.textContent = prov.already_provisioned ? 'Email enregistré (accès déjà existant).' : 'Email enregistré, invitation envoyée.';
       status.style.color = 'var(--emerald)';
-      inp.value = '';
-      SebaDB.log('employe', 'PIN terrain défini — ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
+      SebaDB.log('employe', 'Email de connexion défini — ' + (_n || 'un employé'), 'employe-fiche.html?id=' + _id);
     } else {
-      status.textContent = res.error || 'Échec de l\'enregistrement.';
+      status.textContent = prov.error || 'Échec de l\'enregistrement.';
       status.style.color = 'var(--danger-text)';
     }
   }
