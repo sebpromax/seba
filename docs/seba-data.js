@@ -36,11 +36,14 @@
      SebaDB.eraseAllData()             -> efface tout (local + ligne cloud), Art. 17 RGPD
      SebaDB.hasData()                  -> vrai si le compte a des données
      SebaDB.messages.list(filter) / .send(obj)  -> async, table seba_messages dédiée
-     SebaDB.setEmployePin(employeId, pin)       -> async, Edge Function employe-set-pin.ts
-     SebaDB.employeLogin(employeId, pin)        -> async, Edge Function employe-auth.ts, pose la session terrain
-     SebaDB.employeSession() / employeLogout()  -> lecture/effacement de la session terrain locale
-     SebaDB.clientPortal.provision(clientId, email)             -> async, Edge Function client-provision.ts, mot de passe de depart '1234'
-     SebaDB.clientPortal.login/logout/session/profile/setPassword()  -> async, vraie session Supabase Auth independante (RPC get_my_client_profile/mark_client_password_changed)
+     -- Authentification universelle (2026-07-19) : patron/employé/client
+     -- suivent tous les trois le même modèle (vraie session Supabase Auth
+     -- indépendante, provisionnée par invitation) --
+     SebaDB.employeePortal.provision(employeId, email)          -> async, Edge Function employe-provision.ts (invitation)
+     SebaDB.employeePortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_employee_profile
+     SebaDB.employeePortal.interventionsForDate(date)           -> async, RPC get_my_employee_interventions (planning du jour)
+     SebaDB.clientPortal.provision(clientId, email)             -> async, Edge Function client-provision.ts (invitation)
+     SebaDB.clientPortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_client_profile
      SebaDB.clientPortal.requests.list/create/update()          -> async, table client_requests dediee
 ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -248,6 +251,16 @@
 
     _syncing = true;
     try {
+      // LEGACY (modele PIN retire 2026-07-19) -- seba_employee_token n'est
+      // plus jamais ecrit nulle part (employeePortal ne pose plus de token
+      // separe, l'employe a desormais sa PROPRE session Supabase comme
+      // tout le monde) : ce bloc reste inoffensif (employeeToken vaut
+      // toujours null) mais aucune page employe n'ecrit de donnees via
+      // SebaDB.create/update aujourd'hui de toute facon (lecture + RPC
+      // dediees + messagerie REST directe uniquement -- voir
+      // employeePortal plus bas). A revoir si un futur besoin d'ecriture
+      // cote employe apparait : sync-push.ts devrait alors accepter le
+      // propre JWT de l'employe et le resoudre via employe_accounts.
       const employeeToken = (() => { try { return localStorage.getItem('seba_employee_token'); } catch (e) { return null; } })();
       const headers = Object.assign(
         { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey },
@@ -600,122 +613,141 @@
       },
     },
 
-    /* Definit/change le PIN terrain (4 chiffres) d'un employe. Chemin
-       Supabase : appelle l'Edge Function employe-set-pin.ts (service_role),
-       car employe_credentials n'a AUCUNE policy RLS -- pin_hash ne doit
-       jamais transiter par le REST public, meme proprietaire du compte
-       (voir supabase-schema.sql section 10a). Repli local (file://, pas
-       de session) : stocke le PIN EN CLAIR sur l'employe local -- honnete
-       pour du mode demo sans backend, jamais utilise si Supabase est
-       configure et une session existe. Retourne {ok:true} ou {ok:false,
-       error}. */
-    async setEmployePin(employeId, pin, opts) {
-      if (!state) loadState();
-      if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
-      const emp = state.employes.find(e => e.id === employeId);
-      if (!emp) return { ok: false, error: 'Employé introuvable.' };
-      // pinIsDefault : marqueur non-secret (jamais le PIN lui-meme) --
-      // true uniquement quand equipe.html pose le code de depart '1234' a
-      // la creation (opts.isDefault). Un changement ulterieur (par
-      // l'employe depuis l'espace terrain, ou une reinitialisation par le
-      // patron) passe toujours opts.isDefault a false/absent, meme si le
-      // nouveau code choisi est accidentellement '1234' -- ce n'est plus
-      // LE code de depart connu de tous, c'est un choix explicite.
-      const isDefault = !!(opts && opts.isDefault);
-      if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
-        try {
-          const cfg = window.SEBA_CONFIG;
-          const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-set-pin', {
-            method: 'POST',
-            headers: adapter._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, pin }),
-          });
-          const body = await res.json().catch(() => ({}));
-          if (!res.ok) return { ok: false, error: body.error || ('Erreur serveur (HTTP ' + res.status + ')') };
-          emp.pinSet = true;
-          emp.pinIsDefault = isDefault;
-          persist();
-          pushOp('employes', employeId, 'update', { pinSet: true, pinIsDefault: isDefault });
-          return { ok: true };
-        } catch (e) {
-          return { ok: false, error: 'Connexion impossible : ' + e.message };
-        }
-      }
-      emp.pinLocal = pin; // clair, mode demo/file:// uniquement -- jamais le chemin utilisé une fois Supabase configuré
-      emp.pinSet = true;
-      emp.pinIsDefault = isDefault;
-      persist();
-      return { ok: true };
-    },
-
-    /* Badge un employé sur l'appareil (employe-connexion.html), PIN 4
-       chiffres verifie contre setEmployePin() ci-dessus. Chemin Supabase :
-       appelle l'Edge Function employe-auth.ts (deja deployee/documentee,
-       verifie le PIN cote serveur via pin_hash -- jamais transmis au
-       client), stocke le token de session retourne. Repli local : compare
-       au pinLocal en clair pose par setEmployePin() en mode demo/file://.
-       Dans les deux cas, persiste la session dans localStorage sous
-       seba_employee_token (deja lu par syncWorker/sync-push plus haut) et
-       seba_employee_active (identite affichee par l'espace terrain). */
-    async employeLogin(employeId, pin) {
-      if (!state) loadState();
-      if (!/^\d{4}$/.test(pin || '')) return { ok: false, error: 'Le PIN doit contenir 4 chiffres.' };
-      const emp = state.employes.find(e => e.id === employeId);
-      if (!emp) return { ok: false, error: 'Employé introuvable.' };
-
-      if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
-        try {
-          const cfg = window.SEBA_CONFIG;
-          const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-auth', {
-            method: 'POST',
-            headers: adapter._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, pin, device_id: getDeviceId() }),
-          });
-          const body = await res.json().catch(() => ({}));
-          if (!res.ok) return { ok: false, error: body.error || 'Identifiants invalides.' };
+    /* ── Espace Terrain (authentification universelle, 2026-07-19) ──────
+       Retire le modele PIN/badge-sur-appareil-patron (setEmployePin/
+       employeLogin/employeSession/employeLogout ci-dessus jusqu'a ce
+       commit) : sur demande explicite, l'employe doit pouvoir se
+       connecter depuis N'IMPORTE QUEL appareil, comme le patron et le
+       client. Structure IDENTIQUE a clientPortal ci-dessous (copier-
+       coller assume, les deux roles suivent exactement le meme modele) :
+       vraie session Supabase Auth independante, provisionnee par
+       INVITATION (Edge Function employe-provision.ts), jamais de mot de
+       passe impose -- l'employe choisit le sien via le lien recu
+       (reset-password.html). seba_employee_session_demo est une cle
+       DISTINCTE du DEMO_KEY partage de sebaAuth et de
+       seba_client_session_demo -- trois roles "connectes" en demo sur le
+       meme navigateur ne doivent jamais se marcher dessus. ── */
+    employeePortal: {
+      async provision(employeId, email) {
+        email = (email || '').trim().toLowerCase();
+        if (!email) return { ok: false, error: 'Email requis.' };
+        if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
           try {
-            localStorage.setItem('seba_employee_token', body.token);
-            localStorage.setItem('seba_employee_active', JSON.stringify({ id: emp.id, prenom: emp.prenom, nom: emp.nom, expiresAt: body.expires_at }));
-          } catch (e) {}
-          return { ok: true, employe: emp };
-        } catch (e) {
-          return { ok: false, error: 'Connexion impossible : ' + e.message };
+            const cfg = window.SEBA_CONFIG;
+            const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-provision', {
+              method: 'POST',
+              headers: adapter._headers({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, email }),
+            });
+            const respBody = await res.json().catch(() => ({}));
+            if (!res.ok) return { ok: false, error: respBody.error || ('Erreur serveur (HTTP ' + res.status + ')') };
+            return { ok: true };
+          } catch (e) {
+            return { ok: false, error: 'Connexion impossible : ' + e.message };
+          }
         }
-      }
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        emp.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- simule un mot de passe deja choisi (pas d'email reel envoye en local)
+        persist();
+        return { ok: true };
+      },
 
-      if (emp.pinLocal !== pin) return { ok: false, error: 'PIN incorrect.' };
-      try {
-        const expiresAt = new Date(Date.now() + 7 * 24 * 3600e3).toISOString(); // 7 jours, mode demo/file:// uniquement
-        localStorage.setItem('seba_employee_token', 'local-' + uid());
-        localStorage.setItem('seba_employee_active', JSON.stringify({ id: emp.id, prenom: emp.prenom, nom: emp.nom, expiresAt }));
-      } catch (e) {}
-      return { ok: true, employe: emp };
-    },
-
-    /* État de badge courant (lu par l'espace terrain) -- null si aucune
-       session employé active ou expirée. Ne vérifie jamais le token côté
-       serveur ici (juste sa présence/fraîcheur locale) : toute requête
-       Supabase réelle (X-Employee-Token) est de toute façon revalidée
-       côté serveur, cette fonction ne sert qu'à l'affichage. */
-    employeSession() {
-      try {
-        const raw = localStorage.getItem('seba_employee_active');
-        if (!raw) return null;
-        const active = JSON.parse(raw);
-        if (active.expiresAt && new Date(active.expiresAt) < new Date()) {
-          localStorage.removeItem('seba_employee_active');
-          localStorage.removeItem('seba_employee_token');
-          return null;
+      async login(email, password) {
+        email = (email || '').trim().toLowerCase();
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          return sebaAuth.signIn(email, password);
         }
-        return active;
-      } catch (e) { return null; }
-    },
+        if (!state) loadState();
+        const emp = state.employes.find(e => (e.email || '').trim().toLowerCase() === email);
+        if (!emp || !emp.pwLocal || emp.pwLocal !== password) {
+          return { ok: false, error: 'Identifiants invalides.' }; // generique -- anti-enumeration
+        }
+        try { localStorage.setItem('seba_employee_session_demo', JSON.stringify({ email, employeId: emp.id })); } catch (e) {}
+        return { ok: true };
+      },
 
-    employeLogout() {
-      try {
-        localStorage.removeItem('seba_employee_active');
-        localStorage.removeItem('seba_employee_token');
-      } catch (e) {}
+      async logout() {
+        try { localStorage.removeItem('seba_employee_session_demo'); } catch (e) {}
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) return sebaAuth.signOut();
+        return { ok: true };
+      },
+
+      async session() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const s = await sebaAuth.getSession();
+          return s ? { supabase: true } : null;
+        }
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      },
+
+      /* Profil complet (fiche) de l'employe connecte -- jamais lu
+         directement depuis seba_state (RLS refuse : auth.uid() de
+         l'employe != user_id du patron proprietaire de la ligne),
+         toujours via la RPC dediee. */
+      async profile() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_employee_profile', {});
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const emp = state.employes.find(e => e.id === demo.employeId);
+          if (!emp) return { ok: false, error: 'Fiche introuvable.' };
+          return { ok: true, employe: emp, account: 'demo', employe_id: emp.id };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Planning du jour (espace-terrain.html) -- interventions vivent
+         dans le blob JSONB du PATRON, RLS de seba_state interdit une
+         lecture directe pour l'auth.uid() de l'employe -- RPC dediee,
+         meme raison que profile() ci-dessus. _date fourni par
+         l'appelant (todayISOLocal(), jamais calcule serveur -- voir
+         supabase-schema.sql pour le pourquoi, piege UTC deja rencontre
+         sur ce projet). */
+      async interventionsForDate(_date) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_employee_interventions', { _date });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const interventions = state.interventions.filter(i => i.employeId === demo.employeId && i.date === _date);
+          return { ok: true, interventions };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Auto-service : l'employe change son propre mot de passe depuis
+         espace-terrain.html, a tout moment -- miroir de
+         clientPortal.setPassword() ci-dessous. */
+      async setPassword(newPassword) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          return sebaAuth.updatePassword(newPassword);
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const emp = state.employes.find(e => e.id === demo.employeId);
+          if (!emp) return { ok: false, error: 'Fiche introuvable.' };
+          emp.pwLocal = newPassword;
+          persist();
+          return { ok: true };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
     },
 
     /* ── Espace Client (2026-07-19, calque sur le modele employe le
@@ -723,30 +755,24 @@
        Meme philosophie que l'employe : le patron provisionne l'acces
        (ici, un vrai compte Supabase Auth via l'Edge Function
        client-provision.ts -- appelee depuis clients.html/client-fiche.html
-       des qu'un email est renseigne) avec un mot de passe de depart
-       '1234', le client se connecte directement et le change lui-meme
-       depuis client-espace.html (panneau "Mon mot de passe", miroir de
-       "Mon code PIN" cote terrain). Plus d'auto-inscription ouverte.
-       Difference structurelle assumee avec l'employe : l'identifiant
-       reste un EMAIL TAPE, jamais une liste deroulante -- un client
-       arrive sur un appareil qui n'a AUCUN contexte d'entreprise deja
-       authentifie (contrairement a l'employe qui badge sur l'appareil
-       DEJA connecte du patron), une liste globale de tous les clients
-       tous comptes confondus serait une fuite d'information entre
-       entreprises differentes (violerait la contrainte deja validee :
-       "aucune visibilite entre clients de patrons differents").
-       Vraie session Supabase Auth independante (contrairement a
-       l'employe) -- reutilise sebaAuth.signIn/updatePassword (deja
-       generiques), mais JAMAIS le DEMO_KEY partage de sebaAuth en mode
-       demo (seba_client_session_demo est une cle distincte, sinon un
-       patron et un client "connectes" en demo sur le meme navigateur se
-       marcheraient dessus). ── */
+       des qu'un email est renseigne) PAR INVITATION (auth.admin.
+       inviteUserByEmail) -- jamais de mot de passe impose, le client
+       choisit le sien via le lien recu (reset-password.html). Plus
+       d'auto-inscription ouverte. Authentification universelle
+       (2026-07-19) : desormais le MEME modele que l'employe
+       (employeePortal ci-dessus, structure identique) -- email tape dans
+       les deux cas, vraie session Supabase Auth independante des deux
+       cotes. Reutilise sebaAuth.signIn/updatePassword (deja generiques),
+       mais JAMAIS le DEMO_KEY partage de sebaAuth en mode demo
+       (seba_client_session_demo est une cle distincte, sinon un patron,
+       un employe et un client "connectes" en demo sur le meme navigateur
+       se marcheraient dessus). ── */
     clientPortal: {
-      /* Cree le compte de connexion (Edge Function client-provision.ts,
+      /* Invite le client par email (Edge Function client-provision.ts,
          service_role -- ne touche jamais a la session du patron qui
-         appelle) avec le mot de passe de depart '1234'. Appelee par
-         clients.html (creation) et client-fiche.html (retrofit si
-         l'email est ajoute apres coup) des qu'un email existe. */
+         appelle). Appelee par clients.html (creation) et
+         client-fiche.html (retrofit si l'email est ajoute apres coup)
+         des qu'un email existe. */
       async provision(clientId, email) {
         email = (email || '').trim().toLowerCase();
         if (!email) return { ok: false, error: 'Email requis.' };
@@ -768,8 +794,7 @@
         if (!state) loadState();
         const client = state.clients.find(c => c.id === clientId);
         if (!client) return { ok: false, error: 'Client introuvable.' };
-        client.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- jamais le chemin utilise une fois Supabase configure
-        client.pwIsDefault = true;
+        client.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- simule un mot de passe deja choisi (pas d'email reel envoye en local)
         persist();
         return { ok: true };
       },
@@ -822,20 +847,16 @@
           if (!demo) return { ok: false, error: 'Non connecté.' };
           const client = state.clients.find(c => c.id === demo.clientId);
           if (!client) return { ok: false, error: 'Fiche introuvable.' };
-          return { ok: true, client, account: 'demo', client_id: client.id, pw_is_default: !!client.pwIsDefault };
+          return { ok: true, client, account: 'demo', client_id: client.id };
         } catch (e) { return { ok: false, error: e.message }; }
       },
 
       /* Auto-service : le client change son propre mot de passe depuis
-         client-espace.html, a tout moment (miroir de SebaDB.setEmployePin
-         appele depuis espace-terrain.html). */
+         client-espace.html, a tout moment (miroir de
+         employeePortal.setPassword ci-dessus). */
       async setPassword(newPassword) {
         if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
-          const res = await sebaAuth.updatePassword(newPassword);
-          if (!res.ok) return res;
-          const mark = await sebaAuth.rpc('mark_client_password_changed', {});
-          if (mark.error) return { ok: false, error: mark.error.message };
-          return { ok: true };
+          return sebaAuth.updatePassword(newPassword);
         }
         if (!state) loadState();
         try {
@@ -845,7 +866,6 @@
           const client = state.clients.find(c => c.id === demo.clientId);
           if (!client) return { ok: false, error: 'Fiche introuvable.' };
           client.pwLocal = newPassword;
-          client.pwIsDefault = false;
           persist();
           return { ok: true };
         } catch (e) { return { ok: false, error: e.message }; }
@@ -987,7 +1007,9 @@
        (service_role) de ces lignes, pas une suppression client -- hors
        perimetre de ce refactor, a traiter dans une iteration dediee avant
        toute mise en production reelle de la synchro. Idem pour
-       employe_credentials/employe_sessions, non purgees ici. */
+       client_accounts/employe_accounts (liens de connexion, contiennent un
+       email), non purges ici -- et pour l'identite Supabase Auth du
+       client/employe invite elle-meme (necessite service_role). */
     async eraseAllData() {
       if (hasSupabase) {
         const cfg = window.SEBA_CONFIG;
