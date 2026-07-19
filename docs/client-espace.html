@@ -69,6 +69,11 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
 
 .ce-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
+
+.ce-banner{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:12px 16px;font-size:.86rem;margin-bottom:20px;color:var(--ink);}
+.ce-banner a{color:var(--danger-text);font-weight:700;}
+.ce-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.ce-pw-row input{flex:1;min-width:120px;}
 </style>
 </head>
 <body>
@@ -85,6 +90,8 @@ button,input,textarea{font-family:'Inter',sans-serif;}
     </div>
   </div>
 
+  <div class="ce-banner" id="ce-pw-banner" style="display:none;">Vous utilisez encore le mot de passe de départ. <a href="#ce-pw-panel">Changez-le maintenant →</a></div>
+
   <div class="ce-section-title">Mes demandes</div>
   <div id="ce-requests"></div>
 
@@ -95,6 +102,17 @@ button,input,textarea{font-family:'Inter',sans-serif;}
       <input type="text" class="ce-msg-input" id="ce-msg-input" placeholder="Écrire à votre prestataire..." onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
       <button class="ce-msg-send" onclick="envoyerMessagePrestataire()">Envoyer</button>
     </div>
+  </div>
+
+  <div class="ce-messaging" id="ce-pw-panel">
+    <div class="ce-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
+    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
+    <div class="ce-pw-row">
+      <input type="password" class="ce-msg-input" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6">
+      <input type="password" class="ce-msg-input" id="ce-pw-confirm" placeholder="Confirmez" minlength="6">
+    </div>
+    <button class="ce-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
+    <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
   </div>
 </div>
 
@@ -141,9 +159,42 @@ const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'T
   document.getElementById('ce-greeting').textContent = 'Bonjour ' + (client.prenom || '');
   document.getElementById('ce-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  if (_profile.pw_is_default) document.getElementById('ce-pw-banner').style.display = 'block';
+
   renderRequests();
   renderMessages();
 })();
+
+// Auto-service : le client change son propre mot de passe depuis ici, a
+// tout moment -- miroir de modifierMonPin() sur espace-terrain.html.
+async function modifierMonMotDePasse() {
+  const newPw = document.getElementById('ce-pw-new').value;
+  const confirmPw = document.getElementById('ce-pw-confirm').value;
+  const status = document.getElementById('ce-pw-status');
+  if (newPw.length < 6) {
+    status.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
+    status.style.color = 'var(--danger-text)';
+    return;
+  }
+  if (newPw !== confirmPw) {
+    status.textContent = 'Les deux mots de passe ne correspondent pas.';
+    status.style.color = 'var(--danger-text)';
+    return;
+  }
+  status.textContent = 'Enregistrement…';
+  status.style.color = '';
+  const res = await SebaDB.clientPortal.setPassword(newPw);
+  if (res.ok) {
+    status.textContent = 'Mot de passe modifié.';
+    status.style.color = 'var(--emerald)';
+    document.getElementById('ce-pw-new').value = '';
+    document.getElementById('ce-pw-confirm').value = '';
+    document.getElementById('ce-pw-banner').style.display = 'none';
+  } else {
+    status.textContent = res.error || 'Échec de la modification.';
+    status.style.color = 'var(--danger-text)';
+  }
+}
 
 async function renderRequests() {
   const box = document.getElementById('ce-requests');

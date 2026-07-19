@@ -11,14 +11,17 @@
 <!-- Page PUBLIQUE (pas de guard.js) : contrairement a l'employe (badge
      sur un appareil deja authentifie patron), le client a sa PROPRE
      session Supabase Auth independante -- rien a verifier avant d'ouvrir
-     cette page. auth.js fournit sebaAuth (signUp/signIn generiques, deja
-     utilises par connexion.html/onboarding.html, pas specifiques au
-     patron). -->
+     cette page. auth.js fournit sebaAuth (signIn generique, deja
+     utilise par connexion.html, pas specifique au patron). ── */
 <script src="auth.js"></script>
 <style>
 /* Meme systeme visuel "Encre Vivante" que connexion.html/
    employe-connexion.html (carte + halo + bordure teal qui fond dans le
-   fond) -- unite visuelle demandee explicitement. */
+   fond), et desormais meme STRUCTURE que employe-connexion.html --
+   demande explicite : "exactement le meme que employe mais en client".
+   Plus de tunnel S'inscrire : le patron provisionne l'acces (comme le
+   PIN employe), le client se connecte directement avec un mot de passe
+   de depart puis le change lui-meme (voir client-espace.html). ── */
 :root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--w-a06:rgba(255,255,255,.6);--nav-bg:rgba(10,10,12,.88);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -67,10 +70,6 @@ input,button{font-family:'Inter',sans-serif;}
 .card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:6px;}
 .card-head p{font-size:.88rem;color:var(--mist);}
 
-.mode-tabs{display:flex;gap:6px;background:var(--w-a05);border:1px solid var(--w-a08);border-radius:10px;padding:4px;margin-bottom:22px;}
-.mode-tab{flex:1;padding:8px;border:none;background:transparent;color:var(--mist);font-size:.82rem;font-weight:600;border-radius:7px;cursor:pointer;transition:background .2s,color .2s;}
-.mode-tab.active{background:var(--dt-a18);color:var(--pure-white);}
-
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
 .field label{font-size:.68rem;font-weight:600;color:var(--w-a06);letter-spacing:.03em;text-transform:uppercase;}
 .field input{
@@ -113,13 +112,18 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 
 .error-msg{font-size:.82rem;color:var(--err);background:var(--err-a07);border:1px solid var(--err-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .error-msg.visible{display:block;}
-.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
-.success-msg.visible{display:block;}
 
-.divider{border:none;border-top:1px solid var(--w-a07);margin:22px 0 16px;}
-.foot{text-align:center;font-size:.84rem;color:var(--w-a35);}
-.foot a{color:var(--db-teal);font-weight:600;transition:opacity .2s;}
-.foot a:hover{opacity:.75;}
+.divider{border:none;border-top:1px solid var(--w-a07);margin:28px 0 16px;}
+
+/* Pied de page (Retour / Mot de passe oublié) : liens texte discrets,
+   volontairement SANS bordure/fond -- meme traitement que
+   employe-connexion.html, ne rivalisent jamais avec .btn-connect. */
+.foot-links{display:flex;justify-content:center;align-items:center;gap:14px;}
+.foot-link{background:none;border:none;padding:2px;color:var(--w-a40);font-size:.78rem;font-weight:500;cursor:pointer;transition:color .2s;}
+.foot-link:hover{color:var(--db-teal);}
+.foot-sep{color:var(--w-a20);font-size:.78rem;}
+.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-top:14px;display:none;}
+.success-msg.visible{display:block;}
 
 #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
 @media(hover:none){#cursor-trail{display:none;}}
@@ -148,17 +152,11 @@ p{letter-spacing:-0.02em;}
       <p>Suivez vos demandes et échangez avec votre prestataire.</p>
     </div>
 
-    <div class="mode-tabs">
-      <button type="button" class="mode-tab active" id="tab-login" onclick="switchMode('login')">Se connecter</button>
-      <button type="button" class="mode-tab" id="tab-signup" onclick="switchMode('signup')">S'inscrire</button>
-    </div>
-
-    <div class="success-msg" id="success-msg"></div>
     <div class="error-msg" id="error-msg"></div>
 
-    <div class="field" id="email-field">
-      <label for="email">Adresse e-mail</label>
-      <input type="email" id="email" placeholder="vous@email.fr" autocomplete="email">
+    <div class="field" id="identifiant-field">
+      <label for="identifiant">Identifiant</label>
+      <input type="email" id="identifiant" placeholder="vous@email.fr" autocomplete="email">
     </div>
 
     <div class="field" id="password-field">
@@ -172,31 +170,25 @@ p{letter-spacing:-0.02em;}
       </div>
     </div>
 
-    <button class="btn-connect" id="btn-connect" onclick="handleSubmit()">
+    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">
       <span class="btn-spinner" id="btn-spinner"></span>
       <span id="btn-connect-text">Se connecter</span>
     </button>
 
+    <div class="success-msg" id="forgot-msg"></div>
+
     <hr class="divider">
 
-    <p class="foot">Vous êtes le prestataire ? <a href="connexion.html">Connexion</a></p>
+    <div class="foot-links">
+      <button type="button" class="foot-link" onclick="history.back()">Retour</button>
+      <span class="foot-sep">·</span>
+      <button type="button" class="foot-link" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
+    </div>
   </div>
 </div>
 
 <script src="seba-data.js"></script>
 <script>
-let _mode = 'login';
-
-function switchMode(mode){
-  _mode = mode;
-  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
-  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
-  document.getElementById('btn-connect-text').textContent = mode === 'login' ? 'Se connecter' : 'Créer mon accès';
-  document.getElementById('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
-  document.getElementById('error-msg').classList.remove('visible');
-  document.getElementById('success-msg').classList.remove('visible');
-}
-
 function shakeCard(){
   const card = document.querySelector('.card');
   card.classList.remove('shake');
@@ -206,17 +198,15 @@ function shakeCard(){
 
 function isValidEmailFormat(v){ return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v); }
 
-async function handleSubmit(){
-  const email = document.getElementById('email').value.trim();
+async function handleLogin(){
+  const email = document.getElementById('identifiant').value.trim();
   const password = document.getElementById('password').value;
   const err = document.getElementById('error-msg');
-  const success = document.getElementById('success-msg');
   err.classList.remove('visible');
-  success.classList.remove('visible');
 
-  if (!isValidEmailFormat(email) || password.length < 6) {
+  if (!isValidEmailFormat(email) || !password) {
     shakeCard();
-    err.textContent = 'Merci de renseigner un e-mail valide et un mot de passe (6 caractères minimum).';
+    err.textContent = 'Saisissez votre identifiant et votre mot de passe.';
     err.classList.add('visible');
     return;
   }
@@ -225,31 +215,31 @@ async function handleSubmit(){
   const btnText = document.getElementById('btn-connect-text');
   btn.classList.add('loading');
   btn.disabled = true;
-  btnText.textContent = _mode === 'login' ? 'Connexion…' : 'Création…';
+  btnText.textContent = 'Connexion…';
 
-  const res = _mode === 'login'
-    ? await SebaDB.clientPortal.login(email, password)
-    : await SebaDB.clientPortal.signup(email, password);
+  const res = await SebaDB.clientPortal.login(email, password);
 
-  if (res.ok && res.needsConfirm) {
-    success.textContent = 'Compte créé — vérifiez vos e-mails et cliquez sur le lien de confirmation, puis connectez-vous.';
-    success.classList.add('visible');
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    btnText.textContent = _mode === 'login' ? 'Se connecter' : 'Créer mon accès';
-    return;
-  }
   if (res.ok) {
     window.location.href = 'client-espace.html';
     return;
   }
 
-  err.textContent = res.error || 'Une erreur est survenue.';
+  err.textContent = res.error || 'Connexion impossible.';
   err.classList.add('visible');
   shakeCard();
   btn.classList.remove('loading');
   btn.disabled = false;
-  btnText.textContent = _mode === 'login' ? 'Se connecter' : 'Créer mon accès';
+  btnText.textContent = 'Se connecter';
+}
+
+/* Pas de flux d'auto-recuperation : seul le patron peut definir/corriger
+   l'email et provisionner un nouvel acces depuis client-fiche.html.
+   Message honnete plutot qu'un lien mort -- meme logique que
+   employe-connexion.html ("Mot de passe oublié ?"). */
+function handleForgotPassword(){
+  const el = document.getElementById('forgot-msg');
+  el.textContent = 'Demandez à votre prestataire de vérifier votre accès depuis votre fiche client.';
+  el.classList.add('visible');
 }
 
 function togglePasswordVisibility(){
@@ -260,7 +250,7 @@ function togglePasswordVisibility(){
   btn.classList.toggle('showing', showing);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement.closest('.card')) handleSubmit(); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement.closest('.card')) handleLogin(); });
 (function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
 </script>
 </body>
