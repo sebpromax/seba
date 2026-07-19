@@ -39,7 +39,8 @@
      SebaDB.setEmployePin(employeId, pin)       -> async, Edge Function employe-set-pin.ts
      SebaDB.employeLogin(employeId, pin)        -> async, Edge Function employe-auth.ts, pose la session terrain
      SebaDB.employeSession() / employeLogout()  -> lecture/effacement de la session terrain locale
-     SebaDB.clientPortal.signup/login/logout/session/profile()  -> async, vraie session Supabase Auth independante (RPC link_client_account/get_my_client_profile)
+     SebaDB.clientPortal.provision(clientId, email)             -> async, Edge Function client-provision.ts, mot de passe de depart '1234'
+     SebaDB.clientPortal.login/logout/session/profile/setPassword()  -> async, vraie session Supabase Auth independante (RPC get_my_client_profile/mark_client_password_changed)
      SebaDB.clientPortal.requests.list/create/update()          -> async, table client_requests dediee
 ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -717,49 +718,75 @@
       } catch (e) {}
     },
 
-    /* ── Espace Client (2026-07-19) ──────────────────────────────────────
-       Seul acteur avec une VRAIE session Supabase Auth independante
-       (contrairement a l'employe, badge sur l'appareil du patron -- voir
-       employeLogin ci-dessus). Reutilise sebaAuth.signUp/signIn (deja
-       generiques, pas specifiques au patron) pour la vraie session, MAIS
-       jamais sebaAuth's DEMO_KEY partage en mode demo : un patron et un
-       client "connectes" en demo sur le meme navigateur se marcheraient
-       dessus sinon. seba_client_session_demo est une cle distincte.
-       Rattachement compte<->fiche existante : RPC link_client_account
-       (recherche cross-tenant par email, SECURITY DEFINER cote serveur --
-       voir supabase-schema.sql section 33) ; en demo, meme recherche mais
-       100% locale (state.clients). ── */
+    /* ── Espace Client (2026-07-19, calque sur le modele employe le
+       2026-07-19b) ────────────────────────────────────────────────────
+       Meme philosophie que l'employe : le patron provisionne l'acces
+       (ici, un vrai compte Supabase Auth via l'Edge Function
+       client-provision.ts -- appelee depuis clients.html/client-fiche.html
+       des qu'un email est renseigne) avec un mot de passe de depart
+       '1234', le client se connecte directement et le change lui-meme
+       depuis client-espace.html (panneau "Mon mot de passe", miroir de
+       "Mon code PIN" cote terrain). Plus d'auto-inscription ouverte.
+       Difference structurelle assumee avec l'employe : l'identifiant
+       reste un EMAIL TAPE, jamais une liste deroulante -- un client
+       arrive sur un appareil qui n'a AUCUN contexte d'entreprise deja
+       authentifie (contrairement a l'employe qui badge sur l'appareil
+       DEJA connecte du patron), une liste globale de tous les clients
+       tous comptes confondus serait une fuite d'information entre
+       entreprises differentes (violerait la contrainte deja validee :
+       "aucune visibilite entre clients de patrons differents").
+       Vraie session Supabase Auth independante (contrairement a
+       l'employe) -- reutilise sebaAuth.signIn/updatePassword (deja
+       generiques), mais JAMAIS le DEMO_KEY partage de sebaAuth en mode
+       demo (seba_client_session_demo est une cle distincte, sinon un
+       patron et un client "connectes" en demo sur le meme navigateur se
+       marcheraient dessus). ── */
     clientPortal: {
-      async signup(email, password) {
+      /* Cree le compte de connexion (Edge Function client-provision.ts,
+         service_role -- ne touche jamais a la session du patron qui
+         appelle) avec le mot de passe de depart '1234'. Appelee par
+         clients.html (creation) et client-fiche.html (retrofit si
+         l'email est ajoute apres coup) des qu'un email existe. */
+      async provision(clientId, email) {
         email = (email || '').trim().toLowerCase();
-        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
-          const res = await sebaAuth.signUp(email, password);
-          if (!res.ok) return res;
-          if (res.needsConfirm) return { ok: true, needsConfirm: true };
-          const link = await sebaAuth.rpc('link_client_account', { _email: email });
-          if (link.error) return { ok: false, error: link.error.message || 'Erreur de rattachement.' };
-          if (!link.data || !link.data.ok) return { ok: false, error: (link.data && link.data.error) || 'Aucune fiche trouvée.' };
-          return { ok: true };
+        if (!email) return { ok: false, error: 'Email requis.' };
+        if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
+          try {
+            const cfg = window.SEBA_CONFIG;
+            const res = await fetch(cfg.supabaseUrl + '/functions/v1/client-provision', {
+              method: 'POST',
+              headers: adapter._headers({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({ account: adapter._accountId(), client_id: clientId, email }),
+            });
+            const respBody = await res.json().catch(() => ({}));
+            if (!res.ok) return { ok: false, error: respBody.error || ('Erreur serveur (HTTP ' + res.status + ')') };
+            return { ok: true };
+          } catch (e) {
+            return { ok: false, error: 'Connexion impossible : ' + e.message };
+          }
         }
         if (!state) loadState();
-        const client = state.clients.find(c => (c.email || '').trim().toLowerCase() === email);
-        if (!client) return { ok: false, error: 'Aucune fiche client trouvée avec cet email. Contactez votre prestataire.' };
-        try { localStorage.setItem('seba_client_session_demo', JSON.stringify({ email, clientId: client.id })); } catch (e) {}
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return { ok: false, error: 'Client introuvable.' };
+        client.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- jamais le chemin utilise une fois Supabase configure
+        client.pwIsDefault = true;
+        persist();
         return { ok: true };
       },
 
       async login(email, password) {
         email = (email || '').trim().toLowerCase();
         if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
-          const res = await sebaAuth.signIn(email, password);
-          if (!res.ok) return res;
-          // Rattache si pas deja fait (ex: confirmation email differee au
-          // signup) -- idempotent, already_linked:true sinon.
-          const link = await sebaAuth.rpc('link_client_account', { _email: email });
-          if (link.data && !link.data.ok) return { ok: false, error: link.data.error };
-          return { ok: true };
+          return sebaAuth.signIn(email, password);
         }
-        return SebaDB.clientPortal.signup(email, password); // demo : meme recherche, pas de vrai mot de passe a verifier
+        if (!state) loadState();
+        const client = state.clients.find(c => (c.email || '').trim().toLowerCase() === email);
+        if (!client || !client.pwLocal) {
+          return { ok: false, error: 'Identifiants invalides.' }; // generique -- meme logique anti-enumeration que le PIN employe
+        }
+        if (client.pwLocal !== password) return { ok: false, error: 'Identifiants invalides.' };
+        try { localStorage.setItem('seba_client_session_demo', JSON.stringify({ email, clientId: client.id })); } catch (e) {}
+        return { ok: true };
       },
 
       async logout() {
@@ -795,7 +822,32 @@
           if (!demo) return { ok: false, error: 'Non connecté.' };
           const client = state.clients.find(c => c.id === demo.clientId);
           if (!client) return { ok: false, error: 'Fiche introuvable.' };
-          return { ok: true, client, account: 'demo', client_id: client.id };
+          return { ok: true, client, account: 'demo', client_id: client.id, pw_is_default: !!client.pwIsDefault };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Auto-service : le client change son propre mot de passe depuis
+         client-espace.html, a tout moment (miroir de SebaDB.setEmployePin
+         appele depuis espace-terrain.html). */
+      async setPassword(newPassword) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.updatePassword(newPassword);
+          if (!res.ok) return res;
+          const mark = await sebaAuth.rpc('mark_client_password_changed', {});
+          if (mark.error) return { ok: false, error: mark.error.message };
+          return { ok: true };
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_client_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const client = state.clients.find(c => c.id === demo.clientId);
+          if (!client) return { ok: false, error: 'Fiche introuvable.' };
+          client.pwLocal = newPassword;
+          client.pwIsDefault = false;
+          persist();
+          return { ok: true };
         } catch (e) { return { ok: false, error: e.message }; }
       },
 
