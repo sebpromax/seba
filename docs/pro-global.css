@@ -12,6 +12,13 @@
    est desormais la source de verite. */
 @import url('src/ui/theme.css');
 
+/* ── 1bis. Anti-scroll horizontal parasite (cahier des charges mobile
+   2026-07-19) ── */
+/* Ne bloque pas les conteneurs a scroll horizontal INTENTIONNEL (ex.
+   .table-wrap{overflow-x:auto}, section 13 plus bas) : overflow-x:hidden
+   ici ne s'applique qu'a html/body eux-memes, jamais a leurs enfants. */
+html, body { overflow-x: hidden; }
+
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */
 button,
 .btn,
@@ -26,7 +33,12 @@ button,
     box-shadow       var(--t-std) var(--ease-std),
     transform        var(--t-fast) var(--ease-out);
 }
-button:hover,  .btn:hover,  [class*="btn-"]:hover { transform: translateY(-1px); }
+/* Hover gardé derrière @media(hover:hover) : sur tactile, :hover se
+   déclenche au tap et reste "collé" jusqu'au tap suivant -- :active
+   (juste en dessous, jamais gardé) donne le retour visuel au doigt. */
+@media (hover: hover) {
+  button:hover,  .btn:hover,  [class*="btn-"]:hover { transform: translateY(-1px); }
+}
 button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) scale(0.98); }
 
 /* ── 2bis. Bandeau d'identité fixe (nom + secteur) ──────────────────────────
@@ -160,9 +172,11 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
     opacity           var(--t-fast) var(--ease-std),
     border-color      var(--t-fast) var(--ease-std);
 }
-.sidebar .nav-item:hover {
-  background-color: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.9);
+@media (hover: hover) {
+  .sidebar .nav-item:hover {
+    background-color: var(--sidebar-hover-bg);
+    color: var(--sidebar-hover-ink);
+  }
 }
 .sidebar .nav-item:active { opacity: .75; } /* pression : fondu, jamais un changement de forme */
 /* Repère "rail tactique" : une fine barre à gauche plutôt qu'un fond teinté —
@@ -196,7 +210,9 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   opacity: 0;
   transition: opacity var(--t-fast) var(--ease-std);
 }
-.sidebar .nav-item:hover .nav-shortcut { opacity: 1; }
+@media (hover: hover) {
+  .sidebar .nav-item:hover .nav-shortcut { opacity: 1; }
+}
 
 /* Grand espace entre les opérations (Principal) et le reste (Équipe/Compte/Découvrir) */
 .sidebar .nav-group-gap { margin-top: 14px; }
@@ -309,15 +325,27 @@ textarea:focus {
     background-color var(--t-fast) var(--ease-std),
     box-shadow       var(--t-std)  var(--ease-std);
 }
-.client-row:hover,
-.client-card:hover,
-.employe-card:hover,
-.fiche-card:hover,
-.event-row:hover,
-.table-row:hover { background-color: rgba(0,255,157,.04) !important; }
+@media (hover: hover) {
+  .client-row:hover,
+  .client-card:hover,
+  .employe-card:hover,
+  .fiche-card:hover,
+  .event-row:hover,
+  .table-row:hover { background-color: var(--row-hover-bg) !important; }
 
+  tbody tr:hover { background-color: var(--tbody-hover-bg); }
+}
+@media (hover: none) {
+  .client-row:active,
+  .client-card:active,
+  .employe-card:active,
+  .fiche-card:active,
+  .event-row:active,
+  .table-row:active { background-color: var(--row-active-bg) !important; }
+
+  tbody tr:active { background-color: var(--tbody-active-bg); }
+}
 tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
-tbody tr:hover { background-color: rgba(0,255,157,.03); }
 
 /* ── 7. Modules / Cards — hover cohérent ────────────────────────────────── */
 .module,
@@ -328,10 +356,12 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
     border-color var(--t-std) var(--ease-std),
     box-shadow   var(--t-std) var(--ease-std);
 }
-.module:hover,
-.metric-card:hover {
-  box-shadow: var(--shadow-glow);
-  border-color: rgba(0,255,157,.4);
+@media (hover: hover) {
+  .module:hover,
+  .metric-card:hover {
+    box-shadow: var(--shadow-glow);
+    border-color: var(--module-hover-border);
+  }
 }
 
 /* ── 98. Mobile safety overrides (site-wide) ───────────────────────────── */
@@ -353,6 +383,24 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
   .btn-em, .btn { width: 100% !important; max-width: 420px !important; margin-left: auto !important; margin-right: auto !important; }
   /* Hide decorative globes or heavy visuals if present */
   .globe-wrap, .ob-globe-panel, .globe-panel, .phone-device, .phone-screen { display: none !important; }
+
+  /* Exception au CTA full-width ci-dessus : un .btn-em a cote d'un champ
+     dans une rangee flex (ex. .msg-input-row d'un panneau de messagerie
+     -- client-fiche.html/employe-fiche.html) n'est PAS un CTA marketing
+     isole. Meme classe de bug que le cas deja documente (CLAUDE.md,
+     "barre d'outils a plusieurs boutons") : width:100%!important force
+     le bouton a occuper toute la largeur de la rangee, ecrasant le champ
+     texte a cote et poussant le bouton hors de l'ecran. Cible tactile
+     >= 48px conservee, mais taille au contenu, pas a 100%. */
+  .msg-input-row .btn-em,
+  .msg-input-row input,
+  .demande-controls .btn-em {
+    width: auto !important;
+    flex-shrink: 0;
+  }
+  .msg-input-row input,
+  .msg-input { min-width: 0; font-size: 16px; min-height: 48px; }
+  .msg-input-row .btn-em { min-height: 48px; }
 }
 
 
@@ -451,7 +499,7 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
   background: var(--emerald);
 }
 .hamburger {
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 5px;
   cursor: pointer;
@@ -467,7 +515,8 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
   border-radius: 99px;
   display: block;
 }
-.hamburger:hover { border-color: var(--ink); }
+@media (hover: hover) { .hamburger:hover { border-color: var(--ink); } }
+@media (hover: none)  { .hamburger:active { border-color: var(--ink); opacity: .8; } }
 
 /* Overlay (fermer la sidebar mobile en cliquant dehors) */
 .sidebar-overlay {
@@ -504,10 +553,36 @@ tbody tr:hover { background-color: rgba(0,255,157,.03); }
     box-shadow: 4px 0 24px rgba(0,0,0,.12);
   }
 
-  .mobile-header { display: flex !important; }
+  .mobile-header {
+    display: flex !important;
+    padding-top: calc(13px + env(safe-area-inset-top, 0px));
+  }
 
   .main,
-  .page-main { padding: 20px 16px 48px !important; }
+  .page-main {
+    padding: 20px 16px calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Cibles tactiles >= 48px + espacement >= 16px (cahier des charges
+     mobile 2026-07-19). Le rail desktop reste a 40px (densite visuelle
+     voulue en usage souris) -- uniquement releve sous ce seuil, jamais en
+     desktop. */
+  .sidebar .nav-item,
+  .sidebar .nav-item:hover,
+  .sidebar .nav-item:active,
+  .sidebar .nav-item.active,
+  .sidebar .nav-item:focus-visible { min-height: 48px; }
+
+  /* iOS zoome automatiquement au focus sur tout champ < 16px. */
+  input, select, textarea { font-size: 16px !important; -webkit-appearance: none; appearance: none; }
+
+  /* Pas de min-height:48px generique sur button/.btn/[class*="btn-"] ici :
+     cette classe de regle globale a deja casse une barre d'outils par le
+     passe quand appliquee sans verifier chaque page (CLAUDE.md, "Leçons
+     apprises" -- .btn-em width:100%). Les boutons/toggles concretement
+     verifies sous 48px sur mobile sont corriges au cas par cas
+     (.hamburger ci-dessus, .msg-input-row .btn-em plus bas, .sidebar
+     .nav-item ci-dessus) plutot qu'un forçage aveugle. */
 }
 
 @media (min-width: 841px) {

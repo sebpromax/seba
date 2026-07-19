@@ -41,6 +41,13 @@
   --ink-inverse: #fff;         /* texte sur ces surfaces toujours sombres */
   --on-emerald: #031A12;       /* texte/icônes sur un fond émeraude vif (boutons, FAB, avatar) */
   --accent-glow: #8B5CF6;      /* violet d'accent — dégradés décoratifs (ex: liseré de la checklist) */
+
+  /* Sidebar : rail TOUJOURS sombre quel que soit le thème de la page
+     (voir pro-global.css, ".sidebar" -- "rail de navigation toujours
+     sombre") -- ces deux tokens vivent donc hors des blocs dark/light,
+     jamais dupliqués. */
+  --sidebar-hover-bg:  rgba(255,255,255,.06);
+  --sidebar-hover-ink: rgba(255,255,255,.9);
 }
 
 /* ── 1b. Thème — Tactical Dark (defaut) / Audit Light ───────────────────── */
@@ -74,6 +81,13 @@
   --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
   --shadow-glow: 0 0 0 1px rgba(0,255,157,.28), 0 4px 24px rgba(0,255,157,.14);
   --grain-opacity: .035;
+
+  /* Lignes/cartes/modules — teinte de survol et de pression (:hover / :active) */
+  --row-hover-bg:      rgba(0,255,157,.04);
+  --row-active-bg:     rgba(0,255,157,.06);
+  --tbody-hover-bg:    rgba(0,255,157,.03);
+  --tbody-active-bg:   rgba(0,255,157,.05);
+  --module-hover-border: rgba(0,255,157,.4);
 }
 
 [data-theme="light"] {
@@ -104,4 +118,11 @@
   --shadow-lg: 0 16px 48px rgba(0,0,0,.16);
   --shadow-glow: 0 0 0 1px rgba(0,153,107,.25), 0 4px 24px rgba(0,153,107,.12);
   --grain-opacity: 0;
+
+  /* Lignes/cartes/modules — teinte de survol et de pression (:hover / :active) */
+  --row-hover-bg:      rgba(0,153,107,.04);
+  --row-active-bg:     rgba(0,153,107,.06);
+  --tbody-hover-bg:    rgba(0,153,107,.03);
+  --tbody-active-bg:   rgba(0,153,107,.05);
+  --module-hover-border: rgba(0,153,107,.4);
 }
