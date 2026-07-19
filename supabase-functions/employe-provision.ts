@@ -1,23 +1,23 @@
 // ═══════════════════════════════════════════════════════════════
-// SEBA — Provisionnement du compte de connexion d'un client (authentification
-// universelle, 2026-07-19).
+// SEBA — Provisionnement du compte de connexion d'un employé (authentification
+// universelle, 2026-07-19 — remplace le modèle PIN/badge-sur-appareil-
+// patron d'employe-auth.ts/employe-set-pin.ts, retirées).
 //
-// Le patron crée la fiche client (clients.html, champ email), cette
-// fonction INVITE le client par email (auth.admin.inviteUserByEmail) --
-// jamais de mot de passe imposé : le client choisit lui-même le sien en
-// cliquant le lien reçu, qui le redirige vers reset-password.html
-// (même page que "mot de passe oublié", même flux de session Supabase
-// -- un lien d'invitation établit une session comme un lien de
-// récupération). Miroir exact de employe-provision.ts.
+// Le patron crée la fiche employé (equipe.html, champ email), cette
+// fonction INVITE l'employé par email (auth.admin.inviteUserByEmail) --
+// jamais de mot de passe imposé : l'employé choisit lui-même le sien en
+// cliquant le lien reçu (reset-password.html). Miroir exact de
+// client-provision.ts -- seule différence : lie employe_accounts au lieu
+// de client_accounts.
 //
 // Pourquoi une Edge Function et pas un appel direct depuis le navigateur
-// du patron : supabase.auth.signUp()/inviteUserByEmail() côté client
-// REMPLACERAIT la session active du navigateur -- appelé depuis le poste
-// du patron, ça le déconnecterait de son propre compte. auth.admin.*
-// (service_role, jamais exposé au navigateur) crée/invite le compte SANS
-// jamais toucher à la session du patron.
+// du patron : auth.admin.inviteUserByEmail() côté client REMPLACERAIT la
+// session active du navigateur -- appelé depuis le poste du patron, ça
+// le déconnecterait de son propre compte. auth.admin.* (service_role,
+// jamais exposé au navigateur) invite le compte SANS jamais toucher à la
+// session du patron.
 //
-// Body attendu : { account, client_id, email }
+// Body attendu : { account, employe_id, email }
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -63,33 +63,33 @@ Deno.serve(async (req) => {
   const callerUid = verifyUser(req);
   if (!callerUid) return jsonResponse(cors, { error: 'Authentification requise' }, 401);
 
-  let body: { account?: string; client_id?: string; email?: string };
+  let body: { account?: string; employe_id?: string; email?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse(cors, { error: 'JSON invalide' }, 400);
   }
-  const { account, client_id, email } = body;
-  if (!account || !client_id || !email) {
+  const { account, employe_id, email } = body;
+  if (!account || !employe_id || !email) {
     return jsonResponse(cors, { error: 'Paramètres manquants' }, 400);
   }
   const emailLower = email.trim().toLowerCase();
 
-  // Même garde-fou que employe-provision.ts : le caller doit être le
+  // Même garde-fou que client-provision.ts : le caller doit être le
   // PROPRIÉTAIRE du compte visé, sinon un JWT valide sur N'IMPORTE QUEL
-  // compte suffirait à inviter des accès pour les clients d'un AUTRE
+  // compte suffirait à inviter des accès pour les employés d'un AUTRE
   // patron.
   const { data: owner } = await supabase.from('seba_state').select('user_id').eq('account', account).maybeSingle();
   if (!owner || owner.user_id !== callerUid) {
     return jsonResponse(cors, { error: 'Compte introuvable ou non autorisé' }, 403);
   }
 
-  // Deja provisionne ? (retrofit d'un client existant, ou double-appel) --
-  // idempotent, ne renvoie jamais une 2e invitation pour ce client_id.
+  // Deja provisionne ? (retrofit d'un employe existant, ou double-appel) --
+  // idempotent, ne renvoie jamais une 2e invitation pour cet employe_id.
   const { data: existingLink } = await supabase
-    .from('client_accounts')
-    .select('client_user_id')
-    .match({ account, client_id })
+    .from('employe_accounts')
+    .select('employe_user_id')
+    .match({ account, employe_id })
     .maybeSingle();
   if (existingLink) {
     return jsonResponse(cors, { ok: true, already_provisioned: true });
@@ -101,8 +101,6 @@ Deno.serve(async (req) => {
   });
 
   if (inviteError) {
-    // Email deja utilise ailleurs dans le systeme (un autre compte
-    // Supabase Auth existe deja) -- message honnete, pas une 500 opaque.
     if (String(inviteError.message || '').toLowerCase().includes('already')) {
       return jsonResponse(cors, { error: 'Cet email est déjà associé à un compte existant.' }, 409);
     }
@@ -115,8 +113,8 @@ Deno.serve(async (req) => {
     return jsonResponse(cors, { error: 'Erreur serveur' }, 500);
   }
 
-  const { error: linkError } = await supabase.from('client_accounts').insert({
-    client_user_id: newUserId, account, client_id, email: emailLower,
+  const { error: linkError } = await supabase.from('employe_accounts').insert({
+    employe_user_id: newUserId, account, employe_id, email: emailLower,
   });
   if (linkError) {
     console.error(linkError);

@@ -6,10 +6,13 @@
 // par une via apply_entity_patch() (atomique, verrouillage par ligne côté
 // Postgres), journalise chacune dans sync_operations, et acquitte.
 //
-// Double voie d'authentification :
-//   - Authorization: Bearer <jwt patron>  -> écriture directe, employee_id null.
-//   - X-Employee-Token: <token>           -> résolu via employe_sessions,
-//     account + employee_id dérivés de la session (jamais déclarés par le client).
+// Authentification : Authorization: Bearer <jwt patron> uniquement.
+// L'ancienne 2e voie (X-Employee-Token -> employe_sessions, PIN badge sur
+// l'appareil patron) est retirée avec le modèle PIN (authentification
+// universelle, 2026-07-19) : employe_sessions n'existe plus. employee_id
+// reste dans sync_operations (colonne legacy, toujours null désormais --
+// voir supabase-schema.sql) car aucune UI employé ne pousse d'écriture via
+// ce chemin de toute façon (lecture seule + messagerie via RPC dédiées).
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -27,7 +30,7 @@ function corsHeaders(req: Request) {
   const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-employee-token',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }
@@ -70,41 +73,9 @@ interface OpResult {
 
 const VALID_ENTITIES = new Set(['clients', 'devis', 'factures', 'interventions', 'employes', 'journal']);
 
-/* Résout account + employee_id à partir des deux voies d'auth possibles.
-   PRIORITÉ à X-Employee-Token quand il est présent : sur une tablette
-   partagée, l'appareil reste authentifié comme le patron (JWT Supabase)
-   PENDANT que le PIN identifie l'employé du moment -- les deux en-têtes
-   sont donc présents simultanément dans le cas réel. Vérifier le JWT en
-   premier attribuerait alors TOUJOURS l'opération au patron, ce qui
-   annule l'intérêt de la couche PIN (traçabilité par employé). Le JWT
-   patron ne sert de repli que lorsqu'aucun employé n'est identifié sur
-   l'appareil (le patron utilise le dashboard lui-même). */
+/* Résout account + user_id à partir du JWT patron. Seul le patron pousse
+   des écritures via ce chemin (voir commentaire d'en-tête). */
 async function resolveIdentity(req: Request): Promise<{ account: string; user_id: string; employee_id: string | null } | null> {
-  const employeeToken = req.headers.get('x-employee-token');
-
-  if (employeeToken) {
-    const { data: session } = await supabase
-      .from('employe_sessions')
-      .select('account, employe_id')
-      .match({ token: employeeToken, revoked: false })
-      .gt('expires_at', new Date().toISOString())
-      .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
-      .maybeSingle();
-    if (session) {
-      const { data: owner } = await supabase
-        .from('seba_state')
-        .select('user_id')
-        .eq('account', session.account)
-        .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
-        .maybeSingle();
-      if (owner) return { account: session.account, user_id: owner.user_id, employee_id: session.employe_id };
-    }
-    // Token employé présent mais invalide/expiré : ne PAS retomber
-    // silencieusement sur le JWT patron (masquerait un problème de session
-    // employé réel) -- échec net, l'appareil doit redemander un PIN.
-    return null;
-  }
-
   const callerUid = verifyUser(req);
   if (callerUid) {
     const { data } = await supabase
