@@ -26,6 +26,10 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-wrap{max-width:680px;margin:0 auto;padding:24px 20px 60px;padding-bottom:max(60px, calc(20px + env(safe-area-inset-bottom, 0px)));}
 
 .ce-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
+.ce-brand{display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;letter-spacing:-0.03em;width:100%;margin-bottom:8px;}
+.ce-brand-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);flex-shrink:0;}
+.ce-brand .b-se{color:var(--ink);}
+.ce-brand .b-ba{font-weight:300;color:var(--text-2);}
 .ce-greeting h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
 .ce-greeting p{font-size:.86rem;color:var(--text-2);}
 .ce-actions{display:flex;gap:10px;flex-wrap:wrap;}
@@ -41,17 +45,26 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 }
 
 .ce-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
+.ce-section-title.ce-section-title-2{margin-top:32px;}
 
-.ce-request{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;}
+.ce-request-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+.ce-request{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;transition:border-color var(--t-std,.25s) var(--ease-std,ease),box-shadow var(--t-std,.25s) var(--ease-std,ease);}
+@media (hover: hover) {
+  .ce-request:hover{border-color:var(--module-hover-border);box-shadow:var(--shadow-glow);}
+}
+@media (hover: none) {
+  .ce-request:active{border-color:var(--module-hover-border);}
+}
 .ce-request-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
 .ce-request-title{font-weight:600;font-size:.96rem;}
 .ce-badge{font-size:.72rem;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--text-2);}
+.ce-badge.nouvelle{background:var(--badge-info-bg);color:var(--text-2);}
 .ce-badge.en_cours{background:var(--badge-success-bg);color:var(--emerald);}
 .ce-badge.terminee{background:var(--bg);color:var(--text-2);}
 .ce-badge.annulee{background:var(--danger-bg);color:var(--danger-text);}
 .ce-request-meta{font-size:.82rem;color:var(--text-2);}
 
-.ce-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
+.ce-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);grid-column:1/-1;}
 
 .ce-messaging{margin-top:32px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
 .ce-msg-thread{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
@@ -87,12 +100,36 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   .ce-actions{gap:12px;}
   .ce-header{gap:12px;}
 }
+
+/* ── Tablette/Desktop : grille (cahier des charges "adaptation
+   multi-supports stricte", 2026-07-19) ── */
+@media (min-width: 640px) {
+  /* Cartes de demandes sur plusieurs colonnes des que la largeur le
+     permet -- auto-fill+minmax : jamais moins de 260px par carte, donc
+     jamais de debordement meme si le nombre de colonnes change. */
+  .ce-request-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
+}
+@media (min-width: 900px) {
+  .ce-wrap{max-width:1100px;padding-left:32px;padding-right:32px;}
+  .ce-brand{width:auto;margin-bottom:0;margin-right:auto;order:-1;}
+  .ce-header{align-items:center;}
+
+  /* Colonne principale (demandes en cours + historique) + colonne
+     laterale (messagerie + mot de passe), cote a cote -- minmax(0,1fr)
+     jamais 1fr seul (piste de grille qui grandit au-dela du viewport,
+     voir CLAUDE.md "Lecons apprises"). */
+  .ce-main-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:28px;align-items:start;}
+  .ce-col-side{position:sticky;top:24px;}
+  .ce-col-side .ce-messaging{margin-top:0;}
+  .ce-col-side .ce-messaging + .ce-messaging{margin-top:20px;}
+}
 </style>
 </head>
 <body>
 
 <div class="ce-wrap" id="ce-wrap" style="display:none;">
   <div class="ce-header">
+    <div class="ce-brand" aria-hidden="true"><span class="ce-brand-dot"></span><span><span class="b-se">Se</span><span class="b-ba">ba</span></span></div>
     <div class="ce-greeting">
       <h1 id="ce-greeting">Bonjour</h1>
       <p id="ce-date"></p>
@@ -103,27 +140,36 @@ button,input,textarea{font-family:'Inter',sans-serif;}
     </div>
   </div>
 
-  <div class="ce-section-title">Mes demandes</div>
-  <div id="ce-requests"></div>
+  <div class="ce-main-grid">
+    <div class="ce-col-main">
+      <div class="ce-section-title">Mes demandes en cours</div>
+      <div id="ce-requests-active" class="ce-request-grid"></div>
 
-  <div class="ce-messaging">
-    <div class="ce-section-title" style="margin-bottom:14px;">Messages</div>
-    <div class="ce-msg-thread" id="ce-msg-thread"></div>
-    <div class="ce-msg-row">
-      <input type="text" class="ce-msg-input" id="ce-msg-input" placeholder="Écrire à votre prestataire..." onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
-      <button class="ce-msg-send" onclick="envoyerMessagePrestataire()">Envoyer</button>
+      <div class="ce-section-title ce-section-title-2">Historique</div>
+      <div id="ce-requests-history" class="ce-request-grid"></div>
     </div>
-  </div>
 
-  <div class="ce-messaging" id="ce-pw-panel">
-    <div class="ce-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
-    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
-    <div class="ce-pw-row">
-      <input type="password" class="ce-msg-input" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6">
-      <input type="password" class="ce-msg-input" id="ce-pw-confirm" placeholder="Confirmez" minlength="6">
+    <div class="ce-col-side">
+      <div class="ce-messaging">
+        <div class="ce-section-title" style="margin-bottom:14px;">Messages</div>
+        <div class="ce-msg-thread" id="ce-msg-thread"></div>
+        <div class="ce-msg-row">
+          <input type="text" class="ce-msg-input" id="ce-msg-input" placeholder="Écrire à votre prestataire..." onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
+          <button class="ce-msg-send" onclick="envoyerMessagePrestataire()">Envoyer</button>
+        </div>
+      </div>
+
+      <div class="ce-messaging" id="ce-pw-panel">
+        <div class="ce-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
+        <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
+        <div class="ce-pw-row">
+          <input type="password" class="ce-msg-input" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6">
+          <input type="password" class="ce-msg-input" id="ce-pw-confirm" placeholder="Confirmez" minlength="6">
+        </div>
+        <button class="ce-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
+        <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
+      </div>
     </div>
-    <button class="ce-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
-    <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
   </div>
 </div>
 
@@ -208,22 +254,31 @@ async function modifierMonMotDePasse() {
   }
 }
 
-async function renderRequests() {
-  const box = document.getElementById('ce-requests');
-  const requests = await SebaDB.clientPortal.requests.list(_profile.account, _profile.client_id);
-  if (!requests.length) {
-    box.innerHTML = '<div class="ce-empty">Aucune demande pour l\'instant. Cliquez sur "+ Nouvelle demande" pour en créer une.</div>';
-    return;
-  }
-  box.innerHTML = requests.map(r => (
-    '<div class="ce-request">' +
+function renderRequestCard(r) {
+  return '<div class="ce-request">' +
       '<div class="ce-request-top">' +
         '<span class="ce-request-title">' + escapeHtml(r.titre) + '</span>' +
         '<span class="ce-badge ' + escapeHtml(r.statut) + '">' + (STATUT_LABELS[r.statut] || r.statut) + '</span>' +
       '</div>' +
       '<div class="ce-request-meta">' + (r.intervenantNom ? 'Intervenant : ' + escapeHtml(r.intervenantNom) : 'Pas encore assignée') + '</div>' +
-    '</div>'
-  )).join('');
+    '</div>';
+}
+
+async function renderRequests() {
+  const activeBox = document.getElementById('ce-requests-active');
+  const historyBox = document.getElementById('ce-requests-history');
+  const requests = await SebaDB.clientPortal.requests.list(_profile.account, _profile.client_id);
+
+  const active = requests.filter(r => r.statut === 'nouvelle' || r.statut === 'en_cours');
+  const history = requests.filter(r => r.statut === 'terminee' || r.statut === 'annulee');
+
+  activeBox.innerHTML = active.length
+    ? active.map(renderRequestCard).join('')
+    : '<div class="ce-empty">Aucune demande en cours. Cliquez sur "+ Nouvelle demande" pour en créer une.</div>';
+
+  historyBox.innerHTML = history.length
+    ? history.map(renderRequestCard).join('')
+    : '<div class="ce-empty">Aucun historique pour l\'instant.</div>';
 }
 
 function openNewRequestModal() {
