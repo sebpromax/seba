@@ -879,26 +879,34 @@
            clientPortal.profile().account, distinct de son propre
            auth.uid()) ; le patron peut l'omettre, il retombe alors sur
            adapter._accountId() (correct pour LUI -- meme defaut que
-           messages.send/list plus haut). */
+           messages.send/list plus haut).
+           clientId optionnel : omis, renvoie TOUTES les demandes du
+           compte (patron uniquement -- assignation.html, "Tour de
+           controle") ; fourni, filtre sur un client precis (client-fiche.html,
+           client-espace.html). RLS client_requests_select autorise deja
+           le patron a lire toutes les lignes de son account. */
         async list(account, clientId) {
           if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
             try {
               const cfg = window.SEBA_CONFIG;
               account = account || adapter._accountId();
-              const url = cfg.supabaseUrl + '/rest/v1/client_requests?account=eq.' + encodeURIComponent(account) + '&client_id=eq.' + encodeURIComponent(clientId) + '&order=created_at.desc';
+              let url = cfg.supabaseUrl + '/rest/v1/client_requests?account=eq.' + encodeURIComponent(account);
+              if (clientId) url += '&client_id=eq.' + encodeURIComponent(clientId);
+              url += '&order=created_at.desc';
               const res = await fetch(url, { headers: adapter._headers() });
               if (res.ok) {
                 const rows = await res.json();
                 return rows.map(r => ({
                   id: r.id, clientId: r.client_id, titre: r.titre, statut: r.statut,
-                  intervenantId: r.intervenant_id, intervenantNom: r.intervenant_nom, createdAt: r.created_at,
+                  intervenantId: r.intervenant_id, intervenantNom: r.intervenant_nom,
+                  interventionId: r.intervention_id, createdAt: r.created_at,
                 }));
               }
               console.warn('[seba-data] lecture demandes distante en echec (HTTP ' + res.status + ') — repli local.');
             } catch (e) { console.warn('[seba-data] lecture demandes distante impossible (reseau)', e.message); }
           }
           if (!state) loadState();
-          return state.clientRequests.filter(r => r.clientId === clientId);
+          return state.clientRequests.filter(r => !clientId || r.clientId === clientId);
         },
         async create(account, clientId, titre) {
           if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
@@ -918,14 +926,15 @@
             } catch (e) { console.warn('[seba-data] creation demande distante impossible (reseau)', e.message); }
           }
           if (!state) loadState();
-          const item = { id: uid(), clientId, titre, statut: 'nouvelle', intervenantId: null, intervenantNom: null, createdAt: todayISO(0) };
+          const item = { id: uid(), clientId, titre, statut: 'nouvelle', intervenantId: null, intervenantNom: null, interventionId: null, createdAt: todayISO(0) };
           state.clientRequests.unshift(item);
           persist();
           return item;
         },
-        /* Cote patron uniquement (client-fiche.html) : assigner un
-           intervenant / changer le statut. RLS client_requests_update
-           n'autorise que le proprietaire du compte (voir schema). */
+        /* Cote patron uniquement (client-fiche.html, assignation.html) :
+           assigner un intervenant / changer le statut / relier la
+           mission creee. RLS client_requests_update n'autorise que le
+           proprietaire du compte (voir schema). */
         async update(requestId, patch) {
           if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
             try {
@@ -934,6 +943,7 @@
               if (patch.statut !== undefined) body.statut = patch.statut;
               if (patch.intervenantId !== undefined) body.intervenant_id = patch.intervenantId;
               if (patch.intervenantNom !== undefined) body.intervenant_nom = patch.intervenantNom;
+              if (patch.interventionId !== undefined) body.intervention_id = patch.interventionId;
               body.updated_at = new Date().toISOString();
               const res = await fetch(cfg.supabaseUrl + '/rest/v1/client_requests?id=eq.' + encodeURIComponent(requestId), {
                 method: 'PATCH',
