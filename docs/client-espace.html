@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Espace Client — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page PRIVEE mais PAS guard.js : contrairement a l'espace terrain
+     (badge sur l'appareil patron), le client a sa PROPRE session
+     Supabase Auth independante -- la verification se fait plus bas via
+     SebaDB.clientPortal.session()/profile(), pas via un pre-requis de
+     session patron sur cet appareil. -->
+<script src="auth.js"></script>
+<style>
+:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button,input,textarea{font-family:'Inter',sans-serif;}
+
+.ce-wrap{max-width:680px;margin:0 auto;padding:24px 20px 60px;}
+
+.ce-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
+.ce-greeting h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
+.ce-greeting p{font-size:.86rem;color:var(--text-2);}
+.ce-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.ce-btn-new{background:var(--emerald);color:var(--on-emerald);border:none;padding:10px 18px;border-radius:var(--rs);font-size:.86rem;font-weight:700;cursor:pointer;}
+.ce-btn-new:hover{opacity:.9;}
+.ce-logout{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);padding:10px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+.ce-logout:hover{opacity:.85;}
+
+.ce-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
+
+.ce-request{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;}
+.ce-request-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
+.ce-request-title{font-weight:600;font-size:.96rem;}
+.ce-badge{font-size:.72rem;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--text-2);}
+.ce-badge.en_cours{background:var(--badge-success-bg);color:var(--emerald);}
+.ce-badge.terminee{background:var(--bg);color:var(--text-2);}
+.ce-badge.annulee{background:var(--danger-bg);color:var(--danger-text);}
+.ce-request-meta{font-size:.82rem;color:var(--text-2);}
+
+.ce-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
+
+.ce-messaging{margin-top:32px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
+.ce-msg-thread{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.ce-msg-bubble{background:var(--bg);border-radius:10px;padding:9px 12px;font-size:.86rem;}
+.ce-msg-meta{font-size:.72rem;color:var(--text-2);margin-top:3px;}
+.ce-msg-empty{font-size:.84rem;color:var(--text-2);text-align:center;padding:12px 0;}
+.ce-msg-row{display:flex;gap:8px;}
+.ce-msg-input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;}
+.ce-msg-input:focus{border-color:var(--emerald);outline:none;}
+.ce-msg-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;}
+
+.ce-modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.ce-modal-overlay.open{display:flex;}
+.ce-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:380px;}
+.ce-modal h3{font-size:1rem;margin-bottom:4px;}
+.ce-modal p{font-size:.82rem;color:var(--text-2);margin-bottom:14px;}
+.ce-modal input{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.9rem;margin-bottom:14px;font-family:'Inter',sans-serif;}
+.ce-modal input:focus{border-color:var(--emerald);outline:none;}
+.ce-modal-actions{display:flex;gap:10px;}
+.ce-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;}
+.ce-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
+.ce-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
+
+.ce-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<div class="ce-wrap" id="ce-wrap" style="display:none;">
+  <div class="ce-header">
+    <div class="ce-greeting">
+      <h1 id="ce-greeting">Bonjour</h1>
+      <p id="ce-date"></p>
+    </div>
+    <div class="ce-actions">
+      <button class="ce-btn-new" onclick="openNewRequestModal()">+ Nouvelle demande</button>
+      <button class="ce-logout" onclick="handleLogout()">Se déconnecter</button>
+    </div>
+  </div>
+
+  <div class="ce-section-title">Mes demandes</div>
+  <div id="ce-requests"></div>
+
+  <div class="ce-messaging">
+    <div class="ce-section-title" style="margin-bottom:14px;">Messages</div>
+    <div class="ce-msg-thread" id="ce-msg-thread"></div>
+    <div class="ce-msg-row">
+      <input type="text" class="ce-msg-input" id="ce-msg-input" placeholder="Écrire à votre prestataire..." onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
+      <button class="ce-msg-send" onclick="envoyerMessagePrestataire()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<div class="ce-loading" id="ce-loading">Chargement…</div>
+
+<div class="ce-modal-overlay" id="ce-modal-overlay">
+  <div class="ce-modal">
+    <h3>Nouvelle demande</h3>
+    <p>Décrivez brièvement ce dont vous avez besoin.</p>
+    <input type="text" id="ce-modal-titre" placeholder="Ex: Ménage supplémentaire cette semaine" maxlength="120">
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeNewRequestModal()">Annuler</button>
+      <button class="ce-modal-send" onclick="submitNewRequest()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script src="seba-data.js"></script>
+<script src="services/message-log.js"></script>
+<script>
+let _profile = null; // { client, account, client_id }
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+
+(async function init() {
+  if (!window.SebaDB) return;
+  const session = await SebaDB.clientPortal.session();
+  if (!session) { window.location.href = 'client-connexion.html'; return; }
+
+  _profile = await SebaDB.clientPortal.profile();
+  if (!_profile || !_profile.ok) {
+    window.location.href = 'client-connexion.html';
+    return;
+  }
+
+  document.getElementById('ce-loading').style.display = 'none';
+  document.getElementById('ce-wrap').style.display = 'block';
+
+  const client = _profile.client || {};
+  document.getElementById('ce-greeting').textContent = 'Bonjour ' + (client.prenom || '');
+  document.getElementById('ce-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  renderRequests();
+  renderMessages();
+})();
+
+async function renderRequests() {
+  const box = document.getElementById('ce-requests');
+  const requests = await SebaDB.clientPortal.requests.list(_profile.account, _profile.client_id);
+  if (!requests.length) {
+    box.innerHTML = '<div class="ce-empty">Aucune demande pour l\'instant. Cliquez sur "+ Nouvelle demande" pour en créer une.</div>';
+    return;
+  }
+  box.innerHTML = requests.map(r => (
+    '<div class="ce-request">' +
+      '<div class="ce-request-top">' +
+        '<span class="ce-request-title">' + escapeHtml(r.titre) + '</span>' +
+        '<span class="ce-badge ' + escapeHtml(r.statut) + '">' + (STATUT_LABELS[r.statut] || r.statut) + '</span>' +
+      '</div>' +
+      '<div class="ce-request-meta">' + (r.intervenantNom ? 'Intervenant : ' + escapeHtml(r.intervenantNom) : 'Pas encore assignée') + '</div>' +
+    '</div>'
+  )).join('');
+}
+
+function openNewRequestModal() {
+  document.getElementById('ce-modal-titre').value = '';
+  document.getElementById('ce-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ce-modal-titre').focus(), 100);
+}
+function closeNewRequestModal() {
+  document.getElementById('ce-modal-overlay').classList.remove('open');
+}
+async function submitNewRequest() {
+  const titre = document.getElementById('ce-modal-titre').value.trim();
+  if (!titre) return;
+  await SebaDB.clientPortal.requests.create(_profile.account, _profile.client_id, titre);
+  closeNewRequestModal();
+  renderRequests();
+}
+
+async function renderMessages() {
+  const box = document.getElementById('ce-msg-thread');
+  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+  const msgs = await window.SebaQuotes.messagesFor('client', _profile.client_id, _profile.account);
+  box.innerHTML = msgs.length
+    ? msgs.map(m => '<div class="ce-msg-bubble">' + escapeHtml(m.texte) +
+        '<div class="ce-msg-meta">' + (m.expediteurRole === 'client' ? 'Vous' : 'Votre prestataire') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
+    : '<div class="ce-msg-empty">Aucun message pour l\'instant.</div>';
+  box.scrollTop = box.scrollHeight;
+}
+
+async function envoyerMessagePrestataire() {
+  const inp = document.getElementById('ce-msg-input');
+  const texte = inp.value.trim();
+  if (!texte) return;
+  await window.SebaQuotes.createMessage({
+    account: _profile.account, clientId: _profile.client_id, expediteurRole: 'client', destinataireRole: 'patron', texte,
+  });
+  inp.value = '';
+  renderMessages();
+}
+
+async function handleLogout() {
+  await SebaDB.clientPortal.logout();
+  window.location.href = 'client-connexion.html';
+}
+</script>
+</body>
+</html>

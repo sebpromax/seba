@@ -425,7 +425,10 @@ async function handleTierEmploye(e){
 }
 function handleTierClient(e){
   e.preventDefault();
-  showTierMsg("L'accès à l'espace client est en cours de déploiement et sera disponible lors d'une prochaine mise à jour.");
+  // Contrairement a l'employe, aucune verification de session patron
+  // n'est necessaire ici : le client a sa PROPRE session Supabase Auth
+  // independante (voir client-connexion.html) -- navigation directe.
+  window.location.href='client-connexion.html';
   return false;
 }
 let _tierMsgTimer;
