@@ -8,20 +8,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Page PUBLIQUE (pas de guard.js) : contrairement a l'employe (badge
-     sur un appareil deja authentifie patron), le client a sa PROPRE
+<!-- Page PUBLIQUE (pas de guard.js) : authentification universelle
+     (2026-07-19) -- le client, comme l'employe et le patron, a sa PROPRE
      session Supabase Auth independante -- rien a verifier avant d'ouvrir
      cette page. auth.js fournit sebaAuth (signIn generique, deja
-     utilise par connexion.html, pas specifique au patron). -->
+     utilise par connexion.html/employe-connexion.html, pas specifique au
+     patron). -->
 <script src="auth.js"></script>
 <style>
 /* Meme systeme visuel "Encre Vivante" que connexion.html/
    employe-connexion.html (carte + halo + bordure teal qui fond dans le
    fond), et desormais meme STRUCTURE que employe-connexion.html --
    demande explicite : "exactement le meme que employe mais en client".
-   Plus de tunnel S'inscrire : le patron provisionne l'acces (comme le
-   PIN employe), le client se connecte directement avec un mot de passe
-   de depart puis le change lui-meme (voir client-espace.html). ── */
+   Plus de tunnel S'inscrire : le patron invite l'acces (comme pour
+   l'employe), le client recoit un email et choisit lui-meme son mot de
+   passe (voir client-espace.html). */
 :root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--w-a06:rgba(255,255,255,.6);--nav-bg:rgba(10,10,12,.88);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}

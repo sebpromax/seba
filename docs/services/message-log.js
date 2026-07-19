@@ -7,15 +7,13 @@
  * modifier client-fiche.html/employe-fiche.html, qui appellent déjà
  * messagesFor()/createMessage().
  *
- * Depuis l'Espace Client (2026-07-19), un vrai aller-retour existe :
- * client-espace.html appelle messagesFor('client', clientId, account) --
- * le 3e argument est necessaire car un client authentifie a SON PROPRE
- * auth.uid(), distinct de account (SebaDB.messages.list ne peut donc
- * plus deriver account depuis le JWT de l'appelant comme il le fait pour
- * le patron/employe -- voir seba-data.js pour le detail). Cote employe,
- * le PIN (employe-auth.ts) badge toujours un employe sur l'appareil deja
- * authentifie du patron plutot que de creer une session independante --
- * account reste dans ce cas derive normalement, le 3e argument est omis.
+ * Authentification universelle (2026-07-19) : client-espace.html ET
+ * espace-terrain.html appellent tous deux messagesFor('client'|'employe',
+ * id, account) avec le 3e argument -- un client ou un employe authentifie
+ * a SON PROPRE auth.uid(), distinct de account (SebaDB.messages.list ne
+ * peut donc plus deriver account depuis le JWT de l'appelant comme il le
+ * fait pour le patron -- voir seba-data.js pour le detail). Seul le
+ * patron (session sur son propre compte) omet ce 3e argument.
  *
  * API ASYNCHRONE (peut faire un aller-retour réseau réel) -- les
  * appelants doivent await ces deux fonctions.

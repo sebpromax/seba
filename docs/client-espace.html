@@ -70,8 +70,6 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 
 .ce-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
 
-.ce-banner{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--rs);padding:12px 16px;font-size:.86rem;margin-bottom:20px;color:var(--ink);}
-.ce-banner a{color:var(--danger-text);font-weight:700;}
 .ce-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 .ce-pw-row input{flex:1;min-width:120px;}
 </style>
@@ -89,8 +87,6 @@ button,input,textarea{font-family:'Inter',sans-serif;}
       <button class="ce-logout" onclick="handleLogout()">Se déconnecter</button>
     </div>
   </div>
-
-  <div class="ce-banner" id="ce-pw-banner" style="display:none;">Vous utilisez encore le mot de passe de départ. <a href="#ce-pw-panel">Changez-le maintenant →</a></div>
 
   <div class="ce-section-title">Mes demandes</div>
   <div id="ce-requests"></div>
@@ -159,14 +155,12 @@ const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'T
   document.getElementById('ce-greeting').textContent = 'Bonjour ' + (client.prenom || '');
   document.getElementById('ce-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  if (_profile.pw_is_default) document.getElementById('ce-pw-banner').style.display = 'block';
-
   renderRequests();
   renderMessages();
 })();
 
 // Auto-service : le client change son propre mot de passe depuis ici, a
-// tout moment -- miroir de modifierMonPin() sur espace-terrain.html.
+// tout moment -- miroir de modifierMonMotDePasse() sur espace-terrain.html.
 async function modifierMonMotDePasse() {
   const newPw = document.getElementById('ce-pw-new').value;
   const confirmPw = document.getElementById('ce-pw-confirm').value;
@@ -189,7 +183,6 @@ async function modifierMonMotDePasse() {
     status.style.color = 'var(--emerald)';
     document.getElementById('ce-pw-new').value = '';
     document.getElementById('ce-pw-confirm').value = '';
-    document.getElementById('ce-pw-banner').style.display = 'none';
   } else {
     status.textContent = res.error || 'Échec de la modification.';
     status.style.color = 'var(--danger-text)';
