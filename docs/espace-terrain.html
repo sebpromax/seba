@@ -492,7 +492,9 @@ function openCloseMissionModal(interventionId) {
   document.getElementById('cm-notes').value = '';
   document.getElementById('cm-photo').value = '';
   document.getElementById('cm-photo-name').textContent = '';
-  document.getElementById('cm-status').textContent = '';
+  const status = document.getElementById('cm-status');
+  status.textContent = '';
+  status.style.color = 'var(--danger-text)';
   document.getElementById('cm-overlay').classList.add('open');
 }
 function closeCloseMissionModal() {
@@ -505,22 +507,56 @@ function handlePhotoSelected() {
   _closingPhotoFile = file || null;
   document.getElementById('cm-photo-name').textContent = file ? ('📎 ' + file.name) : '';
 }
+// Nom de fichier "propre" pour le chemin de stockage : jamais les
+// caracteres du nom d'origine tels quels (espaces, accents, etc. posent
+// probleme dans une cle d'objet Storage).
+function sanitizeFileName(name) {
+  return String(name || 'photo.jpg').toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// Upload direct vers mission-photos (le JWT de l'employe, jamais
+// service_role -- les policies RLS du bucket font le travail
+// d'autorisation, voir supabase-schema.sql section 37). Ne bloque JAMAIS
+// la cloture : un echec d'upload (reseau, session expiree...) est
+// signale dans le statut de la modale, la mission se cloture quand meme,
+// simplement sans photo. En mode demo/local (pas de vrai bucket), un
+// chemin factice mais de forme identique est simule pour que l'affichage
+// cote patron/client (bouton "Voir la photo") reste testable.
+async function uploadClosurePhoto(requestId) {
+  if (!_closingPhotoFile) return { path: null, warning: null };
+  if (!requestId) return { path: null, warning: 'Photo non envoyée : aucune demande liée à cette mission.' };
+
+  if (!(window.SEBA_CONFIG && window.SEBA_CONFIG.supabaseUrl) || !window.sebaAuth || !sebaAuth.isConfigured) {
+    // Mode demo/local : aucun vrai bucket -- simule un chemin de meme forme.
+    const fakePath = requestId + '/' + Date.now() + '_' + sanitizeFileName(_closingPhotoFile.name);
+    return { path: fakePath, warning: null };
+  }
+
+  const path = requestId + '/' + Date.now() + '_' + sanitizeFileName(_closingPhotoFile.name);
+  const up = await sebaAuth.uploadFile('mission-photos', path, _closingPhotoFile);
+  if (!up.ok) return { path: null, warning: 'Photo non envoyée (' + up.error + '), rapport enregistré quand même.' };
+  return { path: up.path, warning: null };
+}
+
 async function validerCloture() {
   if (!_closingInterventionId) return;
+  const mission = _missionsById[_closingInterventionId];
   const notes = document.getElementById('cm-notes').value.trim();
   const btn = document.getElementById('cm-validate');
   if (btn.disabled) return; // anti double-tap : requête déjà en vol
   btn.disabled = true;
+  btn.textContent = _closingPhotoFile ? 'Envoi de la photo…' : 'Validation…';
+
+  const { path: photoPath, warning } = await uploadClosurePhoto(mission && mission.requestId);
+
   btn.textContent = 'Validation…';
 
   // Ecriture unique cote serveur (RPC close_my_intervention, SECURITY
-  // DEFINER) : met a jour l'intervention (done/rapport) ET la
-  // client_request liee (statut "terminee") dans la meme transaction --
-  // l'employe n'a aucun droit d'ecriture direct sur ni l'une ni l'autre
-  // (voir seba-data.js: employeePortal.closeIntervention). Photo : nom de
-  // fichier trace uniquement pour l'instant, aucun stockage reel (UI
-  // seule, cahier des charges 2026-07-20).
-  const res = await SebaDB.employeePortal.closeIntervention(_closingInterventionId, notes, _closingPhotoFile ? _closingPhotoFile.name : null);
+  // DEFINER) : met a jour l'intervention (done/rapport/rapportPhotoPath)
+  // ET la client_request liee (statut "terminee" + photo_path) dans la
+  // meme transaction -- l'employe n'a aucun droit d'ecriture direct sur
+  // ni l'une ni l'autre (voir seba-data.js: employeePortal.closeIntervention).
+  const res = await SebaDB.employeePortal.closeIntervention(_closingInterventionId, notes, photoPath);
 
   btn.disabled = false;
   btn.textContent = 'Valider la clôture';
@@ -530,8 +566,16 @@ async function validerCloture() {
     return;
   }
 
-  closeCloseMissionModal();
+  // Cloture reussie meme si la photo a echoue (jamais bloquant) -- mais
+  // dans ce cas precis on laisse la modale ouverte un instant avec le
+  // message, plutot que de la refermer sans que l'employe ait pu le lire.
   await renderMissions();
+  if (warning) {
+    document.getElementById('cm-status').style.color = 'var(--emerald)';
+    document.getElementById('cm-status').textContent = 'Mission clôturée. ' + warning;
+    return;
+  }
+  closeCloseMissionModal();
 }
 </script>
 </body>

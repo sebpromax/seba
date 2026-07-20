@@ -63,6 +63,7 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-badge.terminee{background:var(--bg);color:var(--text-2);}
 .ce-badge.annulee{background:var(--danger-bg);color:var(--danger-text);}
 .ce-request-meta{font-size:.82rem;color:var(--text-2);margin-bottom:10px;}
+.ce-request-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .ce-request-chat-btn{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.8rem;font-weight:600;cursor:pointer;min-height:48px;display:inline-flex;align-items:center;gap:6px;}
 @media (hover:hover){.ce-request-chat-btn:hover{border-color:var(--emerald);color:var(--emerald);}}
 @media (hover:none){.ce-request-chat-btn:active{border-color:var(--emerald);color:var(--emerald);}}
@@ -128,6 +129,15 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .mc-input:focus{border-color:var(--emerald);outline:none;}
 .mc-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
 .mc-send:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── Visionneuse photo de clôture (2026-07-20b) -- URL signee generee a
+   la demande (bucket prive), jamais mise en cache. ── */
+.pv-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:700;padding:20px;}
+.pv-overlay.open{display:flex;}
+.pv-panel{background:var(--white);border-radius:var(--r);padding:20px;max-width:520px;width:100%;position:relative;}
+.pv-close{position:absolute;top:8px;right:8px;background:none;border:none;font-size:1.3rem;color:var(--text-2);cursor:pointer;min-width:48px;min-height:48px;}
+.pv-body{text-align:center;padding:24px 10px 4px;color:var(--text-2);font-size:.9rem;}
+.pv-body img{max-width:100%;border-radius:var(--rs);display:block;margin:0 auto;}
 
 .ce-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 .ce-pw-row input{flex:1;min-width:120px;min-height:48px;-webkit-appearance:none;appearance:none;}
@@ -242,6 +252,14 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Visionneuse photo de clôture -->
+<div class="pv-overlay" id="pv-overlay" onclick="if(event.target===this)closePhotoViewer()">
+  <div class="pv-panel">
+    <button class="pv-close" onclick="closePhotoViewer()" aria-label="Fermer">&times;</button>
+    <div class="pv-body" id="pv-body">Chargement…</div>
+  </div>
+</div>
+
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <script>
@@ -318,7 +336,10 @@ function renderRequestCard(r) {
         '<span class="ce-badge ' + escapeHtml(r.statut) + '">' + (STATUT_LABELS[r.statut] || r.statut) + '</span>' +
       '</div>' +
       '<div class="ce-request-meta">' + (r.intervenantNom ? 'Intervenant : ' + escapeHtml(r.intervenantNom) : 'Pas encore assignée') + '</div>' +
-      '<button type="button" class="ce-request-chat-btn" onclick="openMissionChat(\'' + r.id + '\')">💬 Chat</button>' +
+      '<div class="ce-request-actions">' +
+        '<button type="button" class="ce-request-chat-btn" onclick="openMissionChat(\'' + r.id + '\')">💬 Chat</button>' +
+        (r.photoPath ? '<button type="button" class="ce-request-chat-btn" onclick="verPhotoMission(\'' + escapeHtml(r.photoPath) + '\')">📷 Voir la photo</button>' : '') +
+      '</div>' +
     '</div>';
 }
 
@@ -454,6 +475,30 @@ async function sendMissionChatMessage() {
   inp.value = '';
   btn.disabled = false;
   renderMissionChatThread();
+}
+
+// ── Visionneuse photo de clôture (2026-07-20b) ──────────────────────
+function openPhotoViewer() {
+  document.getElementById('pv-body').textContent = 'Chargement…';
+  document.getElementById('pv-overlay').classList.add('open');
+}
+function closePhotoViewer() {
+  document.getElementById('pv-overlay').classList.remove('open');
+}
+async function verPhotoMission(photoPath) {
+  if (!photoPath) return;
+  openPhotoViewer();
+  const body = document.getElementById('pv-body');
+  if (!window.sebaAuth || !sebaAuth.isConfigured) {
+    body.textContent = 'Aperçu non disponible en mode démo (aucun fichier réellement stocké côté serveur).';
+    return;
+  }
+  const res = await sebaAuth.getSignedUrl('mission-photos', photoPath);
+  if (!res.ok) {
+    body.textContent = 'Impossible de charger la photo : ' + (res.error || 'erreur inconnue');
+    return;
+  }
+  body.innerHTML = '<img src="' + res.url + '" alt="Photo de fin d\'intervention">';
 }
 </script>
 </body>
