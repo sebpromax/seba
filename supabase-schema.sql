@@ -1004,11 +1004,38 @@ create index if not exists idx_client_requests_client on client_requests (accoun
 -- ── 32. seba_messages : policies reecrites pour un 2e/3e auth.uid() possible ──
 -- Patron OU client lie (client_accounts) OU employe lie (employe_accounts,
 -- authentification universelle 2026-07-19) peuvent lire/ecrire une ligne.
+--
+-- Chat de mission tripartite (2026-07-20) : request_id ancre un message
+-- sur UNE demande (client_requests, existe des la soumission -- couvre
+-- tout le cycle de vie, avant et apres assignation). Ajoute ici (apres
+-- client_requests, section 31 juste au-dessus) plutot que dans la
+-- create table de seba_messages (section 29, plus haut dans ce fichier)
+-- car la contrainte de cle etrangere echouerait sur une table qui
+-- n'existe pas encore lors d'une installation fraiche complete.
+-- Les fils generiques (client_id/employe_id seuls, request_id null)
+-- restent pleinement fonctionnels -- decision fondateur explicite : le
+-- nouveau canal s'ajoute, ne remplace rien.
+alter table seba_messages add column if not exists request_id uuid references client_requests (id) on delete cascade;
+create index if not exists idx_seba_messages_request on seba_messages (request_id, created_at);
+
 drop policy if exists "seba_messages_select" on seba_messages;
 create policy "seba_messages_select" on seba_messages for select using (
   exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
   or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
+  -- Chat de mission cote client : proprietaire de la demande visee.
+  or exists (
+    select 1 from client_requests cr
+    where cr.id = seba_messages.request_id and cr.client_user_id = auth.uid()
+  )
+  -- Chat de mission cote employe : verifie EN DIRECT contre
+  -- client_requests.intervenant_id (l'assignation ACTUELLE) -- une
+  -- reassignation coupe l'acces immediatement, sans purge manuelle.
+  or exists (
+    select 1 from client_requests cr
+    join employe_accounts ea on ea.account = cr.account and ea.employe_id = cr.intervenant_id
+    where cr.id = seba_messages.request_id and ea.employe_user_id = auth.uid()
+  )
 );
 drop policy if exists "seba_messages_insert" on seba_messages;
 create policy "seba_messages_insert" on seba_messages for insert with check (
@@ -1017,6 +1044,15 @@ create policy "seba_messages_insert" on seba_messages for insert with check (
     exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
     or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
     or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
+    or exists (
+      select 1 from client_requests cr
+      where cr.id = seba_messages.request_id and cr.client_user_id = auth.uid()
+    )
+    or exists (
+      select 1 from client_requests cr
+      join employe_accounts ea on ea.account = cr.account and ea.employe_id = cr.intervenant_id
+      where cr.id = seba_messages.request_id and ea.employe_user_id = auth.uid()
+    )
   )
 );
 drop policy if exists "seba_messages_update" on seba_messages;
@@ -1024,6 +1060,15 @@ create policy "seba_messages_update" on seba_messages for update using (
   exists (select 1 from seba_state s where s.account = seba_messages.account and s.user_id = auth.uid())
   or exists (select 1 from client_accounts ca where ca.client_user_id = auth.uid() and ca.account = seba_messages.account and ca.client_id = seba_messages.client_id)
   or exists (select 1 from employe_accounts ea where ea.employe_user_id = auth.uid() and ea.account = seba_messages.account and ea.employe_id = seba_messages.employe_id)
+  or exists (
+    select 1 from client_requests cr
+    where cr.id = seba_messages.request_id and cr.client_user_id = auth.uid()
+  )
+  or exists (
+    select 1 from client_requests cr
+    join employe_accounts ea on ea.account = cr.account and ea.employe_id = cr.intervenant_id
+    where cr.id = seba_messages.request_id and ea.employe_user_id = auth.uid()
+  )
 );
 
 -- ── 33. Lit le profil client (fiche complete) du compte connecte ──
