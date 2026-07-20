@@ -36,6 +36,23 @@
     }
   }
 
+  /* Chat de mission (2026-07-20) : ancre sur UNE demande (client_requests),
+     partagé entre patron/employé/client selon les 3 policies RLS dédiées
+     (voir migrations/20260720_mission_chat.sql) -- distinct des fils
+     génériques ci-dessus (client_id/employe_id seuls), qui restent
+     inchangés pour les échanges hors-mission. */
+  async function messagesForRequest(requestId, account) {
+    if (!window.SebaDB || !requestId) return [];
+    const filter = { requestId };
+    if (account) filter.account = account;
+    try {
+      return await SebaDB.messages.list(filter);
+    } catch (e) {
+      console.warn('[message-log] lecture chat de mission impossible', e.message);
+      return [];
+    }
+  }
+
   async function createMessage(obj) {
     if (!window.SebaDB) return null;
     return SebaDB.messages.send(obj);
@@ -43,5 +60,6 @@
 
   window.SebaQuotes = window.SebaQuotes || {};
   window.SebaQuotes.messagesFor = messagesFor;
+  window.SebaQuotes.messagesForRequest = messagesForRequest;
   window.SebaQuotes.createMessage = createMessage;
 })();

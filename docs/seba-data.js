@@ -546,6 +546,10 @@
             let url = cfg.supabaseUrl + '/rest/v1/seba_messages?account=eq.' + encodeURIComponent(account) + '&order=created_at.asc';
             if (filter && filter.clientId) url += '&client_id=eq.' + encodeURIComponent(filter.clientId);
             if (filter && filter.employeId) url += '&employe_id=eq.' + encodeURIComponent(filter.employeId);
+            // Chat de mission (2026-07-20) : ancre sur UNE demande
+            // (client_requests), independamment de client_id/employe_id --
+            // voir migrations/20260720_mission_chat.sql pour le pourquoi.
+            if (filter && filter.requestId) url += '&request_id=eq.' + encodeURIComponent(filter.requestId);
             const res = await fetch(url, { headers: adapter._headers() });
             // Normalise snake_case (colonnes Postgres) -> camelCase (convention
             // JS du reste de SebaDB) : sans ca, un appelant lisant m.clientId
@@ -556,6 +560,7 @@
               const rows = await res.json();
               return rows.map(r => ({
                 id: r.id, createdAt: r.created_at, clientId: r.client_id, employeId: r.employe_id,
+                requestId: r.request_id,
                 expediteurRole: r.expediteur_role, destinataireRole: r.destinataire_role,
                 texte: r.texte, lu: r.lu,
               }));
@@ -567,7 +572,8 @@
         }
         return state.messages.filter(m =>
           (!filter || !filter.clientId || m.clientId === filter.clientId) &&
-          (!filter || !filter.employeId || m.employeId === filter.employeId)
+          (!filter || !filter.employeId || m.employeId === filter.employeId) &&
+          (!filter || !filter.requestId || m.requestId === filter.requestId)
         );
       },
       async send(obj) {
@@ -579,6 +585,7 @@
               account: obj.account || adapter._accountId(),
               client_id: obj.clientId || null,
               employe_id: obj.employeId || null,
+              request_id: obj.requestId || null,
               expediteur_role: obj.expediteurRole,
               destinataire_role: obj.destinataireRole,
               texte: obj.texte,
@@ -594,6 +601,7 @@
               // Meme normalisation snake_case -> camelCase que list() ci-dessus.
               return {
                 id: r.id, createdAt: r.created_at, clientId: r.client_id, employeId: r.employe_id,
+                requestId: r.request_id,
                 expediteurRole: r.expediteur_role, destinataireRole: r.destinataire_role,
                 texte: r.texte, lu: r.lu,
               };
