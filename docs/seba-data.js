@@ -42,7 +42,7 @@
      SebaDB.employeePortal.provision(employeId, email)          -> async, Edge Function employe-provision.ts (invitation)
      SebaDB.employeePortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_employee_profile
      SebaDB.employeePortal.interventionsForDate(date)           -> async, RPC get_my_employee_interventions (planning du jour)
-     SebaDB.employeePortal.closeIntervention(id, rapport, photoName) -> async, RPC close_my_intervention (clôture de mission)
+     SebaDB.employeePortal.closeIntervention(id, rapport, photoPath) -> async, RPC close_my_intervention (clôture de mission)
      SebaDB.clientPortal.provision(clientId, email)             -> async, Edge Function client-provision.ts (invitation)
      SebaDB.clientPortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_client_profile
      SebaDB.clientPortal.requests.list/create/update()          -> async, table client_requests dediee
@@ -743,14 +743,18 @@
          seba_state ni sur client_requests (memes RLS que interventionsForDate
          ci-dessus, cote lecture) : RPC SECURITY DEFINER close_my_intervention
          restreinte aux missions ACTUELLEMENT assignees a l'appelant.
-         photoName : simple nom de fichier trace pour l'instant (UI
-         uniquement, cahier des charges 2026-07-20 point 2 -- aucun
-         stockage reel de la photo elle-meme, a batir dans une iteration
-         dediee avec un bucket Supabase Storage). */
-      async closeIntervention(interventionId, rapport, photoName) {
+         photoPath (2026-07-20b, stockage reel) : chemin retourne par
+         sebaAuth.uploadFile('mission-photos', ...) apres upload DIRECT
+         depuis le navigateur de l'employe (son propre JWT, jamais
+         service_role -- policies RLS du bucket, voir supabase-schema.sql
+         section 37) -- l'appelant (espace-terrain.html) fait l'upload
+         AVANT d'appeler cette fonction et lui passe le chemin obtenu, ou
+         null si pas de photo/upload en echec (ne bloque jamais la
+         cloture -- voir espace-terrain.html: validerCloture()). */
+      async closeIntervention(interventionId, rapport, photoPath) {
         if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
           const res = await sebaAuth.rpc('close_my_intervention', {
-            _intervention_id: interventionId, _rapport: rapport || null, _photo_name: photoName || null,
+            _intervention_id: interventionId, _rapport: rapport || null, _photo_path: photoPath || null,
           });
           if (res.error) return { ok: false, error: res.error.message };
           return res.data;
@@ -760,10 +764,10 @@
         if (!interv) return { ok: false, error: 'Mission introuvable.' };
         interv.done = true;
         interv.rapport = rapport || null;
-        interv.rapportPhotoName = photoName || null;
+        interv.rapportPhotoPath = photoPath || null;
         if (interv.requestId) {
           const req = state.clientRequests.find(r => r.id === interv.requestId);
-          if (req) req.statut = 'terminee';
+          if (req) { req.statut = 'terminee'; req.photoPath = photoPath || null; }
         }
         persist();
         return { ok: true };
@@ -939,7 +943,7 @@
                 return rows.map(r => ({
                   id: r.id, clientId: r.client_id, titre: r.titre, statut: r.statut,
                   intervenantId: r.intervenant_id, intervenantNom: r.intervenant_nom,
-                  interventionId: r.intervention_id, createdAt: r.created_at,
+                  interventionId: r.intervention_id, photoPath: r.photo_path, createdAt: r.created_at,
                 }));
               }
               console.warn('[seba-data] lecture demandes distante en echec (HTTP ' + res.status + ') — repli local.');
@@ -966,7 +970,7 @@
             } catch (e) { console.warn('[seba-data] creation demande distante impossible (reseau)', e.message); }
           }
           if (!state) loadState();
-          const item = { id: uid(), clientId, titre, statut: 'nouvelle', intervenantId: null, intervenantNom: null, interventionId: null, createdAt: todayISO(0) };
+          const item = { id: uid(), clientId, titre, statut: 'nouvelle', intervenantId: null, intervenantNom: null, interventionId: null, photoPath: null, createdAt: todayISO(0) };
           state.clientRequests.unshift(item);
           persist();
           return item;

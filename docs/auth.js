@@ -9,8 +9,9 @@
      prototype reste 100% fonctionnel sans compte Supabase).
 
    API : window.sebaAuth = { isConfigured, signUp, signIn, signOut,
-   getSession } — toutes les fonctions sont async et renvoient
-   { ok, error, session? }.
+   getSession, rpc, uploadFile, getSignedUrl } — toutes les fonctions
+   sont async et renvoient { ok, error, session? } (rpc renvoie
+   { data, error }, forme supabase-js standard).
 ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -216,6 +217,39 @@
         const sb = await loadSDK();
         return await sb.rpc(fnName, params);
       } catch (e) { return { data: null, error: e }; }
+    },
+
+    /* Passerelle Storage generique -- meme raison d'etre que rpc()
+       ci-dessus (auth.js reste le seul point d'entree Supabase du site).
+       Upload DIRECT avec le JWT de la session en cours (jamais
+       service_role) : les policies RLS du bucket font tout le travail
+       d'autorisation cote serveur (voir supabase-schema.sql, section 37,
+       mission-photos, 2026-07-20) -- pas d'Edge Function necessaire pour
+       ce flux. Pas de mode demo ici, meme logique que rpc(). */
+    async uploadFile(bucket, path, file) {
+      if (!configured) return { ok: false, error: 'Supabase non configuré' };
+      try {
+        const sb = await loadSDK();
+        const { data, error } = await sb.storage.from(bucket).upload(path, file, {
+          contentType: file.type || 'application/octet-stream',
+          upsert: false,
+        });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, path: data.path };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    /* Le bucket est privé (pas d'URL publique) : toute lecture passe par
+       une URL signée, temporaire, générée à la demande -- jamais stockée
+       ni mise en cache, le lien expire de lui-même (expiresIn, secondes). */
+    async getSignedUrl(bucket, path, expiresIn) {
+      if (!configured) return { ok: false, error: 'Supabase non configuré' };
+      try {
+        const sb = await loadSDK();
+        const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, expiresIn || 3600);
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, url: data.signedUrl };
+      } catch (e) { return { ok: false, error: e.message }; }
     },
   };
 })();
