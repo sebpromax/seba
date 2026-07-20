@@ -98,12 +98,37 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
      mais min/max alignent le contenu correctement */
 }
 @media (min-width: 841px) {
-  /* Décalage sous .identity-bar (même principe que dashboard.html/
-     dashboard-v2.css pour .v2-header-bar) -- dashboard.html a sa propre
-     surcharge plus spécifique (voir son <style> inline), donc cette règle ne
-     s'applique qu'aux 10 autres pages, qui n'avaient aucun bandeau fixe
-     avant ce correctif. */
-  .sidebar { top: var(--identity-bar-height); height: calc(100vh - var(--identity-bar-height)); }
+  /* position:fixed (pas sticky) -- demande fondateur explicite 2026-07-20 :
+     la sidebar ne doit JAMAIS bouger, sur aucune page, quel que soit le
+     scroll. sticky s'est avéré non fiable ici : son ancrage dépend de la
+     hauteur du contenu de .layout (bloc de scroll), et sur les pages avec
+     peu de contenu (page courte, juste un peu plus haute que le viewport)
+     le calcul de sticky se brise et la sidebar dérive vers le haut au lieu
+     de rester à top:var(--identity-bar-height) (mesuré via Puppeteer,
+     scroll simulé -- avant ce correctif). fixed est insensible à la
+     hauteur du contenu : ancrage viewport pur, aucune dérive possible.
+     width explicite obligatoire : la sidebar sort du flux de la grille
+     .layout/.app (elle ne peut plus hériter la largeur de sa piste de
+     grille), donc doit maintenant fixer elle-même sa largeur -- doit rester
+     synchronisée avec le 220px de chaque .layout{grid-template-columns:...}
+     local. */
+  .sidebar {
+    position: fixed;
+    top: var(--identity-bar-height);
+    left: 0;
+    width: 220px;
+    height: calc(100vh - var(--identity-bar-height));
+  }
+  /* .sidebar étant sortie du flux (fixed), elle ne compte plus comme item
+     de grille -- sans cette règle, .main deviendrait le seul enfant de
+     grille restant et hériterait par défaut la 1ère piste (220px, sous la
+     sidebar fixe) au lieu de la 2ème. Recale explicitement le contenu dans
+     la piste de droite, laissant la 1ère piste vide (visuellement occupée
+     par la sidebar fixe qui la recouvre). */
+  .layout > .main,
+  .app > .main {
+    grid-column: 2;
+  }
 }
 
 /* Logo (compatible .s-logo dashboard + .logo clients/autres) */
