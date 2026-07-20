@@ -42,6 +42,7 @@
      SebaDB.employeePortal.provision(employeId, email)          -> async, Edge Function employe-provision.ts (invitation)
      SebaDB.employeePortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_employee_profile
      SebaDB.employeePortal.interventionsForDate(date)           -> async, RPC get_my_employee_interventions (planning du jour)
+     SebaDB.employeePortal.closeIntervention(id, rapport, photoName) -> async, RPC close_my_intervention (clôture de mission)
      SebaDB.clientPortal.provision(clientId, email)             -> async, Edge Function client-provision.ts (invitation)
      SebaDB.clientPortal.login/logout/session/profile/setPassword()  -> async, RPC get_my_client_profile
      SebaDB.clientPortal.requests.list/create/update()          -> async, table client_requests dediee
@@ -735,6 +736,37 @@
           const interventions = state.interventions.filter(i => i.employeId === demo.employeId && i.date === _date);
           return { ok: true, interventions };
         } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Clôture de mission (espace-terrain.html, "Terminer la mission",
+         2026-07-20) -- l'employe n'a AUCUN droit d'ecriture direct ni sur
+         seba_state ni sur client_requests (memes RLS que interventionsForDate
+         ci-dessus, cote lecture) : RPC SECURITY DEFINER close_my_intervention
+         restreinte aux missions ACTUELLEMENT assignees a l'appelant.
+         photoName : simple nom de fichier trace pour l'instant (UI
+         uniquement, cahier des charges 2026-07-20 point 2 -- aucun
+         stockage reel de la photo elle-meme, a batir dans une iteration
+         dediee avec un bucket Supabase Storage). */
+      async closeIntervention(interventionId, rapport, photoName) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('close_my_intervention', {
+            _intervention_id: interventionId, _rapport: rapport || null, _photo_name: photoName || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const interv = state.interventions.find(i => i.id === interventionId);
+        if (!interv) return { ok: false, error: 'Mission introuvable.' };
+        interv.done = true;
+        interv.rapport = rapport || null;
+        interv.rapportPhotoName = photoName || null;
+        if (interv.requestId) {
+          const req = state.clientRequests.find(r => r.id === interv.requestId);
+          if (req) req.statut = 'terminee';
+        }
+        persist();
+        return { ok: true };
       },
 
       /* Auto-service : l'employe change son propre mot de passe depuis

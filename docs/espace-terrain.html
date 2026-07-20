@@ -33,15 +33,19 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 
 .et-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
 
-.et-mission{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;}
+.et-mission{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;transition:opacity var(--t-std,.25s) var(--ease-std,ease);}
+.et-mission.done{opacity:.6;}
 .et-mission-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .et-mission-time{font-size:.82rem;font-weight:700;color:var(--emerald);}
 .et-mission-badge{font-size:.72rem;padding:3px 9px;border-radius:12px;font-weight:600;background:var(--bg);color:var(--text-2);}
 .et-mission-badge.done{background:var(--badge-success-bg);color:var(--emerald);}
 .et-mission-client{font-weight:600;font-size:1rem;margin-bottom:2px;}
 .et-mission-service{font-size:.86rem;color:var(--text-2);margin-bottom:12px;}
-.et-mission-actions{display:flex;gap:8px;}
+.et-mission-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .et-btn-msg{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;cursor:pointer;min-height:48px;}
+.et-btn-terminer{background:var(--emerald);border:none;color:var(--on-emerald);padding:8px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:700;cursor:pointer;min-height:48px;}
+@media (hover:hover){.et-btn-terminer:hover{opacity:.9;}}
+@media (hover:none){.et-btn-terminer:active{opacity:.85;}}
 
 .et-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
 
@@ -112,8 +116,37 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .et-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 .et-pw-row input{flex:1;min-width:120px;min-height:48px;-webkit-appearance:none;appearance:none;}
 
+/* ── Clôture de mission (2026-07-20) -- meme feuille ancree en bas sur
+   mobile que .mc-panel, corps scrollable independant du header/footer
+   fixes (textarea + bouton photo peuvent depasser la hauteur visible
+   sans jamais masquer les actions ni le champ de saisie). ── */
+.cm-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:flex-end;justify-content:center;z-index:600;}
+.cm-overlay.open{display:flex;}
+.cm-panel{background:var(--white);width:100%;max-width:480px;border-radius:var(--r) var(--r) 0 0;display:flex;flex-direction:column;max-height:90vh;max-height:90dvh;}
+@media (min-width:640px){
+  .cm-overlay{align-items:center;padding:20px;}
+  .cm-panel{border-radius:var(--r);max-height:85vh;max-height:85dvh;}
+}
+.cm-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;}
+.cm-title{font-weight:700;font-size:1rem;}
+.cm-sub{font-size:.8rem;color:var(--text-2);margin-top:2px;}
+.cm-close{background:none;border:none;font-size:1.3rem;color:var(--text-2);cursor:pointer;line-height:1;padding:6px;min-width:48px;min-height:48px;flex-shrink:0;}
+.cm-body{flex:1;overflow-y:auto;padding:18px 20px;}
+.cm-label{display:block;font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;}
+.cm-textarea{width:100%;min-height:110px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;resize:vertical;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;margin-bottom:18px;}
+.cm-textarea:focus{border-color:var(--emerald);outline:none;}
+.cm-photo-btn{width:100%;background:var(--bg);border:1.5px dashed var(--border);color:var(--ink);padding:12px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;min-height:48px;}
+@media (hover:hover){.cm-photo-btn:hover{border-color:var(--emerald);color:var(--emerald);}}
+@media (hover:none){.cm-photo-btn:active{border-color:var(--emerald);color:var(--emerald);}}
+.cm-photo-name{font-size:.8rem;color:var(--emerald);margin-top:8px;}
+.cm-actions{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(16px, calc(12px + env(safe-area-inset-bottom,0px)));}
+.cm-actions button{flex:1;padding:12px;border-radius:var(--rs);font-size:.9rem;font-weight:700;cursor:pointer;min-height:48px;}
+.cm-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
+.cm-validate{background:var(--emerald);border:none;color:var(--on-emerald);}
+.cm-validate:disabled{opacity:.5;cursor:not-allowed;}
+
 @media (max-width: 768px) {
-  .et-msg-input,.et-modal textarea,.et-pw-row input{font-size:16px;}
+  .et-msg-input,.et-modal textarea,.et-pw-row input,.cm-textarea{font-size:16px;}
   .et-mission-actions{gap:12px;}
 }
 </style>
@@ -182,6 +215,32 @@ button,input,textarea{font-family:'Inter',sans-serif;}
     <div class="mc-input-row">
       <input type="text" class="mc-input" id="mc-input" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendMissionChatMessage();">
       <button class="mc-send" id="mc-send" onclick="sendMissionChatMessage()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clôture de mission -->
+<div class="cm-overlay" id="cm-overlay">
+  <div class="cm-panel" role="dialog" aria-modal="true" aria-label="Clôturer la mission">
+    <div class="cm-header">
+      <div>
+        <div class="cm-title">Clôturer la mission</div>
+        <div class="cm-sub" id="cm-sub"></div>
+      </div>
+      <button class="cm-close" onclick="closeCloseMissionModal()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="cm-body">
+      <label class="cm-label" for="cm-notes">Notes et rapport de fin d'intervention</label>
+      <textarea id="cm-notes" class="cm-textarea" placeholder="Ex : ménage complet effectué, rien à signaler..."></textarea>
+      <label class="cm-label" for="cm-photo">Photo</label>
+      <button type="button" class="cm-photo-btn" onclick="document.getElementById('cm-photo').click()">📷 Ajouter une photo</button>
+      <input type="file" id="cm-photo" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelected()">
+      <div class="cm-photo-name" id="cm-photo-name"></div>
+      <p id="cm-status" style="font-size:.82rem;margin-top:10px;color:var(--danger-text);"></p>
+    </div>
+    <div class="cm-actions">
+      <button class="cm-cancel" onclick="closeCloseMissionModal()">Annuler</button>
+      <button class="cm-validate" id="cm-validate" onclick="validerCloture()">Valider la clôture</button>
     </div>
   </div>
 </div>
@@ -281,7 +340,7 @@ async function renderMissions() {
   }
 
   box.innerHTML = missions.map(m => (
-    '<div class="et-mission">' +
+    '<div class="et-mission' + (m.done ? ' done' : '') + '">' +
       '<div class="et-mission-top">' +
         '<span class="et-mission-time">' + (m.time || '') + '</span>' +
         '<span class="et-mission-badge' + (m.done ? ' done' : '') + '">' + (m.done ? 'Terminée' : 'À faire') + '</span>' +
@@ -292,6 +351,7 @@ async function renderMissions() {
         (m.requestId
           ? '<button class="et-btn-msg" onclick="openMissionChat(\'' + m.id + '\')">💬 Chat</button>'
           : '<button class="et-btn-msg" onclick="openMissionModal(\'' + m.id + '\',\'' + escapeHtml(m.clientName || '').replace(/'/g, "\\'") + '\')">Message</button>') +
+        (!m.done ? '<button class="et-btn-terminer" onclick="openCloseMissionModal(\'' + m.id + '\')">✓ Terminer la mission</button>' : '') +
       '</div>' +
     '</div>'
   )).join('');
@@ -418,6 +478,60 @@ async function sendMissionChatMessage() {
   btn.disabled = false;
   const mission = Object.values(_missionsById).find(m => m.requestId === _missionChatRequestId);
   renderMissionChatThread(mission);
+}
+
+// ── Clôture de mission ("Terminer la mission", 2026-07-20) ─────────────
+let _closingInterventionId = null;
+let _closingPhotoFile = null;
+function openCloseMissionModal(interventionId) {
+  const mission = _missionsById[interventionId];
+  if (!mission) return;
+  _closingInterventionId = interventionId;
+  _closingPhotoFile = null;
+  document.getElementById('cm-sub').textContent = (mission.clientName || 'Client') + ' — ' + (mission.service || '');
+  document.getElementById('cm-notes').value = '';
+  document.getElementById('cm-photo').value = '';
+  document.getElementById('cm-photo-name').textContent = '';
+  document.getElementById('cm-status').textContent = '';
+  document.getElementById('cm-overlay').classList.add('open');
+}
+function closeCloseMissionModal() {
+  document.getElementById('cm-overlay').classList.remove('open');
+  _closingInterventionId = null;
+}
+function handlePhotoSelected() {
+  const inp = document.getElementById('cm-photo');
+  const file = inp.files && inp.files[0];
+  _closingPhotoFile = file || null;
+  document.getElementById('cm-photo-name').textContent = file ? ('📎 ' + file.name) : '';
+}
+async function validerCloture() {
+  if (!_closingInterventionId) return;
+  const notes = document.getElementById('cm-notes').value.trim();
+  const btn = document.getElementById('cm-validate');
+  if (btn.disabled) return; // anti double-tap : requête déjà en vol
+  btn.disabled = true;
+  btn.textContent = 'Validation…';
+
+  // Ecriture unique cote serveur (RPC close_my_intervention, SECURITY
+  // DEFINER) : met a jour l'intervention (done/rapport) ET la
+  // client_request liee (statut "terminee") dans la meme transaction --
+  // l'employe n'a aucun droit d'ecriture direct sur ni l'une ni l'autre
+  // (voir seba-data.js: employeePortal.closeIntervention). Photo : nom de
+  // fichier trace uniquement pour l'instant, aucun stockage reel (UI
+  // seule, cahier des charges 2026-07-20).
+  const res = await SebaDB.employeePortal.closeIntervention(_closingInterventionId, notes, _closingPhotoFile ? _closingPhotoFile.name : null);
+
+  btn.disabled = false;
+  btn.textContent = 'Valider la clôture';
+
+  if (!res.ok) {
+    document.getElementById('cm-status').textContent = res.error || 'Échec de la clôture.';
+    return;
+  }
+
+  closeCloseMissionModal();
+  await renderMissions();
 }
 </script>
 </body>
