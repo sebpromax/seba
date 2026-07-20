@@ -170,12 +170,12 @@
         <div class="panel tab-content" id="tab-general">
           <h3>Informations générales</h3>
           <p class="desc">Ces informations apparaissent sur vos devis et factures.</p>
-          <div class="field-group"><label>Nom de l'entreprise</label><input type="text" value="Ménage Express Lyon"></div>
+          <div class="field-group"><label>Nom de l'entreprise</label><input type="text" id="regl-nom" placeholder="Ex : Ménage Express Lyon"></div>
           <div class="field-row">
-            <div class="field-group"><label>Email professionnel</label><input type="email" value="contact@menageexpress.fr"></div>
-            <div class="field-group"><label>Téléphone</label><input type="text" value="04 78 00 00 00"></div>
+            <div class="field-group"><label>Email professionnel</label><input type="email" id="regl-email" placeholder="Ex : contact@entreprise.fr"></div>
+            <div class="field-group"><label>Téléphone</label><input type="text" id="regl-tel" placeholder="Ex : 04 78 00 00 00"></div>
           </div>
-          <div class="field-group"><label>Zone d'intervention</label><input type="text" value="Lyon et agglomération"></div>
+          <div class="field-group"><label>Zone d'intervention</label><input type="text" id="regl-zone" placeholder="Ex : Lyon et agglomération"></div>
           <div class="field-group">
             <label>Apparence</label>
             <div class="theme-switch-row">
@@ -183,7 +183,7 @@
               <button type="button" class="theme-switch-btn" id="theme-switch-light" onclick="setSebaTheme('light')">☀️ Clair</button>
             </div>
           </div>
-          <button class="btn-em" onclick="showReglToast('Réglages enregistrés')">Enregistrer</button>
+          <button class="btn-em" onclick="saveGeneralInfo()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-identite" style="display:none;">
@@ -286,13 +286,34 @@
   let _ent = null;
   try {
     _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
-    if (_ent && _ent.nom) {
-      const _f = document.querySelector('.sidebar-footer');
-      if (_f) _f.childNodes[0].textContent = _ent.nom;
-      const _inp = document.querySelector('#tab-general input[type="text"]');
-      if (_inp) _inp.value = _ent.nom;
+    if (_ent) {
+      const _f = document.getElementById('sidebar-company');
+      if (_f && _ent.nom) _f.textContent = _ent.nom;
+      if (_ent.nom) document.getElementById('regl-nom').value = _ent.nom;
+      if (_ent.email) document.getElementById('regl-email').value = _ent.email;
+      if (_ent.telephone) document.getElementById('regl-tel').value = _ent.telephone;
+      if (_ent.zone) document.getElementById('regl-zone').value = _ent.zone;
     }
   } catch(e) {}
+
+  // Enregistrement réel du panneau "Informations générales" -- avant ce
+  // correctif, le bouton se contentait d'un toast sans jamais écrire dans
+  // localStorage.sebaEntreprise (demande fondateur 2026-07-21 : changer le
+  // nom d'entreprise "ne changeait rien", restait "Mon entreprise" partout).
+  function saveGeneralInfo() {
+    const nom = document.getElementById('regl-nom').value.trim();
+    if (!nom) { showReglToast('Le nom de l\'entreprise ne peut pas être vide'); return; }
+    _ent = Object.assign({}, _ent, {
+      nom,
+      email: document.getElementById('regl-email').value.trim(),
+      telephone: document.getElementById('regl-tel').value.trim(),
+      zone: document.getElementById('regl-zone').value.trim(),
+    });
+    localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
+    const _f = document.getElementById('sidebar-company');
+    if (_f) _f.textContent = nom;
+    showReglToast('Réglages enregistrés');
+  }
 
   /* ── Services & tarifs (réels, alimentent devis-nouveau.html) ──
      Fallback 'autre', même convention que dashboard.html/devis-nouveau.html. */
