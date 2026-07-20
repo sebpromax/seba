@@ -8,7 +8,7 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 
 Ces actions ne peuvent être faites que par toi (accès au dashboard Supabase) — sans elles, les fonctionnalités correspondantes restent en mode démo local uniquement sur le site en production. Coche au fur et à mesure.
 
-- [ ] **Authentification universelle Client + Employé (2026-07-19)** : rejouer `migrations/20260719_client_espace.sql` PUIS `migrations/20260719c_universal_auth_employe.sql` (dans cet ordre — le 2e référence `client_accounts`), ou le schéma complet `supabase-schema.sql`, sur ta base Supabase → SQL Editor.
+- [x] **Schéma SQL complet (2026-07-20)** : `supabase-schema.sql` rejoué en entier sur la base Supabase réelle (auth universelle, demandes client, chat de mission, clôture de mission, bucket `mission-photos`) — confirmé "Success. No rows returned".
 - [ ] **Authentification universelle Client + Employé (2026-07-19)** : déployer les Edge Functions **`client-provision`** et **`employe-provision`** — voir section 1k, point 6 ci-dessous.
 - [ ] **Authentification universelle Client + Employé (2026-07-19)** : configurer un serveur SMTP personnalisé dans Supabase → Authentication → Email Templates / SMTP Settings. Le SMTP par défaut de Supabase a une limite très basse (quelques emails/heure) et sert désormais à la fois les invitations client ET employé (`inviteUserByEmail`) — indispensable avant du trafic réel, sinon les invitations ne partent plus une fois le quota atteint.
 
