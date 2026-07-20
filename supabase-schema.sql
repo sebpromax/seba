@@ -1170,3 +1170,73 @@ end;
 $$;
 revoke all on function get_my_employee_interventions(text) from public;
 grant execute on function get_my_employee_interventions(text) to authenticated;
+
+-- ── 36. Clôture de mission côté employé (espace-terrain.html, 2026-07-20) ──
+-- Meme mur d'ecriture que pour la LECTURE ci-dessus (seba_state.state_update
+-- et client_requests.client_requests_update exigent tous deux
+-- auth.uid() = user_id, celui du PATRON) -- cette RPC SECURITY DEFINER fait
+-- l'equivalent en ECRITURE, restreinte aux missions ACTUELLEMENT assignees
+-- a l'appelant. Reconstruit tout le tableau interventions (jamais un
+-- jsonb_set positionnel par index -- l'ordre n'est pas garanti stable cote
+-- client), et cloture aussi la client_request liee (statut "terminee")
+-- dans la meme transaction si l'intervention a un requestId.
+create or replace function close_my_intervention(_intervention_id text, _rapport text, _photo_name text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_link employe_accounts;
+  v_state jsonb;
+  v_new_interventions jsonb;
+  v_found boolean := false;
+  v_request_id text;
+begin
+  select * into v_link from employe_accounts where employe_user_id = v_uid;
+  if v_link is null then
+    return jsonb_build_object('ok', false, 'error', 'Compte non relié à une fiche employé.');
+  end if;
+
+  select state into v_state from seba_state where account = v_link.account for update;
+  if v_state is null then
+    return jsonb_build_object('ok', false, 'error', 'Compte introuvable.');
+  end if;
+
+  select
+    jsonb_agg(
+      case
+        when i ->> 'id' = _intervention_id and i ->> 'employeId' = v_link.employe_id
+        then i || jsonb_build_object('done', true, 'rapport', _rapport, 'rapportPhotoName', _photo_name)
+        else i
+      end
+    ),
+    bool_or(i ->> 'id' = _intervention_id and i ->> 'employeId' = v_link.employe_id)
+  into v_new_interventions, v_found
+  from jsonb_array_elements(coalesce(v_state -> 'interventions', '[]'::jsonb)) i;
+
+  if not v_found then
+    return jsonb_build_object('ok', false, 'error', 'Mission introuvable ou non assignée à vous.');
+  end if;
+
+  update seba_state
+  set state = jsonb_set(state, '{interventions}', coalesce(v_new_interventions, '[]'::jsonb)),
+      updated_at = now()
+  where account = v_link.account;
+
+  select i ->> 'requestId' into v_request_id
+  from jsonb_array_elements(v_new_interventions) i
+  where i ->> 'id' = _intervention_id;
+
+  if v_request_id is not null then
+    update client_requests
+    set statut = 'terminee', updated_at = now()
+    where id = v_request_id::uuid and account = v_link.account;
+  end if;
+
+  return jsonb_build_object('ok', true);
+end;
+$$;
+revoke all on function close_my_intervention(text, text, text) from public;
+grant execute on function close_my_intervention(text, text, text) to authenticated;
