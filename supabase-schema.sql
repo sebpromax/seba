@@ -971,6 +971,7 @@ create table if not exists client_requests (
   intervenant_id text,              -- id dans state.employes[], nullable (pas encore assigne)
   intervenant_nom text,
   intervention_id text,             -- id dans state.interventions[] une fois transformee en mission (assignation.html, 2026-07-19)
+  photo_path text,                  -- chemin dans le bucket mission-photos une fois la mission cloturee avec photo (close_my_intervention, 2026-07-20)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -1180,7 +1181,11 @@ grant execute on function get_my_employee_interventions(text) to authenticated;
 -- jsonb_set positionnel par index -- l'ordre n'est pas garanti stable cote
 -- client), et cloture aussi la client_request liee (statut "terminee")
 -- dans la meme transaction si l'intervention a un requestId.
-create or replace function close_my_intervention(_intervention_id text, _rapport text, _photo_name text)
+-- _photo_path (2026-07-20b, stockage reel) : chemin dans le bucket
+-- mission-photos (section 37 juste en dessous), ou null si pas de photo/
+-- echec d'upload -- ecrit a la fois sur l'intervention (rapportPhotoPath,
+-- dans le blob) et sur la client_request liee (colonne photo_path dediee).
+create or replace function close_my_intervention(_intervention_id text, _rapport text, _photo_path text)
 returns jsonb
 language plpgsql
 security definer
@@ -1208,7 +1213,7 @@ begin
     jsonb_agg(
       case
         when i ->> 'id' = _intervention_id and i ->> 'employeId' = v_link.employe_id
-        then i || jsonb_build_object('done', true, 'rapport', _rapport, 'rapportPhotoName', _photo_name)
+        then i || jsonb_build_object('done', true, 'rapport', _rapport, 'rapportPhotoPath', _photo_path)
         else i
       end
     ),
@@ -1231,7 +1236,7 @@ begin
 
   if v_request_id is not null then
     update client_requests
-    set statut = 'terminee', updated_at = now()
+    set statut = 'terminee', photo_path = _photo_path, updated_at = now()
     where id = v_request_id::uuid and account = v_link.account;
   end if;
 
@@ -1240,3 +1245,56 @@ end;
 $$;
 revoke all on function close_my_intervention(text, text, text) from public;
 grant execute on function close_my_intervention(text, text, text) to authenticated;
+
+-- ── 37. Stockage des photos de clôture de mission (2026-07-20) ──
+-- Bucket DISTINCT de intervention-photos (section 12, Palier 2 QA
+-- visuelle) : cette photo-ci n'est jamais analysee par IA, elle sert de
+-- preuve visuelle de fin d'intervention, visible par le PATRON,
+-- l'EMPLOYE assigne ET le CLIENT -- intervention-photos ne l'est jamais
+-- (patron uniquement, upload service_role). Upload DIRECT depuis le
+-- navigateur de l'employe (son propre JWT, jamais service_role) : les
+-- policies RLS font tout le travail d'autorisation, pas d'Edge Function
+-- necessaire pour ce flux. Convention de nommage : {id_demande}/{fichier}
+-- -- id_demande (storage.foldername(name)[1]) est le uuid reel de
+-- client_requests.id, directement joignable dans les policies.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('mission-photos', 'mission-photos', false, 10485760, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
+
+drop policy if exists "mission_photos_insert_employe" on storage.objects;
+create policy "mission_photos_insert_employe" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'mission-photos'
+    -- Verifie EN DIRECT contre client_requests.intervenant_id (assignation
+    -- ACTUELLE) -- meme principe que seba_messages/close_my_intervention.
+    and exists (
+      select 1 from client_requests cr
+      join employe_accounts ea on ea.account = cr.account and ea.employe_id = cr.intervenant_id
+      where cr.id::text = (storage.foldername(name))[1]
+        and ea.employe_user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "mission_photos_select" on storage.objects;
+create policy "mission_photos_select" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'mission-photos'
+    and (
+      exists (
+        select 1 from client_requests cr
+        join seba_state s on s.account = cr.account
+        where cr.id::text = (storage.foldername(name))[1] and s.user_id = auth.uid()
+      )
+      or exists (
+        select 1 from client_requests cr
+        join employe_accounts ea on ea.account = cr.account and ea.employe_id = cr.intervenant_id
+        where cr.id::text = (storage.foldername(name))[1] and ea.employe_user_id = auth.uid()
+      )
+      or exists (
+        select 1 from client_requests cr
+        where cr.id::text = (storage.foldername(name))[1] and cr.client_user_id = auth.uid()
+      )
+    )
+  );
