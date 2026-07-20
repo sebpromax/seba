@@ -62,7 +62,10 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-badge.en_cours{background:var(--badge-success-bg);color:var(--emerald);}
 .ce-badge.terminee{background:var(--bg);color:var(--text-2);}
 .ce-badge.annulee{background:var(--danger-bg);color:var(--danger-text);}
-.ce-request-meta{font-size:.82rem;color:var(--text-2);}
+.ce-request-meta{font-size:.82rem;color:var(--text-2);margin-bottom:10px;}
+.ce-request-chat-btn{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.8rem;font-weight:600;cursor:pointer;min-height:48px;display:inline-flex;align-items:center;gap:6px;}
+@media (hover:hover){.ce-request-chat-btn:hover{border-color:var(--emerald);color:var(--emerald);}}
+@media (hover:none){.ce-request-chat-btn:active{border-color:var(--emerald);color:var(--emerald);}}
 
 .ce-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);grid-column:1/-1;}
 
@@ -91,6 +94,40 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-modal-send:disabled{opacity:.5;cursor:not-allowed;}
 
 .ce-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
+
+/* ── Chat de mission (tripartite Patron/Employé/Client, 2026-07-20) ──
+   Feuille ancrée en bas sur mobile (le clavier réduit la hauteur du
+   viewport -> le panneau, contraint en max-height:85dvh, se redimensionne
+   avec lui : le champ de saisie reste toujours visible juste au-dessus du
+   clavier, jamais de position:fixed collé au bas de l'écran qui risquerait
+   d'être recouvert -- voir cahier des charges mobile 2026-07-19, point 4).
+   Modale centrée classique dès 640px. */
+.mc-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:flex-end;justify-content:center;z-index:600;}
+.mc-overlay.open{display:flex;}
+.mc-panel{background:var(--white);width:100%;max-width:480px;border-radius:var(--r) var(--r) 0 0;display:flex;flex-direction:column;max-height:85vh;max-height:85dvh;}
+@media (min-width:640px){
+  .mc-overlay{align-items:center;padding:20px;}
+  .mc-panel{border-radius:var(--r);max-height:80vh;max-height:80dvh;}
+}
+.mc-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;}
+.mc-title{font-weight:700;font-size:1rem;}
+.mc-sub{font-size:.8rem;color:var(--text-2);margin-top:2px;}
+.mc-close{background:none;border:none;font-size:1.3rem;color:var(--text-2);cursor:pointer;line-height:1;padding:6px;min-width:48px;min-height:48px;flex-shrink:0;}
+.mc-thread{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.mc-row{display:flex;flex-direction:column;max-width:78%;}
+.mc-row.self{align-self:flex-end;align-items:flex-end;}
+.mc-row.other{align-self:flex-start;align-items:flex-start;}
+.mc-author{font-size:.72rem;color:var(--text-2);margin-bottom:3px;padding:0 3px;font-weight:600;}
+.mc-bubble{padding:9px 13px;border-radius:14px;font-size:.88rem;line-height:1.4;word-break:break-word;}
+.mc-row.self .mc-bubble{background:var(--emerald);color:var(--on-emerald);border-bottom-right-radius:4px;}
+.mc-row.other .mc-bubble{background:var(--bg);color:var(--ink);border:1px solid var(--border);border-bottom-left-radius:4px;}
+.mc-time{font-size:.68rem;color:var(--text-2);margin-top:3px;padding:0 3px;}
+.mc-empty{text-align:center;color:var(--text-2);font-size:.86rem;padding:28px 0;}
+.mc-input-row{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(14px, calc(10px + env(safe-area-inset-bottom,0px)));}
+.mc-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;-webkit-appearance:none;appearance:none;}
+.mc-input:focus{border-color:var(--emerald);outline:none;}
+.mc-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
+.mc-send:disabled{opacity:.5;cursor:not-allowed;}
 
 .ce-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 .ce-pw-row input{flex:1;min-width:120px;min-height:48px;-webkit-appearance:none;appearance:none;}
@@ -187,6 +224,24 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Chat de mission (tripartite) -- ouvert depuis une carte de demande -->
+<div class="mc-overlay" id="mc-overlay">
+  <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Chat de la demande">
+    <div class="mc-header">
+      <div>
+        <div class="mc-title" id="mc-title">Chat</div>
+        <div class="mc-sub" id="mc-sub"></div>
+      </div>
+      <button class="mc-close" onclick="closeMissionChat()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="mc-thread" id="mc-thread-mission"></div>
+    <div class="mc-input-row">
+      <input type="text" class="mc-input" id="mc-input" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendMissionChatMessage();">
+      <button class="mc-send" id="mc-send" onclick="sendMissionChatMessage()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <script>
@@ -254,6 +309,8 @@ async function modifierMonMotDePasse() {
   }
 }
 
+let _requestsById = {};
+
 function renderRequestCard(r) {
   return '<div class="ce-request">' +
       '<div class="ce-request-top">' +
@@ -261,6 +318,7 @@ function renderRequestCard(r) {
         '<span class="ce-badge ' + escapeHtml(r.statut) + '">' + (STATUT_LABELS[r.statut] || r.statut) + '</span>' +
       '</div>' +
       '<div class="ce-request-meta">' + (r.intervenantNom ? 'Intervenant : ' + escapeHtml(r.intervenantNom) : 'Pas encore assignée') + '</div>' +
+      '<button type="button" class="ce-request-chat-btn" onclick="openMissionChat(\'' + r.id + '\')">💬 Chat</button>' +
     '</div>';
 }
 
@@ -268,6 +326,8 @@ async function renderRequests() {
   const activeBox = document.getElementById('ce-requests-active');
   const historyBox = document.getElementById('ce-requests-history');
   const requests = await SebaDB.clientPortal.requests.list(_profile.account, _profile.client_id);
+  _requestsById = {};
+  requests.forEach(r => { _requestsById[r.id] = r; });
 
   const active = requests.filter(r => r.statut === 'nouvelle' || r.statut === 'en_cours');
   const history = requests.filter(r => r.statut === 'terminee' || r.statut === 'annulee');
@@ -335,6 +395,65 @@ async function handleLogout() {
   _loggingOut = true;
   await SebaDB.clientPortal.logout();
   window.location.href = 'client-connexion.html';
+}
+
+// ── Chat de mission (tripartite) ──────────────────────────────────────
+// Ancré sur une demande précise (request_id), distinct du fil générique
+// "Messages" ci-dessus (patron<->client, hors contexte de mission).
+let _missionChatRequestId = null;
+function missionChatAuthor(m, req) {
+  if (m.expediteurRole === 'client') return null; // self, pas de nom au-dessus
+  if (m.expediteurRole === 'employe') return (req && req.intervenantNom) || 'Intervenant';
+  return 'Votre prestataire';
+}
+function openMissionChat(requestId) {
+  const req = _requestsById[requestId];
+  if (!req) return;
+  _missionChatRequestId = requestId;
+  document.getElementById('mc-title').textContent = 'Chat — ' + req.titre;
+  document.getElementById('mc-sub').textContent = req.intervenantNom ? 'Avec ' + req.intervenantNom : 'Pas encore d\'intervenant assigné';
+  document.getElementById('mc-input').value = '';
+  document.getElementById('mc-overlay').classList.add('open');
+  renderMissionChatThread();
+  setTimeout(() => document.getElementById('mc-input').focus(), 150);
+}
+function closeMissionChat() {
+  document.getElementById('mc-overlay').classList.remove('open');
+  _missionChatRequestId = null;
+}
+async function renderMissionChatThread() {
+  const box = document.getElementById('mc-thread-mission');
+  if (!_missionChatRequestId) return;
+  const req = _requestsById[_missionChatRequestId];
+  const msgs = await window.SebaQuotes.messagesForRequest(_missionChatRequestId, _profile.account);
+  if (!msgs.length) {
+    box.innerHTML = '<div class="mc-empty">Aucun message pour l\'instant. Écrivez le premier.</div>';
+    return;
+  }
+  box.innerHTML = msgs.map(m => {
+    const self = m.expediteurRole === 'client';
+    const author = missionChatAuthor(m, req);
+    return '<div class="mc-row ' + (self ? 'self' : 'other') + '">' +
+      (author ? '<div class="mc-author">' + escapeHtml(author) + '</div>' : '') +
+      '<div class="mc-bubble">' + escapeHtml(m.texte) + '</div>' +
+    '</div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+async function sendMissionChatMessage() {
+  const inp = document.getElementById('mc-input');
+  const texte = inp.value.trim();
+  if (!texte || !_missionChatRequestId) return;
+  const btn = document.getElementById('mc-send');
+  if (btn.disabled) return; // anti double-tap
+  btn.disabled = true;
+  await window.SebaQuotes.createMessage({
+    account: _profile.account, clientId: _profile.client_id, requestId: _missionChatRequestId,
+    expediteurRole: 'client', destinataireRole: 'patron', texte,
+  });
+  inp.value = '';
+  btn.disabled = false;
+  renderMissionChatThread();
 }
 </script>
 </body>

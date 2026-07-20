@@ -346,13 +346,17 @@ async function validerAssignation() {
   const client = _clientsById[req.clientId];
   const employeNom = emp.prenom + ' ' + emp.nom;
 
-  // A. Vraie mission planifiée dans state.interventions[].
+  // A. Vraie mission planifiée dans state.interventions[]. requestId
+  // (pointeur retour vers client_requests) permet au chat de mission
+  // (espace-terrain.html) de retrouver le fil sans round-trip
+  // supplémentaire -- voir migrations/20260720_mission_chat.sql.
   const intervention = SebaDB.create('interventions', {
     clientId: req.clientId,
     clientName: client ? (client.prenom + ' ' + client.nom) : 'Client',
     service: req.titre,
     date, time,
     employeId: emp.id,
+    requestId: req.id,
     done: false,
   });
 

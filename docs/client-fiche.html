@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
-:root{--danger-text:#EF4444;}
+:root{--danger-text:#EF4444;--modal-overlay-bg:rgba(0,0,0,.5);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -125,9 +125,41 @@
   .demande-titre{font-weight:500;font-size:0.88rem;flex:1;min-width:140px;}
   .demande-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .demande-controls select{font-size:0.78rem;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--ink);}
+  .demande-chat-btn{font-size:0.78rem;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font-weight:500;min-height:44px;}
+  @media (hover:hover){.demande-chat-btn:hover{border-color:var(--emerald);color:var(--emerald);}}
+  @media (hover:none){.demande-chat-btn:active{border-color:var(--emerald);color:var(--emerald);}}
   .demande-empty{font-size:0.85rem;color:var(--text-2);}
   .msg-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;color:var(--ink);background:var(--bg);}
   .msg-empty{font-size:0.82rem;color:var(--text-2);}
+
+  /* ── Chat de mission (tripartite Patron/Employé/Client, 2026-07-20) --
+     ouvert depuis le panneau Demandes, sans quitter la fiche client
+     (decision fondateur : modale/side-panel, contexte visuel conserve). ── */
+  .mc-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:flex-end;justify-content:center;z-index:600;}
+  .mc-overlay.open{display:flex;}
+  .mc-panel{background:var(--white);width:100%;max-width:480px;border-radius:var(--r) var(--r) 0 0;display:flex;flex-direction:column;max-height:85vh;max-height:85dvh;}
+  @media (min-width:640px){
+    .mc-overlay{align-items:center;padding:20px;}
+    .mc-panel{border-radius:var(--r);max-height:80vh;max-height:80dvh;}
+  }
+  .mc-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;}
+  .mc-title{font-weight:700;font-size:1rem;}
+  .mc-sub{font-size:.8rem;color:var(--text-2);margin-top:2px;}
+  .mc-close{background:none;border:none;font-size:1.3rem;color:var(--text-2);cursor:pointer;line-height:1;padding:6px;min-width:48px;min-height:48px;flex-shrink:0;}
+  .mc-thread{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+  .mc-row{display:flex;flex-direction:column;max-width:78%;}
+  .mc-row.self{align-self:flex-end;align-items:flex-end;}
+  .mc-row.other{align-self:flex-start;align-items:flex-start;}
+  .mc-author{font-size:.72rem;color:var(--text-2);margin-bottom:3px;padding:0 3px;font-weight:600;}
+  .mc-bubble{padding:9px 13px;border-radius:14px;font-size:.88rem;line-height:1.4;word-break:break-word;}
+  .mc-row.self .mc-bubble{background:var(--emerald);color:var(--on-emerald);border-bottom-right-radius:4px;}
+  .mc-row.other .mc-bubble{background:var(--bg);color:var(--ink);border:1px solid var(--border);border-bottom-left-radius:4px;}
+  .mc-empty{text-align:center;color:var(--text-2);font-size:.86rem;padding:28px 0;}
+  .mc-input-row{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(14px, calc(10px + env(safe-area-inset-bottom,0px)));}
+  .mc-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;-webkit-appearance:none;appearance:none;}
+  .mc-input:focus{border-color:var(--emerald);outline:none;}
+  .mc-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:6px;font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
+  .mc-send:disabled{opacity:.5;cursor:not-allowed;}
 
   /* NOTES */
   .notes-area{width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);resize:vertical;min-height:90px;line-height:1.5;}
@@ -425,6 +457,24 @@
   </main>
 </div>
 
+<!-- Chat de mission (tripartite) -- ouvert depuis le panneau Demandes -->
+<div class="mc-overlay" id="mc-overlay">
+  <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Chat de la demande">
+    <div class="mc-header">
+      <div>
+        <div class="mc-title" id="mc-title">Chat</div>
+        <div class="mc-sub" id="mc-sub"></div>
+      </div>
+      <button class="mc-close" onclick="closeMissionChat()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="mc-thread" id="mc-thread-mission"></div>
+    <div class="mc-input-row">
+      <input type="text" class="mc-input" id="mc-input" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendMissionChatMessage();">
+      <button class="mc-send" id="mc-send" onclick="sendMissionChatMessage()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <!-- businessTypes.js déjà chargé plus haut (bandeau d'identité) -->
@@ -688,6 +738,7 @@
      client_requests_update reserve ce PATCH au proprietaire du compte --
      voir supabase-schema.sql section 31. ── */
   const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+  let _demandesById = {};
   async function renderDemandes() {
     const box = document.getElementById('demandes-list');
     if (!box || !window.SebaDB || !window.SebaDB.clientPortal) return;
@@ -697,10 +748,13 @@
       return;
     }
     const employes = SebaDB.list('employes') || [];
+    _demandesById = {};
+    demandes.forEach(d => { _demandesById[d.id] = d; });
     box.innerHTML = demandes.map(d => (
       '<div class="demande-row" data-id="' + d.id + '">' +
         '<span class="demande-titre">' + esc(d.titre) + '</span>' +
         '<div class="demande-controls">' +
+          '<button type="button" class="demande-chat-btn" onclick="openMissionChat(\'' + d.id + '\')">💬 Chat</button>' +
           '<select onchange="updateDemandeStatut(\'' + d.id + '\', this.value)">' +
             Object.keys(STATUT_LABELS).map(s => '<option value="' + s + '"' + (s === d.statut ? ' selected' : '') + '>' + STATUT_LABELS[s] + '</option>').join('') +
           '</select>' +
@@ -722,6 +776,66 @@
       intervenantId: employeId || null,
       intervenantNom: emp ? (emp.prenom + ' ' + emp.nom) : null,
     });
+  }
+
+  // ── Chat de mission (tripartite) ──────────────────────────────────────
+  // Ouvert depuis le panneau Demandes, sans quitter la fiche client
+  // (modale) -- ancré sur request_id, distinct du fil générique
+  // "Messages" plus bas sur cette page.
+  let _missionChatRequestId = null;
+  function missionChatAuthor(m, demande) {
+    if (m.expediteurRole === 'patron') return null; // self, pas de nom au-dessus
+    if (m.expediteurRole === 'employe') return (demande && demande.intervenantNom) || 'Intervenant';
+    const client = (SebaDB.list('clients') || []).find(c => c.id === _id);
+    return client ? (client.prenom + ' ' + client.nom) : (_n || 'Client');
+  }
+  function openMissionChat(requestId) {
+    const demande = _demandesById[requestId];
+    if (!demande) return;
+    _missionChatRequestId = requestId;
+    document.getElementById('mc-title').textContent = 'Chat — ' + demande.titre;
+    document.getElementById('mc-sub').textContent = demande.intervenantNom ? 'Avec ' + demande.intervenantNom : 'Pas encore d\'intervenant assigné';
+    document.getElementById('mc-input').value = '';
+    document.getElementById('mc-overlay').classList.add('open');
+    renderMissionChatThread();
+    setTimeout(() => document.getElementById('mc-input').focus(), 150);
+  }
+  function closeMissionChat() {
+    document.getElementById('mc-overlay').classList.remove('open');
+    _missionChatRequestId = null;
+  }
+  async function renderMissionChatThread() {
+    const box = document.getElementById('mc-thread-mission');
+    if (!_missionChatRequestId) return;
+    const demande = _demandesById[_missionChatRequestId];
+    const msgs = await window.SebaQuotes.messagesForRequest(_missionChatRequestId);
+    if (!msgs.length) {
+      box.innerHTML = '<div class="mc-empty">Aucun message pour l\'instant.</div>';
+      return;
+    }
+    box.innerHTML = msgs.map(m => {
+      const self = m.expediteurRole === 'patron';
+      const author = missionChatAuthor(m, demande);
+      return '<div class="mc-row ' + (self ? 'self' : 'other') + '">' +
+        (author ? '<div class="mc-author">' + esc(author) + '</div>' : '') +
+        '<div class="mc-bubble">' + esc(m.texte) + '</div>' +
+      '</div>';
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+  async function sendMissionChatMessage() {
+    const inp = document.getElementById('mc-input');
+    const texte = inp.value.trim();
+    if (!texte || !_missionChatRequestId) return;
+    const btn = document.getElementById('mc-send');
+    if (btn.disabled) return; // anti double-tap
+    btn.disabled = true;
+    await window.SebaQuotes.createMessage({
+      clientId: _id, requestId: _missionChatRequestId, expediteurRole: 'patron', destinataireRole: 'client', texte,
+    });
+    inp.value = '';
+    btn.disabled = false;
+    renderMissionChatThread();
   }
 
   // Email de connexion -- SebaDB.update() classique pour la fiche + provision()
