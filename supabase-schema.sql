@@ -15,9 +15,13 @@ create table if not exists seba_state (
   updated_at timestamptz default now()
 );
 alter table seba_state enable row level security;
+drop policy if exists "state_select" on seba_state;
 create policy "state_select" on seba_state for select using (auth.uid() = user_id);
+drop policy if exists "state_insert" on seba_state;
 create policy "state_insert" on seba_state for insert with check (auth.uid() = user_id);
+drop policy if exists "state_update" on seba_state;
 create policy "state_update" on seba_state for update using (auth.uid() = user_id);
+drop policy if exists "state_delete" on seba_state;
 create policy "state_delete" on seba_state for delete using (auth.uid() = user_id);
 
 -- ── 0b. Compteur d'usage par fonction (ai-relay.ts, send-email.ts, send-push.ts) ──
@@ -49,9 +53,13 @@ create table if not exists clients (
   created_at timestamptz default now()
 );
 alter table clients enable row level security;
+drop policy if exists "clients_select" on clients;
 create policy "clients_select" on clients for select using (auth.uid() = user_id);
+drop policy if exists "clients_insert" on clients;
 create policy "clients_insert" on clients for insert with check (auth.uid() = user_id);
+drop policy if exists "clients_update" on clients;
 create policy "clients_update" on clients for update using (auth.uid() = user_id);
+drop policy if exists "clients_delete" on clients;
 create policy "clients_delete" on clients for delete using (auth.uid() = user_id);
 create index if not exists clients_user_idx on clients (user_id);
 
@@ -68,9 +76,13 @@ create table if not exists interventions (
   created_at timestamptz default now()
 );
 alter table interventions enable row level security;
+drop policy if exists "interv_select" on interventions;
 create policy "interv_select" on interventions for select using (auth.uid() = user_id);
+drop policy if exists "interv_insert" on interventions;
 create policy "interv_insert" on interventions for insert with check (auth.uid() = user_id);
+drop policy if exists "interv_update" on interventions;
 create policy "interv_update" on interventions for update using (auth.uid() = user_id);
+drop policy if exists "interv_delete" on interventions;
 create policy "interv_delete" on interventions for delete using (auth.uid() = user_id);
 create index if not exists interv_user_date_idx on interventions (user_id, date);
 
@@ -88,9 +100,13 @@ create table if not exists devis (
   created_at timestamptz default now()
 );
 alter table devis enable row level security;
+drop policy if exists "devis_select" on devis;
 create policy "devis_select" on devis for select using (auth.uid() = user_id);
+drop policy if exists "devis_insert" on devis;
 create policy "devis_insert" on devis for insert with check (auth.uid() = user_id);
+drop policy if exists "devis_update" on devis;
 create policy "devis_update" on devis for update using (auth.uid() = user_id);
+drop policy if exists "devis_delete" on devis;
 create policy "devis_delete" on devis for delete using (auth.uid() = user_id);
 create index if not exists devis_user_idx on devis (user_id);
 
@@ -109,9 +125,13 @@ create table if not exists factures (
   created_at timestamptz default now()
 );
 alter table factures enable row level security;
+drop policy if exists "factures_select" on factures;
 create policy "factures_select" on factures for select using (auth.uid() = user_id);
+drop policy if exists "factures_insert" on factures;
 create policy "factures_insert" on factures for insert with check (auth.uid() = user_id);
+drop policy if exists "factures_update" on factures;
 create policy "factures_update" on factures for update using (auth.uid() = user_id);
+drop policy if exists "factures_delete" on factures;
 create policy "factures_delete" on factures for delete using (auth.uid() = user_id);
 create index if not exists factures_user_idx on factures (user_id);
 
@@ -127,9 +147,13 @@ create table if not exists employes (
   created_at timestamptz default now()
 );
 alter table employes enable row level security;
+drop policy if exists "employes_select" on employes;
 create policy "employes_select" on employes for select using (auth.uid() = user_id);
+drop policy if exists "employes_insert" on employes;
 create policy "employes_insert" on employes for insert with check (auth.uid() = user_id);
+drop policy if exists "employes_update" on employes;
 create policy "employes_update" on employes for update using (auth.uid() = user_id);
+drop policy if exists "employes_delete" on employes;
 create policy "employes_delete" on employes for delete using (auth.uid() = user_id);
 
 -- ── 6. Profils & Entreprises (tunnel "Flash & Drop", onboarding.html) ──
@@ -145,7 +169,9 @@ create table if not exists profiles (
   created_at timestamptz default now()
 );
 alter table profiles enable row level security;
+drop policy if exists "profiles_select" on profiles;
 create policy "profiles_select" on profiles for select using (auth.uid() = user_id);
+drop policy if exists "profiles_insert" on profiles;
 create policy "profiles_insert" on profiles for insert with check (auth.uid() = user_id);
 create index if not exists profiles_user_idx on profiles (user_id);
 -- Pas de policy update/delete : aucune UI n'ecrit encore sur ces champs
@@ -164,9 +190,11 @@ alter table companies enable row level security;
 -- la policy doit donc verifier la propriete indirectement via le
 -- profil parent, pas un `auth.uid() = user_id` litteral qui n'aurait
 -- rien a comparer sur cette table.
+drop policy if exists "companies_select" on companies;
 create policy "companies_select" on companies for select using (
   exists (select 1 from profiles where profiles.id = companies.profile_id and profiles.user_id = auth.uid())
 );
+drop policy if exists "companies_insert" on companies;
 create policy "companies_insert" on companies for insert with check (
   exists (select 1 from profiles where profiles.id = companies.profile_id and profiles.user_id = auth.uid())
 );
@@ -236,7 +264,9 @@ create table if not exists sync_operations (
 );
 create index if not exists idx_sync_ops_lookup on sync_operations (account, entity, entity_id);
 alter table sync_operations enable row level security;
+drop policy if exists "sync_operations_select" on sync_operations;
 create policy "sync_operations_select" on sync_operations for select using (auth.uid() = user_id);
+drop policy if exists "sync_operations_insert" on sync_operations;
 create policy "sync_operations_insert" on sync_operations for insert with check (auth.uid() = user_id);
 -- Pas de policy update/delete : append-only par design, RLS ferme par défaut sans policy.
 
@@ -251,6 +281,7 @@ create table if not exists entity_versions (
   primary key (account, entity, entity_id)
 );
 alter table entity_versions enable row level security;
+drop policy if exists "entity_versions_select" on entity_versions;
 create policy "entity_versions_select" on entity_versions for select using (
   exists (select 1 from seba_state s where s.account = entity_versions.account and s.user_id = auth.uid())
 );
@@ -271,9 +302,11 @@ create table if not exists sync_conflicts (
   created_at timestamptz default now()
 );
 alter table sync_conflicts enable row level security;
+drop policy if exists "sync_conflicts_select" on sync_conflicts;
 create policy "sync_conflicts_select" on sync_conflicts for select using (
   exists (select 1 from seba_state s where s.account = sync_conflicts.account and s.user_id = auth.uid())
 );
+drop policy if exists "sync_conflicts_resolve" on sync_conflicts;
 create policy "sync_conflicts_resolve" on sync_conflicts for update using (
   exists (select 1 from seba_state s where s.account = sync_conflicts.account and s.user_id = auth.uid())
 ) with check (resolved = true);   -- le client ne peut que MARQUER résolu, jamais réécrire l'historique du conflit lui-même
@@ -387,12 +420,14 @@ on conflict (id) do nothing;
 -- via service_role (l'Edge Function), pas via le JWT du patron, la
 -- colonne `owner` automatique de Storage ne se remplit pas et n'est donc
 -- pas utilisable comme critere ici.
+drop policy if exists "intervention_photos_insert" on storage.objects;
 create policy "intervention_photos_insert" on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'intervention-photos'
     and (storage.foldername(name))[1] = (select account from seba_state where user_id = auth.uid())
   );
+drop policy if exists "intervention_photos_select" on storage.objects;
 create policy "intervention_photos_select" on storage.objects
   for select to authenticated
   using (
@@ -418,6 +453,7 @@ create table if not exists qa_photos (
 );
 create index if not exists idx_qa_photos_intervention on qa_photos (account, intervention_id);
 alter table qa_photos enable row level security;
+drop policy if exists "qa_photos_select" on qa_photos;
 create policy "qa_photos_select" on qa_photos for select using (auth.uid() = user_id);
 -- Pas de policy insert/update/delete pour authenticated : ecrit exclusivement
 -- par vision-qa.ts (service_role) -- une photo/verdict ne doit jamais pouvoir
@@ -455,6 +491,7 @@ create table if not exists alert_logs (
 create index if not exists idx_alert_logs_account_status on alert_logs (account, status);
 create index if not exists idx_alert_logs_intervention on alert_logs (account, intervention_id);
 alter table alert_logs enable row level security;
+drop policy if exists "alert_logs_select" on alert_logs;
 create policy "alert_logs_select" on alert_logs for select using (
   exists (select 1 from seba_state s where s.account = alert_logs.account and s.user_id = auth.uid())
 );
@@ -463,6 +500,7 @@ create policy "alert_logs_select" on alert_logs for select using (
 -- par le trigger ci-dessous), et le with check limite strictement la
 -- transition possible -- impossible de forcer 'resolved' ou de modifier
 -- type_alerte/raison depuis le navigateur.
+drop policy if exists "alert_logs_acknowledge" on alert_logs;
 create policy "alert_logs_acknowledge" on alert_logs for update using (
   exists (select 1 from seba_state s where s.account = alert_logs.account and s.user_id = auth.uid())
 ) with check (status = 'acknowledged');
@@ -549,6 +587,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists qa_photos_alert_trigger on qa_photos;
 create trigger qa_photos_alert_trigger
 after insert on qa_photos
 for each row execute function trigger_qa_alert();
@@ -616,6 +655,7 @@ create index if not exists idx_memoire_embeddings_account on memoire_embeddings 
 create index if not exists idx_memoire_embeddings_intervention on memoire_embeddings (account, intervention_id);
 create index if not exists idx_memoire_embeddings_vector on memoire_embeddings using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 alter table memoire_embeddings enable row level security;
+drop policy if exists "memoire_embeddings_select" on memoire_embeddings;
 create policy "memoire_embeddings_select" on memoire_embeddings for select using (
   exists (select 1 from seba_state s where s.account = memoire_embeddings.account and s.user_id = auth.uid())
 );
@@ -725,9 +765,13 @@ alter table materiaux_couts enable row level security;
 -- (comme clients/devis/factures), pas un artefact genere par un systeme
 -- (contrairement a qa_photos/alert_logs qui sont ecriture service_role
 -- uniquement).
+drop policy if exists "materiaux_couts_select" on materiaux_couts;
 create policy "materiaux_couts_select" on materiaux_couts for select using (auth.uid() = user_id);
+drop policy if exists "materiaux_couts_insert" on materiaux_couts;
 create policy "materiaux_couts_insert" on materiaux_couts for insert with check (auth.uid() = user_id);
+drop policy if exists "materiaux_couts_update" on materiaux_couts;
 create policy "materiaux_couts_update" on materiaux_couts for update using (auth.uid() = user_id);
+drop policy if exists "materiaux_couts_delete" on materiaux_couts;
 create policy "materiaux_couts_delete" on materiaux_couts for delete using (auth.uid() = user_id);
 
 -- ── 23. Paiements ──
@@ -746,9 +790,13 @@ create table if not exists paiements (
 create index if not exists idx_paiements_intervention on paiements (account, intervention_id);
 create index if not exists idx_paiements_client on paiements (account, client_id);
 alter table paiements enable row level security;
+drop policy if exists "paiements_select" on paiements;
 create policy "paiements_select" on paiements for select using (auth.uid() = user_id);
+drop policy if exists "paiements_insert" on paiements;
 create policy "paiements_insert" on paiements for insert with check (auth.uid() = user_id);
+drop policy if exists "paiements_update" on paiements;
 create policy "paiements_update" on paiements for update using (auth.uid() = user_id);
+drop policy if exists "paiements_delete" on paiements;
 create policy "paiements_delete" on paiements for delete using (auth.uid() = user_id);
 
 -- ── 24. Vue de marge par intervention ──
@@ -986,6 +1034,7 @@ drop policy if exists "client_requests_insert" on client_requests;
 -- etabli pour CE client_user_id -- empeche un client authentifie de
 -- creer une demande sous l'account/client_id de quelqu'un d'autre en
 -- forgeant juste les valeurs du formulaire.
+drop policy if exists "client_requests_insert" on client_requests;
 create policy "client_requests_insert" on client_requests for insert with check (
   auth.uid() = client_user_id
   and exists (
@@ -996,6 +1045,7 @@ create policy "client_requests_insert" on client_requests for insert with check 
 drop policy if exists "client_requests_update" on client_requests;
 -- Update reserve au patron (changer statut/intervenant) -- le client ne
 -- modifie jamais une demande apres creation dans cette premiere version.
+drop policy if exists "client_requests_update" on client_requests;
 create policy "client_requests_update" on client_requests for update using (
   exists (select 1 from seba_state s where s.account = client_requests.account and s.user_id = auth.uid())
 );
