@@ -1034,7 +1034,6 @@ drop policy if exists "client_requests_insert" on client_requests;
 -- etabli pour CE client_user_id -- empeche un client authentifie de
 -- creer une demande sous l'account/client_id de quelqu'un d'autre en
 -- forgeant juste les valeurs du formulaire.
-drop policy if exists "client_requests_insert" on client_requests;
 create policy "client_requests_insert" on client_requests for insert with check (
   auth.uid() = client_user_id
   and exists (
@@ -1045,7 +1044,6 @@ create policy "client_requests_insert" on client_requests for insert with check 
 drop policy if exists "client_requests_update" on client_requests;
 -- Update reserve au patron (changer statut/intervenant) -- le client ne
 -- modifie jamais une demande apres creation dans cette premiere version.
-drop policy if exists "client_requests_update" on client_requests;
 create policy "client_requests_update" on client_requests for update using (
   exists (select 1 from seba_state s where s.account = client_requests.account and s.user_id = auth.uid())
 );
