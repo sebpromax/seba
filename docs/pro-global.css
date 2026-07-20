@@ -97,6 +97,13 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   /* largeur imposée par la grille de chaque page,
      mais min/max alignent le contenu correctement */
 }
+/* Sidebar sans logo "Seba" (posée par sidebar.js sur les 12 pages hors
+   tableau de bord, demande fondateur 2026-07-20) : sans ce repère en tête,
+   les groupes de nav restaient plaqués en haut avec un grand vide en
+   dessous -- centre le bloc nav-group verticalement dans l'espace
+   disponible. .sidebar-footer garde margin-top:auto (règle plus bas), qui
+   prime sur justify-content et le maintient collé en bas quoi qu'il arrive. */
+.sidebar.sidebar-no-logo { justify-content: center; }
 @media (min-width: 841px) {
   /* position:fixed (pas sticky) -- demande fondateur explicite 2026-07-20 :
      la sidebar ne doit JAMAIS bouger, sur aucune page, quel que soit le

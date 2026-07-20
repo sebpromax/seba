@@ -100,7 +100,11 @@
 
   /* ── Génération du HTML ──────────────────────────────────────────────────── */
   function build() {
-    var html = '<div class="s-logo"><div class="s-logo-dot"></div>Seba</div>';
+    // Logo "Seba" réservé au tableau de bord (demande fondateur 2026-07-20) :
+    // les 12 autres pages gardent une sidebar recentrée sans ce repère (voir
+    // classe .sidebar-no-logo posée dans init(), qui centre verticalement le
+    // nav via pro-global.css).
+    var html = isInApp() ? '<div class="s-logo"><div class="s-logo-dot"></div>Seba</div>' : '';
 
     NAV.forEach(function (group) {
       var groupCls = 'nav-group' + (group.gapBefore ? ' nav-group-gap' : '');
@@ -129,6 +133,7 @@
       var nav = document.querySelector('nav.sidebar');
       if (!nav) return;
       nav.innerHTML = build();
+      nav.classList.toggle('sidebar-no-logo', !isInApp());
     } catch (e) {
       console.error('sidebar init failed', e);
     }
