@@ -1,0 +1,117 @@
+# Classification déterministe des fichiers SQL du dépôt — environnement local
+# Révisé le 2026-07-22 après analyse frontière snapshot/migrations.
+#
+# Cinq statuts possibles, un seul par fichier :
+#   BASELINE MAÎTRE                        -> appliqué toujours, par défaut
+#   MIGRATION PRODUIT                      -> appliquée toujours, par défaut, APRÈS le baseline, dans l'ordre listé
+#   OVERLAY MANUEL FACULTATIF              -> appliqué uniquement sur commande explicite (--with-rgpd)
+#   HISTORIQUE ABSORBÉ — NE PAS REJOUER    -> documentation seule, jamais exécuté par les scripts
+#   SCRIPT DE TEST — NE PAS APPLIQUER      -> jamais un objet de schéma, exécuté séparément comme test
+#
+# Preuve de la classification : voir chaque ligne ci-dessous + l'analyse
+# complète dans _architecture/PHASE_1A_CHECKPOINT.md (section T0/environnement local).
+#
+# RÈGLE ACTÉE EN PHASE 1C (2026-07-22) : à partir de maintenant, le baseline
+# ci-dessus reste FIGÉ. Toute nouvelle correction produit devient une entrée
+# de la section [PRODUCT-MIGRATIONS] ci-dessous -- jamais fusionnée dans
+# supabase-schema.sql. Reconstruction cible : baseline figé + migrations
+# produit ordonnées + overlay RGPD uniquement sur demande explicite.
+
+# ══════════════════════════════════════════════════════════════════
+# BASELINE (appliqué par défaut, sans option)
+# ══════════════════════════════════════════════════════════════════
+[BASELINE]
+supabase-schema.sql
+# Commit de référence : 51d55ffb41d1a48e68ba6467def8614165b1e718 (2026-07-20 11:05:53 +0200)
+# Voir scripts/local-db/BASELINE_MANIFEST.txt pour le hash exact et la règle de revalidation.
+
+# ══════════════════════════════════════════════════════════════════
+# MIGRATIONS PRODUIT (appliquées par défaut, dans l'ordre listé, APRÈS le baseline)
+# Jamais fusionnées dans supabase-schema.sql -- chaque fichier reste une
+# migration à part entière, même après application en production.
+# ══════════════════════════════════════════════════════════════════
+[PRODUCT-MIGRATIONS]
+migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql
+# T2 : corrige la divergence de secteur (menage/conciergerie/maintenance/autre)
+# et rend create_profile_and_company idempotente/sûre en cas d'appel concurrent.
+# Voir l'en-tête du fichier pour le détail complet.
+
+# ══════════════════════════════════════════════════════════════════
+# OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
+# ══════════════════════════════════════════════════════════════════
+[OVERLAY-RGPD]
+migrations/2026-07-11-rgpd-suppression-compte.sql
+# Statut : OVERLAY MANUEL FACULTATIF.
+# Raison : cette migration porte son propre en-tête "À exécuter dans l'éditeur
+# SQL Supabase (action fondateur)" -- conçue dès l'origine comme une action
+# manuelle ponctuelle, jamais fusionnée dans supabase-schema.sql (confirmé :
+# aucune trace de "erase_account_completely"/"rgpd" dans le baseline, grep
+# insensible à la casse, zéro résultat). Ne doit donc jamais s'appliquer
+# implicitement lors d'une reconstruction standard.
+
+# ══════════════════════════════════════════════════════════════════
+# HISTORIQUE ABSORBÉ — documentation uniquement, NE JAMAIS REJOUER
+# Chacune des 9 lignes suivantes crée un objet DÉJÀ présent dans le baseline
+# actuel de supabase-schema.sql. Les rejouer après le baseline provoque au
+# mieux un no-op silencieux, au pire une erreur (cas réel rencontré :
+# renommage de paramètre RPC, voir 20260720b ci-dessous).
+# ══════════════════════════════════════════════════════════════════
+# migrations/20260709_create_client_memoire.sql
+#   Objet absorbé   : vue `client_memoire`
+#   Preuve           : supabase-schema.sql:861 (commentaire renvoie explicitement à ce fichier)
+#   Raison non-exec  : vue déjà créée dans le baseline, recréation redondante
+
+# migrations/20260709_create_api_usage_guardrail.sql
+#   Objet absorbé   : table `api_usage_daily`
+#   Preuve           : supabase-schema.sql:905
+#   Raison non-exec  : table déjà créée dans le baseline
+
+# migrations/20260716_create_seba_messages.sql
+#   Objet absorbé   : table `seba_messages`
+#   Preuve           : supabase-schema.sql (table présente) ; fichier s'auto-déclare
+#                      "Idempotent : peut être rejoué sans risque. Voir supabase-schema.sql" (ligne 2)
+#   Raison non-exec  : déjà dans le baseline, ré-exécution documentée comme inutile par l'auteur lui-même
+
+# migrations/20260719_client_espace.sql
+#   Objet absorbé   : tables `client_accounts`, `client_requests`
+#   Preuve           : supabase-schema.sql:999, 1012 ; fichier s'auto-déclare
+#                      "Idempotent : peut être rejoué sans risque. Voir supabase-schema.sql" (ligne 4)
+#   Raison non-exec  : déjà dans le baseline
+
+# migrations/20260719c_universal_auth_employe.sql
+#   Objet absorbé   : table `employe_accounts`
+#   Preuve           : supabase-schema.sql:329
+#   Raison non-exec  : déjà dans le baseline
+
+# migrations/20260719d_client_requests_intervention_link.sql
+#   Objet absorbé   : colonne `intervention_id` sur `client_requests`
+#   Preuve           : supabase-schema.sql:1020, intégrée directement dans la définition de table
+#                      (pas un `alter table` séparé -- le baseline reflète déjà l'état final fusionné)
+#   Raison non-exec  : colonne déjà présente dans la définition de table du baseline
+
+# migrations/20260720_mission_chat.sql
+#   Objet absorbé   : colonne `request_id` sur `seba_messages`
+#   Preuve           : supabase-schema.sql:1067
+#   Raison non-exec  : déjà dans le baseline
+
+# migrations/20260720b_close_mission_rpc.sql
+#   Objet absorbé   : fonction `close_my_intervention` -- MAIS sous une forme SUPERSÉDÉE
+#                      (paramètre nommé `_photo_name`, remplacé ensuite par `_photo_path`)
+#   Preuve           : ce fichier définit `_photo_name` (ligne 20) ; le baseline a `_photo_path`
+#                      (supabase-schema.sql:1236) -- la version du baseline vient de 20260720c, pas de ce fichier
+#   Raison non-exec  : rejouer ce fichier après le baseline ÉCHOUE (PostgreSQL refuse de renommer un
+#                      paramètre via CREATE OR REPLACE) -- confirmé empiriquement le 2026-07-22
+
+# migrations/20260720c_mission_photos_storage.sql
+#   Objet absorbé   : fonction `close_my_intervention(..., _photo_path)`, bucket `mission-photos`
+#   Preuve           : supabase-schema.sql:1236 (fonction, forme finale identique), :1309 (bucket)
+#   Raison non-exec  : déjà dans le baseline, sous sa forme finale exacte
+
+# ══════════════════════════════════════════════════════════════════
+# SCRIPT DE TEST — jamais un objet de schéma, jamais appliqué au schéma
+# ══════════════════════════════════════════════════════════════════
+# migrations/20260709_create_client_memoire.test.sql
+#   Nature : script de vérification RLS manuel (son propre en-tête le dit explicitement :
+#            conçu pour être collé dans Supabase SQL Editor après déploiement de client_memoire).
+#   Traitement : réutilisé tel quel comme test dans scripts/local-db/verify.sh, JAMAIS
+#            listé comme migration de schéma à appliquer.

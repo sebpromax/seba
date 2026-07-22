@@ -1,0 +1,21 @@
+# Manifeste de provenance du baseline local — SEBA
+# Généré le 2026-07-22. Ne pas modifier à la main : régénérer si supabase-schema.sql change.
+
+BASELINE_FILE="supabase-schema.sql"
+BASELINE_COMMIT="51d55ffb41d1a48e68ba6467def8614165b1e718"
+BASELINE_COMMIT_DATE="2026-07-20T11:05:53+02:00"
+BASELINE_COMMIT_MESSAGE="chore: supabase-schema.sql — retire 2 drop policy redondants"
+BASELINE_SHA256="2b3f8ace9a2510b62536c1d4660d63ae42f271a806b16d620600340828a4ea37"
+
+# RÈGLE OBLIGATOIRE :
+# Toute modification future de supabase-schema.sql invalide la classification
+# de scripts/local-db/migrations-order.txt (section HISTORIQUE ABSORBÉ) tant
+# qu'elle n'a pas été revalidée manuellement :
+#   1. recalculer le sha256 (`sha256sum supabase-schema.sql`) ;
+#   2. si différent de BASELINE_SHA256 ci-dessus, ré-exécuter la vérification
+#      objet par objet de migrations-order.txt (chaque ligne "Preuve") ;
+#   3. mettre à jour BASELINE_COMMIT / BASELINE_COMMIT_DATE / BASELINE_SHA256
+#      ci-dessus uniquement après cette revalidation, jamais avant.
+#
+# rebuild.sh vérifie ce hash avant d'appliquer le baseline et affiche un
+# avertissement (pas un blocage) s'il ne correspond plus à ce manifeste.
