@@ -7,7 +7,7 @@
 window.sebaTheme = {
   KEY: 'seba_theme',
   get() {
-    try { return localStorage.getItem(this.KEY) || 'dark'; } catch (e) { return 'dark'; }
+    try { return localStorage.getItem(this.KEY) || 'light'; } catch (e) { return 'light'; }
   },
   set(theme) {
     document.documentElement.setAttribute('data-theme', theme);

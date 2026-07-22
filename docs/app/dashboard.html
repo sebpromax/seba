@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <title>Seba — L'écosystème des entreprises de terrain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,7 +110,17 @@
     /* ── Header ── */
     .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
     .dh-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-    .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+    /* white-space:nowrap + ellipsis (pas de retour a la ligne) : le texte
+       complet reste dans le DOM (accessibilite/lecture d'ecran intactes),
+       seul l'AFFICHAGE tronque un nom d'entreprise long -- sans ca, la
+       correction du bug "Bonsoir, Nettoyage !" (nom.split(' ')[0] retire,
+       nom complet affiche) faisait parfois passer la salutation sur 2
+       lignes en mobile, decalant tout le contenu suivant de ~27px et
+       revelant un chevauchement latent avec le FAB assistant IA fixe
+       (verifie empiriquement via scripts/qa-dashboard-full.js
+       --viewport=mobile). .dh-left a deja min-width:0 (necessaire pour que
+       text-overflow fonctionne dans un enfant flex). */
+    .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .dh-meta { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--text-2); flex-wrap: wrap; }
     .clock-time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .84rem; color: var(--ink); letter-spacing: .04em; }
     .clock-tz { font-size: .71rem; color: var(--text-2); }
@@ -159,6 +169,29 @@
        distinction entre zones fixes (télémétrie, vecteurs d'action) et zone
        modulable (grille de widgets). Discrets, pas des titres de module. ── */
     .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
+    /* Repris a l'identique a l'interieur de .v2-grid-container (refonte
+       hierarchie dashboard) : sans grid-column:1/-1 explicite, un enfant de
+       cette grille 12-colonnes n'occuperait par defaut que la 1re piste
+       (tres etroit) au lieu de toute la largeur comme les .v2-zone freres. */
+    .v2-grid-container .zone-eyebrow { grid-column: 1 / -1; margin: 18px 2px 2px; }
+    .v2-grid-container .zone-eyebrow:first-child { margin-top: 4px; }
+    /* Lignes d'Horizon (Bible II.5) : visuel d'ambiance "sans cadre", sans
+       label ni valeur lisible -- n'aide pas a decider, retire de la
+       hierarchie principale (refonte produit visible, 2026-07-22). Le
+       canvas et son rendu restent en place (aucune fonctionnalite supprimee,
+       juste masquee) : reactivable en retirant cette regle.
+       visibility:hidden (PAS display:none) : conserve son espace reserve
+       (height:130px + margin-bottom:20px, regle plus haut). display:none
+       aurait fait remonter tout le contenu suivant de ~150px -- verifie
+       empiriquement (scripts/qa-dashboard-full.js --viewport=mobile) que ce
+       decalage suffit a faire chevaucher le bouton "Valider" de l'action
+       prioritaire avec le FAB assistant IA fixe (bottom:28px;right:28px),
+       cliquable a la place du bouton reel sur ce viewport precis. Bug
+       latent preexistant (FAB fixe superposable a du contenu en flux
+       normal, pas nouveau), simplement revele par ce changement -- une
+       vraie correction du FAB merite son propre chantier, hors perimetre
+       ici. */
+    .horizon-section { visibility: hidden; }
 
     /* Cockpit-telemetry/widget-grid/widget-shell/module-* (V1) supprimés avec
        la purge (DASHBOARD_V2_MASTER_PLAN.md §7) — équivalents V2 :
@@ -849,8 +882,11 @@
            sticky (.v2-header-bar) reste en haut, seule cette grille bouge. -->
       <div class="v2-grid-container">
         <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
+        <div class="zone-eyebrow">Recommandations</div>
         <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
+        <div class="zone-eyebrow">Activité commerciale</div>
         <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
+        <div class="zone-eyebrow">Paiements &amp; finances</div>
         <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
       </div>
 
@@ -1427,7 +1463,12 @@
       /* Header */
       const h = new Date().getHours();
       const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
-      document.getElementById('greeting').textContent = salut + ', ' + nom.split(' ')[0] + ' !';
+      /* nom est le nom de l'ENTREPRISE (pas un prénom) -- nom.split(' ')[0]
+         produisait des salutations absurdes ("Bonsoir, Nettoyage !") pour
+         toute entreprise dont le nom commence par un mot courant. Aucun
+         champ prénom n'existe dans ce modèle de données (sebaEntreprise =
+         {nom, secteur, email}) : on salue par le nom complet de l'entreprise. */
+      document.getElementById('greeting').textContent = salut + ', ' + nom + ' !';
       document.getElementById('topbar-date').textContent =
         new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
       startClock(biz);

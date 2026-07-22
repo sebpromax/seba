@@ -1564,7 +1564,13 @@ window.WIDGET_CATALOG = {
 
   'timeline': { id: 'timeline', title: "Journée d'aujourd'hui", size: 'L', category: 'core', source: 'demo',
     keywords: ['planning', "aujourd'hui", 'journée', 'agenda du jour'],
-    defaultVisible: true, defaultOrder: 6, link: { href: '../planning.html', label: 'Voir le planning →' },
+    /* defaultOrder abaisse de 6 a 0.5 (refonte hierarchie dashboard,
+       2026-07-22) : ne s'applique QUE si getEffectiveLayout() n'a ni
+       disposition sauvegardee ni domainOrder (aucun secteur resolu) --
+       cas rare en pratique. L'ordre reellement visible pour un compte
+       avec secteur vient de CORE (docs/services/config-dashboard.js),
+       corrige au meme endroit pour la meme raison. */
+    defaultVisible: true, defaultOrder: 0.5, link: { href: '../planning.html', label: 'Voir le planning →' },
     render(ctx, el) { el.innerHTML = buildTimelineHTML(ctx.demo.timeline); } },
 
   /* Migré vers le squelette V2 (.v2-zone-activite) — voir MIGRATED_TO_V2_IDS
@@ -1976,7 +1982,12 @@ function persistOrder(orderedIds) {
    #cockpit-telemetry, plus de flag ?v2=1 — voir renderAllV2() plus bas,
    seul point d'entrée désormais appelé par dashboard.html.
 ═══════════════════════════════════════════════════════════════ */
-const V2_ZONE_ACTIVITE_IDS = ['activity', 'timeline', 'team'];
+/* 'timeline' (Journée d'aujourd'hui = planning du jour) en tête : hiérarchie
+   dashboard demandée (refonte produit visible, 2026-07-22) -- actions
+   prioritaires, PUIS planning du jour, avant l'activité commerciale
+   générique. Montage par ID (mountV2Zone), pas par classe : simple
+   réordonnancement de tableau, aucun changement de rendu. */
+const V2_ZONE_ACTIVITE_IDS = ['timeline', 'activity', 'team'];
 const V2_ZONE_FINANCE_IDS = ['bento-chart', 'marge-reelle', 'lot-treso'];
 
 /* Widgets montés en instances WidgetV2 (classe, cycle de vie

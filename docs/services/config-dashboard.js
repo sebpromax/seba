@@ -36,9 +36,16 @@
 
   /* Socle commun à tous les domaines — inchangé par rapport aux
      defaultVisible/defaultOrder d'origine du WIDGET_CATALOG. */
+  /* 'timeline' (Journée d'aujourd'hui = planning du jour) déplacé juste
+     après 'serenity-score', avant les mini-métriques (refonte hiérarchie
+     dashboard, 2026-07-22) : widgetsFor() trie par index dans CE tableau
+     (voir plus bas), donc l'ordre ici EST l'ordre d'affichage réel --
+     déplacer defaultOrder sur la définition du widget (widgets.js) n'a
+     aucun effet tant qu'un secteur (donc domainOrder) est actif, seul cet
+     ordre CORE compte alors. */
   var CORE = [
-    'serenity-score', 'metric-0', 'metric-1', 'metric-2', 'metric-3',
-    'bento-chart', 'bento-actions', 'timeline', 'activity', 'recos',
+    'serenity-score', 'timeline', 'metric-0', 'metric-1', 'metric-2', 'metric-3',
+    'bento-chart', 'bento-actions', 'activity', 'recos',
     'quick-actions', 'goal', 'workspace', 'portal', 'team',
   ];
 
