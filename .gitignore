@@ -5,3 +5,4 @@ docs/audit-screenshots/
 .env
 scripts/local-db/.synthetic-ids.env
 .vscode/mcp.json
+scripts/pilot-test/.pilot-credentials.env
