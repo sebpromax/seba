@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SEBA — Harnais de reproduction T3</title>
+<script>
+  // Config LOCALE explicite, posée AVANT auth.js/seba-data.js. Injectée par
+  // le driver Puppeteer via une balise <script> ajoutée dynamiquement au
+  // chargement (voir test-t3-sync-harness.js) -- ce fichier ne code en dur
+  // aucune URL/clé, locale ou réelle.
+</script>
+</head>
+<body>
+<script src="/docs/auth.js"></script>
+<script src="/docs/seba-data.js"></script>
+<script>
+  // Expose des points d'entrée simples pour le driver Puppeteer
+  // (page.evaluate ne peut appeler que des fonctions déjà en portée globale).
+  window.__t3 = {
+    async signIn(email, password) {
+      return window.sebaAuth.signIn(email, password);
+    },
+    async createDevis(label) {
+      return SebaDB.create('devis', { numero: label, statut: 'envoye', montant: 100 });
+    },
+    getPendingQueue() {
+      try { return JSON.parse(localStorage.getItem('seba_pending_ops') || '[]'); }
+      catch (e) { return []; }
+    },
+    getPendingCount() {
+      return window.__t3.getPendingQueue().length;
+    },
+    getFailedQueue() {
+      try { return JSON.parse(localStorage.getItem('seba_failed_ops') || '[]'); }
+      catch (e) { return []; }
+    },
+    getFailedCount() {
+      return window.__t3.getFailedQueue().length;
+    },
+    isIndicatorVisible() {
+      const el = document.getElementById('seba-sync-indicator');
+      if (!el) return false;
+      const style = getComputedStyle(el);
+      return style.display !== 'none' && el.textContent.trim().length > 0;
+    },
+    indicatorText() {
+      const el = document.getElementById('seba-sync-indicator');
+      return el ? el.textContent.trim() : null;
+    },
+    retrySyncNow() {
+      return SebaDB.retrySyncNow();
+    },
+    syncStatus() {
+      return SebaDB.syncStatus();
+    },
+  };
+</script>
+</body>
+</html>

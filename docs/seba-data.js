@@ -188,9 +188,16 @@
      pur, pushOp() est un no-op immediat, aucune cle localStorage
      supplementaire n'est meme ecrite. */
   const PENDING_KEY = 'seba_pending_ops';
+  const FAILED_KEY = 'seba_failed_ops'; // operations abandonnees apres MAX_OP_ATTEMPTS -- jamais supprimees, deplacees ici (visibles/recuperables via SebaDB.retrySyncNow())
   const DEVICE_KEY = 'seba_device_id';
   const SEQ_KEY = 'seba_client_seq';
   const MAX_OP_ATTEMPTS = 5;
+  const RETRY_DELAYS_MS = [2000, 5000, 15000, 30000, 60000]; // reessai apres echec (HTTP/reseau/operation) : delai progressif, plafonne a 60s, jamais de boucle serree
+  let _syncFailureStreak = 0;
+  function backoffDelay() {
+    const idx = Math.min(Math.max(_syncFailureStreak - 1, 0), RETRY_DELAYS_MS.length - 1);
+    return RETRY_DELAYS_MS[idx];
+  }
 
   function getDeviceId() {
     try {
@@ -216,6 +223,73 @@
   function saveQueue(queue) {
     try { localStorage.setItem(PENDING_KEY, JSON.stringify(queue)); } catch (e) {}
   }
+  function loadFailed() {
+    try { return JSON.parse(localStorage.getItem(FAILED_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function saveFailed(list) {
+    try { localStorage.setItem(FAILED_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  /* ═══ Indicateur visuel (file d'attente/echecs) + reessai manuel ═══
+     Widget minimal auto-injecte par seba-data.js -- aucune page a modifier.
+     Visible uniquement si une operation est en attente ou a echoue.
+     Aucune couleur en dur : uniquement des tokens CSS deja definis par
+     chaque page (theme.css pour les pages pro-global, Tactical Dark pour
+     dashboard.html) -- voir tools/check-design-system.js. */
+  let _syncIndicatorEl = null;
+  function ensureSyncIndicatorEl() {
+    if (_syncIndicatorEl || typeof document === 'undefined' || !document.body) return _syncIndicatorEl;
+    const el = document.createElement('div');
+    el.id = 'seba-sync-indicator';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite'); // role="status" l'implique deja, explicite ici pour la compatibilite des lecteurs d'ecran les moins recents
+    el.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2000;display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--rs,8px);background:var(--white);border:1px solid var(--border);color:var(--ink);font-size:.82rem;box-shadow:var(--shadow-md,0 4px 16px rgba(0,0,0,.4));';
+    const label = document.createElement('span');
+    label.className = 'seba-sync-indicator-label';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Réessayer';
+    btn.style.cssText = 'background:var(--emerald);color:var(--on-emerald,#031A12);border:none;border-radius:var(--rs,8px);padding:4px 10px;font-size:.78rem;font-weight:600;cursor:pointer;';
+    btn.addEventListener('click', retrySyncNow);
+    el.appendChild(label);
+    el.appendChild(btn);
+    document.body.appendChild(el);
+    _syncIndicatorEl = el;
+    return el;
+  }
+  function updateSyncIndicator() {
+    if (typeof document === 'undefined') return;
+    const render = () => {
+      const el = ensureSyncIndicatorEl();
+      if (!el) return;
+      const pending = loadQueue().length;
+      const failed = loadFailed().length;
+      if (pending === 0 && failed === 0) { el.style.display = 'none'; return; }
+      el.style.display = 'flex';
+      const parts = [];
+      if (pending > 0) parts.push(pending === 1 ? '1 modification en attente' : pending + ' modifications en attente');
+      if (failed > 0) parts.push(failed === 1 ? '1 echec definitif' : failed + ' echecs definitifs');
+      el.querySelector('.seba-sync-indicator-label').textContent = parts.join(' · ');
+    };
+    if (document.body) render();
+    else document.addEventListener('DOMContentLoaded', render, { once: true });
+  }
+
+  /* Reessai manuel (bouton de l'indicateur ou SebaDB.retrySyncNow()) :
+     replace les operations echouees definitivement dans la file active
+     (compteur d'essais remis a zero) et relance le worker immediatement. */
+  function retrySyncNow() {
+    const failed = loadFailed();
+    if (failed.length) {
+      const queue = loadQueue().concat(failed.map(o => Object.assign({}, o, { attempts: 0 })));
+      saveQueue(queue);
+      saveFailed([]);
+    }
+    _syncFailureStreak = 0;
+    scheduleSyncWorker(0);
+    updateSyncIndicator();
+  }
 
   /* Met en file un patch delta pour une entite -- jamais l'objet seba_state
      entier (Pilier 1). `patch` = uniquement les champs concernes : l'objet
@@ -230,21 +304,25 @@
     queue.push({ client_seq: nextClientSeq(), entity, entity_id: entityId, op, patch, attempts: 0 });
     saveQueue(queue);
     scheduleSyncWorker();
+    updateSyncIndicator();
   }
 
   let _syncTimer = null;
   let _syncing = false;
-  function scheduleSyncWorker() {
+  function scheduleSyncWorker(delay) {
     clearTimeout(_syncTimer);
-    _syncTimer = setTimeout(syncWorker, 800); // meme debounce que l'ancien push blob, comportement percu inchange
+    _syncTimer = setTimeout(syncWorker, typeof delay === 'number' ? delay : 800); // 800ms = meme debounce que l'ancien push blob (ecriture normale) ; delay explicite = reessai (flush au chargement, backoff, evenement online)
   }
 
   /* Vide seba_pending_ops vers sync-push.ts par lots. Idempotent cote
      serveur (unique(account, device_id, client_seq)) : rejouer le meme
      lot apres une coupure ne duplique jamais rien, donc aucune precaution
-     particuliere n'est necessaire ici en cas de double declenchement. */
+     particuliere n'est necessaire ici en cas de double declenchement.
+     Echec (HTTP hors 2xx/207, ou reseau) : re-essai automatique avec
+     delai progressif (backoffDelay()), jamais silencieux -- la file reste
+     intacte et l'indicateur visuel reste affiche. */
   async function syncWorker() {
-    if (_syncing) return;
+    if (_syncing) { scheduleSyncWorker(500); return; } // deja un run en cours : on repousse au lieu de perdre silencieusement ce declenchement
     const cfg = window.SEBA_CONFIG;
     if (!hasSupabase || !SupabaseAdapter._hasSession(cfg)) return; // mode demo/anonyme : rien a synchroniser
     const queue = loadQueue();
@@ -279,7 +357,10 @@
       });
 
       if (!res.ok && res.status !== 207) {
-        console.warn('[seba-data] sync-push en echec (HTTP ' + res.status + ') — la file reste intacte, re-essai plus tard.');
+        console.warn('[seba-data] sync-push en echec (HTTP ' + res.status + ') — la file reste intacte, re-essai automatique programme.');
+        _syncFailureStreak++;
+        scheduleSyncWorker(backoffDelay());
+        updateSyncIndicator();
         return;
       }
       const body = await res.json();
@@ -287,26 +368,38 @@
       const acked = new Set(results.filter(r => r.status === 'applied' || r.status === 'ack_duplicate').map(r => r.client_seq));
       const errored = new Set(results.filter(r => r.status === 'error').map(r => r.client_seq));
 
-      const remaining = queue
+      const candidates = queue
         .filter(o => !acked.has(o.client_seq))
-        .map(o => errored.has(o.client_seq) ? Object.assign({}, o, { attempts: o.attempts + 1 }) : o)
-        .filter(o => {
-          if (o.attempts > MAX_OP_ATTEMPTS) {
-            console.error('[seba-data] operation abandonnee apres ' + MAX_OP_ATTEMPTS + ' echecs (' + o.entity + '/' + o.entity_id + '), retiree de la file.', o);
-            return false;
-          }
-          return true;
-        });
+        .map(o => errored.has(o.client_seq) ? Object.assign({}, o, { attempts: o.attempts + 1 }) : o);
+      const remaining = [];
+      const newlyFailed = [];
+      candidates.forEach(o => {
+        if (o.attempts > MAX_OP_ATTEMPTS) newlyFailed.push(o);
+        else remaining.push(o);
+      });
+      if (newlyFailed.length) {
+        saveFailed(loadFailed().concat(newlyFailed));
+        console.error('[seba-data] ' + newlyFailed.length + ' operation(s) deplacee(s) vers seba_failed_ops apres ' + MAX_OP_ATTEMPTS + ' echecs -- jamais supprimees, toujours visibles/recuperables (indicateur + SebaDB.retrySyncNow()).', newlyFailed);
+      }
       saveQueue(remaining);
-      if (remaining.length) scheduleSyncWorker(); // ops restantes (erreurs recuperables) : re-essai differe, pas de boucle serree
+      if (remaining.length) {
+        _syncFailureStreak++;
+        scheduleSyncWorker(backoffDelay()); // erreurs par operation (ex: 207 partiel) : meme politique de re-essai que l'echec HTTP global, pas de boucle serree
+      } else {
+        _syncFailureStreak = 0; // lot entierement acquitte : on repart a zero pour le prochain echec eventuel
+      }
+      updateSyncIndicator();
     } catch (e) {
-      console.warn('[seba-data] sync-push impossible (reseau) — la file reste intacte, re-essai a la prochaine ecriture ou reconnexion.', e.message);
+      console.warn('[seba-data] sync-push impossible (reseau) — la file reste intacte, re-essai automatique programme.', e.message);
+      _syncFailureStreak++;
+      scheduleSyncWorker(backoffDelay());
+      updateSyncIndicator();
     } finally {
       _syncing = false;
     }
   }
   if (typeof window !== 'undefined') {
-    window.addEventListener('online', () => { if (hasSupabase) scheduleSyncWorker(); });
+    window.addEventListener('online', () => { if (hasSupabase) { _syncFailureStreak = 0; scheduleSyncWorker(0); } }); // reconnexion detectee : on retente immediatement, sans heriter du backoff precedent
   }
 
   /* Date ISO en HEURE LOCALE — jamais toISOString() qui bascule au jour
@@ -459,9 +552,19 @@
             listeners.forEach(fn => { try { fn(); } catch (e) {} });
           }
         });
+        // File non vide venant d'une session precedente (coupure, onglet
+        // ferme avant reconnexion...) : on relance le worker au chargement,
+        // sans attendre la prochaine ecriture ou le prochain evenement online.
+        if (loadQueue().length) scheduleSyncWorker(0);
+        updateSyncIndicator();
       }
       return state;
     },
+
+    /* Reessai manuel (bouton "Réessayer" de l'indicateur, ou appel direct
+       depuis une page qui voudrait son propre bouton). */
+    retrySyncNow() { retrySyncNow(); },
+    syncStatus() { return { pending: loadQueue().length, failed: loadFailed().length, syncing: _syncing }; },
 
     hasData() { if (!state) loadState(); return state.clients.length > 0; },
 

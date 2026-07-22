@@ -27,6 +27,7 @@ Environnement de développement/test isolé, distinct du projet Supabase de prod
 | `bash scripts/local-db/seed-synthetic.sh` | Insère seulement le jeu de données synthétique. |
 | `bash scripts/local-db/verify.sh` | Vérifications du baseline : infrastructure, inventaire du schéma, tests RLS élémentaires. Confirme aussi l'**absence** de `erase_account_completely` tant que l'overlay n'a pas été appliqué. |
 | `bash scripts/local-db/verify-rgpd-overlay.sh` | Vérifications spécifiques à l'overlay RGPD, à lancer uniquement après `rebuild.sh --with-rgpd` : propriétés de sécurité de la fonction, rejouabilité, puis un appel réel limité à un compte synthétique. |
+| `node scripts/local-db/test-t3-sync-harness.js` | Harnais Puppeteer (T3, synchronisation) : reproduit/valide le comportement de réessai de `docs/seba-data.js` contre une instance locale réelle (Chrome + Supabase local). Le dernier scénario (idempotence réelle côté serveur) s'auto-ignore si la fonction `sync-push` n'est pas servie localement (cas par défaut de cet environnement). |
 
 ## Prérequis
 
