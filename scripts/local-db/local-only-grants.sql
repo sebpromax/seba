@@ -21,6 +21,17 @@
 -- que le privilège d'objet existe). Il n'est PAS une migration -- ne jamais
 -- le copier vers migrations/ ni l'exécuter contre le projet partagé.
 --
+-- AJOUT (2026-07-22, harnais T3) : meme constat pour service_role. Sur un
+-- vrai projet Supabase hébergé, service_role a deja acces a tout le schema
+-- public (pose par la plateforme au provisioning, hors de tout fichier
+-- versionne ici). En local, ce role n'a par defaut AUCUN privilege objet non
+-- plus -- confirme empiriquement via PostgREST (403 "permission denied for
+-- table seba_state", hint "GRANT SELECT ... TO service_role") en testant
+-- l'edge function sync-push.ts (qui utilise le service role key) contre
+-- l'environnement local. Sans ce grant, TOUTE edge function locale utilisant
+-- createClient(url, SERVICE_ROLE_KEY) echoue silencieusement (une simple
+-- ligne introuvable, pas une erreur explicite cote fonction).
+--
 -- STATUT EXPLICITE (2026-07-22, révisé Phase 1C) :
 --   - LOCAL UNIQUEMENT. Ne représente PAS la source de vérité des privilèges
 --     réels de production -- voir scripts/local-db/PRIVILEGE_COMPARISON.md
@@ -39,7 +50,7 @@
 --     retrouver mélangé à une future suite de migrations produit par
 --     inadvertance.
 
-grant usage on schema public to anon, authenticated;
+grant usage on schema public to anon, authenticated, service_role;
 
 do $$
 declare
@@ -52,5 +63,27 @@ begin
   loop
     execute format('grant select, insert, update, delete on public.%I to authenticated', t);
     execute format('grant select on public.%I to anon', t);
+    execute format('grant all on public.%I to service_role', t);
+  end loop;
+end $$;
+
+-- Meme constat pour les fonctions : seul le proprietaire (postgres) a EXECUTE
+-- par defaut en local. Les RPC deja publiees (create_profile_and_company,
+-- close_my_intervention, erase_account_completely...) portent chacune leur
+-- propre `grant execute ... to authenticated` explicite dans leur migration
+-- -- inchange ici. Ce grant local ne vise QUE service_role, necessaire aux
+-- edge functions (ex. apply_entity_patch appelee par sync-push.ts) et absent
+-- par defaut, meme constat que les tables ci-dessus.
+do $$
+declare
+  f record;
+begin
+  for f in
+    select p.proname as name, pg_get_function_identity_arguments(p.oid) as args
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+  loop
+    execute format('grant execute on function public.%I(%s) to service_role', f.name, f.args);
   end loop;
 end $$;
