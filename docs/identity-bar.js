@@ -1,8 +1,9 @@
 /* identity-bar.js — Seba
- * Bandeau d'identité fixe (nom d'entreprise + secteur), partagé par toutes
- * les pages connectées qui n'ont pas le bandeau riche du dashboard V2
- * (score de sérénité, +Créer, Actions -- ceux-là restent scopés à
- * docs/app/dashboard.html, voir CLAUDE.md "Thème Tactical Dark Absolu").
+ * Bandeau d'identité fixe (nom d'entreprise + secteur), partagé par TOUTES
+ * les pages connectées, dashboard patron compris depuis la refonte du
+ * 2026-07-22 (retrait de l'exception Tactical Dark -- voir dashboard.html,
+ * qui utilise désormais exactement le même socle visuel que clients.html/
+ * planning.html/devis.html/reglages.html).
  *
  * Avant ce fichier, seul le dashboard avait un bandeau fixe en haut de page :
  * en naviguant vers les 9 autres pages connectées, le contenu démarrait à

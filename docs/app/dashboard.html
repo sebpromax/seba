@@ -1,702 +1,170 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
-  <title>Seba — L'écosystème des entreprises de terrain</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Tableau de bord — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../pro-global.css">
-<!-- Squelette V2 (Phase 1) — scopé .v2-*, ne modifie aucun style pro-global.css.
-     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md. -->
-<link rel="stylesheet" href="../css/dashboard-v2.css">
 <script src="../theme.js"></script>
-  <style>
-    :root{
-      /* Blancs translucides utilises sur le fond toujours sombre du Mode
-         Focus (--surface-inverse) -- extraits en token car la ligne .focus-exit
-         a ete touchee par le correctif de z-index du 2026-07-18 (le
-         verificateur de design system signale toute la ligne des qu'on la
-         modifie, meme des valeurs deja presentes avant). */
-      --focus-exit-border: rgba(255,255,255,.2);
-      --focus-exit-text: rgba(255,255,255,.6);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    /* ── Tactical Dark Absolu (refonte) — override scopé à cette page uniquement,
-       pro-global.css n'est pas touché : le reste du site garde sa palette actuelle.
-       Force le thème sombre resserré quel que soit le réglage stocké (on jette le
-       thème clair pour ce cockpit). ── */
-    [data-theme="dark"], [data-theme="light"] {
-      --bg: #09090B; --white: #18181B; --ink: #EDEDED; --text-2: #A1A1AA; --emerald: #10B981;
-      --overlay-scrim: rgba(0,0,0,.35);
-      --sidebar-border-faint: rgba(255,255,255,.08);
-      --sidebar-text-dim: rgba(255,255,255,.35);
-      --sidebar-text-base: rgba(255,255,255,.55);
-    }
-    .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-    /* Benchmark Vercel §3.1 : la classe .mono-num existait mais n'était appliquée
-       nulle part — seul le CA pinné en télémétrie avait sa propre règle locale
-       dupliquée. Applique désormais "chiffres en monospace façon terminal
-       financier" (charte Tactical Dark) à toute donnée numérique principale. */
-    .metric-value, .bc-amount, .focus-score-num {
-      font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums;
-    }
-    /* .goal-current retiré de cette liste (règle dupliquée dans
-       dashboard-v2.css, widget 'goal' migré en V2 — voir §6bis). */
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; position: relative; }
-    /* Grain numérique subtil — évite l'aspect plat, quasi imperceptible mais casse les aplats */
-    body::before {
-      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: var(--grain-opacity); mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-    .app { position: relative; z-index: 2; }
-    /* Fond shader ambiant (bg-shader.js) : sous tout le contenu (z-index:-1,
-       au-dessus du seul fond de page var(--bg)), jamais interactif. */
-    #bg-shader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; display: block; }
-    a { color: inherit; text-decoration: none; }
+<link rel="icon" type="image/jpeg" href="../favicon.jpg">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#F6F5F2">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("../sw.js").catch(function(){})})}</script>
+<!-- Verrou d'accès : redirection immédiate si Supabase configuré et session absente -->
+<script src="../auth.js"></script>
+<script src="../guard.js"></script>
+<script src="../sentry-init.js" defer></script>
+<script src="../analytics-init.js" defer></script>
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+ * Dashboard patron — même socle visuel que clients/planning/devis/reglages
+ * (pro-global.css + theme.css, aucune exception Tactical Dark). Refonte
+ * 2026-07-22 : remplace la grille de widgets personnalisable par une
+ * structure fixe, priorisée, sans élément purement décoratif.
+ * ══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; }
+.mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
-    /* ── App layout ── */
-    /* margin-top = --v2-fixed-header-space (dashboard-v2.css) : le bandeau V2
-       est maintenant position:fixed (demande fondateur, voir commentaire
-       .v2-header-bar dans dashboard-v2.css) et sort donc du flux normal —
-       sans ce décalage, la sidebar et le contenu démarreraient sous le
-       bandeau au lieu de commencer juste en dessous. */
-    .app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; margin-top: var(--v2-fixed-header-space); }
+.layout { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
 
-    /* ── Sidebar ── */
-    /* position/height/responsive behavior fournis par pro-global.css (base sticky + bascule mobile fixed) */
-    /* Décalage desktop uniquement (même seuil que le repli mobile de
-       pro-global.css, 840/841px) : la sidebar doit démarrer sous le bandeau
-       fixe, pas à top:0, sinon elle passerait derrière lui pendant le
-       scroll. Sur mobile, pro-global.css bascule .sidebar en tiroir plein
-       écran (position:fixed inset haut/bas) — non concerné par ce décalage. */
-    @media (min-width: 841px) {
-      .sidebar { top: var(--v2-fixed-header-space); height: calc(100vh - var(--v2-fixed-header-space)); }
-    }
-    /* Sélecteurs préfixés .sidebar (au lieu de bruts) : même spécificité que
-       .sidebar .nav-item/.s-logo/etc. dans pro-global.css (partagé, chargé
-       avant ce <style>), donc CES valeurs gagnent sur cette page — sans
-       toucher pro-global.css (rayon d'impact large, CLAUDE.md). Resserré
-       (logo/labels/items/footer) pour que la sidebar tienne sans son
-       mini-scroll interne (overflow-y:auto de pro-global.css) sur les
-       hauteurs d'écran réduites (~700-800px) : mesuré à 666px de contenu
-       nécessaire avant ce resserrement, contre ~595px disponibles sous le
-       bandeau fixe à 700px de haut — demande fondateur "sidebar fixe, zéro
-       scroll, même mini". */
-    .sidebar .s-logo { display: flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; padding: 0 20px 12px; border-bottom: 1px solid var(--sidebar-border-faint); margin-bottom: 8px; }
-    .s-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
-    .sidebar .nav-group { padding: 0 10px; margin-bottom: 4px; }
-    .sidebar .nav-group-gap { margin-top: 12px; }
-    .sidebar .nav-label { font-size: .68rem; font-weight: 600; color: var(--sidebar-text-dim); text-transform: uppercase; letter-spacing: .07em; padding: 0 10px 5px; }
-    .sidebar .nav-item { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: var(--rs); font-size: .875rem; color: var(--sidebar-text-base); cursor: pointer; margin-bottom: 1px; transition: background .15s, color .15s; }
-    .nav-item:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
-    .nav-item.active { background: rgba(0,255,157,.12); color: var(--emerald); }
-    .nav-item .ni-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); opacity: 0; transition: opacity .15s; }
-    .nav-item.active .ni-dot { opacity: 1; }
-    .sidebar .sidebar-footer { margin-top: auto; padding: 10px 20px; border-top: 1px solid var(--sidebar-border-faint); font-size: .78rem; color: var(--sidebar-text-dim); }
-    .sidebar-footer strong { display: block; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: 2px; }
+/* ── En-tête pleine largeur ── */
+.db-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.db-header-left { min-width: 0; }
+.db-greeting { font-size: 1.4rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.db-date { font-size: .84rem; color: var(--text-2); margin-top: 3px; text-transform: capitalize; }
+.db-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; position: relative; }
+.db-secondary-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); padding: 6px; min-width: 190px; z-index: 200; box-shadow: var(--shadow-md); display: none; }
+.db-secondary-menu.open { display: block; }
+.db-secondary-menu a, .db-secondary-menu button { display: block; width: 100%; text-align: left; padding: 9px 12px; border-radius: 6px; font-size: .88rem; color: var(--ink); background: none; border: none; cursor: pointer; font-family: inherit; }
+.db-secondary-menu a:hover, .db-secondary-menu button:hover { background: var(--bg); }
+.avatar-wrap { position: relative; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700; color: var(--on-emerald); cursor: pointer; user-select: none; }
+.user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); padding: 6px; min-width: 168px; z-index: 200; box-shadow: var(--shadow-md); display: none; }
+.user-menu.open { display: block; }
+.user-menu a { display: block; padding: 9px 12px; border-radius: 6px; font-size: .88rem; color: var(--ink); }
+.user-menu a:hover { background: var(--bg); }
+.menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.menu-deconnect { color: var(--text-2) !important; }
 
-    /* ── Main ── */
-    .main { padding: 28px 32px 56px; overflow-x: clip; min-width: 0; transition: padding-bottom .3s var(--ease-std); }
-    /* Zone d'exclusion dynamique (audit 1.2) : quand la pile Conscience Seba a au
-       moins une carte visible, on réserve de l'espace en bas du document pour que
-       le flux principal (Vecteurs d'Action, Welcome Checklist) ne se retrouve
-       jamais physiquement sous la pile fixe une fois la page scrollée en bas —
-       classe posée/retirée par updateAuraReserve() dans widgets.js. */
-    .main.has-aura-notifications { padding-bottom: 260px; }
+/* ── Ligne 1 : À traiter maintenant (compact, pas des cartes décoratives) ── */
+.db-alerts { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 20px; overflow: hidden; }
+.db-alert-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.db-alert-row:last-child { border-bottom: none; }
+.db-alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.db-alert-dot.high { background: var(--critical); }
+.db-alert-dot.medium { background: var(--amber); }
+.db-alert-dot.low { background: var(--text-2); }
+.db-alert-label { flex: 1; min-width: 0; font-size: .88rem; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-alert-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: .85rem; color: var(--ink); flex-shrink: 0; }
+.db-alert-action { flex-shrink: 0; font-size: .8rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: var(--rs); white-space: nowrap; }
+.db-alert-action:hover { background: var(--bg); }
+.db-alert-ok { display: flex; align-items: center; gap: 10px; padding: 16px 18px; color: var(--badge-success-txt); font-size: .88rem; font-weight: 600; }
 
-    /* ── Header ── */
-    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; }
-    .dh-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-    /* white-space:nowrap + ellipsis (pas de retour a la ligne) : le texte
-       complet reste dans le DOM (accessibilite/lecture d'ecran intactes),
-       seul l'AFFICHAGE tronque un nom d'entreprise long -- sans ca, la
-       correction du bug "Bonsoir, Nettoyage !" (nom.split(' ')[0] retire,
-       nom complet affiche) faisait parfois passer la salutation sur 2
-       lignes en mobile, decalant tout le contenu suivant de ~27px et
-       revelant un chevauchement latent avec le FAB assistant IA fixe
-       (verifie empiriquement via scripts/qa-dashboard-full.js
-       --viewport=mobile). .dh-left a deja min-width:0 (necessaire pour que
-       text-overflow fonctionne dans un enfant flex). */
-    .dh-greeting { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .dh-meta { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--text-2); flex-wrap: wrap; }
-    .clock-time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .84rem; color: var(--ink); letter-spacing: .04em; }
-    .clock-tz { font-size: .71rem; color: var(--text-2); }
-    .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    /* color: var(--ink) ajouté -- sans ça, un <button> retombe sur le noir
-       système par défaut, invisible sur le fond sombre --white, et les SVG
-       internes (stroke="currentColor") en héritent aussi (icônes Focus/IA/
-       Personnaliser/Notifications entièrement invisibles). */
-    .topbar-btn { width: 36px; height: 36px; border-radius: var(--rs); border: 1.5px solid var(--border); background: var(--white); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: border-color .15s; }
-    .topbar-btn:hover { border-color: var(--ink); }
-    .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--emerald); color: var(--on-emerald); font-size: .58rem; font-weight: 700; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .notif-wrap { position: relative; }
-    .notif-panel { width: 300px; max-width: 80vw; padding: 4px 0 6px; }
-    /* #notif-panel (ID, gagne toujours sur .user-menu{z-index:200}) : la
-       Welcome Checklist rendait le panneau visuellement/fonctionnellement
-       inaccessible pour tout nouvel utilisateur -- confirme en prod,
-       audit 2026-07-18. */
-    #notif-panel { z-index: 1500; }
-    .notif-panel-head { font-size: .76rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; padding: 8px 14px 6px; }
-    .notif-item { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; border-radius: 6px; font-size: .84rem; color: var(--ink); }
-    .notif-item:hover { background: var(--bg); }
-    .notif-item .ni-sub { font-size: .74rem; color: var(--text-2); }
-    .notif-empty { padding: 16px 14px 18px; font-size: .84rem; color: var(--text-2); text-align: center; }
-    .avatar-wrap { position: relative; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; color: var(--on-emerald); cursor: pointer; transition: opacity .15s; user-select: none; }
-    .avatar:hover { opacity: .85; }
-    .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); padding: 6px; min-width: 168px; z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.08); display: none; }
-    .user-menu.open { display: block; }
-    .user-menu a { display: block; padding: 9px 12px; border-radius: 6px; font-size: .88rem; color: var(--ink); }
-    .user-menu a:hover { background: var(--bg); }
-    .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
-    .menu-deconnect { color: var(--text-2) !important; }
+/* ── Grille 12 colonnes ── */
+.db-grid { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 20px; margin-bottom: 20px; }
+.db-col-8 { grid-column: span 8; min-width: 0; }
+.db-col-4 { grid-column: span 4; min-width: 0; }
+.db-col-7 { grid-column: span 7; min-width: 0; }
+.db-col-5 { grid-column: span 5; min-width: 0; }
+.db-col-12 { grid-column: span 12; min-width: 0; }
+@media (max-width: 1080px) {
+  .db-col-8, .db-col-4, .db-col-7, .db-col-5 { grid-column: span 12; }
+}
 
-    /* ── Metric card ── */
-    .metric-card { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: block; }
-    .metric-card:hover { border-color: rgba(0,255,157,.4); box-shadow: var(--shadow-glow); }
-    .metric-label { font-size: .72rem; color: var(--text-2); font-weight: var(--weight-label); text-transform: uppercase; letter-spacing: var(--tracking-label); margin-bottom: 7px; }
-    .metric-value { font-size: 1.55rem; font-weight: var(--weight-data); letter-spacing: var(--tracking-tight); line-height: var(--leading-data); margin-bottom: 4px; }
-    .metric-unit { font-size: .9rem; font-weight: 400; color: var(--text-2); margin-left: 2px; }
-    .metric-delta { font-size: .73rem; font-weight: 500; }
-    .metric-delta.up { color: var(--emerald); }
-    .metric-delta.down { color: var(--amber); }
+.db-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; }
+.db-panel-title { font-size: .95rem; font-weight: 700; color: var(--ink); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+.db-panel-title a { font-size: .78rem; font-weight: 600; color: var(--emerald); }
 
-    /* ── Eyebrows de section (benchmark Notion §4.1) — rendent visible, dans
-       l'UI elle-même (pas seulement dans les commentaires du code), la
-       distinction entre zones fixes (télémétrie, vecteurs d'action) et zone
-       modulable (grille de widgets). Discrets, pas des titres de module. ── */
-    .zone-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 4px 2px 10px; opacity: .65; }
-    /* Repris a l'identique a l'interieur de .v2-grid-container (refonte
-       hierarchie dashboard) : sans grid-column:1/-1 explicite, un enfant de
-       cette grille 12-colonnes n'occuperait par defaut que la 1re piste
-       (tres etroit) au lieu de toute la largeur comme les .v2-zone freres. */
-    .v2-grid-container .zone-eyebrow { grid-column: 1 / -1; margin: 18px 2px 2px; }
-    .v2-grid-container .zone-eyebrow:first-child { margin-top: 4px; }
-    /* Lignes d'Horizon (Bible II.5) : visuel d'ambiance "sans cadre", sans
-       label ni valeur lisible -- n'aide pas a decider, retire de la
-       hierarchie principale (refonte produit visible, 2026-07-22). Le
-       canvas et son rendu restent en place (aucune fonctionnalite supprimee,
-       juste masquee) : reactivable en retirant cette regle.
-       visibility:hidden (PAS display:none) : conserve son espace reserve
-       (height:130px + margin-bottom:20px, regle plus haut). display:none
-       aurait fait remonter tout le contenu suivant de ~150px -- verifie
-       empiriquement (scripts/qa-dashboard-full.js --viewport=mobile) que ce
-       decalage suffit a faire chevaucher le bouton "Valider" de l'action
-       prioritaire avec le FAB assistant IA fixe (bottom:28px;right:28px),
-       cliquable a la place du bouton reel sur ce viewport precis. Bug
-       latent preexistant (FAB fixe superposable a du contenu en flux
-       normal, pas nouveau), simplement revele par ce changement -- une
-       vraie correction du FAB merite son propre chantier, hors perimetre
-       ici. */
-    .horizon-section { visibility: hidden; }
+/* ── Aujourd'hui (liste chronologique, pas un tableau) ── */
+.db-job-list { display: flex; flex-direction: column; }
+.db-job-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.db-job-row:last-child { border-bottom: none; }
+.db-job-time { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 600; color: var(--text-2); }
+.db-job-main { min-width: 0; }
+.db-job-title { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-job-sub { font-size: .78rem; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; line-height: 1.35; }
+.db-job-side { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.db-job-status { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.db-job-status.a-venir { background: var(--badge-info-bg); color: var(--badge-info-txt); }
+.db-job-status.en-cours { background: var(--badge-warning-bg); color: var(--badge-warning-txt); }
+.db-job-status.terminee { background: var(--badge-success-bg); color: var(--badge-success-txt); }
+.db-job-status.en-retard { background: var(--badge-error-bg); color: var(--badge-error-txt); }
+.db-job-status.non-assignee { background: var(--badge-info-bg); color: var(--badge-info-txt); }
+.db-job-open { font-size: .78rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; padding: 4px 6px; }
+.db-empty { padding: 32px 16px; text-align: center; color: var(--text-2); font-size: .88rem; }
+.db-skeleton-row { height: 44px; border-radius: var(--rs); background: var(--bg); margin-bottom: 8px; }
 
-    /* Cockpit-telemetry/widget-grid/widget-shell/module-* (V1) supprimés avec
-       la purge (DASHBOARD_V2_MASTER_PLAN.md §7) — équivalents V2 :
-       .v2-widget-container/.v2-widget-head dans dashboard-v2.css. */
-    .main { background:
-      radial-gradient(900px 420px at 85% -10%, rgba(0,255,157,.09), transparent 60%),
-      radial-gradient(700px 380px at -10% 30%, rgba(201,169,218,.05), transparent 55%); }
+/* ── Résumé financier ── */
+.db-fin-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.db-fin-row:last-child { border-bottom: none; }
+.db-fin-label { font-size: .82rem; color: var(--text-2); }
+.db-fin-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: .95rem; color: var(--ink); }
+.db-fin-value .u { font-size: .78rem; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+.db-fin-delta { font-size: .72rem; font-weight: 600; margin-left: 6px; }
+.db-fin-delta.up { color: var(--emerald); }
+.db-fin-delta.down { color: var(--amber); }
 
-    /* ── Graphique D3 : conteneur + tooltip ── */
-    .bc-d3-wrap { flex: 1; margin-top: 12px; position: relative; min-height: 0; }
-    .d3-fin-tip { position: absolute; transform: translateX(-50%); background: var(--surface-inverse); border: 1px solid var(--border); color: var(--emerald); font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: .72rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none; box-shadow: var(--shadow-md); z-index: 5; }
-    .d3-fin-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--surface-inverse); }
+/* ── Pipeline commercial (étapes, pas un graphique) ── */
+.db-pipeline-steps { display: flex; gap: 6px; margin-bottom: 14px; }
+.db-pipeline-step { flex: 1; text-align: center; }
+.db-pipeline-bar { height: 6px; border-radius: 4px; background: var(--bg); margin-bottom: 6px; overflow: hidden; }
+.db-pipeline-bar-fill { height: 100%; background: var(--emerald); border-radius: 4px; }
+.db-pipeline-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+.db-pipeline-lbl { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.db-pipeline-conversion { font-size: .82rem; color: var(--text-2); padding-top: 10px; border-top: 1px solid var(--border); }
+.db-pipeline-conversion strong { color: var(--emerald); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
-    /* ── Mini-sparkline des metric cards (posée en fond bas-droit, ne pousse pas le layout) ── */
-    .metric-card { position: relative; }
-    .metric-spark { position: absolute; right: 12px; bottom: 10px; width: 84px; opacity: .7; pointer-events: none; }
+/* ── Recommandations (max 2) ── */
+.db-reco { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.db-reco:last-child { border-bottom: none; }
+.db-reco-title { font-size: .86rem; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.db-reco-desc { font-size: .78rem; color: var(--text-2); line-height: 1.4; margin-bottom: 8px; }
+.db-reco-cta { font-size: .78rem; font-weight: 600; color: var(--emerald); }
 
-    /* Performance mobile : blur coûteux → réduit sous 760px (garde le glass, sans le coût du blur(20px)).
-       .widget-shell gardé dans ce sélecteur bien que retiré du DOM (V1, voir
-       §7) : le retirer ne change rien fonctionnellement et forcerait une
-       nouvelle valeur de couleur en dur sur cette ligne pour rester conforme
-       à tools/check-design-system.js — non-modification délibérée. */
-    @media (max-width: 760px) {
-      .widget-shell, .metric-card { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(255,255,255,.05); }
-      .widget-shell:hover { transform: none; }
-    }
+/* ── Zone secondaire (indicateurs non actionnables, poids visuel faible) ── */
+.db-secondary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-top: 6px; }
+@media (max-width: 640px) { .db-secondary { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.db-secondary-item { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--rs); }
+.db-secondary-label { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.db-secondary-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 1rem; color: var(--text-2); }
 
-    /* ── Drag & Drop Haptique (Bible IV.8) — reciblé sur .v2-widget-container
-       (GridManagerV2, docs/widgets.js) au lieu de .widget-shell (V1, supprimé). ── */
-    .v2-widget-container.is-dragging {
-      transform: scale(1.05);
-      box-shadow: 0 22px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(0,255,157,.35);
-      cursor: grabbing;
-      z-index: 40;
-    }
-    /* Lock : onde lumineuse émeraude sur les bords à la dépose */
-    @keyframes lockWave {
-      0%   { box-shadow: 0 0 0 0 rgba(0,255,157,.55); }
-      70%  { box-shadow: 0 0 0 16px rgba(0,255,157,0); }
-      100% { box-shadow: 0 0 0 16px rgba(0,255,157,0); }
-    }
-    .v2-widget-container.lock-wave { animation: lockWave .65s var(--ease-out); }
-    /* Le placeholder SortableJS (l'espace vide qui "aimante") reprend le style pointillé existant */
-    .sortable-ghost { opacity: .35; border-style: dashed !important; border-color: rgba(0,255,157,.5) !important; }
+/* ── États ── */
+.db-error-banner { background: var(--badge-error-bg); color: var(--badge-error-txt); border-radius: var(--rs); padding: 12px 16px; margin-bottom: 16px; font-size: .86rem; }
 
-    /* ── Timeline ── */
-    .tl-item { display: grid; grid-template-columns: 50px 1fr; gap: 0; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
-    .tl-item:last-child { border-bottom: none; }
-    .tl-item:hover { background: var(--bg); }
-    .tl-item.done { opacity: .5; }
-    .tl-time-col { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding-top: 1px; }
-    .tl-time { font-size: .7rem; font-weight: 600; color: var(--text-2); }
-    .tl-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border); background: transparent; flex-shrink: 0; }
-    .tl-dot.done { background: var(--emerald); border-color: var(--emerald); }
-    .tl-type-pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: .65rem; font-weight: 600; margin-bottom: 3px; }
-    .tl-type-pill.intervention { background: rgba(0,255,157,.12); color: var(--emerald); }
-    .tl-type-pill.devis { background: rgba(255,184,0,.12); color: var(--amber); }
-    .tl-type-pill.client { background: rgba(201,169,218,.12); color: var(--plum); }
-    .tl-type-pill.paiement { background: rgba(0,255,157,.15); color: var(--emerald); }
-    .tl-label { font-size: .85rem; font-weight: 500; margin-bottom: 2px; }
-    .tl-sub { font-size: .76rem; color: var(--text-2); line-height: 1.4; }
-    .tl-empty { padding: 24px 16px; font-size: .85rem; color: var(--text-2); text-align: center; }
+/* ── Bouton primaire / secondaire (réutilise .btn-em existant du site) ── */
+.db-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; background: var(--emerald); color: var(--on-emerald); font-family: 'Inter', sans-serif; font-size: .88rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; white-space: nowrap; }
+.db-btn-secondary { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--white); color: var(--ink); border: 1.5px solid var(--border); border-radius: var(--rs); cursor: pointer; }
+.db-btn-secondary:hover { border-color: var(--ink); }
 
-    /* .reco-* migré vers dashboard-v2.css (widget 'recos' migré en V2 — voir
-       DASHBOARD_V2_MASTER_PLAN.md §6bis) : exclusif à ce widget, aucun
-       consommateur V1 restant. */
+/* Focus visible cohérent (déjà global via pro-global.css :focus-visible, rappelé ici pour les nouveaux composants) */
+.db-alert-action:focus-visible, .db-job-open:focus-visible, .db-btn-secondary:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; }
 
-    /* quick-actions décommissionné en faveur de v2-header — voir
-       DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .qa-grid/.qa-btn retiré
-       (exclusif à ce widget). */
+/* Animations courtes uniquement (<=200ms) */
+.db-panel, .db-alerts { transition: border-color .15s ease; }
 
-    /* .goal-* migré vers dashboard-v2.css (widget 'goal' migré en V2 — voir
-       DASHBOARD_V2_MASTER_PLAN.md §6bis) : exclusif à ce widget, aucun
-       consommateur V1 restant. */
-
-    /* ── Activity ── */
-    .activity-item { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-item:hover { background: var(--bg); }
-    .act-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .act-dot.client { background: var(--plum); }
-    .act-dot.paiement { background: var(--emerald); }
-    .act-dot.devis { background: var(--amber); }
-    .act-dot.intervention { background: var(--emerald); }
-    .act-body { flex: 1; min-width: 0; }
-    .act-label { font-size: .83rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .act-time { font-size: .71rem; color: var(--text-2); margin-top: 1px; }
-
-    /* ── Workspace ── */
-    .ws-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: .83rem; }
-    .ws-row:last-child { border-bottom: none; }
-    a.ws-row { cursor: pointer; transition: background .12s; color: inherit; }
-    a.ws-row:hover { background: var(--bg); }
-    .ws-label { color: var(--text-2); font-size: .76rem; }
-    .ws-val { font-weight: 500; font-family: 'JetBrains Mono', 'SF Mono', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-    .ws-val.link { color: var(--emerald); }
-    .ws-val.warn { color: var(--amber); }
-
-    /* ── Portal ── */
-    .portal-block { padding: 14px 16px; }
-    .portal-name { font-size: .95rem; font-weight: 600; margin-bottom: 3px; }
-    .portal-url-txt { font-size: .76rem; color: var(--text-2); margin-bottom: 10px; word-break: break-all; }
-    .portal-code-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .portal-code-lbl { font-size: .73rem; color: var(--text-2); }
-    .code-chip { font-size: .71rem; font-weight: 700; letter-spacing: .05em; background: var(--bg); border: 1.5px solid var(--border); padding: 3px 9px; border-radius: 6px; }
-    .portal-actions { display: flex; gap: 8px; }
-    .portal-btn { flex: 1; padding: 8px 10px; border-radius: var(--rs); font-size: .76rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--bg); color: var(--ink); transition: all .15s; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
-    .portal-btn:hover { border-color: var(--ink); }
-    .portal-btn.primary { background: var(--ink); color: var(--white); border-color: var(--ink); }
-    .portal-btn.primary:hover { opacity: .88; }
-
-    /* ── Team ── */
-    .team-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; color: inherit; }
-    .team-item:last-child { border-bottom: none; }
-    .team-item:hover { background: var(--bg); }
-    .team-av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; }
-    .team-info { flex: 1; min-width: 0; }
-    .team-name { font-size: .83rem; font-weight: 500; }
-    .team-role { font-size: .72rem; color: var(--text-2); }
-    .team-status { font-size: .67rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
-    .team-status.working { background: rgba(0,255,157,.14); color: var(--emerald); }
-    .team-status.off { background: rgba(255,255,255,.04); color: var(--text-2); border: 1px solid var(--border); }
-
-    /* ── Empty state ── */
-    .empty-state { text-align: center; padding: 80px 24px; }
-    .empty-state h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 8px; }
-    .empty-state p { font-size: .95rem; color: var(--text-2); margin-bottom: 28px; max-width: 380px; margin-left: auto; margin-right: auto; }
-    .btn-em { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 24px; background: var(--emerald); color: var(--on-emerald); font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; }
-
-    /* Serenity Score (Bible I.1, sphère-nébuleuse) décommissionné en faveur de
-       v2-header — voir DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS de rendu
-       (.serenity-wrap/.serenity-canvas/.serenity-readout/.serenity-score-num/
-       .serenity-score-lbl/.serenity-orbit*) retiré : exclusif à ce widget,
-       jamais réutilisé par le Focus Mode (classes .focus-* distinctes, voir
-       plus bas) ni ailleurs. */
-    .oi-lbl { font-size: .63rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
-    .oi-val { font-size: .88rem; font-weight: 700; color: var(--ink); }
-
-    /* ── Vecteurs d'Action (Bible II.4) — cartes de gain, verre depoli + liseré émeraude ── */
-    .action-stream { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-    .action-vector {
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      padding: 14px 18px;
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--emerald); /* liseré vert fluo = gain */
-      border-radius: var(--r);
-      transition: opacity .3s var(--ease-std), transform .3s var(--ease-std), border-color .2s, box-shadow .2s;
-    }
-    .action-vector:hover { border-color: var(--border); border-left-color: var(--emerald); box-shadow: var(--shadow-glow); }
-    .action-vector.leaving { opacity: 0; transform: scale(.8); pointer-events: none; }
-    .av-title { font-size: .88rem; font-weight: 600; color: var(--ink); }
-    .av-amount { font-size: .79rem; color: var(--emerald); font-weight: 700; margin-top: 3px; }
-    .av-validate { flex-shrink: 0; background: var(--emerald); color: var(--on-emerald); border: none; padding: 9px 18px; border-radius: var(--rs); font-family: 'Inter', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .15s; }
-    .av-validate:hover { opacity: .88; }
-    .av-validate:active { transform: scale(.94); }
-
-    /* ── Lignes d'Horizon (Bible II.5) — courbes sans cadre, flux financiers ── */
-    .horizon-section { position: relative; height: 130px; margin-bottom: 20px; }
-    #horizon-line { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
-    .horizon-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface-inverse); border: 1px solid var(--border); color: var(--ink-inverse); font-size: .74rem; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap; opacity: 0; transition: opacity .15s; transform: translate(-50%, -135%); }
-    .horizon-tip.visible { opacity: 1; }
-
-    /* ── Timeline de Vie (Bible III.6) — pouls d'activité, rail vertical fixe ── */
-    .timeline-life-rail { position: fixed; top: 88px; right: 0; bottom: 88px; width: 52px; z-index: 150; pointer-events: none; }
-    #timeline-life { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; pointer-events: auto; }
-    .tl-life-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface-inverse); border: 1px solid var(--border); color: var(--ink-inverse); font-size: .76rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; opacity: 0; transition: opacity .2s; max-width: 220px; white-space: nowrap; transform: translate(-100%, -50%); }
-    .tl-life-tip.visible { opacity: 1; }
-    /* Sous 1180px, le rail empièterait sur un contenu déjà resserré (grille passe à 2 colonnes) — masqué plutôt que gênant */
-    @media (max-width: 1180px) { .timeline-life-rail { display: none; } }
-
-    /* ── Conscience Seba (Bible II.7) — notifications prédictives en "aura" ── */
-    /* Sous 840px : bord gauche de l'écran (la sidebar est un tiroir caché,
-       pas de recouvrement possible). Au-delà de 840px (TD-3) : vrai tiroir
-       à DROITE de l'écran ("Tiroir Droit" du cockpit), plutôt que collée
-       au bord de la sidebar comme avant. */
-    /* max-height + overflow : empêche la pile de grandir sans limite et de recouvrir
-       le flux principal (Vecteurs d'Action, Welcome Checklist) — audit 1.2. La pile
-       elle-même laisse passer les clics (pointer-events:none) ; seules les cartes
-       réellement visibles interceptent les clics qui leur sont destinés. */
-    .aura-stack { position: fixed; left: 24px; bottom: 96px; z-index: 260; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 300px; max-height: 46vh; overflow: hidden; pointer-events: none; }
-    /* Repli à droite (right:24px) dès que la sidebar redevient une colonne fixe
-       (.app bascule à 760px, voir media query "Responsive" plus bas) — un
-       ancien seuil à 841px créait une fenêtre 761-840px où la sidebar est
-       déjà pleine largeur (220px) mais .aura-stack restait encore à
-       left:24px, la faisant chevaucher le pied de sidebar (nom d'entreprise). */
-    @media (min-width: 761px) { .aura-stack { left: auto; right: 24px; } }
-    .aura-stack-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 0 2px 2px; display: none; }
-    @media (min-width: 761px) { .aura-stack:has(.aura-card) .aura-stack-label { display: block; } }
-    /* Mobile : encore plus contenue, pour ne jamais masquer la Welcome Checklist
-       (avant ce correctif, la pile recouvrait ~60% de la hauteur d'écran). */
-    @media (max-width: 840px) { .aura-stack { max-height: 34vh; max-width: 260px; } }
-    .aura-card {
-      position: relative; padding: 14px 16px; pointer-events: auto;
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      opacity: 0; transform: translateY(16px) scale(.92);
-      transition: opacity .4s var(--ease-out), transform .4s cubic-bezier(0.22,1,.36,1);
-      animation: auraPulse 3.2s ease-in-out infinite;
-    }
-    .aura-card.visible { opacity: 1; transform: translateY(0) scale(1); }
-    .aura-card.leaving { opacity: 0 !important; transform: translateY(40px) scale(.7) !important; transition: opacity .4s var(--ease-std), transform .4s var(--ease-std) !important; animation: none; }
-    @keyframes auraPulse {
-      0%, 100% { box-shadow: 0 0 0 1px rgba(255,184,0,.18), 0 0 22px rgba(255,184,0,.14); }
-      50% { box-shadow: 0 0 0 1px rgba(255,184,0,.32), 0 0 32px rgba(255,184,0,.24); }
-    }
-    .aura-badge { display: inline-block; font-size: .68rem; font-weight: 700; color: var(--badge-warning-txt); background: var(--badge-warning-bg); padding: 2px 8px; border-radius: 20px; margin-bottom: 7px; }
-    .aura-msg { font-size: .85rem; font-weight: 500; color: var(--ink); line-height: 1.4; margin-bottom: 12px; }
-    .aura-actions { display: flex; gap: 8px; }
-    .aura-btn { flex: 1; padding: 7px 10px; border-radius: var(--rs); font-family: 'Inter', sans-serif; font-size: .78rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-2); transition: opacity .15s, border-color .15s, color .15s, background .15s; }
-    .aura-btn.ignore:hover { border-color: var(--ink); color: var(--ink); }
-    .aura-btn.validate { background: var(--emerald); color: var(--on-emerald); border-color: var(--emerald); }
-    .aura-btn.validate:hover { opacity: .88; }
-    /* Matérialisation du nouveau Vecteur d'Action après le morphing */
-    .action-vector.materializing { opacity: 0 !important; transform: scale(.85) !important; }
-
-    /* ── Bento Cockpit + Flash ── */
-    /* Sélecteur de période (benchmark Shopify §7.1) — zoom temporel sur la même
-       courbe, pas un changement de vue : "7 jours" réutilise buildHorizonSeries
-       (déjà calculée pour les Lignes d'Horizon), "6 mois" reste buildFinanceSeries. */
-    .bc-period-row{display:flex;gap:6px;margin-bottom:8px;}
-    .bc-period-btn{padding:4px 10px;border-radius:20px;background:var(--bg);border:1.5px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .15s,color .15s,background .15s;}
-    .bc-period-btn:hover{border-color:var(--emerald);color:var(--emerald);}
-    .bc-period-btn.active{background:rgba(0,255,157,.12);border-color:var(--emerald);color:var(--emerald);}
-    /* .bc-pad migré vers dashboard-v2.css (voir plus bas) : aucun consommateur
-       V1 restant (bento-chart/marge-reelle/generic-media-report sont V2). */
-    .bc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
-    .bc-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;}
-    .bc-amount{font-size:2.1rem;font-weight:800;letter-spacing:-.045em;line-height:1;}
-    .bc-amount .bc-u{font-size:1rem;font-weight:500;color:var(--text-2);margin-left:2px;}
-    .bc-delta-row{display:flex;align-items:center;gap:8px;margin-top:5px;}
-    .bc-delta{font-size:.74rem;font-weight:600;}
-    .bc-delta.up{color:var(--emerald);}
-    .bc-delta.dn{color:var(--amber);}
-    .bc-svg-wrap{flex:1;margin-top:12px;position:relative;}
-    .bc-svg{width:100%;display:block;}
-    .bc-months{display:flex;justify-content:space-between;padding-top:5px;font-size:.65rem;color:var(--text-2);}
-    /* QA 2026-07-08 : buildRichEmptyHTML() (widgets.js, benchmark Airbnb §5.1) est
-       injecté directement dans .widget-body pour lot-tournee/lot-pipeline/lot-impayes
-       — sans le wrapper .bc-pad (flex + height:100%) dont bento-chart profite pour
-       centrer son propre état vide. Résultat mesuré (Puppeteer, boundingClientRect) :
-       sur widget L/XL, flex:1 n'a aucun ancêtre flex (.widget-body n'est display:flex
-       que pour S/M) donc justify-content:center ne centre rien ; et même là où
-       .widget-body EST flex (M, ex. lot-impayes), le contenu (icône 48px + titre +
-       sous-titre) réclamait ~174px dans une boîte de ~94px, débordant de 80px.
-       Correctifs : height:100% (fonctionne que le parent soit flex ou non, tant
-       qu'il a une hauteur définie — .widget-body en a toujours une via son propre
-       flex:1) + gabarit sensiblement plus compact pour tenir dans les tailles M/L. */
-    /* .bc-empty-* migré vers dashboard-v2.css (voir plus bas) : même raison
-       que .bc-pad — aucun consommateur V1 restant. */
-    /* bento-actions décommissionné en faveur de v2-header — voir
-       DASHBOARD_V2_MASTER_PLAN.md §4quater. CSS .bento-flash/.flash-*
-       retiré (exclusif à ce widget). */
-    .team-av-wrap{position:relative;display:inline-block;}
-    .team-av-status{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg);}
-    .team-av-status.on{background:var(--emerald);}
-    .team-av-status.pause{background:var(--amber);}
-    .team-av-status.off{background:rgba(255,255,255,.3);}
-
-    /* ── Welcome Checklist ── */
-    .welcome-checklist{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden;}
-    .welcome-checklist::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--emerald),var(--accent-glow));}
-    .wc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-    .wc-title{font-size:.95rem;font-weight:700;}
-    .wc-close{background:none;border:none;cursor:pointer;color:var(--text-2);font-size:1.1rem;line-height:1;padding:2px;}
-    .wc-close:hover{color:var(--ink);}
-    .wc-items{display:flex;flex-direction:column;gap:10px;}
-    .wc-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--rs);border:1px solid var(--border);transition:border-color .2s,background .2s;cursor:default;}
-    .wc-item.done{background:rgba(0,255,157,.04);border-color:rgba(0,255,157,.2);}
-    .wc-item.clickable{cursor:pointer;}
-    .wc-item.clickable:hover{border-color:var(--emerald);background:rgba(0,255,157,.04);}
-    .wc-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,border-color .2s;}
-    .wc-item.done .wc-check{background:var(--emerald);border-color:var(--emerald);}
-    .wc-check-ico{font-size:.65rem;color:var(--ink-inverse);opacity:0;transition:opacity .15s;}
-    .wc-item.done .wc-check-ico{opacity:1;}
-    .wc-text{font-size:.865rem;font-weight:500;flex:1;}
-    .wc-item.done .wc-text{color:var(--text-2);text-decoration:line-through;}
-    .wc-cta{font-size:.78rem;font-weight:600;color:var(--emerald);white-space:nowrap;}
-    .wc-progress{margin-top:14px;display:flex;align-items:center;gap:10px;}
-    .wc-bar-track{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
-    .wc-bar-fill{height:100%;background:var(--emerald);border-radius:99px;transition:width .5s cubic-bezier(0.4,0,0.2,1);}
-    .wc-pct{font-size:.73rem;font-weight:700;color:var(--text-2);white-space:nowrap;}
-
-    /* ── Fab menu (bouton .fab décommissionné en faveur de v2-header, voir
-       DASHBOARD_V2_MASTER_PLAN.md) : seul déclencheur restant = le bouton
-       "+ Créer" du header V2 (position top-right, plus bottom-right — sinon
-       le menu s'ouvrirait dans un coin vide sans bouton pour le justifier). ── */
-    .fab-menu{position:fixed;top:64px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:299;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .2s,transform .2s;}
-    .fab-menu.open{opacity:1;pointer-events:auto;transform:translateY(0);}
-    .fab-item{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;font-weight:600;color:var(--ink);text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.3);transition:border-color .15s,transform .15s;}
-    .fab-item:hover{border-color:var(--emerald);transform:translateX(-2px);}
-    .fab-item-ico{font-size:.9rem;}
-
-    /* ── Cmd+K palette ── */
-    .palette-overlay{position:fixed;inset:0;z-index:500;background:var(--overlay-scrim);backdrop-filter:none;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease,backdrop-filter .2s ease,visibility .2s;}
-    .palette-overlay.open{visibility:visible;opacity:1;pointer-events:auto;backdrop-filter:blur(4px);}
-    .palette-box{background:var(--white);border:1px solid var(--border);border-radius:14px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);overflow:hidden;}
-    .palette-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
-    .palette-ico{color:var(--text-2);font-size:1rem;}
-    .palette-inp{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.95rem;color:var(--ink);background:transparent;}
-    .palette-inp::placeholder{color:var(--text-2);}
-    .palette-results{max-height:320px;overflow-y:auto;}
-    .pal-section{padding:8px 0;}
-    .pal-section-lbl{font-size:.67rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;padding:4px 18px 6px;}
-    .pal-item{display:flex;align-items:center;gap:12px;padding:9px 18px;cursor:pointer;transition:background .12s;}
-    .pal-item:hover,.pal-item.focused{background:rgba(0,255,157,.07);}
-    .pal-item-ico{width:28px;height:28px;border-radius:7px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
-    .pal-item-lbl{font-size:.875rem;font-weight:500;}
-    .pal-item-sub{font-size:.75rem;color:var(--text-2);margin-top:1px;}
-    .palette-foot{padding:8px 18px;border-top:1px solid var(--border);display:flex;gap:16px;align-items:center;}
-    .pal-hint{font-size:.7rem;color:var(--text-2);display:flex;align-items:center;gap:5px;}
-    .pal-key{display:inline-block;padding:2px 6px;background:var(--border);border-radius:4px;font-size:.65rem;font-weight:600;}
-
-    /* ── Confetti canvas ── */
-    #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:499;}
-
-    /* ── Entrance animations ── */
-    @keyframes dbFadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-    @keyframes dbFadeIn{from{opacity:0;}to{opacity:1;}}
-    .dash-header{animation:dbFadeIn .35s ease .05s both;}
-    .welcome-checklist{animation:dbFadeUp .45s cubic-bezier(0.22,1,.36,1) .04s both;}
-    .v2-widget-container{animation:dbFadeUp .5s cubic-bezier(0.22,1,.36,1) both;}
-    .v2-widget-container:nth-child(1){animation-delay:.06s;}
-    .v2-widget-container:nth-child(2){animation-delay:.11s;}
-    .v2-widget-container:nth-child(3){animation-delay:.16s;}
-    .v2-widget-container:nth-child(4){animation-delay:.21s;}
-    .v2-widget-container:nth-child(n+5){animation-delay:.26s;}
-
-    /* ── Metric card radial hover glow ── */
-    .metric-card{overflow:hidden;}
-    .metric-card::after{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(0,255,157,.09) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
-    .metric-card:hover::after{opacity:1;}
-
-    /* ── Chart line draw animation ── */
-    @keyframes chartLineDraw{from{stroke-dashoffset:1600;}to{stroke-dashoffset:0;}}
-    .chart-line-anim{stroke-dasharray:1600;animation:chartLineDraw 1.4s cubic-bezier(0.22,1,.36,1) .55s both;}
-
-    /* ── Sidebar SVG icon ── */
-    .nav-item svg{flex-shrink:0;transition:opacity .15s,color .15s;opacity:.55;}
-    .nav-item:hover svg,.nav-item.active svg{opacity:1;}
-
-    /* ── Micro-interactions ── */
-    .metric-card:active, .portal-btn:active { transform: scale(.985); }
-    .topbar-btn { transition: border-color var(--t-fast) var(--ease-std), box-shadow var(--t-std) var(--ease-std), transform var(--t-fast) var(--ease-std); }
-    .topbar-btn:hover { box-shadow: 0 0 0 3px rgba(0,255,157,.12); }
-    .topbar-btn:active { transform: scale(.94); }
-    a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; border-radius: 4px; }
-
-    /* Ouverture des overlays : zoom doux au lieu d'un pop sec */
-    @keyframes overlayBoxIn { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
-    .palette-overlay.open .palette-box, .ai-bar-overlay.open .ai-bar-box, .shortcuts-overlay.open .shortcuts-box { animation: overlayBoxIn .22s var(--ease-out) both; }
-
-    /* Menu du FAB : apparition en cascade */
-    .fab-menu.open .fab-item { animation: dbFadeUp .28s var(--ease-out) both; }
-    .fab-menu.open .fab-item:nth-child(1) { animation-delay: .05s; }
-    .fab-menu.open .fab-item:nth-child(2) { animation-delay: .10s; }
-    .fab-menu.open .fab-item:nth-child(3) { animation-delay: .15s; }
-
-    /* Accessibilité : réduire les animations si demandé par le système */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 760px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar {}
-      .main { padding: 20px 16px 40px; }
-    }
-
-    /* ── Panneau Personnaliser (bibliothèque de widgets) ── */
-    .customize-panel-overlay{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,.3);display:none;}
-    .customize-panel-overlay.open{display:block;}
-    .customize-panel{position:fixed;top:0;right:0;bottom:0;width:340px;max-width:90vw;background:var(--white);border-left:1px solid var(--border);box-shadow:-8px 0 32px rgba(0,0,0,.4);z-index:521;transform:translateX(100%);transition:transform .25s cubic-bezier(0.22,1,.36,1);display:flex;flex-direction:column;}
-    .customize-panel.open{transform:translateX(0);}
-    .cp-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);}
-    .cp-title{font-size:1rem;font-weight:700;}
-    .cp-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-2);}
-    .cp-body{flex:1;overflow-y:auto;padding:8px 0;}
-    .widget-lib-row{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;font-size:.86rem;cursor:pointer;}
-    .widget-lib-row:hover{background:var(--bg);}
-    .cp-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
-
-    /* Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1
-       (DASHBOARD_V2_MASTER_PLAN.md §7) — tiroir + rendu des 3 widgets
-       d'extension retirés. */
-
-    /* ── Planète de Calibration (Bible V.10) — cérémonie one-shot ── */
-    .calib-overlay{position:fixed;inset:0;z-index:900;background:#020204;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;opacity:0;transition:opacity .6s ease;}
-    .calib-overlay.open{display:flex;}
-    .calib-overlay.visible{opacity:1;}
-    .calib-globe-wrap{position:relative;width:340px;height:340px;}
-    .calib-globe-wrap svg{width:100%;height:100%;}
-    .calib-caption{color:var(--text-2);font-size:.9rem;text-align:center;max-width:320px;min-height:1.4em;transition:color .3s;}
-    .calib-caption.locked{color:var(--emerald);font-weight:600;}
-    .calib-flash{position:absolute;inset:-20px;border-radius:50%;box-shadow:0 0 0 0 rgba(0,255,157,0);pointer-events:none;}
-    .calib-flash.fire{animation:calibFlash .9s ease-out;}
-    @keyframes calibFlash{0%{box-shadow:0 0 0 0 rgba(0,255,157,.55);}100%{box-shadow:0 0 60px 40px rgba(0,255,157,0);}}
-
-    /* ── Toast (TD-4) — remplace les window.alert() ── */
-    .dash-toast{position:fixed;bottom:28px;right:28px;z-index:700;background:var(--white);border:1px solid var(--border);border-left:3px solid var(--emerald);color:var(--ink);padding:12px 18px;border-radius:var(--rs);font-size:.86rem;font-weight:500;box-shadow:0 12px 32px rgba(0,0,0,.4);opacity:0;transform:translateY(12px);transition:opacity .25s ease,transform .25s ease;pointer-events:none;max-width:320px;}
-    .dash-toast.visible{opacity:1;transform:translateY(0);}
-
-    /* ── Pont de Données (Bible V.11) — scan de pixels sur les métriques ── */
-    .metric-value.pixel-scan{animation:pixelScan .5s steps(6) both;}
-    @keyframes pixelScan{
-      0%{filter:none;transform:translateX(0);}
-      15%{filter:blur(1px) brightness(2);transform:translateX(-2px);color:var(--emerald);}
-      30%{transform:translateX(2px);}
-      45%{transform:translateX(-1px);filter:blur(0.5px) brightness(1.6);}
-      60%{transform:translateX(1px);}
-      100%{filter:none;transform:translateX(0);color:inherit;}
-    }
-
-    /* ── Barre de commande IA (simulée) ── */
-    .ai-bar-overlay{position:fixed;inset:0;z-index:500;background:var(--overlay-scrim);backdrop-filter:none;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease,backdrop-filter .2s ease,visibility .2s;}
-    .ai-bar-overlay.open{visibility:visible;opacity:1;pointer-events:auto;backdrop-filter:blur(4px);}
-    .ai-bar-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3),var(--shadow-glow);overflow:hidden;position:relative;}
-    .ai-bar-burst-canvas{position:absolute;inset:0;pointer-events:none;z-index:1;}
-    .ai-bar-inp-wrap{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
-    .ai-bar-ico{color:var(--emerald);font-size:1.1rem;}
-    .ai-bar-inp{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.95rem;color:var(--ink);background:transparent;}
-    .ai-bar-inp::placeholder{color:var(--text-2);}
-    .ai-bar-results{max-height:320px;overflow-y:auto;padding:10px 18px 18px;font-size:.85rem;color:var(--text-2);}
-    .ai-bar-match{display:flex;align-items:center;gap:8px;padding:8px 0;color:var(--ink);}
-    .ai-bar-match .ok{color:var(--emerald);}
-    .ai-bar-hint{padding:8px 18px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-2);}
-
-    /* ── Aide raccourcis clavier ── */
-    .shortcuts-overlay{position:fixed;inset:0;z-index:530;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;}
-    .shortcuts-overlay.open{display:flex;}
-    .shortcuts-box{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:24px 28px;max-width:420px;width:90vw;box-shadow:0 24px 80px rgba(0,0,0,.5);}
-    .shortcuts-box h3{font-size:1rem;font-weight:700;margin-bottom:14px;}
-    .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.85rem;border-bottom:1px solid var(--border);}
-    .shortcut-row:last-child{border-bottom:none;}
-
-    /* ── Mode Focus (Bible I.3) — mise sous vide ── */
-    /* z-index 1002, pas 400 : .focus-overlay etablit son PROPRE contexte
-       d'empilement (position:fixed + z-index) -- monter le z-index de son
-       enfant .focus-exit tout seul ne suffisait pas, l'overlay entier
-       perdait deja face a .v2-dashboard-wrapper (1000) au niveau racine.
-       Confirme avec elementFromPoint() avant/apres correctif, audit 2026-07-18. */
-    .focus-overlay{position:fixed;inset:0;z-index:1002;background:var(--surface-inverse);display:none;flex-direction:column;align-items:center;justify-content:center;gap:28px;opacity:0;transition:opacity .35s var(--ease-std);}
-    .focus-overlay.open{display:flex;}
-    .focus-overlay.visible{opacity:1;}
-    .focus-serenity-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(60vw,520px);height:min(60vw,520px);}
-    #focus-serenity-canvas{position:absolute;inset:0;width:100%;height:100%;}
-    .focus-readout{position:relative;z-index:2;text-align:center;pointer-events:none;}
-    .focus-score-num{font-size:5.5rem;font-weight:800;letter-spacing:-.03em;color:var(--ink-inverse);}
-    .focus-score-lbl{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-top:4px;}
-    .focus-action-line{position:relative;z-index:2;text-align:center;max-width:560px;padding:0 24px;}
-    .focus-action-line .fa-label{display:block;font-size:.72rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
-    .focus-action-line .fa-text{display:block;font-size:1.1rem;font-weight:500;color:var(--ink-inverse);line-height:1.5;margin-bottom:18px;}
-    .focus-action-line .fa-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;background:var(--emerald);color:var(--on-emerald);border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none;animation:focusBlink 2.2s ease-in-out infinite;}
-    @keyframes focusBlink{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.5);}50%{box-shadow:0 0 0 10px rgba(0,255,157,0);}}
-    /* z-index 1001, pas 2 : .v2-dashboard-wrapper (dashboard-v2.css) est a
-       1000 et passait par-dessus ce bouton -- visuellement normal mais
-       cliquer dessus n'atteignait jamais le bouton (confirme en prod,
-       audit 2026-07-18). */
-    .focus-exit{position:fixed;top:24px;right:28px;z-index:1001;background:transparent;border:1px solid var(--focus-exit-border);color:var(--focus-exit-text);padding:8px 16px;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
-    .focus-exit:hover{border-color:rgba(255,255,255,.5);color:var(--ink-inverse);}
-    /* Le superflu se dissout plutôt que de disparaître d'un coup. Reciblé sur
-       .v2-header-bar/.v2-grid-container (remplace l'ancien .widget-grid >
-       .widget-shell — voir DASHBOARD_V2_MASTER_PLAN.md §7, V1 retiré). */
-    body.focus-active .sidebar, body.focus-active .mobile-header, body.focus-active .welcome-checklist,
-    body.focus-active .action-stream, body.focus-active .horizon-section,
-    body.focus-active .timeline-life-rail, body.focus-active .aura-stack,
-    body.focus-active .fab-menu,
-    body.focus-active .v2-header-bar, body.focus-active .v2-grid-container {
-      opacity: 0 !important; filter: blur(6px); pointer-events: none; transition: opacity .3s var(--ease-std), filter .3s var(--ease-std);
-    }
-
-    /* Sobriété de mouvement (P3.2, ticket #17) — neutralise toutes les
-       animations/transitions du cockpit (y compris calibFlash, auraPulse,
-       le shimmer .v2-skeleton) pour les utilisateurs ayant activé la
-       réduction des animations au niveau système. Posé ici plutôt que dans
-       dashboard-v2.css, dont l'en-tête interdit les sélecteurs non préfixés
-       .v2- (un `*` global y contredirait la règle d'isolation du fichier). */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-delay: -1ms !important;
-        animation-duration: 1ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0s !important;
-        scroll-behavior: auto !important;
-      }
-      .v2-skeleton {
-        background: var(--border) !important;
-        animation: none !important;
-      }
-    }
-  </style>
-  <link rel="icon" type="image/jpeg" href="../favicon.jpg">
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#050505">
-  <link rel="apple-touch-icon" href="../icon-192.png">
-  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("../sw.js").catch(function(){})})}</script>
-  <!-- Verrou d'accès : redirection immédiate si Supabase configuré et session absente -->
-  <script src="../auth.js"></script>
-  <script src="../guard.js"></script>
-  <script src="../sentry-init.js" defer></script>
-  <script src="../analytics-init.js" defer></script>
+/* ── Mobile (<768px) ── */
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .main { padding: 20px 16px calc(88px + env(safe-area-inset-bottom,0px)) !important; }
+  .db-header { flex-direction: column; align-items: stretch; }
+  .db-header-actions { justify-content: flex-end; }
+  .db-btn-primary.full-mobile { width: 100%; justify-content: center; order: -1; }
+  .db-grid { gap: 14px; }
+  .db-panel { padding: 14px 16px; }
+  /* Cibles tactiles >= 44px (contrainte mobile explicite) -- desktop garde
+     une densité plus fine (souris), uniquement relevé sous ce seuil. */
+  .db-btn-primary, .db-btn-secondary, .db-alert-action, .db-job-open { min-height: 44px; }
+  .db-btn-secondary { min-width: 44px; }
+  .db-alert-row { padding: 8px 18px; }
+  .db-job-row { padding: 8px 0; }
+}
+</style>
 </head>
 <body>
 <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;width:100%;background:var(--amber);color:var(--on-emerald);text-align:center;padding:6px;font-size:.8rem;font-weight:600;z-index:9999;">
@@ -704,1690 +172,460 @@
 </div>
 <script>
 (function(){
-  window.addEventListener('offline', () => {
-    const banner = document.getElementById('offline-banner');
-    if (banner) banner.style.display = 'block';
-  });
-  window.addEventListener('online', () => {
-    const banner = document.getElementById('offline-banner');
-    if (banner) banner.style.display = 'none';
-  });
+  window.addEventListener('offline', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='block'; });
+  window.addEventListener('online', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='none'; });
 })();
 </script>
-<script>
-(function(){
-  const c=localStorage.getItem('user_theme_color');
-  if(c){
-    document.documentElement.style.setProperty('--emerald',c);
-    document.documentElement.style.setProperty('--em',c);
-  }
-})();
-</script>
-<canvas id="bg-shader" aria-hidden="true"></canvas>
 
-<!-- ═══════ DASHBOARD — STANDARD V2 NATIF ═══════
-     Voir _architecture/DASHBOARD_V2_MASTER_PLAN.md §7 (bascule V2 native,
-     legacy retiré). Seul rendu du dashboard désormais — plus de flag
-     ?v2=1/__SEBA_V2_ENABLED__, plus de grille V1 en parallèle. -->
-<div id="v2-dashboard-skeleton" class="v2-dashboard-wrapper">
-  <!-- Header : sticky, hors de la grille 12 colonnes. Identité + workspace
-       (zone gauche, panneau déroulant), indicateur de santé (centre),
-       portail + "+ Créer" (zone droite) — voir renderV2Header() dans
-       docs/widgets.js. -->
-  <header id="v2-header" class="v2-header-bar">
-    <div class="v2-header-left">
-      <span class="v2-header-identity-name"></span>
-      <span class="v2-header-identity-sector"></span>
-      <button type="button" class="v2-header-workspace-btn" title="Votre espace" onclick="toggleWorkspacePanel()">▾</button>
-      <div class="v2-dropdown-panel" id="v2-workspace-panel">
-        <div id="v2-workspace-panel-body"></div>
-      </div>
-    </div>
-    <div class="v2-header-center header-status-group">
-      <div class="v2-serenity-row">
-        <span class="v2-serenity-score-num">—</span>
-        <span class="v2-serenity-state-lbl">—</span>
-      </div>
-      <div class="v2-serenity-bar-track"><div class="v2-serenity-bar-fill" style="width:0"></div></div>
-    </div>
-    <div class="v2-header-right">
-      <button type="button" class="v2-header-actions-btn" title="Portail client" onclick="togglePortalMenu()">Actions</button>
-      <div class="v2-dropdown-panel v2-dropdown-panel--right" id="v2-portal-menu">
-        <div id="v2-portal-menu-body"></div>
-      </div>
-      <button type="button" class="v2-header-create-btn" onclick="if (typeof toggleFab === 'function') toggleFab();">+ Créer</button>
-    </div>
-  </header>
-</div>
+<!-- Bandeau d'identité fixe (nom + secteur), partagé avec toutes les pages pro. -->
+<div id="identity-bar" class="identity-bar"></div>
+<script src="../businessTypes.js"></script>
+<script src="../identity-bar.js"></script>
 
-<div class="app">
-
-  <!-- ═══════ SIDEBAR ═══════ -->
+<div class="layout">
   <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="handleLegacyClick('toggleSidebar')">
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
       <span></span><span></span><span></span>
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <!-- Sidebar générée par sidebar.js (source unique de vérité, partagée avec toutes les pages pro). -->
   <nav class="sidebar"></nav>
   <script src="../sidebar.js"></script>
 
-  <!-- ═══════ MAIN ═══════ -->
   <main class="main">
-
-    <!-- État vide -->
     <div id="empty-state" class="empty-state" style="display:none;">
       <h2>Bienvenue sur Seba !</h2>
       <p>Créez votre espace professionnel en quelques minutes pour accéder à votre tableau de bord personnalisé.</p>
-      <a href="../onboarding.html" class="btn-em">Créer mon entreprise →</a>
+      <button class="btn-em" onclick="window.location.href='../onboarding.html'">Créer mon entreprise →</button>
     </div>
 
-    <!-- Dashboard principal -->
     <div id="dash-content">
+      <div id="db-error-banner" class="db-error-banner" style="display:none;" role="alert"></div>
 
-      <!-- ── Zone 1 : En-tête ── -->
-      <div class="dash-header">
-        <div class="dh-left">
-          <div>
-            <div class="dh-greeting" id="greeting">Bonjour !</div>
-            <div class="dh-meta">
-              <span id="topbar-date"></span>
-              <span aria-hidden="true">·</span>
-              <span class="clock-time" id="clock-time">--:--:--</span>
-              <span class="clock-tz" id="clock-tz" title="Heure locale de l'entreprise"></span>
-            </div>
-          </div>
+      <!-- En-tête pleine largeur -->
+      <header class="db-header">
+        <div class="db-header-left">
+          <h1 class="db-greeting" id="db-greeting">Bonjour !</h1>
+          <div class="db-date" id="db-date"></div>
         </div>
-        <div class="topbar-actions">
-          <button class="topbar-btn" title="Mode Focus (F)" aria-label="Activer le Mode Focus" onclick="toggleFocusMode()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>
-          </button>
-          <button class="topbar-btn" title="Barre de commande IA (⌘⇧K)" aria-label="Ouvrir la barre de commande IA" onclick="openAiBar()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1l1.2 3.8L13 6l-3.8 1.2L8 11l-1.2-3.8L3 6l3.8-1.2L8 1z"/></svg>
-          </button>
-          <button class="topbar-btn" title="Personnaliser le dashboard" aria-label="Personnaliser le dashboard" onclick="openCustomizePanel()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
-          </button>
-          <button class="topbar-btn" title="Activer les notifications push" aria-label="Activer les notifications push" onclick="enablePushNotifications()">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/><circle cx="12.5" cy="3.5" r="2.5" fill="var(--emerald)" stroke="none"/></svg>
-          </button>
-          <div class="notif-wrap">
-            <button class="topbar-btn" id="notif-btn" title="Notifications" aria-label="Notifications" aria-haspopup="true" onclick="toggleNotifPanel(event)">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V6a5 5 0 0 1 5-5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>
-              <div class="notif-badge" id="notif-badge" style="display:none;">0</div>
-            </button>
-            <div class="user-menu notif-panel" id="notif-panel">
-              <div class="notif-panel-head">Notifications</div>
-              <div id="notif-panel-body"></div>
-            </div>
+        <div class="db-header-actions">
+          <button type="button" class="db-btn-primary full-mobile" onclick="window.location.href='../planning.html'">+ Nouvelle intervention</button>
+          <button type="button" class="db-btn-secondary" id="db-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Autres actions" onclick="toggleSecondaryMenu(event)">⋯</button>
+          <div class="db-secondary-menu" id="db-secondary-menu" role="menu">
+            <a href="../clients.html" role="menuitem">Nouveau client</a>
+            <a href="../devis-nouveau.html" role="menuitem">Nouveau devis</a>
+            <a href="../factures-nouvelle.html" role="menuitem">Nouvelle facture</a>
           </div>
           <div class="avatar-wrap">
-            <div class="avatar" id="avatar" style="background:var(--emerald);">—</div>
-            <div class="user-menu" id="user-menu">
-              <a href="../reglages.html">Mon compte</a>
-              <a href="#" id="pont-donnees-link" onclick="event.preventDefault();activerDonneesReelles();">Activer mes données réelles</a>
+            <button type="button" class="avatar" id="avatar" aria-haspopup="true" aria-expanded="false" aria-label="Menu du compte" onclick="toggleUserMenu(event)">—</button>
+            <div class="user-menu" id="user-menu" role="menu">
+              <a href="../reglages.html" role="menuitem">Mon compte</a>
               <div class="menu-sep"></div>
-              <a href="../connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+              <a href="../connexion.html" class="menu-deconnect" role="menuitem" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <!-- Welcome Checklist (shown only after onboarding) -->
-      <div class="welcome-checklist" id="welcome-checklist" style="display:none;">
-        <div class="wc-head">
-          <span class="wc-title">🎯 Démarrez en 3 étapes</span>
-          <button class="wc-close" onclick="closeChecklist()" aria-label="Fermer">✕</button>
-        </div>
-        <div class="wc-items">
-          <div class="wc-item done" id="wci-0">
-            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
-            <span class="wc-text">Création de votre compte professionnel</span>
-          </div>
-          <a href="../devis-nouveau.html" class="wc-item clickable" id="wci-1" onclick="checkItem(1)">
-            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
-            <span class="wc-text">Simuler la création de votre premier devis</span>
-            <span class="wc-cta">Créer →</span>
-          </a>
-          <div class="wc-item clickable" id="wci-2" role="button" tabindex="0" onclick="checkItem(2)" onkeydown="if(event.key==='Enter'||event.key===' '){checkItem(2);event.preventDefault();}">
-            <div class="wc-check"><span class="wc-check-ico">✓</span></div>
-            <span class="wc-text">Copier votre lien public et le partager</span>
-            <span class="wc-cta">Copier →</span>
+      <!-- Ligne 1 — À traiter maintenant -->
+      <section class="db-alerts" id="db-alerts" aria-label="Actions prioritaires">
+        <div class="db-skeleton-row" style="margin:14px 18px;"></div>
+      </section>
+
+      <!-- Colonne principale (8) + Résumé financier (4) -->
+      <div class="db-grid">
+        <div class="db-col-8">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Aujourd'hui</span><a href="../planning.html">Voir le planning →</a></div>
+            <div class="db-job-list" id="db-job-list">
+              <div class="db-skeleton-row"></div><div class="db-skeleton-row"></div>
+            </div>
           </div>
         </div>
-        <div class="wc-progress">
-          <div class="wc-bar-track"><div class="wc-bar-fill" id="wc-bar" style="width:33%"></div></div>
-          <span class="wc-pct" id="wc-pct">1 / 3</span>
+        <div class="db-col-4">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Résumé financier</span><a href="../factures.html">Factures →</a></div>
+            <div id="db-finance"></div>
+          </div>
         </div>
       </div>
 
-      <!-- ── Bouton mode personnalisation ── -->
-      <div id="customize-bar" style="margin-bottom:14px;padding:10px 16px;background:rgba(0,255,157,.06);border:1.5px dashed rgba(0,255,157,.4);border-radius:var(--rs);font-size:.82rem;color:var(--text-2);justify-content:space-between;align-items:center;display:none;">
-        <span>Mode personnalisation — glissez ⠿ pour réordonner, ✕ pour retirer.</span>
-        <button class="portal-btn primary" style="padding:5px 14px;" onclick="toggleCustomizeMode()">Terminer</button>
+      <!-- Activité commerciale (7) + Recommandations (5) -->
+      <div class="db-grid">
+        <div class="db-col-7">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Activité commerciale</span><a href="../devis.html">Voir les devis →</a></div>
+            <div id="db-pipeline"></div>
+          </div>
+        </div>
+        <div class="db-col-5">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Recommandations Seba</span></div>
+            <div id="db-recos"></div>
+          </div>
+        </div>
       </div>
 
-
-      <!-- ── Vecteurs d'action (Bible II.4) — gains a valider, pas des taches ── -->
-      <div class="zone-eyebrow">À traiter maintenant</div>
-      <section id="action-stream" class="action-stream"></section>
-
-      <!-- ── Lignes d'Horizon (Bible II.5) — flux financiers, sans cadre ── -->
-      <section class="horizon-section"><canvas id="horizon-line"></canvas></section>
-
-      <!-- ── Grille de widgets V2 (demande fondateur 2026-07-16) : déplacée sous
-           "Bonsoir" / Vecteurs d'action / Lignes d'Horizon, jugé plus logique
-           que ces sections apparaissent avant le détail des widgets. Le header
-           sticky (.v2-header-bar) reste en haut, seule cette grille bouge. -->
-      <div class="v2-grid-container">
-        <div class="v2-zone v2-bandeau-priorite">bandeau-priorite-v2</div>
-        <div class="zone-eyebrow">Recommandations</div>
-        <div class="v2-zone v2-zone-traitement">zone-traitement-v2</div>
-        <div class="zone-eyebrow">Activité commerciale</div>
-        <div class="v2-zone v2-zone-activite">zone-activite-v2</div>
-        <div class="zone-eyebrow">Paiements &amp; finances</div>
-        <div class="v2-zone v2-zone-finance">zone-finance-v2</div>
-      </div>
-
-    </div><!-- /dash-content -->
+      <!-- Zone secondaire — indicateurs non actionnables, poids visuel faible -->
+      <div class="db-secondary" id="db-secondary"></div>
+    </div>
   </main>
-</div>
-
-<!-- Conscience Seba (Bible II.7) — notifications predictives, tiroir droit (TD-3) -->
-<div class="aura-stack" id="aura-stack"><div class="aura-stack-label">Conscience Seba</div></div>
-
-<!-- Timeline de Vie (Bible III.6) — rail vertical fixe, pouls d'activite en continu -->
-<div class="timeline-life-rail"><canvas id="timeline-life"></canvas></div>
-
-<!-- fab décommissionné en faveur de v2-header (bouton "+ Créer") -->
-<!-- fab-menu conservé : seul déclencheur désormais .v2-header-create-btn (toggleFab()) -->
-<div class="fab-menu" id="fab-menu">
-  <a href="../clients.html" class="fab-item"><span class="fab-item-ico">👤</span>Nouveau client<span class="pal-key" style="margin-left:auto;">1</span></a>
-  <a href="../devis-nouveau.html" class="fab-item"><span class="fab-item-ico">📄</span>Nouveau devis<span class="pal-key" style="margin-left:auto;">2</span></a>
-  <a href="../planning.html" class="fab-item"><span class="fab-item-ico">📅</span>Nouvelle intervention<span class="pal-key" style="margin-left:auto;">3</span></a>
-</div>
-
-<!-- Cmd+K palette -->
-<div class="palette-overlay" id="palette-overlay" onclick="closePalette(event)">
-  <div class="palette-box" onclick="event.stopPropagation()">
-    <div class="palette-inp-wrap">
-      <span class="palette-ico">⌘</span>
-      <input type="text" class="palette-inp" id="palette-inp" placeholder="Rechercher une page ou une action…" oninput="filterPalette(this.value)">
-    </div>
-    <div class="palette-results" id="palette-results"></div>
-    <div class="palette-foot">
-      <span class="pal-hint"><span class="pal-key">↑↓</span> naviguer</span>
-      <span class="pal-hint"><span class="pal-key">↵</span> ouvrir</span>
-      <span class="pal-hint"><span class="pal-key">Esc</span> fermer</span>
-    </div>
-  </div>
-</div>
-
-<!-- Confetti canvas -->
-<canvas id="confetti-canvas" aria-hidden="true"></canvas>
-
-<!-- Panneau Personnaliser (bibliothèque de widgets) -->
-<div class="customize-panel-overlay" id="customize-panel-overlay" onclick="closeCustomizePanel()"></div>
-<div class="customize-panel" id="customize-panel" role="dialog" aria-modal="true" aria-labelledby="cp-title" tabindex="-1">
-  <div class="cp-head">
-    <span class="cp-title" id="cp-title">Personnaliser le dashboard</span>
-    <button class="cp-close" onclick="closeCustomizePanel()" aria-label="Fermer">✕</button>
-  </div>
-  <div class="cp-body" id="cp-body"></div>
-  <div class="cp-foot">Cochez les widgets que vous voulez voir. Activez le mode réorganisation pour les glisser-déposer.</div>
-</div>
-
-<!-- Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1 —
-     voir DASHBOARD_V2_MASTER_PLAN.md §7. ext-chart/ext-notes/ext-rss retirés
-     du catalogue, ce tiroir n'a plus rien à afficher. -->
-
-<!-- Planète de Calibration (Bible V.10) — cérémonie one-shot -->
-<div class="calib-overlay" id="calib-overlay">
-  <div class="calib-globe-wrap">
-    <svg id="calib-globe-canvas" width="340" height="340"></svg>
-    <div class="calib-flash" id="calib-flash"></div>
-  </div>
-  <div class="calib-caption" id="calib-caption">Calibration de votre cockpit en cours…</div>
-</div>
-
-<!-- Barre de commande IA (simulée, 100% côté client) -->
-<div class="ai-bar-overlay" id="ai-bar-overlay" onclick="closeAiBar(event)">
-  <div class="ai-bar-box" id="ai-bar-box" role="dialog" aria-modal="true" aria-label="Barre de commande IA" tabindex="-1" onclick="event.stopPropagation()">
-    <canvas class="ai-bar-burst-canvas" id="ai-bar-burst-canvas"></canvas>
-    <div class="ai-bar-inp-wrap">
-      <span class="ai-bar-ico">✨</span>
-      <input type="text" class="ai-bar-inp" id="ai-bar-inp" placeholder="Ex : « Affiche mon CA du mois et mes factures en retard »" onkeydown="if(event.key==='Enter')submitAiBar()">
-    </div>
-    <div class="ai-bar-results" id="ai-bar-results">Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.</div>
-    <div class="ai-bar-hint">Analyse locale par mots-clés — aucune donnée envoyée à un serveur.</div>
-  </div>
-</div>
-
-<!-- Aide raccourcis clavier -->
-<div class="shortcuts-overlay" id="shortcuts-overlay" onclick="closeShortcuts(event)">
-  <div class="shortcuts-box" id="shortcuts-box" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" tabindex="-1" onclick="event.stopPropagation()">
-    <h3 id="shortcuts-title">Raccourcis clavier</h3>
-    <div class="shortcut-row"><span>Ouvrir la recherche</span><span class="pal-key">⌘K</span></div>
-    <div class="shortcut-row"><span>Ouvrir la barre IA</span><span class="pal-key">⌘⇧K</span></div>
-    <div class="shortcut-row"><span>Mode personnalisation</span><span class="pal-key">E</span></div>
-    <div class="shortcut-row"><span>Mode Focus</span><span class="pal-key">F</span></div>
-    <div class="shortcut-row"><span>Actions rapides</span><span class="pal-key">C</span></div>
-    <div class="shortcut-row"><span>Afficher cette aide</span><span class="pal-key">?</span></div>
-    <div class="shortcut-row"><span>Fermer une fenêtre</span><span class="pal-key">Esc</span></div>
-  </div>
-</div>
-
-<!-- Mode Focus (Bible I.3) — mise sous vide : ne laisse que le Serenity Score + l'action prioritaire -->
-<div class="focus-overlay" id="focus-overlay">
-  <div class="focus-serenity-wrap"><canvas id="focus-serenity-canvas"></canvas></div>
-  <div class="focus-readout">
-    <div class="focus-score-num" id="focus-score-num">—</div>
-    <div class="focus-score-lbl" id="focus-score-lbl"></div>
-  </div>
-  <div class="focus-action-line" id="focus-action-line"></div>
-  <button class="focus-exit" onclick="toggleFocusMode()" aria-label="Quitter le Mode Focus" title="Quitter (Esc)">Quitter le Mode Focus</button>
 </div>
 
 <script src="../businessTypes.js"></script>
 <script src="../seba-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="../services/config-dashboard.js"></script>
-<script src="../services/widget-data-api.js"></script>
-<script src="../services/widget-v2-framework.js"></script>
 <script src="../services/contract-billing.js"></script>
+<!-- buildWidgetCtx/evaluateRules/RULES (moteur de recommandations,
+     réutilisé tel quel pour ne jamais afficher de recommandation
+     générique) -- voir aussi commentaire en tête de widgets.js.
+     widget-v2-framework.js reste nécessaire : widgets.js déclare encore des
+     classes qui étendent WidgetV2 au chargement (ReferenceError sinon),
+     même si cette page n'instancie plus aucun widget de grille V2. -->
+<script src="../services/widget-v2-framework.js"></script>
 <script src="../widgets.js"></script>
 <script src="../ai-assistant.js" defer></script>
 <script src="../push-init.js" defer></script>
 <script src="../logger.js" defer></script>
+
 <script>
-  /* ═══════════════════════════════════════════════════════
-     DEMO DATA — par secteur
-  ═══════════════════════════════════════════════════════ */
-  const DEMO = {
-    menage: {
-      metrics: [
-        { label: 'CA ce mois', value: '2 840', unit: '€', delta: '+12% vs mois der.', up: true, href: '../factures.html' },
-        { label: 'Interventions', value: '23', unit: '', delta: '+3 vs mois der.', up: true, href: '../planning.html' },
-        { label: 'Clients actifs', value: '14', unit: '', delta: '+2 nouveaux', up: true, href: '../clients.html' },
-        { label: 'Devis en attente', value: '4', unit: '', delta: '2 à relancer', up: false, href: '../devis.html' },
-      ],
-      timeline: [
-        { time: '08:00', done: true,  type: 'intervention', label: 'Ménage — M. Durand',          sub: 'Ménage complet 3h · Terminé',              href: '../client-fiche.html' },
-        { time: '11:30', done: true,  type: 'devis',        label: 'Devis envoyé — Mme Petit',     sub: 'Grand ménage + vitrerie · 280 €',           href: '../devis.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Mme Bernard — Ménage hebdo',   sub: 'Durée prévue : 2h',                         href: '../client-fiche.html' },
-        { time: '17:00', done: false, type: 'client',       label: 'RDV — Sophie Lacroix',         sub: "Visite d'estimation · nouveau client",       href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Planifiez vos relances',       desc: '2 devis en attente depuis plus de 7 jours sans réponse.', cta: 'Voir les devis',  href: '../devis.html' },
-        { cls: 'am', title: 'Demandez des avis clients',    desc: '5 interventions cette semaine sans demande de retour.',   cta: 'Mes clients',      href: '../clients.html' },
-        { cls: 'pl', title: 'Créez vos modèles de devis',  desc: 'Gagnez 8 min par devis, soit environ 2h/mois.',           cta: 'Réglages',          href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Nouveau client — Mme Renaud',              time: 'Il y a 2h',         href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Paiement reçu — Sophie Lacroix · 160 €',   time: 'Ce matin 11:42',   href: '../factures.html' },
-        { type: 'devis',        label: 'Devis signé — Pierre Tessier · 190 €',     time: 'Hier 16:15',       href: '../devis.html' },
-        { type: 'intervention', label: 'Intervention terminée — M. Durand',         time: 'Hier 09:30',       href: '../planning.html' },
-      ],
-      team: [
-        { name: 'Léa Martin',   role: 'Aide-ménagère', working: true,  href: '../employe-fiche.html' },
-        { name: 'Sarah Dupont', role: 'Aide-ménagère', working: true,  href: '../employe-fiche.html' },
-        { name: 'Julie Moreau', role: 'Aide-ménagère', working: false, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 2840, target: 3500, unit: '€' },
-    },
+'use strict';
 
-    conciergerie: {
-      metrics: [
-        { label: 'CA mensuel',     value: '6 420', unit: '€', delta: '+8% vs mois der.', up: true,  href: '../factures.html' },
-        { label: 'Logements',      value: '12',    unit: '',  delta: '+1 ce mois',        up: true,  href: '../clients.html' },
-        { label: "Arrivées auj.",  value: '3',     unit: '',  delta: '2 départs aussi',   up: true,  href: '../planning.html' },
-        { label: 'Ménages à faire',value: '2',     unit: '',  delta: "Aujourd'hui",        up: false, href: '../planning.html' },
-      ],
-      timeline: [
-        { time: '09:00', done: true,  type: 'intervention', label: 'Check-out — Apt Rue Molière',    sub: 'État des lieux · Clés récupérées',          href: '../client-fiche.html' },
-        { time: '11:00', done: true,  type: 'intervention', label: 'Ménage — Apt Rue Molière',       sub: 'Préparation prochaine arrivée · 2h',         href: '../client-fiche.html' },
-        { time: '15:00', done: false, type: 'client',       label: 'Check-in — Villa Les Pins',      sub: 'Famille Martin · 4 pers.',                   href: '../client-fiche.html' },
-        { time: '18:00', done: false, type: 'client',       label: 'Check-in — Apt Haussmann',       sub: 'M. Schneider · 1 pers.',                     href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Automatisez les check-ins',        desc: '7 check-ins cette semaine. Économisez jusqu\'à 3h de déplacements.',   cta: 'Configurer', href: '../reglages.html' },
-        { cls: 'am', title: 'Photos des logements à mettre à jour', desc: '3 logements sans photos récentes. +25% de réservations en moyenne.', cta: 'Clients',    href: '../clients.html' },
-        { cls: 'pl', title: 'Rapport propriétaire en attente',  desc: 'Rapport de mai non envoyé à 2 propriétaires.',                          cta: 'Clients',    href: '../clients.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Nouvelle réservation — Villa Les Pins',           time: 'Il y a 1h',   href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Virement propriétaire — M. Fontaine · 1 200 €', time: 'Ce matin',    href: '../factures.html' },
-        { type: 'intervention', label: 'Check-out effectué — Apt Molière',                time: 'Hier 10:00', href: '../planning.html' },
-        { type: 'devis',        label: 'Nouveau logement — Contrat signé',                time: 'Avant-hier', href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Léa Martin',  role: 'Agent conciergerie', working: true,  href: '../employe-fiche.html' },
-        { name: 'Marc Tissot', role: 'Prestataire ménage', working: true,  href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 6420, target: 8000, unit: '€' },
-    },
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD_DEMO_DATA — toutes les valeurs mockées regroupées ici,
+   par secteur. Rien d'autre dans le HTML/JS ne code une donnée
+   d'exemple en dur (refonte produit, 2026-07-22).
+═══════════════════════════════════════════════════════════════ */
+const DASHBOARD_DEMO_DATA = {
+  menage: {
+    jobs: [
+      { time: '08:00', client: 'M. Durand', service: 'Ménage complet', adresse: '12 rue des Lilas, Nice', employe: 'Léa Martin', statut: 'terminee' },
+      { time: '11:30', client: 'Mme Petit', service: 'Devis grand ménage', adresse: '4 av. de la Gare, Nice', employe: null, statut: 'a-venir' },
+      { time: '14:00', client: 'Mme Bernard', service: 'Ménage hebdomadaire', adresse: '9 bd Victor Hugo, Nice', employe: 'Sarah Dupont', statut: 'a-venir' },
+      { time: '17:00', client: 'Sophie Lacroix', service: "Visite d'estimation", adresse: '2 rue Masséna, Nice', employe: null, statut: 'non-assignee' },
+    ],
+    recommendations: [
+      { title: '2 devis en attente depuis plus de 7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher.', cta: 'Voir les devis', href: '../devis.html' },
+      { title: '5 interventions sans demande d\'avis', desc: 'Demandez un retour à vos clients récents.', cta: 'Voir les clients', href: '../clients.html' },
+    ],
+    finance: { caMois: 2840, encaisse: 2840, enAttente: 380, impaye: 0, deltaPct: 12 },
+    pipeline: { prospects: 6, devisEnvoyes: 4, devisAcceptes: 2, devisRefuses: 1, tauxConversion: 33 },
+  },
+  autre: {
+    jobs: [],
+    recommendations: [
+      { title: 'Créez votre premier devis', desc: 'Simulez un devis pour découvrir le parcours complet.', cta: 'Créer un devis', href: '../devis-nouveau.html' },
+    ],
+    finance: { caMois: 0, encaisse: 0, enAttente: 0, impaye: 0, deltaPct: null },
+    pipeline: { prospects: 0, devisEnvoyes: 0, devisAcceptes: 0, devisRefuses: 0, tauxConversion: null },
+  },
+};
+DASHBOARD_DEMO_DATA.conciergerie = DASHBOARD_DEMO_DATA.menage;
+DASHBOARD_DEMO_DATA.maintenance = DASHBOARD_DEMO_DATA.menage;
 
-    conciergerieCopro: {
-      metrics: [
-        { label: 'CA mensuel',      value: '3 800', unit: '€', delta: 'Abonnements stables', up: true,  href: '../factures.html' },
-        { label: 'Résidences',      value: '4',     unit: '',  delta: '+1 en négociation',   up: true,  href: '../clients.html' },
-        { label: 'Incidents',       value: '2',     unit: '',  delta: 'à traiter',            up: false, href: '../planning.html' },
-        { label: 'Colis en attente',value: '8',     unit: '',  delta: 'depuis >2j',           up: false, href: '../clients.html' },
-      ],
-      timeline: [
-        { time: '08:00', done: true,  type: 'intervention', label: 'Nettoyage — Résidence Galilée',    sub: "Parties communes · Hall + cage d'escalier",  href: '../client-fiche.html' },
-        { time: '10:00', done: true,  type: 'intervention', label: 'Réception colis — 14 unités',      sub: 'Résidence Galilée · Enregistrés',            href: '../client-fiche.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Incident — Résidence Montaigne',    sub: 'Ascenseur en panne · Contacter prestataire', href: '../client-fiche.html' },
-        { time: '16:30', done: false, type: 'client',       label: 'RDV syndic — Résidence Lafayette', sub: 'Renouvellement contrat annuel',              href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: '8 colis en attente depuis +2j', desc: 'Alertez les résidents pour éviter les réclamations.',         cta: 'Clients',  href: '../clients.html' },
-        { cls: 'am', title: 'Assemblée générale dans 10 jours', desc: 'Préparez le rapport d\'activité trimestriel.',             cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: 'Incident ascenseur non assigné',   desc: 'Résidence Montaigne — coordonnez un prestataire vite.',    cta: 'Planning', href: '../planning.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Signalement — Fuite cave Résidence Voltaire',    time: 'Il y a 1h',   href: '../client-fiche.html' },
-        { type: 'intervention', label: 'Nettoyage terminé — Résidence Galilée',          time: 'Ce matin',    href: '../planning.html' },
-        { type: 'paiement',     label: 'Abonnement reçu — Résidence Montaigne · 950 €', time: 'Hier',        href: '../factures.html' },
-        { type: 'devis',        label: 'Devis nouveau contrat — Résidence Victor Hugo',   time: 'Avant-hier', href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Isabelle Laurent', role: 'Concierge', working: true,  href: '../employe-fiche.html' },
-        { name: 'Paul Mercier',     role: 'Concierge', working: false, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 3800, target: 4500, unit: '€' },
-    },
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function fmtMoney(n, sym) { return (n || 0).toLocaleString('fr-FR') + ' ' + (sym || '€'); }
 
-    conciergerieEntreprise: {
-      metrics: [
-        { label: 'CA mensuel',      value: '5 200', unit: '€', delta: '+6% vs mois der.',    up: true,  href: '../factures.html' },
-        { label: 'Entreprises',     value: '3',     unit: '',  delta: 'clientes actives',     up: true,  href: '../clients.html' },
-        { label: "Demandes auj.",   value: '12',    unit: '',  delta: 'salariés',             up: true,  href: '../planning.html' },
-        { label: 'Budget utilisé',  value: '78',    unit: '%', delta: 'du forfait mensuel',   up: false, href: '../factures.html' },
-      ],
-      timeline: [
-        { time: '08:30', done: true,  type: 'intervention', label: 'Accueil visiteurs — TechCorp',     sub: 'Délégation partenaire · 8 pers. · Café prêt',  href: '../client-fiche.html' },
-        { time: '10:00', done: true,  type: 'devis',        label: 'Réservation hôtel — M. Schneider', sub: 'Déplacement Lyon · 2 nuits · Confirmé',         href: '../devis.html' },
-        { time: '12:30', done: false, type: 'intervention', label: 'Déjeuner équipe — StartupXY',       sub: 'Restaurant La Belle Époque · 12 pers.',         href: '../client-fiche.html' },
-        { time: '15:00', done: false, type: 'intervention', label: '5 demandes salariés en attente',    sub: 'Services conciergerie bien-être',                href: '../planning.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Budget mensuel à 78% au 20',       desc: 'Informez le DRH de TechCorp avant d\'atteindre le plafond.',   cta: 'Client',   href: '../client-fiche.html' },
-        { cls: 'am', title: 'Pic de demandes lundi matin',       desc: 'Renforcez votre disponibilité en début de semaine.',           cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: 'Proposez le module bien-être',      desc: '2 entreprises clientes sans ce service très demandé.',         cta: 'Réglages', href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Nouvelle demande — M. Petit (StartupXY)',  time: 'Il y a 30min', href: '../client-fiche.html' },
-        { type: 'intervention', label: 'Accueil visiteurs terminé — TechCorp',     time: 'Ce matin',     href: '../planning.html' },
-        { type: 'paiement',     label: 'Abonnement mensuel — InnoGroup · 1 800 €', time: 'Hier',         href: '../factures.html' },
-        { type: 'devis',        label: 'Devis nouveau service — TechCorp',          time: 'Avant-hier',  href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Marine Dupont', role: 'Concierge entreprise',   working: true, href: '../employe-fiche.html' },
-        { name: 'Kevin Perrin',  role: 'Assistant conciergerie', working: true, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 5200, target: 6500, unit: '€' },
-    },
+/* ═══════════════════════════════════════════════════════════════
+   buildDashboardViewModel(state) — point d'entrée UNIQUE de lecture
+   des données. Aucun composant ne lit directement SebaDB/localStorage
+   ailleurs : tout passe par l'objet retourné ici.
+═══════════════════════════════════════════════════════════════ */
+function buildDashboardViewModel(state) {
+  const biz = state.biz;
+  const secteur = biz.secteur || 'autre';
+  const demo = DASHBOARD_DEMO_DATA[secteur] || DASHBOARD_DEMO_DATA.autre;
+  const sym = biz.deviseSymbole || '€';
+  const hasRealData = !!(window.SebaDB && SebaDB.hasData());
 
-    jardinage: {
-      metrics: [
-        { label: 'CA mensuel',      value: '3 100', unit: '€', delta: '+5% vs mois der.', up: true,  href: '../factures.html' },
-        { label: 'Interventions',   value: '31',    unit: '',  delta: 'ce mois',           up: true,  href: '../planning.html' },
-        { label: 'Contrats annuels',value: '8',     unit: '',  delta: '+1 ce trimestre',   up: true,  href: '../clients.html' },
-        { label: 'Devis en cours',  value: '3',     unit: '',  delta: '1 à relancer',      up: false, href: '../devis.html' },
-      ],
-      timeline: [
-        { time: '07:30', done: true,  type: 'intervention', label: 'Tonte — M. Girard',              sub: 'Jardin 400m² · 1h30 · Terminé',        href: '../client-fiche.html' },
-        { time: '09:30', done: true,  type: 'intervention', label: 'Taille de haies — Mme Colin',    sub: '80ml de haie · Terminé',                href: '../client-fiche.html' },
-        { time: '13:30', done: false, type: 'intervention', label: 'Entretien — Résidence Les Acacias',sub: 'Contrat mensuel · Espaces communs',    href: '../client-fiche.html' },
-        { time: '16:00', done: false, type: 'devis',        label: 'Visite terrain — Mme Faure',     sub: 'Création massif · devis à établir',     href: '../devis.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Contrat annuel à renouveler',    desc: 'Le contrat de M. Girard expire dans 3 semaines.',           cta: 'Client',   href: '../client-fiche.html' },
-        { cls: 'am', title: 'Météo défavorable jeudi',         desc: 'Pluie prévue — reportez les 2 interventions planifiées.',   cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: '3 clients sans passage depuis 45j',desc: 'La saison est active — relancez avant la concurrence.',    cta: 'Clients',  href: '../clients.html' },
-      ],
-      activity: [
-        { type: 'paiement',     label: 'Paiement — Mme Colin · 180 €',          time: 'Il y a 3h',   href: '../factures.html' },
-        { type: 'intervention', label: 'Tonte terminée — M. Girard',             time: 'Ce matin',    href: '../planning.html' },
-        { type: 'client',       label: 'Nouveau client — Résidence Les Acacias', time: 'Hier',        href: '../client-fiche.html' },
-        { type: 'devis',        label: 'Devis envoyé — Mme Faure · 640 €',       time: 'Avant-hier', href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Lucas Bernard', role: 'Paysagiste', working: true,  href: '../employe-fiche.html' },
-        { name: 'Antoine Roux',  role: 'Paysagiste', working: false, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 3100, target: 4000, unit: '€' },
-    },
+  let todayJobs, financeSummary, salesPipeline, urgentActions;
 
-    maintenance: {
-      metrics: [
-        { label: 'CA mensuel',      value: '4 200', unit: '€', delta: '+9% vs mois der.', up: true,  href: '../factures.html' },
-        { label: 'Interventions',   value: '18',    unit: '',  delta: 'ce mois',           up: true,  href: '../planning.html' },
-        { label: 'Urgences',        value: '3',     unit: '',  delta: 'cette semaine',     up: false, href: '../planning.html' },
-        { label: 'Devis signés',    value: '5',     unit: '',  delta: '+2 vs mois der.',   up: true,  href: '../devis.html' },
-      ],
-      timeline: [
-        { time: '08:30', done: true,  type: 'intervention', label: 'Plomberie — M. Lambert',           sub: 'Fuite robinet · Réparé en 45min',         href: '../client-fiche.html' },
-        { time: '10:30', done: true,  type: 'intervention', label: 'Électricité — Mme Perrin',         sub: 'Tableau disjoncteur · Mis aux normes',     href: '../client-fiche.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Montage meubles — M. et Mme Roy',  sub: 'Suite chambre IKEA · ~3h',                 href: '../client-fiche.html' },
-        { time: '17:30', done: false, type: 'devis',        label: 'Devis peinture — Mme Aubert',      sub: 'Salon + couloir · ~120m²',                 href: '../devis.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Intervention non facturée',      desc: "Passage chez M. Lambert terminé mais facture non émise.",   cta: 'Factures', href: '../factures.html' },
-        { cls: 'am', title: 'Urgence non assignée',            desc: 'Demande entrante en attente depuis 4h.',                   cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: 'Créez un forfait urgence',        desc: 'Vos interventions urgentes valent 3× plus — formalisez.',  cta: 'Réglages', href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Nouveau client — M. Aubert',         time: 'Il y a 1h',   href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Paiement — M. Lambert · 90 €',       time: 'Ce matin',    href: '../factures.html' },
-        { type: 'intervention', label: 'Intervention terminée — Mme Perrin', time: 'Hier 16:00',  href: '../planning.html' },
-        { type: 'devis',        label: 'Devis refusé — M. Moreau',           time: 'Avant-hier',  href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Thomas Chevalier', role: 'Technicien', working: true, href: '../employe-fiche.html' },
-        { name: 'Julien Blanc',     role: 'Technicien', working: true, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 4200, target: 5000, unit: '€' },
-    },
+  if (hasRealData) {
+    const DB = window.SebaDB;
+    const m = DB.metrics();
+    const clientsById = {}; DB.list('clients').forEach(c => { clientsById[c.id] = c; });
+    const now = new Date();
 
-    pressing: {
-      metrics: [
-        { label: 'CA mensuel',  value: '1 840', unit: '€', delta: '+4% vs mois der.', up: true,  href: '../factures.html' },
-        { label: 'Commandes',   value: '47',    unit: '',  delta: 'ce mois',           up: true,  href: '../clients.html' },
-        { label: 'À collecter', value: '5',     unit: '',  delta: "aujourd'hui",        up: true,  href: '../planning.html' },
-        { label: 'Retards',     value: '2',     unit: '',  delta: 'à résoudre',        up: false, href: '../clients.html' },
-      ],
-      timeline: [
-        { time: '08:00', done: true,  type: 'intervention', label: 'Collecte — M. Renaud',   sub: '3 chemises + 1 costume · Récupéré',  href: '../client-fiche.html' },
-        { time: '10:00', done: true,  type: 'intervention', label: 'Collecte — Mme Blanc',   sub: 'Linge hebdo · Récupéré',             href: '../client-fiche.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Livraison — M. Renaud',  sub: 'Commande de lundi · Prête',          href: '../client-fiche.html' },
-        { time: '17:00', done: false, type: 'intervention', label: 'Collecte — Mme Fontaine',sub: 'Abonnement hebdomadaire',             href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Commande en attente depuis 4j',      desc: "M. Laurent n'est pas venu récupérer sa commande.",          cta: 'Clients',  href: '../clients.html' },
-        { cls: 'am', title: '2 clients sans commande depuis 3 sem.',desc: 'Période inhabituelle — relancez avant la concurrence.',    cta: 'Clients',  href: '../clients.html' },
-        { cls: 'pl', title: 'Proposez l\'abonnement mensuel',       desc: '12 clients réguliers pourraient passer en abonnement.',    cta: 'Réglages', href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'client',       label: "Nouvel abonnement — Mme Fontaine",   time: 'Ce matin',    href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Paiement — M. Renaud · 48 €',        time: 'Hier 14:30', href: '../factures.html' },
-        { type: 'intervention', label: 'Collecte effectuée — Mme Blanc',      time: 'Hier 10:00', href: '../planning.html' },
-        { type: 'devis',        label: 'Devis entreprise — Cabinet Dupont',   time: 'Avant-hier', href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Camille Jouvet', role: 'Livreur-collecteur', working: true, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 1840, target: 2200, unit: '€' },
-    },
+    todayJobs = m.interventionsJour.map(i => {
+      const cl = clientsById[i.clientId];
+      let statut = i.done ? 'terminee' : 'a-venir';
+      if (!i.done && i.time) {
+        const [h, mn] = i.time.split(':').map(Number);
+        const jobTime = new Date(now); jobTime.setHours(h || 0, mn || 0, 0, 0);
+        if (now > jobTime) statut = 'en-retard';
+      }
+      return {
+        time: i.time || '', client: i.clientName || (cl && cl.nom) || 'Client', service: i.service || '',
+        adresse: (cl && cl.adresse) || '', employe: i.employeNom || null,
+        statut: i.employeNom ? statut : 'non-assignee', id: i.id,
+      };
+    });
 
-    beaute: {
-      metrics: [
-        { label: 'CA mensuel',        value: '2 380', unit: '€', delta: '+15% vs mois der.', up: true, href: '../factures.html' },
-        { label: 'RDV ce mois',       value: '34',    unit: '',  delta: '+6 vs mois der.',   up: true, href: '../planning.html' },
-        { label: 'Nouveaux clients',  value: '5',     unit: '',  delta: 'ce mois',            up: true, href: '../clients.html' },
-        { label: 'Fidélisation',      value: '82',    unit: '%', delta: '+3pts',              up: true, href: '../clients.html' },
-      ],
-      timeline: [
-        { time: '09:00', done: true,  type: 'intervention', label: 'Coupe + couleur — Mme Petit',   sub: '2h30 · Terminé · 120 €',          href: '../client-fiche.html' },
-        { time: '11:30', done: true,  type: 'intervention', label: 'Soin visage — Mme Renaud',      sub: '1h · Terminé · 60 €',             href: '../client-fiche.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Balayage — Mme Lambert',        sub: 'Durée estimée : 3h',               href: '../client-fiche.html' },
-        { time: '17:30', done: false, type: 'intervention', label: 'Maquillage mariage — Mme Blanc',sub: 'Prestation événementielle · 80 €', href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: '3 clientes sans RDV depuis 6 sem.', desc: 'Habituellement mensuelles — un message les ramènera.',     cta: 'Clients',  href: '../clients.html' },
-        { cls: 'am', title: 'Créneau vide demain matin',           desc: "Proposez-le à votre liste d'attente dès maintenant.",    cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: 'Collectez plus d\'avis',              desc: '8 prestations cette semaine sans demande d\'avis.',      cta: 'Clients',  href: '../clients.html' },
-      ],
-      activity: [
-        { type: 'paiement',     label: 'Paiement — Mme Petit · 120 €',     time: 'Il y a 2h',  href: '../factures.html' },
-        { type: 'client',       label: 'Nouveau client — Mme Aubert',       time: 'Ce matin',   href: '../client-fiche.html' },
-        { type: 'intervention', label: 'Soin terminé — Mme Renaud',         time: 'Ce matin',   href: '../planning.html' },
-        { type: 'devis',        label: 'Devis mariage — Mme Fontaine',      time: 'Hier',       href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Sophie Morel', role: 'Esthéticienne', working: true,  href: '../employe-fiche.html' },
-        { name: 'Claire Dubois',role: 'Coiffeuse',      working: false, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 2380, target: 3000, unit: '€' },
-    },
-
-    animaux: {
-      metrics: [
-        { label: 'CA mensuel',       value: '1 620', unit: '€', delta: '+7% vs mois der.', up: true, href: '../factures.html' },
-        { label: 'Animaux en garde', value: '6',     unit: '',  delta: "aujourd'hui",        up: true, href: '../clients.html' },
-        { label: 'Promenades',       value: '14',    unit: '',  delta: 'cette semaine',      up: true, href: '../planning.html' },
-        { label: 'Nouveaux clients', value: '3',     unit: '',  delta: 'ce mois',            up: true, href: '../clients.html' },
-      ],
-      timeline: [
-        { time: '07:00', done: true,  type: 'intervention', label: 'Promenade — Rex (M. Martin)',   sub: '30min · Parc Lefebvre · Terminé', href: '../client-fiche.html' },
-        { time: '08:00', done: true,  type: 'intervention', label: 'Promenade — Nala (Mme Girard)', sub: '30min · Terminé',                  href: '../client-fiche.html' },
-        { time: '12:00', done: false, type: 'intervention', label: 'Visite domicile — Cookie',       sub: 'Chat de Mme Blanc · 2e jour',      href: '../client-fiche.html' },
-        { time: '17:00', done: false, type: 'intervention', label: 'Promenade — Bruno (M. Fontaine)',sub: '45min · Abonnement hebdo',          href: '../client-fiche.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Confirmez la garde semaine prochaine', desc: 'M. Lambert revient dans 6 jours — la place est encore libre.', cta: 'Planning', href: '../planning.html' },
-        { cls: 'am', title: 'Vaccins à renouveler',                  desc: 'Rex (M. Martin) — carnet de santé à vérifier avant le séjour.', cta: 'Client',   href: '../client-fiche.html' },
-        { cls: 'pl', title: 'Proposez l\'abonnement promenades',     desc: '4 clients réguliers sans abonnement — revenu garanti pour vous.', cta: 'Réglages', href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'client',       label: 'Nouveau client — Mme Aubert + Luna',   time: 'Il y a 3h', href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Paiement garde — M. Martin · 160 €',  time: 'Ce matin',  href: '../factures.html' },
-        { type: 'intervention', label: 'Promenade terminée — Rex',              time: 'Ce matin',  href: '../planning.html' },
-        { type: 'devis',        label: 'Devis garde 2 sem. — M. Lambert',      time: 'Hier',      href: '../devis.html' },
-      ],
-      team: [
-        { name: 'Eva Moreau', role: 'Garde animaux', working: true, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 1620, target: 2000, unit: '€' },
-    },
-
-    demenagement: {
-      metrics: [
-        { label: 'CA mensuel',    value: '8 400', unit: '€', delta: '+11% vs mois der.', up: true,  href: '../factures.html' },
-        { label: 'Déménagements', value: '7',     unit: '',  delta: 'ce mois',            up: true,  href: '../planning.html' },
-        { label: 'Devis en attente',value: '5',   unit: '',  delta: '2 à relancer',       up: false, href: '../devis.html' },
-        { label: 'Volume moyen',  value: '28',    unit: 'm³',delta: 'par mission',         up: true,  href: '../factures.html' },
-      ],
-      timeline: [
-        { time: '07:00', done: true,  type: 'intervention', label: 'Déménagement — Mme Dupont',   sub: 'Apt 3 pièces · Chargement en cours',  href: '../client-fiche.html' },
-        { time: '09:00', done: false, type: 'intervention', label: 'Transport — Rue des Lilas',    sub: 'Destination : Bd Voltaire · ~45min',   href: '../planning.html' },
-        { time: '14:00', done: false, type: 'intervention', label: 'Déchargement + montage',        sub: 'Durée estimée : 3h',                   href: '../planning.html' },
-        { time: '17:00', done: false, type: 'devis',        label: 'Visite estimation — M. Laurent',sub: 'Appartement 4 pièces · 70m²',         href: '../devis.html' },
-      ],
-      recos: [
-        { cls: 'em', title: '2 devis sans réponse depuis 8j',   desc: 'La décision se prend en 5 jours — relancez maintenant.',       cta: 'Devis',    href: '../devis.html' },
-        { cls: 'am', title: 'Forte demande juin–juillet',         desc: 'Bloquez vos disponibilités tôt — créneaux partent en 3 sem.', cta: 'Planning', href: '../planning.html' },
-        { cls: 'pl', title: 'Ajoutez le service garde-meubles',  desc: '3 clients ont demandé du stockage — service non proposé.',     cta: 'Réglages', href: '../reglages.html' },
-      ],
-      activity: [
-        { type: 'devis',        label: 'Devis signé — Mme Dupont · 1 200 €',   time: 'Hier 17:00',    href: '../devis.html' },
-        { type: 'client',       label: 'Nouveau client — M. Laurent',            time: 'Hier 14:00',    href: '../client-fiche.html' },
-        { type: 'paiement',     label: 'Acompte reçu — M. Faure · 400 €',       time: 'Avant-hier',    href: '../factures.html' },
-        { type: 'intervention', label: 'Déménagement terminé — M. Blanc',        time: 'Il y a 3 jours',href: '../planning.html' },
-      ],
-      team: [
-        { name: 'Lucas Bernard', role: 'Chauffeur-déménageur', working: true, href: '../employe-fiche.html' },
-        { name: 'Antoine Roux',  role: 'Déménageur',           working: true, href: '../employe-fiche.html' },
-        { name: 'Julien Blanc',  role: 'Déménageur',           working: true, href: '../employe-fiche.html' },
-      ],
-      goal: { label: 'CA mensuel', current: 8400, target: 10000, unit: '€' },
-    },
-
-    autre: {
-      metrics: [
-        { label: 'CA mensuel',   value: '—', unit: '', delta: 'À configurer', up: true, href: '../factures.html' },
-        { label: 'Interventions',value: '—', unit: '', delta: 'ce mois',      up: true, href: '../planning.html' },
-        { label: 'Clients',      value: '—', unit: '', delta: '',              up: true, href: '../clients.html' },
-        { label: 'Devis',        value: '—', unit: '', delta: '',              up: true, href: '../devis.html' },
-      ],
-      timeline: [
-        { time: '—', done: false, type: 'intervention', label: 'Complétez votre profil', sub: 'Ajoutez vos services dans les réglages pour personnaliser le planning', href: '../reglages.html' },
-      ],
-      recos: [
-        { cls: 'em', title: 'Personnalisez votre espace',  desc: 'Ajoutez vos services pour activer les recommandations Seba.', cta: 'Réglages',   href: '../reglages.html' },
-        { cls: 'pl', title: 'Créez votre premier devis',   desc: 'Commencez à travailler avec vos premiers clients.',           cta: 'Nouveau devis', href: '../devis-nouveau.html' },
-      ],
-      activity: [
-        { type: 'client', label: 'Bienvenue sur Seba !', time: "Aujourd'hui", href: '../reglages.html' },
-      ],
-      team: [],
-      goal: { label: 'CA mensuel', current: 0, target: 0, unit: '€' },
-    },
-  };
-
-  /* ═══════════════════════════════════════════════════════
-     HELPERS
-  ═══════════════════════════════════════════════════════ */
-  /* Echappement HTML avant innerHTML — copie locale plutot qu'un import de
-     docs/src/core/esc.js : renderDashboard()/renderNotifPanel() s'executent
-     de facon SYNCHRONE des le chargement (voir l'appel renderDashboard(biz)
-     au niveau superieur de ce script, ligne ~1328), donc AVANT que le
-     script differe type="module" (dashboard-init.js, charge en fin de
-     document) ait la moindre chance de s'executer. Attendre un import
-     async ici creerait une regression reelle au premier chargement
-     (esc undefined). Meme fonction que clients.html/crm-tech.html/widgets.js
-     (voir AUDIT-RISQUES.md section 1.2 sur cette duplication deja connue). */
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
-  function slugify(str) {
-    return (str || '').toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'mon-entreprise';
-  }
-
-  /* ── Horloge temps réel ── */
-  const TZ_MAP = {
-    FR:'Europe/Paris',      BE:'Europe/Brussels',   CH:'Europe/Zurich',
-    LU:'Europe/Luxembourg', CA:'America/Toronto',   MA:'Africa/Casablanca',
-    TN:'Africa/Tunis',      DZ:'Africa/Algiers',    SN:'Africa/Dakar',
-    CI:'Africa/Abidjan',    CM:'Africa/Douala',     CD:'Africa/Kinshasa',
-    MG:'Indian/Antananarivo', HT:'America/Port-au-Prince', MC:'Europe/Monaco',
-    RE:'Indian/Reunion',    MQ:'America/Martinique', GP:'America/Guadeloupe',
-    GF:'America/Cayenne',   NC:'Pacific/Noumea',    PF:'Pacific/Tahiti',
-    ES:'Europe/Madrid',     PT:'Europe/Lisbon',     IT:'Europe/Rome',
-    DE:'Europe/Berlin',     GB:'Europe/London',     US:'America/New_York',
-  };
-  let _clockInterval = null;
-  function startClock(biz) {
-    const tz = biz.timezone || TZ_MAP[biz.paysCode] || 'Europe/Paris';
-    const fmt = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const city = tz.split('/').pop().replace(/_/g, ' ');
-    const tzEl = document.getElementById('clock-tz');
-    if (tzEl) tzEl.textContent = city;
-    const tick = () => {
-      const el = document.getElementById('clock-time');
-      if (el) el.textContent = fmt.format(new Date());
+    const facturesRetard = DB.list('factures').filter(f => f.status === 'retard');
+    const facturesAttente = DB.list('factures').filter(f => f.status === 'attente');
+    financeSummary = {
+      caMois: m.caMois,
+      encaisse: m.caMois,
+      enAttente: facturesAttente.reduce((s, f) => s + (f.amount || 0), 0),
+      impaye: facturesRetard.reduce((s, f) => s + (f.amount || 0), 0),
+      deltaPct: null,
     };
-    tick();
-    if (_clockInterval) clearInterval(_clockInterval);
-    _clockInterval = setInterval(tick, 1000);
-  }
 
-  /* ═══════════════════════════════════════════════════════
-     INIT
-  ═══════════════════════════════════════════════════════ */
-  let biz = null;
-  try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch(e) {}
-  let _ctx = null;
-  let _customizeMode = false;
+    const devisAll = DB.list('devis');
+    const devisEnvoyes = devisAll.filter(d => d.status === 'attente').length;
+    const devisAcceptes = devisAll.filter(d => d.status === 'signe').length;
+    const devisRefuses = devisAll.filter(d => d.status === 'refuse' || d.status === 'expire').length;
+    const totalDevis = devisEnvoyes + devisAcceptes + devisRefuses;
+    salesPipeline = {
+      prospects: DB.list('clients').filter(c => c.statut === 'attente').length,
+      devisEnvoyes, devisAcceptes, devisRefuses,
+      tauxConversion: totalDevis > 0 ? Math.round((devisAcceptes / totalDevis) * 100) : null,
+    };
 
-  if (!biz || !biz.secteur) {
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('dash-content').style.display = 'none';
+    urgentActions = buildUrgentActions({ facturesRetard, devisAll, todayJobs, syncStatus: currentSyncStatus() });
   } else {
-    renderDashboard(biz);
-    /* Re-rendu quand les données changent dans un autre onglet */
-    if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
-    /* Conscience Seba (Bible II.7) — les vrais déclencheurs (maybeTriggerAIOnSerenity/
-       maybeTriggerAIOnHorizon, dans widgets.js) restent actifs et se déclenchent sur
-       de vraies conditions. triggerAuraDemo() était un scénario de test hardcodé
-       ("client X") qui s'affichait à CHAQUE chargement pour TOUS les utilisateurs —
-       retiré (audit 2026-07-07, §1.1). La fonction reste définie dans widgets.js
-       pour permettre un déclenchement manuel en QA (scripts/qa-dashboard-full.js
-       l'appelle directement via page.evaluate si besoin). */
-    showCalibration(biz);
+    todayJobs = demo.jobs;
+    financeSummary = demo.finance;
+    salesPipeline = demo.pipeline;
+    urgentActions = buildUrgentActions({ facturesRetard: [], devisAll: [], todayJobs, syncStatus: currentSyncStatus(), demoMode: true });
   }
 
-  /* ═══════════════════════════════════════════════════════
-     RENDER — construit le contexte et délègue à la grille
-     de widgets (moteur dans widgets.js)
-  ═══════════════════════════════════════════════════════ */
-  function renderDashboard(biz) {
-    const nom      = biz.nom || 'Mon entreprise';
-    const secteur  = biz.secteur || 'autre';
-    const couleur  = biz.couleur || '#00FF9D';
-    const services = biz.services || [];
-    const slug     = biz.slug || slugify(biz.publicName || nom);
-    const bt       = window.businessTypes || {};
-    const sectorLabel = (bt[secteur] || {}).label || secteur;
-    const sym = biz.deviseSymbole || '€';
-    /* Données réelles du compte si le moteur en a, sinon démo du secteur.
-       Filet de sécurité (post-mortem "4 blocs placeholder V2 bloqués en
-       prod") : buildLiveData() lit des données réelles imprévisibles
-       (interventions/factures/clients saisis à la main) — une seule valeur
-       manquante y a déjà fait remonter une exception jusqu'ici, empêchant
-       tout le reste de renderDashboard() (dont renderAllV2()) de s'exécuter
-       et laissant les 4 zones V2 bloquées sur leur texte de squelette brut.
-       Un repli sur demoFallback vaut mieux qu'un dashboard entièrement
-       cassé pour une seule donnée mal formée. */
-    const demoFallback = DEMO[secteur] || DEMO['autre'];
-    let demo = demoFallback;
-    if (window.SebaDB && SebaDB.hasData()) {
-      try {
-        demo = buildLiveData(demoFallback, sym);
-      } catch (err) {
-        console.error('[Seba Error Boundary] buildLiveData() a échoué, repli sur les données démo :', err);
-      }
-    }
+  const recommendations = (hasRealData && typeof evaluateRules === 'function')
+    ? (() => {
+        try {
+          const ctx = buildWidgetCtx({ biz, demo: { recos: demo.recommendations.map(r => ({ cls: 'em', title: r.title, desc: r.desc, cta: r.cta, href: r.href })) }, secteur, sectorLabel: secteur, nom: biz.nom, couleur: biz.couleur, services: biz.services || [], slug: '', sym });
+          const evaluated = evaluateRules(ctx).map(r => ({ title: r.title, desc: r.desc, cta: r.cta, href: r.href }));
+          return evaluated.length ? evaluated.slice(0, 2) : demo.recommendations.slice(0, 2);
+        } catch (e) { return demo.recommendations.slice(0, 2); }
+      })()
+    : demo.recommendations.slice(0, 2);
 
-    /* Filet de sécurité (post-mortem "4 blocs placeholder V2 bloqués en prod") :
-       tout ce bloc dépend de données réelles saisies à la main (biz, demo,
-       localStorage) qu'on ne peut pas garantir bien formées. buildLiveData()
-       est déjà protégé individuellement (voir plus haut), mais un point de
-       plantage encore inconnu ailleurs dans ce bloc aurait le même effet :
-       couper l'exécution avant renderAllV2() et laisser les zones V2
-       (.v2-zone-traitement/activite/finance) figées sur leur texte de
-       squelette brut ("zone-activite-v2"...), sans jamais atteindre
-       clearV2Zone(). Ce try/catch garantit qu'un échec inattendu, où qu'il
-       survienne ici, ne laisse jamais ce texte de dev visible : on vide
-       explicitement les zones dans le catch plutôt que de les laisser
-       intactes. */
-    try {
-      /* Header */
-      const h = new Date().getHours();
-      const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
-      /* nom est le nom de l'ENTREPRISE (pas un prénom) -- nom.split(' ')[0]
-         produisait des salutations absurdes ("Bonsoir, Nettoyage !") pour
-         toute entreprise dont le nom commence par un mot courant. Aucun
-         champ prénom n'existe dans ce modèle de données (sebaEntreprise =
-         {nom, secteur, email}) : on salue par le nom complet de l'entreprise. */
-      document.getElementById('greeting').textContent = salut + ', ' + nom + ' !';
-      document.getElementById('topbar-date').textContent =
-        new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-      startClock(biz);
-
-      /* Avatar */
-      const av = document.getElementById('avatar');
-      av.style.background = couleur;
-      av.textContent = nom.charAt(0).toUpperCase();
-
-      /* Sidebar */
-      const sidebarCompanyEl = document.getElementById('sidebar-company');
-      if (sidebarCompanyEl) sidebarCompanyEl.textContent = nom;
-
-      /* Widgets — rendu V2 natif, seul système depuis la bascule (DASHBOARD_V2_MASTER_PLAN.md §7).
-         Plus de grille V1/flag ?v2=1 : renderAllV2() est le seul point d'entrée
-         (détruit les instances WidgetV2 vivantes, remonte les 3 zones + le
-         header, réattache GridManagerV2). */
-      _ctx = buildWidgetCtx({ biz, demo, secteur, sectorLabel, nom, couleur, services, slug, sym });
-      window._ctx = _ctx; // benchmark Shopify §7.1 : switchChartPeriod() (widgets.js) en a besoin
-      if (typeof renderAllV2 === 'function') renderAllV2(_ctx, _customizeMode);
-      if (typeof populateActionStream === 'function') populateActionStream(_ctx);
-      if (typeof renderHorizonLine === 'function') renderHorizonLine(_ctx);
-      if (typeof renderTimelineLife === 'function') renderTimelineLife(_ctx);
-      if (typeof renderNotifPanel === 'function') renderNotifPanel(_ctx);
-      setTimeout(animateMetrics, 80);
-    } catch (err) {
-      console.error('[Seba Error Boundary] renderDashboard() a échoué avant renderAllV2() :', err);
-      ['.v2-zone-traitement', '.v2-zone-activite', '.v2-zone-finance'].forEach(sel => {
-        const zone = document.querySelector(sel);
-        if (zone) zone.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-2);font-size:.85rem;">Dashboard temporairement indisponible — rechargez la page.</div>';
-      });
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     MODE PERSONNALISATION + BIBLIOTHÈQUE DE WIDGETS
-  ═══════════════════════════════════════════════════════ */
-  function toggleCustomizeMode() {
-    _customizeMode = !_customizeMode;
-    document.getElementById('customize-bar').style.display = _customizeMode ? 'flex' : 'none';
-    document.body.classList.toggle('customize-mode', _customizeMode);
-    renderAllV2(_ctx, _customizeMode);
-  }
-  function onWidgetRemove(id) {
-    removeWidgetFromLayout(id);
-    renderAllV2(_ctx, _customizeMode);
-    refreshLibraryPanel();
-  }
-  function onWidgetToggle(id, checked) {
-    if (checked) addWidgetToLayout(id); else removeWidgetFromLayout(id);
-    renderAllV2(_ctx, _customizeMode);
-  }
-  function refreshLibraryPanel() {
-    const b = document.getElementById('cp-body');
-    if (b) b.innerHTML = buildLibraryPanelHTML();
-  }
-  /* Piège de focus (P0.2) : contient Tab/Shift+Tab à l'intérieur d'une modale
-     ouverte. Les éléments focusables sont recalculés à chaque Tab (pas figés
-     à l'ouverture) car le contenu du panneau Personnaliser est reconstruit
-     dynamiquement par refreshLibraryPanel(). Idempotent : n'attache le
-     listener qu'une fois par élément (dataset.trapBound), sinon chaque
-     ouverture empilerait un nouveau listener keydown. */
-  function setupFocusTrap(modalEl) {
-    if (!modalEl) return;
-    const getFocusable = () => modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex="0"]');
-    if (modalEl.dataset.trapBound !== '1') {
-      modalEl.dataset.trapBound = '1';
-      modalEl.addEventListener('keydown', function(e) {
-        if (e.key !== 'Tab') return;
-        const focusableEls = getFocusable();
-        const firstFocusable = focusableEls[0];
-        const lastFocusable = focusableEls[focusableEls.length - 1];
-        if (!firstFocusable) { e.preventDefault(); return; }
-        if (e.shiftKey) {
-          if (document.activeElement === firstFocusable) { lastFocusable.focus(); e.preventDefault(); }
-        } else {
-          if (document.activeElement === lastFocusable) { firstFocusable.focus(); e.preventDefault(); }
-        }
-      });
-    }
-    const focusableEls = getFocusable();
-    if (focusableEls[0]) focusableEls[0].focus();
-    else modalEl.focus();
-  }
-  function openCustomizePanel() {
-    refreshLibraryPanel();
-    document.getElementById('customize-panel-overlay').classList.add('open');
-    document.getElementById('customize-panel').classList.add('open');
-    if (!_customizeMode) toggleCustomizeMode();
-    setupFocusTrap(document.getElementById('customize-panel'));
-  }
-  function closeCustomizePanel() {
-    document.getElementById('customize-panel-overlay').classList.remove('open');
-    document.getElementById('customize-panel').classList.remove('open');
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     PANNEAUX v2-header : workspace (zone gauche) / portail (zone droite)
-     Même patron clic-dehors-pour-fermer que .user-menu/.notif-panel
-     existants — voir le listener global plus bas.
-  ═══════════════════════════════════════════════════════ */
-  function toggleWorkspacePanel() {
-    document.getElementById('v2-workspace-panel').classList.toggle('open');
-    document.getElementById('v2-portal-menu').classList.remove('open');
-  }
-  function togglePortalMenu() {
-    document.getElementById('v2-portal-menu').classList.toggle('open');
-    document.getElementById('v2-workspace-panel').classList.remove('open');
-  }
-
-  /* Bibliothèque d'Extensions (Bible IV.9) décommissionnée avec la purge V1
-     (DASHBOARD_V2_MASTER_PLAN.md §7) — plus de tiroir, plus de catégorie
-     'extension' peuplée dans WIDGET_CATALOG. */
-
-  /* ═══════════════════════════════════════════════════════
-     BARRE DE COMMANDE IA (simulée)
-  ═══════════════════════════════════════════════════════ */
-  function openAiBar() {
-    AudioUI.playClick();
-    document.getElementById('ai-bar-overlay').classList.add('open');
-    const inp = document.getElementById('ai-bar-inp');
-    document.getElementById('ai-bar-results').textContent = 'Décrivez ce que vous voulez voir, en français, et appuyez sur Entrée.';
-    if (inp) inp.value = '';
-    setupFocusTrap(document.getElementById('ai-bar-box'));
-  }
-  function closeAiBar(e) {
-    if (e && e.target !== document.getElementById('ai-bar-overlay')) return;
-    document.getElementById('ai-bar-overlay').classList.remove('open');
-  }
-  function submitAiBar() {
-    const inp = document.getElementById('ai-bar-inp');
-    const resEl = document.getElementById('ai-bar-results');
-    const text = inp ? inp.value.trim() : '';
-    if (!text) return;
-    const results = matchIntent(text);
-    let addedAny = false;
-    let html = '';
-    results.forEach(r => {
-      if (r.widget) {
-        addWidgetToLayout(r.widget.id);
-        addedAny = true;
-        html += '<div class="ai-bar-match"><span class="ok">✓</span> Widget ajouté : « ' + r.widget.title + ' »</div>';
-      } else if (r.suggestions && r.suggestions.length) {
-        html += '<div class="ai-bar-match">Vouliez-vous dire : ' + r.suggestions.map(w => '<a href="#" onclick="event.preventDefault();addWidgetToLayout(\'' + w.id + '\');document.getElementById(\'ai-bar-results\').innerHTML=\'✓ Ajouté.\';renderAllV2(_ctx,_customizeMode);" style="color:var(--emerald);">' + w.title + '</a>').join(' ou ') + ' ?</div>';
-      } else {
-        html += '<div class="ai-bar-match">Aucun widget ne correspond à « ' + r.query + ' ».</div>';
-      }
-    });
-    resEl.innerHTML = html;
-    if (addedAny) {
-      AudioUI.playSuccess();
-      if (window.aiBarParticleBurst) aiBarParticleBurst(document.getElementById('ai-bar-burst-canvas'));
-      renderAllV2(_ctx, _customizeMode);
-      setTimeout(closeAiBar, 1400);
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     AIDE RACCOURCIS
-  ═══════════════════════════════════════════════════════ */
-  function openShortcuts() {
-    document.getElementById('shortcuts-overlay').classList.add('open');
-    setupFocusTrap(document.getElementById('shortcuts-box'));
-  }
-  function closeShortcuts(e) {
-    if (e && e.target !== document.getElementById('shortcuts-overlay')) return;
-    document.getElementById('shortcuts-overlay').classList.remove('open');
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     MODE FOCUS (Bible I.3) — mise sous vide. Réutilise le moteur du
-     Serenity Score (widgets.js) sur un second canvas dédié à
-     l'overlay, et le moteur de règles (evaluateRules) pour extraire
-     la seule action qui compte vraiment à l'instant T.
-  ═══════════════════════════════════════════════════════ */
-  let _focusCleanup = null;
-  let _focusActive = false;
-
-  /* ─── Toast (TD-4) — remplace les window.alert() natifs, jugés
-     amateurs pour un SaaS pro. Glisse en bas à droite, accent émeraude,
-     disparaît après ~3s. ─── */
-  let _dashToastEl = null, _dashToastTimer = null;
-  function showDashToast(msg) {
-    if (!_dashToastEl) {
-      _dashToastEl = document.createElement('div');
-      _dashToastEl.className = 'dash-toast';
-      document.body.appendChild(_dashToastEl);
-    }
-    _dashToastEl.textContent = msg;
-    _dashToastEl.classList.add('visible');
-    clearTimeout(_dashToastTimer);
-    _dashToastTimer = setTimeout(() => { _dashToastEl.classList.remove('visible'); }, 3000);
-  }
-  window.showDashToast = showDashToast;
-
-  async function enablePushNotifications() {
-    if (!window.sebaPush || !sebaPush.isConfigured) {
-      showDashToast('Notifications push non configurées côté administrateur pour le moment.');
-      return;
-    }
-    const res = await sebaPush.subscribe();
-    showDashToast(res.ok ? 'Notifications activées ✓ Vous recevrez vos rappels ici.' : 'Activation impossible : ' + (res.error || 'permission refusée'));
-  }
-
-  /* ─── Interface Sonore (Bible VI.13) — Web Audio API, zero fichier externe.
-     Meme objet que docs/onboarding.html (AudioUI), copie ici car le
-     dashboard n'importe pas onboarding.html. ─── */
-  const AudioUI = {
-    ctx: null,
-    init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-    playClick() {
-      try {
-        this.init();
-        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(660, this.ctx.currentTime);
-        o.frequency.exponentialRampToValueAtTime(330, this.ctx.currentTime + 0.06);
-        g.gain.setValueAtTime(0.035, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.06);
-        o.connect(g); g.connect(this.ctx.destination);
-        o.start(); o.stop(this.ctx.currentTime + 0.06);
-      } catch (e) {}
-    },
-    playSuccess() {
-      try {
-        this.init();
-        const now = this.ctx.currentTime;
-        [523.25, 659.25].forEach((freq, i) => {
-          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-          o.type = 'sine';
-          o.frequency.setValueAtTime(freq, now + i * 0.06);
-          g.gain.setValueAtTime(0.028, now + i * 0.06);
-          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.14);
-          o.connect(g); g.connect(this.ctx.destination);
-          o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.14);
-        });
-      } catch (e) {}
-    },
-    playComplete() {
-      try {
-        this.init();
-        const now = this.ctx.currentTime;
-        [523.25, 659.25, 783.99].forEach((freq, i) => {
-          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-          o.type = 'sine';
-          o.frequency.setValueAtTime(freq, now + i * 0.08);
-          g.gain.setValueAtTime(0.025, now + i * 0.08);
-          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.18);
-          o.connect(g); g.connect(this.ctx.destination);
-          o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.18);
-        });
-      } catch (e) {}
-    },
+  return {
+    todayJobs, urgentActions, financeSummary, salesPipeline, recommendations,
+    syncStatus: currentSyncStatus(),
+    secteur, sym, nom: biz.nom || 'Mon entreprise',
   };
-  window.AudioUI = AudioUI;
+}
 
-  /* ─── Planète de Calibration (Bible V.10) ───────────────────────────
-     Cérémonie one-shot (localStorage.seba_calibration_seen) affichée à
-     la première visite du dashboard. Réutilise le globe D3 orthographique
-     de onboarding.html (adapté, recoloré aux tokens Tactical Dark) — le
-     pays a déjà été choisi à l'onboarding, cette planète ne fait que le
-     confirmer/verrouiller visuellement, elle ne recollecte rien. ─── */
-  const CALIB_COUNTRIES = {
-    FR: { lat: 46.2, lng: 2.2, label: 'France' }, BE: { lat: 50.5, lng: 4.5, label: 'Belgique' },
-    CH: { lat: 46.8, lng: 8.2, label: 'Suisse' }, LU: { lat: 49.8, lng: 6.1, label: 'Luxembourg' },
-    CA: { lat: 56.1, lng: -106.3, label: 'Canada' }, MA: { lat: 31.8, lng: -7.1, label: 'Maroc' },
-    TN: { lat: 33.9, lng: 9.6, label: 'Tunisie' }, DZ: { lat: 28.0, lng: 2.6, label: 'Algérie' },
-    SN: { lat: 14.5, lng: -14.5, label: 'Sénégal' }, CI: { lat: 7.5, lng: -5.5, label: "Côte d'Ivoire" },
-    CM: { lat: 3.9, lng: 11.5, label: 'Cameroun' }, CD: { lat: -4.0, lng: 21.8, label: 'RD Congo' },
-    MG: { lat: -18.8, lng: 47.0, label: 'Madagascar' }, HT: { lat: 18.9, lng: -72.3, label: 'Haïti' },
-    MC: { lat: 43.7, lng: 7.4, label: 'Monaco' }, RE: { lat: -21.1, lng: 55.5, label: 'La Réunion' },
-    MQ: { lat: 14.7, lng: -61.0, label: 'Martinique' }, GP: { lat: 16.3, lng: -61.7, label: 'Guadeloupe' },
-    GF: { lat: 3.9, lng: -53.1, label: 'Guyane française' }, NC: { lat: -20.9, lng: 165.6, label: 'Nouvelle-Calédonie' },
-    PF: { lat: -17.7, lng: -149.4, label: 'Polynésie française' }, ES: { lat: 40.5, lng: -3.7, label: 'Espagne' },
-    PT: { lat: 39.4, lng: -8.2, label: 'Portugal' }, IT: { lat: 41.9, lng: 12.5, label: 'Italie' },
-    DE: { lat: 51.2, lng: 10.5, label: 'Allemagne' }, GB: { lat: 55.4, lng: -3.4, label: 'Royaume-Uni' },
-    US: { lat: 37.1, lng: -95.7, label: 'États-Unis' },
-  };
-  const CALIB_ISO_NUM = { FR: 250, BE: 56, CH: 756, LU: 442, CA: 124, MA: 504, TN: 788, DZ: 12, SN: 686, CI: 384, CM: 120, CD: 180, MG: 450, HT: 332, MC: 492, RE: 638, MQ: 474, GP: 312, GF: 254, NC: 540, PF: 258, ES: 724, PT: 620, IT: 380, DE: 276, GB: 826, US: 840 };
+function currentSyncStatus() {
+  try {
+    if (window.SebaDB && typeof SebaDB.syncStatus === 'function') return SebaDB.syncStatus();
+  } catch (e) {}
+  return { pending: 0, failed: 0, syncing: false };
+}
 
-  function loadTopojsonScript() {
-    return new Promise((resolve) => {
-      if (typeof topojson !== 'undefined') return resolve();
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js';
-      s.onload = () => resolve();
-      s.onerror = () => resolve();
-      document.head.appendChild(s);
+/* Ordre imposé : erreurs de synchro, interventions non assignées, factures
+   impayées, devis en attente, demandes clients non lues. Masque les lignes
+   à zéro ; "Tout est à jour" si tout est à zéro. */
+function buildUrgentActions({ facturesRetard, devisAll, todayJobs, syncStatus, demoMode }) {
+  const actions = [];
+  if (syncStatus && (syncStatus.failed > 0)) {
+    actions.push({ level: 'high', label: 'Erreur de synchronisation', count: syncStatus.failed, cta: 'Réessayer', action: () => { if (window.SebaDB) SebaDB.retrySyncNow(); } });
+  }
+  const nonAssignees = (todayJobs || []).filter(j => j.statut === 'non-assignee').length;
+  if (nonAssignees > 0) actions.push({ level: 'medium', label: 'Intervention(s) non assignée(s)', count: nonAssignees, cta: 'Assigner', href: '../assignation.html' });
+  const impayees = (facturesRetard || []).length;
+  if (impayees > 0) actions.push({ level: 'high', label: 'Facture(s) impayée(s)', count: impayees, cta: 'Relancer', href: '../factures.html' });
+  const devisAttente = demoMode ? 2 : (devisAll || []).filter(d => d.status === 'attente').length;
+  if (devisAttente > 0) actions.push({ level: 'low', label: 'Devis en attente de réponse', count: devisAttente, cta: 'Voir les devis', href: '../devis.html' });
+  return actions;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDU
+═══════════════════════════════════════════════════════════════ */
+function renderAlerts(actions) {
+  const el = document.getElementById('db-alerts');
+  if (!actions.length) {
+    el.innerHTML = '<div class="db-alert-ok">✓ Tout est à jour</div>';
+    return;
+  }
+  el.innerHTML = actions.map(a => (
+    '<div class="db-alert-row">' +
+      '<span class="db-alert-dot ' + a.level + '" aria-hidden="true"></span>' +
+      '<span class="db-alert-label">' + esc(a.label) + '</span>' +
+      '<span class="db-alert-count mono-num">' + a.count + '</span>' +
+      '<button type="button" class="db-alert-action" data-action-idx="' + actions.indexOf(a) + '">' + esc(a.cta) + '</button>' +
+    '</div>'
+  )).join('');
+  el.querySelectorAll('.db-alert-action').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      const a = actions[i];
+      if (a.action) a.action();
+      else if (a.href) window.location.href = a.href;
     });
-  }
-
-  /* Audit 2.1 : cette cérémonie bloquait toute l'interface (z-index:900,
-     inset:0) pendant ~4.7s minimum sans échappatoire, ignorait
-     prefers-reduced-motion, et le fetch du globe (jsdelivr) n'avait aucun
-     timeout — un CDN lent pouvait geler l'accès au dashboard à la toute
-     première connexion. Correctifs : reduced-motion saute directement à
-     l'état verrouillé (pas de rotation JS pilotée par rAF), timeout de
-     3.5s sur le fetch (Promise.race), et clic/Échap ferment immédiatement. */
-  async function showCalibration(biz) {
-    try {
-      if (localStorage.getItem('seba_calibration_seen') === '1') return;
-      if (typeof d3 === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
-      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      await loadTopojsonScript();
-      if (typeof topojson === 'undefined') { localStorage.setItem('seba_calibration_seen', '1'); return; }
-
-      const code = (biz && biz.paysCode) || 'FR';
-      const country = CALIB_COUNTRIES[code] || CALIB_COUNTRIES.FR;
-      const target = [-country.lng, -country.lat, 0];
-      const overlay = document.getElementById('calib-overlay');
-      const caption = document.getElementById('calib-caption');
-      overlay.classList.add('open');
-      requestAnimationFrame(() => overlay.classList.add('visible'));
-
-      const W = 340, H = 340, R = 155;
-      const proj = d3.geoOrthographic().scale(R).translate([W / 2, H / 2]).clipAngle(90).rotate(reduceMotion ? target : [0, -25, 0]);
-      const gpath = d3.geoPath().projection(proj);
-      const graticuleDatum = d3.geoGraticule()();
-      let rot = [0, -25, 0];
-      const svgSel = d3.select('#calib-globe-canvas');
-      const defs = svgSel.append('defs');
-      const f = defs.append('filter').attr('id', 'calib-glow').attr('x', '-45%').attr('y', '-45%').attr('width', '190%').attr('height', '190%');
-      f.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', '8').attr('result', 'blur');
-      f.append('feFlood').attr('flood-color', '#00FF9D').attr('flood-opacity', '0.7').attr('result', 'color');
-      f.append('feComposite').attr('in', 'color').attr('in2', 'blur').attr('operator', 'in').attr('result', 'shadow');
-      const mg = f.append('feMerge');
-      mg.append('feMergeNode').attr('in', 'shadow');
-      mg.append('feMergeNode').attr('in', 'SourceGraphic');
-
-      svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', '#091524');
-      const gratPath = svgSel.append('path').datum(graticuleDatum).attr('fill', 'none').attr('stroke', '#1a3050').attr('stroke-width', 0.35).attr('d', gpath).attr('opacity', 0.5);
-
-      /* Timeout de sécurité : jamais plus de 3.5s à attendre le CDN avant
-         d'abandonner proprement la cérémonie (le dashboard reste utilisable). */
-      const world = await Promise.race([
-        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json()),
-        new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
-      ]).catch(() => null);
-      if (!world) { overlay.classList.remove('open', 'visible'); localStorage.setItem('seba_calibration_seen', '1'); return; }
-      const countries = topojson.feature(world, world.objects.countries);
-      const pathsG = svgSel.append('g');
-      pathsG.selectAll('path').data(countries.features).enter().append('path')
-        .attr('d', gpath).attr('fill', '#1e293b').attr('stroke', '#263a5a').attr('stroke-width', 0.4);
-      svgSel.append('circle').attr('cx', W / 2).attr('cy', H / 2).attr('r', R).attr('fill', 'none').attr('stroke', '#1c2d50').attr('stroke-width', 1.2);
-
-      function render() { pathsG.selectAll('path').attr('d', gpath); gratPath.attr('d', gpath); }
-      function paintLocked() {
-        pathsG.selectAll('path')
-          .attr('fill', (d) => (CALIB_ISO_NUM[code] === d.id ? '#00FF9D' : '#1e293b'))
-          .attr('filter', (d) => (CALIB_ISO_NUM[code] === d.id ? 'url(#calib-glow)' : null));
-        caption.textContent = 'Cockpit calibré pour ' + country.label + ' ✓';
-        caption.classList.add('locked');
-      }
-
-      let cancelled = false;
-      let spinning = !reduceMotion; // reduced-motion : pas de boucle de rotation, déjà positionné sur target
-      function closeCalibration() {
-        document.removeEventListener('keydown', onKeyDown);
-        overlay.removeEventListener('click', onSkip);
-        overlay.classList.remove('visible');
-        setTimeout(() => overlay.classList.remove('open'), reduceMotion ? 0 : 650);
-      }
-      /* Échap ou clic n'importe où sur l'overlay = passer directement à l'état
-         verrouillé puis fermer, quel que soit le point de la cérémonie. */
-      function onSkip() {
-        if (cancelled) return;
-        cancelled = true;
-        spinning = false;
-        proj.rotate(target);
-        render();
-        paintLocked();
-        closeCalibration();
-      }
-      function onKeyDown(e) { if (e.key === 'Escape') onSkip(); }
-      document.addEventListener('keydown', onKeyDown);
-      overlay.addEventListener('click', onSkip);
-
-      localStorage.setItem('seba_calibration_seen', '1');
-
-      if (reduceMotion) {
-        /* Pas de rotation pilotée par rAF : l'état verrouillé est déjà la
-           position de départ du globe (proj.rotate(target) ci-dessus). */
-        cancelled = true;
-        paintLocked();
-        setTimeout(closeCalibration, 700);
-        return;
-      }
-
-      function spinLoop() {
-        if (!spinning || cancelled) return;
-        rot[0] += 0.5;
-        proj.rotate(rot);
-        render();
-        requestAnimationFrame(spinLoop);
-      }
-      spinLoop();
-      caption.textContent = 'Localisation de votre territoire…';
-
-      setTimeout(() => {
-        if (cancelled) return;
-        spinning = false;
-        const from = proj.rotate().slice();
-        const interp = d3.interpolate(from, target);
-        const ease = d3.easeCubicInOut;
-        d3.timer(function (elapsed) {
-          if (cancelled) return true;
-          proj.rotate(interp(ease(Math.min(elapsed / 980, 1))));
-          render();
-          if (elapsed >= 980) {
-            paintLocked();
-            document.getElementById('calib-flash').classList.add('fire');
-            AudioUI.playComplete();
-            setTimeout(() => { if (!cancelled) closeCalibration(); }, 1300);
-            return true;
-          }
-        });
-      }, 1800);
-    } catch (e) { /* jamais bloquant : en cas d'erreur, le dashboard reste utilisable normalement */ }
-  }
-
-  /* ─── Le Pont de Données (Bible V.11) ────────────────────────────────
-     Seba n'a pas de connexion bancaire réelle : l'interprétation fidèle
-     à l'architecture existante est la bascule des données de démo
-     (seed() dans seba-data.js) vers un état 100% réel — SebaDB._reset()
-     existe déjà pour ça. L'animation de "scan" (vibration des pixels,
-     décrite dans la Bible) traverse les métriques avant la bascule. ─── */
-  function activerDonneesReelles() {
-    if (localStorage.getItem('seba_donnees_reelles') === '1') {
-      showDashToast('Vos données réelles sont déjà activées — ce cockpit ne contient plus de données de démonstration.');
-      return;
-    }
-    const ok = confirm('Ceci efface toutes les données de démonstration (clients, devis, factures fictifs) pour repartir sur une base 100% réelle. Continuer ?');
-    if (!ok) return;
-    const metrics = Array.from(document.querySelectorAll('.metric-value'));
-    metrics.forEach((el, i) => {
-      setTimeout(() => {
-        el.classList.add('pixel-scan');
-        el.addEventListener('animationend', () => el.classList.remove('pixel-scan'), { once: true });
-      }, i * 90);
-    });
-    setTimeout(() => {
-      if (window.SebaDB) SebaDB._reset();
-      localStorage.setItem('seba_donnees_reelles', '1');
-      AudioUI.playComplete();
-      if (biz) renderDashboard(biz);
-      const menuEl2 = document.getElementById('user-menu');
-      if (menuEl2) menuEl2.classList.remove('open');
-    }, metrics.length * 90 + 550);
-  }
-  window.activerDonneesReelles = activerDonneesReelles;
-
-  function toggleFocusMode() {
-    AudioUI.playClick();
-    _focusActive = !_focusActive;
-    const overlay = document.getElementById('focus-overlay');
-    if (_focusActive) {
-      if (!_ctx) return; // pas encore de compte/donnees — rien a mettre sous vide
-      document.body.classList.add('focus-active');
-      overlay.classList.add('open');
-      requestAnimationFrame(() => overlay.classList.add('visible'));
-
-      const score = computeSerenityScore(_ctx);
-      const state = serenityStateFor(score);
-      document.getElementById('focus-score-num').textContent = score;
-      document.getElementById('focus-score-lbl').textContent = state.label;
-      if (_focusCleanup) { _focusCleanup(); _focusCleanup = null; }
-      const canvas = document.getElementById('focus-serenity-canvas');
-      _focusCleanup = startSerenityAnimation(canvas, canvas.parentElement, state);
-
-      const top = evaluateRules(_ctx)[0];
-      const line = document.getElementById('focus-action-line');
-      if (top) {
-        line.innerHTML = '<span class="fa-label">Action prioritaire</span>' +
-          '<span class="fa-text">' + top.title + ' — ' + top.desc + '</span>' +
-          '<a class="fa-btn" href="' + top.href + '">' + top.cta + ' →</a>';
-      } else {
-        line.innerHTML = '<span class="fa-label">Action prioritaire</span>' +
-          '<span class="fa-text">Rien d\'urgent — profitez-en pour avancer sur le fond.</span>';
-      }
-    } else {
-      document.body.classList.remove('focus-active');
-      overlay.classList.remove('visible');
-      if (_focusCleanup) { _focusCleanup(); _focusCleanup = null; }
-      setTimeout(() => overlay.classList.remove('open'), 350); // laisse le fondu de sortie se terminer
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     COPY PORTAL LINK
-  ═══════════════════════════════════════════════════════ */
-
-  function copyLink(btn) {
-    const url = 'https://seba.app/p/' + (_ctx ? _ctx.slug : '');
-    const restore = btn ? btn.innerHTML : null;
-    const ok = () => {
-      if (!btn) return;
-      btn.textContent = 'Copié !';
-      btn.style.color = 'var(--emerald)';
-      btn.style.borderColor = 'var(--emerald)';
-      setTimeout(() => { btn.innerHTML = restore; btn.style.color = ''; btn.style.borderColor = ''; }, 2200);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(ok).catch(() => fallbackCopy(url, ok));
-    } else {
-      fallbackCopy(url, ok);
-    }
-  }
-
-  function fallbackCopy(text, cb) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    try { document.execCommand('copy'); cb(); } catch(e) {}
-    document.body.removeChild(ta);
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     AVATAR MENU
-  ═══════════════════════════════════════════════════════ */
-  const avatarEl  = document.getElementById('avatar');
-  const menuEl    = document.getElementById('user-menu');
-  avatarEl.addEventListener('click', e => { e.stopPropagation(); document.getElementById('notif-panel').classList.remove('open'); menuEl.classList.toggle('open'); });
-  document.addEventListener('click', () => menuEl.classList.remove('open'));
-
-  /* ═══════════════════════════════════════════════════════
-     NOTIFICATIONS (audit 1.4) — le bouton cloche était mort (aucun
-     handler, badge "2" figé en dur). Panneau réel, alimenté par les
-     mêmes créances en retard que les Vecteurs d'Action/lot-impayes —
-     pas une nouvelle source de données inventée.
-  ═══════════════════════════════════════════════════════ */
-  function toggleNotifPanel(e) {
-    if (e) e.stopPropagation();
-    menuEl.classList.remove('open');
-    document.getElementById('notif-panel').classList.toggle('open');
-  }
-  window.toggleNotifPanel = toggleNotifPanel;
-  document.addEventListener('click', () => document.getElementById('notif-panel').classList.remove('open'));
-
-  function renderNotifPanel(ctx) {
-    const badge = document.getElementById('notif-badge');
-    const body = document.getElementById('notif-panel-body');
-    if (!badge || !body || !ctx) return;
-    const late = (ctx.creances || []);
-    if (!late.length) {
-      badge.style.display = 'none';
-      body.innerHTML = '<div class="notif-empty">Rien à signaler — tout est à jour.</div>';
-      return;
-    }
-    badge.style.display = 'flex';
-    badge.textContent = late.length > 9 ? '9+' : String(late.length);
-    const notifBtn = document.getElementById('notif-btn');
-    if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications (' + late.length + ' non lue' + (late.length > 1 ? 's' : '') + ')');
-    body.innerHTML = late.slice(0, 5).map(c =>
-      // href '#' volontaire : contentieux-recouvrement.html fait partie du
-      // cluster "Lot" neutralisé WM-007 (mockup sans auth/SebaDB) -- meme
-      // traitement que les widgets lot-impayes/lot-pipeline (widgets.js),
-      // oublie ici jusqu'a cet audit (2026-07-18).
-      '<a href="#" class="notif-item">' +
-        '<span>Facture en retard — ' + esc(c.client) + '</span>' +
-        '<span class="ni-sub">' + (c.montant || 0).toLocaleString('fr-FR') + ' ' + esc(ctx.sym) + ' en attente</span>' +
-      '</a>'
-    ).join('');
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     WELCOME CHECKLIST
-  ═══════════════════════════════════════════════════════ */
-  (function initChecklist() {
-    const biz2 = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-    const dismissed = localStorage.getItem('seba_checklist_dismissed');
-    if (!biz2.secteur || dismissed) return;
-    const wc = document.getElementById('welcome-checklist');
-    if (!wc) return;
-    wc.style.display = '';
-    const done1 = localStorage.getItem('seba_check_1') === '1';
-    const done2 = localStorage.getItem('seba_check_2') === '1';
-    if (done1) { const e1 = document.getElementById('wci-1'); if (e1) e1.classList.add('done'); }
-    if (done2) { const e2 = document.getElementById('wci-2'); if (e2) e2.classList.add('done'); }
-    updateChecklistBar();
-  })();
-
-  function checkItem(n) {
-    localStorage.setItem('seba_check_' + n, '1');
-    const el = document.getElementById('wci-' + n);
-    if (el) el.classList.add('done');
-    if (n === 2) {
-      const biz3 = JSON.parse(localStorage.getItem('sebaEntreprise') || '{}');
-      const url = 'https://seba.app/p/' + (biz3.slug || 'mon-entreprise');
-      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
-    }
-    updateChecklistBar();
-    const done1 = localStorage.getItem('seba_check_1') === '1';
-    const done2 = localStorage.getItem('seba_check_2') === '1';
-    if (done1 && done2) {
-      setTimeout(fireConfetti, 400);
-      setTimeout(() => {
-        const wc = document.getElementById('welcome-checklist');
-        if (wc) { wc.style.transition = 'opacity .5s'; wc.style.opacity = '0'; setTimeout(() => { wc.style.display = 'none'; }, 500); }
-      }, 2800);
-    }
-  }
-
-  function updateChecklistBar() {
-    const d0 = true;
-    const d1 = localStorage.getItem('seba_check_1') === '1';
-    const d2 = localStorage.getItem('seba_check_2') === '1';
-    const total = [d0, d1, d2].filter(Boolean).length;
-    const pct = Math.round((total / 3) * 100);
-    const bar = document.getElementById('wc-bar');
-    const lbl = document.getElementById('wc-pct');
-    if (bar) bar.style.width = pct + '%';
-    if (lbl) lbl.textContent = total + ' / 3';
-  }
-
-  function closeChecklist() {
-    localStorage.setItem('seba_checklist_dismissed', '1');
-    const wc = document.getElementById('welcome-checklist');
-    if (wc) { wc.style.transition = 'opacity .3s'; wc.style.opacity = '0'; setTimeout(() => wc.style.display = 'none', 320); }
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     CONFETTI
-  ═══════════════════════════════════════════════════════ */
-  function fireConfetti() {
-    const canvas = document.getElementById('confetti-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const pieces = Array.from({length: 90}, () => ({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 80,
-      vx: (Math.random() - 0.5) * 3,
-      vy: 2 + Math.random() * 3,
-      size: 6 + Math.random() * 6,
-      color: ['#00FF9D','#8B5CF6','#F59E0B','#3D2645','#EF4444','#3B82F6'][Math.floor(Math.random()*6)],
-      rot: Math.random() * 360,
-      spin: (Math.random() - 0.5) * 8,
-    }));
-    let t = 0; const MAX = 120;
-    function frame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pieces.forEach(p => {
-        p.x += p.vx; p.y += p.vy; p.rot += p.spin; p.vy += 0.08;
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
-        ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - t / MAX);
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
-        ctx.restore();
-      });
-      if (++t < MAX) requestAnimationFrame(frame);
-      else ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    frame();
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     FLOATING ACTION BUTTON
-  ═══════════════════════════════════════════════════════ */
-  let _fabOpen = false;
-  function toggleFab() {
-    _fabOpen = !_fabOpen;
-    const menu = document.getElementById('fab-menu');
-    const btn = document.getElementById('fab');
-    if (menu) {
-      /* Position calculée depuis la hauteur RÉELLE de #v2-header (pas un top
-         fixe en dur) : le header n'a pas la même hauteur en desktop qu'en
-         mobile (bouton "+ Créer" 44px min-height + padding réduit, voir
-         @media dashboard-v2.css) — un top fixe unique aurait fait chevaucher
-         le menu et le bouton sur l'un des deux viewports. Recalculé à chaque
-         ouverture : s'adapte aussi si la hauteur du header change plus tard. */
-      const header = document.getElementById('v2-header');
-      if (header) menu.style.top = (header.getBoundingClientRect().bottom + 8) + 'px';
-      menu.classList.toggle('open', _fabOpen);
-    }
-    if (btn) {
-      btn.textContent = _fabOpen ? '✕' : '+';
-      btn.classList.toggle('open-state', _fabOpen);
-    }
-  }
-  document.addEventListener('click', e => {
-    /* Le bouton "+ Créer" du header V2 appelle ce même toggleFab() (voir
-       #v2-header) — sans cette exemption, le clic qui l'ouvre bulle jusqu'ici
-       et le referme aussitôt (target hors .fab/.fab-menu). */
-    if (_fabOpen && !e.target.closest('.fab') && !e.target.closest('.fab-menu') && !e.target.closest('.v2-header-create-btn')) {
-      _fabOpen = false;
-      const menu = document.getElementById('fab-menu');
-      const btn = document.getElementById('fab');
-      if (menu) menu.classList.remove('open');
-      if (btn) { btn.textContent = '+'; btn.classList.remove('open-state'); }
-    }
   });
-  /* Ferme les panneaux workspace/portail du v2-header au clic extérieur —
-     même patron que .user-menu/.notif-panel/.fab-menu ci-dessus. */
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.v2-header-workspace-btn') && !e.target.closest('#v2-workspace-panel')) {
-      document.getElementById('v2-workspace-panel')?.classList.remove('open');
-    }
-    if (!e.target.closest('.v2-header-actions-btn') && !e.target.closest('#v2-portal-menu')) {
-      document.getElementById('v2-portal-menu')?.classList.remove('open');
-    }
-  });
+}
 
-  /* ═══════════════════════════════════════════════════════
-     CMD+K PALETTE
-  ═══════════════════════════════════════════════════════ */
-  const PAL_ITEMS = [
-    { section: 'Navigation', items: [
-      { ico: '🏠', lbl: 'Tableau de bord', sub: 'Vue d\'ensemble', href: 'dashboard.html' },
-      { ico: '👥', lbl: 'Clients', sub: 'Gérer vos clients', href: '../clients.html' },
-      { ico: '📅', lbl: 'Planning', sub: 'Agenda des interventions', href: '../planning.html' },
-      { ico: '📄', lbl: 'Devis', sub: 'Créer et suivre vos devis', href: '../devis.html' },
-      { ico: '🧾', lbl: 'Factures', sub: 'Historique de facturation', href: '../factures.html' },
-      { ico: '👤', lbl: 'Équipe', sub: 'Gérer vos collaborateurs', href: '../equipe.html' },
-      { ico: '⚙️', lbl: 'Réglages', sub: 'Paramètres du compte', href: '../reglages.html' },
-    ]},
-    { section: 'Actions rapides', items: [
-      { ico: '➕', lbl: 'Nouveau client', sub: 'Ajouter une fiche client', href: '../clients.html' },
-      { ico: '📝', lbl: 'Nouveau devis', sub: 'Créer un devis signable', href: '../devis-nouveau.html' },
-      { ico: '🗓️', lbl: 'Nouvelle intervention', sub: 'Planifier une mission', href: '../planning.html' },
-    ]},
+const STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard', 'non-assignee': 'Non assignée' };
+
+function renderJobs(jobs) {
+  const el = document.getElementById('db-job-list');
+  if (!jobs.length) { el.innerHTML = '<div class="db-empty">Aucune intervention prévue aujourd\'hui. <a href="../planning.html" style="color:var(--emerald);font-weight:600;">Planifier →</a></div>'; return; }
+  el.innerHTML = jobs.map(j => (
+    '<div class="db-job-row">' +
+      '<div class="db-job-time mono-num">' + esc(j.time) + '</div>' +
+      '<div class="db-job-main">' +
+        '<div class="db-job-title">' + esc(j.client) + ' — ' + esc(j.service) + '</div>' +
+        '<div class="db-job-sub">' + esc(j.adresse || 'Adresse non renseignée') + (j.employe ? ' · ' + esc(j.employe) : '') + '</div>' +
+      '</div>' +
+      '<div class="db-job-side">' +
+        '<span class="db-job-status ' + j.statut + '">' + (STATUS_LABEL[j.statut] || j.statut) + '</span>' +
+        '<button type="button" class="db-job-open" onclick="window.location.href=\'../planning.html\'">Ouvrir</button>' +
+      '</div>' +
+    '</div>'
+  )).join('');
+}
+
+function renderFinance(f, sym) {
+  const el = document.getElementById('db-finance');
+  const rows = [
+    { label: 'CA du mois', value: f.caMois, delta: f.deltaPct },
+    { label: 'Encaissé', value: f.encaisse },
+    { label: 'En attente', value: f.enAttente },
+    { label: 'Impayé', value: f.impaye },
   ];
-  let _palFocused = 0;
-  let _palFiltered = [];
+  el.innerHTML = rows.map(r => (
+    '<div class="db-fin-row">' +
+      '<span class="db-fin-label">' + r.label + '</span>' +
+      '<span class="db-fin-value mono-num">' + fmtMoney(r.value, sym) +
+        (r.delta != null ? '<span class="db-fin-delta ' + (r.delta >= 0 ? 'up' : 'down') + '">' + (r.delta >= 0 ? '↑' : '↓') + r.delta + '% vs mois dernier</span>' : '') +
+      '</span>' +
+    '</div>'
+  )).join('');
+}
 
-  const CmdHistory = {
-    KEY: 'seba_cmd_history',
-    push(lbl) {
-      const h = this.get();
-      const next = [lbl, ...h.filter(x => x !== lbl)].slice(0, 3);
-      localStorage.setItem(this.KEY, JSON.stringify(next));
-    },
-    get() { try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch(e) { return []; } }
-  };
+function renderPipeline(p) {
+  const el = document.getElementById('db-pipeline');
+  const steps = [
+    { label: 'Prospects', n: p.prospects },
+    { label: 'Devis envoyés', n: p.devisEnvoyes },
+    { label: 'Devis acceptés', n: p.devisAcceptes },
+    { label: 'Devis refusés', n: p.devisRefuses },
+  ];
+  const max = Math.max(1, ...steps.map(s => s.n));
+  el.innerHTML =
+    '<div class="db-pipeline-steps">' +
+    steps.map(s => (
+      '<div class="db-pipeline-step">' +
+        '<div class="db-pipeline-bar"><div class="db-pipeline-bar-fill" style="width:' + Math.round((s.n / max) * 100) + '%"></div></div>' +
+        '<div class="db-pipeline-num mono-num">' + s.n + '</div>' +
+        '<div class="db-pipeline-lbl">' + s.label + '</div>' +
+      '</div>'
+    )).join('') +
+    '</div>' +
+    '<div class="db-pipeline-conversion">Taux de conversion : ' + (p.tauxConversion != null ? '<strong>' + p.tauxConversion + '%</strong>' : '—') + '</div>';
+}
 
-  function openPalette() {
-    const ov = document.getElementById('palette-overlay');
-    const inp = document.getElementById('palette-inp');
-    if (!ov) return;
-    ov.classList.add('open');
-    if (inp) { inp.value = ''; inp.focus(); }
-    filterPalette('');
+function renderRecos(recos) {
+  const el = document.getElementById('db-recos');
+  if (!recos.length) { el.innerHTML = '<div class="db-empty">Aucune recommandation pour le moment.</div>'; return; }
+  el.innerHTML = recos.slice(0, 2).map(r => (
+    '<div class="db-reco">' +
+      '<div class="db-reco-title">' + esc(r.title) + '</div>' +
+      '<div class="db-reco-desc">' + esc(r.desc) + '</div>' +
+      '<a class="db-reco-cta" href="' + esc(r.href || '#') + '">' + esc(r.cta) + ' →</a>' +
+    '</div>'
+  )).join('');
+}
+
+function renderSecondary(vm) {
+  const el = document.getElementById('db-secondary');
+  el.innerHTML = [
+    { label: 'Clients actifs', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.list('clients').filter(c => c.statut === 'actif').length : 3 },
+    { label: 'Interventions (mois)', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsMois : 8 },
+    { label: 'Équipe active', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.list('employes').filter(e => e.actif).length : 2 },
+    { label: 'Synchronisation', value: vm.syncStatus.syncing ? 'En cours' : (vm.syncStatus.pending > 0 ? vm.syncStatus.pending + ' en attente' : (vm.syncStatus.failed > 0 ? vm.syncStatus.failed + ' échec(s)' : 'À jour')) },
+  ].map(s => '<div class="db-secondary-item"><div class="db-secondary-label">' + s.label + '</div><div class="db-secondary-value">' + s.value + '</div></div>').join('');
+}
+
+function renderErrorBanner(msg) {
+  const el = document.getElementById('db-error-banner');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function renderDashboard(biz) {
+  const nom = biz.nom || 'Mon entreprise';
+  const h = new Date().getHours();
+  const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  document.getElementById('db-greeting').textContent = salut + ', ' + nom + ' !';
+  document.getElementById('db-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const av = document.getElementById('avatar');
+  av.style.background = biz.couleur || 'var(--emerald)';
+  av.textContent = nom.charAt(0).toUpperCase();
+
+  try {
+    renderErrorBanner(null);
+    const vm = buildDashboardViewModel({ biz });
+    renderAlerts(vm.urgentActions);
+    renderJobs(vm.todayJobs);
+    renderFinance(vm.financeSummary, vm.sym);
+    renderPipeline(vm.salesPipeline);
+    renderRecos(vm.recommendations);
+    renderSecondary(vm);
+  } catch (err) {
+    console.error('[dashboard] rendu impossible :', err);
+    renderErrorBanner('Impossible de charger certaines données du tableau de bord. Réessayez ou rechargez la page.');
   }
-  function closePalette(e) {
-    if (e && e.target !== document.getElementById('palette-overlay')) return;
-    document.getElementById('palette-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
+let biz = null;
+try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch (e) {}
+
+if (!biz || !biz.secteur) {
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('dash-content').style.display = 'none';
+} else {
+  renderDashboard(biz);
+  if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
+}
+
+/* ── Menus ── */
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('user-menu');
+  const open = m.classList.toggle('open');
+  document.getElementById('avatar').setAttribute('aria-expanded', String(open));
+  document.getElementById('db-secondary-menu').classList.remove('open');
+}
+function toggleSecondaryMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('db-secondary-menu');
+  const open = m.classList.toggle('open');
+  document.getElementById('db-menu-btn').setAttribute('aria-expanded', String(open));
+  document.getElementById('user-menu').classList.remove('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('user-menu').classList.remove('open');
+  document.getElementById('db-secondary-menu').classList.remove('open');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('user-menu').classList.remove('open');
+    document.getElementById('db-secondary-menu').classList.remove('open');
   }
-  function closePaletteForce() { document.getElementById('palette-overlay').classList.remove('open'); }
+});
 
-  function filterPalette(q) {
-    const res = document.getElementById('palette-results');
-    if (!res) return;
-    _palFiltered = [];
-    let html = '';
-
-    /* Recents section when no query */
-    if (!q) {
-      const recents = CmdHistory.get();
-      if (recents.length) {
-        const recentItems = recents.map(lbl => {
-          for (const sec of PAL_ITEMS) {
-            const found = sec.items.find(it => it.lbl === lbl);
-            if (found) return found;
-          }
-          return null;
-        }).filter(Boolean);
-        if (recentItems.length) {
-          html += '<div class="pal-section"><div class="pal-section-lbl">Récents</div>';
-          recentItems.forEach(it => {
-            const idx = _palFiltered.length;
-            _palFiltered.push(it);
-            html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" role="button" tabindex="0" onclick="palGo(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){palGo(' + idx + ');event.preventDefault();}">' +
-              '<div class="pal-item-ico" style="background:rgba(0,255,157,.1);">🕐</div>' +
-              '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
-              '</div>';
-          });
-          html += '</div>';
-        }
-      }
-    }
-
-    PAL_ITEMS.forEach(sec => {
-      const matches = sec.items.filter(it => !q || it.lbl.toLowerCase().includes(q.toLowerCase()) || it.sub.toLowerCase().includes(q.toLowerCase()));
-      if (!matches.length) return;
-      html += '<div class="pal-section"><div class="pal-section-lbl">' + sec.section + '</div>';
-      matches.forEach(it => {
-        const idx = _palFiltered.length;
-        _palFiltered.push(it);
-        html += '<div class="pal-item' + (idx === _palFocused ? ' focused' : '') + '" data-idx="' + idx + '" role="button" tabindex="0" onclick="palGo(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){palGo(' + idx + ');event.preventDefault();}">' +
-          '<div class="pal-item-ico">' + it.ico + '</div>' +
-          '<div><div class="pal-item-lbl">' + it.lbl + '</div><div class="pal-item-sub">' + it.sub + '</div></div>' +
-          '</div>';
-      });
-      html += '</div>';
-    });
-    res.innerHTML = html || '<div style="padding:20px 18px;font-size:.88rem;color:var(--text-2);">Aucun résultat</div>';
-    _palFocused = 0;
-  }
-
-  function palGo(idx) {
-    const it = _palFiltered[idx];
-    if (!it) return;
-    CmdHistory.push(it.lbl);
-    window.location.href = it.href;
-  }
-
-  document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openAiBar(); return; }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openPalette(); return; }
-
-    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
-    if (!typing && (e.key === 'e' || e.key === 'E')) { toggleCustomizeMode(); return; }
-    if (!typing && (e.key === 'f' || e.key === 'F')) { toggleFocusMode(); return; }
-    /* Benchmark Linear §2.1/2.2 : le FAB "Actions rapides" n'était accessible
-       qu'à la souris/tactile — C l'ouvre/ferme, et 1/2/3 vont directement à
-       chaque action une fois le menu ouvert (cohérent avec les badges .pal-key
-       posés sur chaque .fab-item). */
-    if (!typing && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); toggleFab(); return; }
-    if (!typing && _fabOpen && /^[123]$/.test(e.key)) {
-      const links = ['clients.html', 'devis-nouveau.html', 'planning.html'];
-      window.location.href = links[+e.key - 1];
-      return;
-    }
-    if (!typing && e.key === '?') { openShortcuts(); return; }
-
-    if (e.key === 'Escape') {
-      if (_focusActive) toggleFocusMode();
-      if (_fabOpen) toggleFab();
-      closePaletteForce();
-      closeAiBar();
-      closeCustomizePanel();
-      closeShortcuts();
-      return;
-    }
-
-    const ov = document.getElementById('palette-overlay');
-    if (!ov || !ov.classList.contains('open')) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); _palFocused = Math.min(_palFocused + 1, _palFiltered.length - 1); filterPalette(document.getElementById('palette-inp').value); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); _palFocused = Math.max(_palFocused - 1, 0); filterPalette(document.getElementById('palette-inp').value); }
-    if (e.key === 'Enter') { palGo(_palFocused); }
-    if (e.key === 'Backspace') {
-      const inp = document.getElementById('palette-inp');
-      if (inp && inp.value === '') filterPalette('');
-    }
-  });
-
-  /* ═══════════════════════════════════════════════════════
-     MOBILE SIDEBAR
-  ═══════════════════════════════════════════════════════ */
-  function toggleSidebar() {
-    const sb = document.querySelector('.sidebar');
-    const ov = document.getElementById('sidebar-overlay');
-    const hb = document.getElementById('hamburger');
-    const open = sb && sb.classList.contains('open');
-    sb && sb.classList.toggle('open', !open);
-    ov && ov.classList.toggle('open', !open);
-    hb && hb.classList.toggle('open', !open);
-    document.body.style.overflow = open ? '' : 'hidden';
-  }
-  function closeSidebar() {
-    document.querySelector('.sidebar')?.classList.remove('open');
-    document.getElementById('sidebar-overlay')?.classList.remove('open');
-    document.getElementById('hamburger')?.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     METRIC CARD — radial glow on mousemove
-     Reciblé sur .v2-grid-container (les .metric-card vivent désormais dans
-     les zones V2, plus dans #widget-grid — voir DASHBOARD_V2_MASTER_PLAN.md §7).
-  ═══════════════════════════════════════════════════════ */
-  document.querySelector('.v2-grid-container').addEventListener('mousemove', e => {
-    const card = e.target.closest('.metric-card');
-    if (!card) return;
-    const r = card.getBoundingClientRect();
-    card.style.setProperty('--gx', ((e.clientX - r.left) / r.width * 100) + '%');
-    card.style.setProperty('--gy', ((e.clientY - r.top) / r.height * 100) + '%');
-  });
-
-  /* ═══════════════════════════════════════════════════════
-     METRIC COUNTER — animated number roll-up
-  ═══════════════════════════════════════════════════════ */
-  function animateMetrics() {
-    document.querySelectorAll('.metric-value').forEach(el => {
-      const tn = Array.from(el.childNodes).find(n => n.nodeType === 3);
-      if (!tn) return;
-      const raw = tn.data.trim();
-      if (!raw || raw === '—') return;
-      const num = parseInt(raw.replace(/[\s ]/g, ''), 10);
-      if (!isFinite(num) || num <= 0) return;
-      const t0 = performance.now(), dur = 700;
-      (function tick(now) {
-        const p = Math.min((now - t0) / dur, 1);
-        const v = Math.round((1 - Math.pow(1 - p, 3)) * num);
-        tn.data = v >= 1000
-          ? Math.floor(v / 1000) + ' ' + String(v % 1000).padStart(3, '0')
-          : String(v);
-        if (p < 1) requestAnimationFrame(tick);
-        else tn.data = raw;
-      })(t0);
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     FAB — rotate + class on open
-  ═══════════════════════════════════════════════════════ */
-  (function patchFab() {
-    const origToggle = window.toggleFab;
-    if (typeof origToggle !== 'undefined') return;
-  })();
+/* ── Sidebar mobile (identique aux autres pages pro) ── */
+function toggleSidebar() {
+  const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
 </script>
-<!-- Seba-Core (migration progressive des onclick, voir docs/src/ui/MIGRATION_REPORT.md) —
-     script additif en type="module", n'affecte pas le script classique ci-dessus. -->
-<script type="module" src="../src/ui/dashboard-init.js"></script>
-<!-- Fond shader du Cockpit : Three.js via CDN (Constitution : zéro npm).
-     bg-shader.js dégrade silencieusement si le CDN/WebGL est absent. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="../bg-shader.js"></script>
 </body>
 </html>
-
-
