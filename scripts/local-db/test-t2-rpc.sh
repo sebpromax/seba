@@ -73,7 +73,8 @@ echo "############################################################"
 set +e
 call_rpc "$UID_NULL" "$UID_NULL" "null" "Entreprise Null" 2>&1
 set -e
-echo "(attendu : violation NOT NULL sur profiles.sector, colonne inchangee)"
+psql_exec -c "select count(*) as profils_uid_null_apres_echec from profiles where user_id = '$UID_NULL';"
+echo "(attendu APRES durcissement 2 : exception explicite 'secteur inconnu' (errcode 22023, IF _sector IS NULL désormais explicite dans la fonction) -- levée AVANT toute tentative d'écriture, donc 0 profil créé. Auparavant (avant durcissement 2) : violation NOT NULL générique de Postgres, message moins clair, même résultat côté données (0 profil).)"
 
 echo
 echo "############################################################"
@@ -230,5 +231,21 @@ node "$(dirname "${BASH_SOURCE[0]}")/test-sector-contract.js"
 
 echo
 echo "############################################################"
-echo "# Suite de tests T2 terminée (25 vérifications)."
+echo "# Test 23 (durcissement 2) : deuxième exécution complète de la migration"
+echo "# -- doit réussir sans erreur (rejouabilité : DROP IF EXISTS + ADD pour"
+echo "# le CHECK, bloc DO avec vérification pg_constraint pour l'UNIQUE,"
+echo "# CREATE OR REPLACE pour la fonction, REVOKE/GRANT idempotents par nature)."
+echo "############################################################"
+COUNT_BEFORE_REPLAY=$(psql_exec -t -A -c "select count(*) from profiles;")
+echo "Profils avant le replay : $COUNT_BEFORE_REPLAY"
+psql_exec < "$(dirname "${BASH_SOURCE[0]}")/../../migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql"
+echo "OK -- deuxième exécution réussie sans erreur."
+COUNT_AFTER_REPLAY=$(psql_exec -t -A -c "select count(*) from profiles;")
+echo "Profils après le replay  : $COUNT_AFTER_REPLAY"
+if [[ "$COUNT_BEFORE_REPLAY" != "$COUNT_AFTER_REPLAY" ]]; then echo "!! ECHEC -- le replay a modifie des donnees"; exit 1; fi
+echo "(attendu : nombre de profils inchangé par le replay -- confirmé)"
+
+echo
+echo "############################################################"
+echo "# Suite de tests T2 terminée (26 vérifications)."
 echo "############################################################"

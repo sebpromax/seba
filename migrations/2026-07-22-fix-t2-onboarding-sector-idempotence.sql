@@ -1,7 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════
 -- SEBA — MIGRATION PRODUIT (T2) : correction create_profile_and_company.
--- Révisée le 2026-07-22 (durcissement) : voir historique de la branche
--- fix/t2-onboarding-sector-idempotence pour la version initiale.
+-- Révisée le 2026-07-22 (durcissement 1) puis le 2026-07-22 (durcissement
+-- 2, pré-production) : voir historique de la branche
+-- fix/t2-onboarding-sector-idempotence pour les versions précédentes.
 --
 -- Statut : MIGRATION PRODUIT — rejouable, ordonnée, appliquée après le
 -- baseline figé (voir scripts/local-db/migrations-order.txt, section
@@ -12,53 +13,70 @@
 -- inchangé.
 --
 -- PROBLÈME CORRIGÉ (2) — absence d'idempotence : voir version initiale,
--- inchangé dans son objectif, mais MÉCANISME REVU après durcissement :
+-- inchangé dans son objectif, mécanisme (SECURITY DEFINER + garde-fou
+-- manuel _user_id = auth.uid()) inchangé depuis le durcissement 1 -- voir
+-- ce commentaire dans l'historique git pour le raisonnement complet
+-- (policy UPDATE écartée, FOR UPDATE insuffisant sans elle sous RLS).
 --
--- La première version ajoutait une policy UPDATE sur `profiles` pour
--- permettre `INSERT ... ON CONFLICT DO UPDATE` (verrouillage de ligne).
--- Problème identifié : cette policy aurait permis à un utilisateur
--- authentifié de modifier N'IMPORTE QUELLE colonne de son propre profil
--- (dont `sector`) par un appel PATCH direct sur /rest/v1/profiles,
--- CONTOURNANT la protection "jamais d'écrasement silencieux du secteur"
--- que la RPC elle-même garantit. Retirée.
---
--- Alternative testée (INSERT ... ON CONFLICT DO NOTHING puis
--- SELECT ... FOR UPDATE sur la ligne existante) : confirmée EMPIRIQUEMENT
--- insuffisante en SECURITY INVOKER -- sans policy UPDATE, `FOR UPDATE`
--- sous RLS ne renvoie AUCUNE ligne (silencieusement, sans erreur), même
--- avec un GRANT UPDATE au niveau table. RLS exige une policy de type
--- UPDATE pour qu'une ligne soit "verrouillable", pas seulement visible en
--- lecture.
---
--- Solution retenue : passer la fonction en SECURITY DEFINER (comme
--- get_my_client_profile/get_my_employee_profile/close_my_intervention/
--- erase_account_completely dans ce même schéma -- le modèle déjà dominant
--- de ce dépôt pour les RPC qui doivent agir au-delà de ce que RLS
--- autoriserait directement). Contourne RLS pour SES PROPRES opérations
--- internes (dont FOR UPDATE), MAIS réplique manuellement la garantie que
--- RLS aurait fournie : vérification explicite `_user_id = auth.uid()` en
--- tout début de fonction -- sans cette vérification, SECURITY DEFINER
--- permettrait à n'importe quel appelant de fournir un _user_id arbitraire
--- et de créer/lire le profil de quelqu'un d'autre. AUCUNE policy
--- supplémentaire n'est ajoutée sur `profiles` ou `companies` : leurs
--- policies RLS existantes restent inchangées et continuent de protéger
--- tout accès direct via l'API REST (hors de cette RPC).
+-- DURCISSEMENT 2 (pré-production, 2026-07-22) — 6 changements, aucun
+-- changement de comportement métier pour un appel valide :
+--   1. Toute la partie exécutable (contraintes, fonction, REVOKE, GRANT)
+--      dans une seule transaction explicite BEGIN/COMMIT -- soit tout
+--      s'applique, soit rien (DDL Postgres est transactionnel).
+--   2. Contrôle de secteur dans la fonction explicitement null-safe
+--      (`_sector is null or ...`) -- `NULL not in (...)` vaut NULL (ni
+--      vrai ni faux) en SQL, jamais une erreur explicite : un appel avec
+--      un secteur NULL aurait silencieusement traversé le IF sans lever
+--      d'exception, pour finir rejeté seulement par la contrainte CHECK
+--      (message moins clair, et seulement APRÈS une tentative d'écriture).
+--   3. Contrainte CHECK elle-même rendue null-safe pour la même raison,
+--      en défense en profondeur (la fonction est le chemin normal, mais
+--      la contrainte reste la garantie de dernier recours si jamais
+--      contournée).
+--   4. Ajout de profiles_user_id_unique rendu réellement rejouable via un
+--      bloc DO qui vérifie pg_constraint -- un DROP puis ADD aurait
+--      reconstruit l'index à chaque rejeu, coûteux et inutile sur une
+--      table réelle en production (contrairement à la contrainte CHECK
+--      ci-dessus, bon marché à reconstruire, qui garde son mécanisme
+--      DROP IF EXISTS + ADD).
+--   5. search_path resserré : `public` retiré, remplacé par
+--      `pg_catalog, pg_temp` (recommandation standard Postgres/Supabase
+--      contre le search_path hijacking -- une fonction malveillante posée
+--      dans le schéma public ne peut plus jamais être appelée à la place
+--      d'une fonction native attendue). Toutes les tables référencées
+--      dans le corps étaient déjà qualifiées `public.` (aucun changement
+--      de comportement) ; `auth.uid()` était déjà qualifié `auth.`
+--      également.
+--   6. REVOKE/GRANT explicites : `public` ET `anon` explicitement révoqués
+--      (le premier REVOKE ALL FROM PUBLIC couvrait déjà transitivement
+--      `anon`, mais un GRANT direct à `anon` ailleurs resterait invisible
+--      sans ce second REVOKE explicite -- défense en profondeur, pas une
+--      lacune corrigée : aucun GRANT direct à `anon` n'existe aujourd'hui
+--      sur cette fonction).
 --
 -- RETOUR DE LA FONCTION : reste `uuid` (pas de changement de contrat
 -- public). Les deux seuls appelants du dépôt (docs/bienvenue.html:173,
 -- docs/connexion.html:435) ignorent déjà la valeur retournée -- seule
 -- l'absence d'erreur leur importe. Les cas d'erreur métier (secteur
--- inconnu, conflit de secteur) lèvent une exception SQL explicite,
+-- inconnu/null, conflit de secteur) lèvent une exception SQL explicite,
 -- capturée nativement par le mécanisme d'erreur déjà utilisé par ces deux
 -- appelants (`const { error } = await sebaAuth.rpc(...)`), sans qu'aucun
 -- changement de code JS ne soit nécessaire.
 -- ═══════════════════════════════════════════════════════════════
 
+begin;
+
 -- 1. Contrainte de secteur : accepte les 4 valeurs réellement envoyées par
---    l'onboarding actuel.
+--    l'onboarding actuel, explicitement null-safe (défense en profondeur,
+--    voir durcissement 2 point 3). Rejouable par nature (DROP IF EXISTS
+--    + ADD) : reconstruction bon marché, contrairement à l'index unique
+--    ci-dessous.
 alter table profiles drop constraint if exists profiles_sector_check;
 alter table profiles add constraint profiles_sector_check
-  check (sector in ('menage', 'conciergerie', 'maintenance', 'autre'));
+  check (
+    sector is not null
+    and sector in ('menage', 'conciergerie', 'maintenance', 'autre')
+  );
 
 -- 2. Contrainte d'unicité sur profiles.user_id.
 --    Prérequis vérifiés avant application (voir rapport de livraison) :
@@ -69,7 +87,18 @@ alter table profiles add constraint profiles_sector_check
 --    N'IMPOSE PAS qu'un propriétaire ne gère qu'une seule entreprise --
 --    aucune contrainte équivalente n'est ajoutée sur companies.profile_id,
 --    décision produit délibérément non prise ici.
-alter table profiles add constraint profiles_user_id_unique unique (user_id);
+--    Rejouable SANS reconstruire l'index à chaque fois (contrairement à un
+--    DROP IF EXISTS + ADD) : ajoutée seulement si absente.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and conname = 'profiles_user_id_unique'
+  ) then
+    alter table public.profiles add constraint profiles_user_id_unique unique (user_id);
+  end if;
+end $$;
 
 -- 3. Aucune policy supplémentaire sur profiles ou companies. Les policies
 --    existantes (profiles_select, profiles_insert, companies_select,
@@ -82,7 +111,7 @@ create or replace function create_profile_and_company(
 ) returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = pg_catalog, pg_temp
 as $$
 declare
   _profile_id uuid;
@@ -108,8 +137,12 @@ begin
       using errcode = '42501';
   end if;
 
-  -- Erreur explicite AVANT toute écriture si le secteur est inconnu.
-  if _sector not in ('menage', 'conciergerie', 'maintenance', 'autre') then
+  -- Erreur explicite AVANT toute écriture si le secteur est NULL ou
+  -- inconnu -- `NULL not in (...)` vaut NULL (ni vrai ni faux) en SQL,
+  -- jamais une erreur : sans le test IS NULL explicite, un secteur NULL
+  -- traverserait ce IF silencieusement et ne serait rejeté que par la
+  -- contrainte CHECK, plus tard et avec un message moins clair.
+  if _sector is null or _sector not in ('menage', 'conciergerie', 'maintenance', 'autre') then
     raise exception 'create_profile_and_company: secteur inconnu ''%'' -- valeurs acceptees : menage, conciergerie, maintenance, autre', _sector
       using errcode = '22023';
   end if;
@@ -118,9 +151,9 @@ begin
   -- UPDATE n'est nécessaire, SECURITY DEFINER contourne de toute façon
   -- RLS pour cette opération, mais on garde le principe du moindre effet
   -- (DO NOTHING plutôt qu'un UPDATE no-op). Objets qualifiés par leur
-  -- schéma (public.) : le search_path est déjà fixé ci-dessus et rend
-  -- cela redondant pour la sécurité, mais plus explicite/robuste à la
-  -- lecture et si ce corps est un jour réutilisé ailleurs.
+  -- schéma (public.) : desormais OBLIGATOIRE (search_path resserré à
+  -- pg_catalog, pg_temp, voir durcissement 2 point 5), plus seulement une
+  -- bonne pratique redondante.
   insert into public.profiles (user_id, sector) values (_user_id, _sector)
   on conflict (user_id) do nothing
   returning id into _profile_id;
@@ -161,4 +194,7 @@ end;
 $$;
 
 revoke all on function create_profile_and_company(uuid, text, varchar) from public;
+revoke all on function create_profile_and_company(uuid, text, varchar) from anon;
 grant execute on function create_profile_and_company(uuid, text, varchar) to authenticated;
+
+commit;
