@@ -29,6 +29,7 @@ function startStaticServer() {
 
 let failures = 0;
 function assert(cond, msg) { if (cond) console.log('  OK   -', msg); else { console.error('  FAIL -', msg); failures++; } }
+function intersects(a, b) { return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }
 
 async function seedAndGoto(page) {
   await page.goto(`http://127.0.0.1:${PORT}/app/dashboard.html?demo`, { waitUntil: 'domcontentloaded' });
@@ -208,6 +209,59 @@ async function main() {
     const hasRetryAction = await page.evaluate(() => Array.from(document.querySelectorAll('.db-alert-row')).some(r => /échec/i.test(r.textContent)));
     assert(hasRetryAction, 'échec de synchronisation simulé apparaît en tête du centre d\'actions avec action "Réessayer"');
     await page.evaluate(() => localStorage.removeItem('seba_failed_ops'));
+    await page.close();
+  }
+
+  // ── 5b. seba-sync-indicator : file longue + échec, aucun chevauchement
+  // (fix(sync-ui) 2026-07-24) -- vérifié à 390/768/1440px : aucun
+  // chevauchement avec une carte du dashboard ni le FAB IA, bouton
+  // "Réessayer" toujours accessible, aucun débordement horizontal,
+  // contenu du dashboard toujours accessible (défilement possible).
+  for (const vp of [{ w: 390, h: 844 }, { w: 768, h: 1024 }, { w: 1440, h: 900 }]) {
+    const page = await browser.newPage();
+    await page.setViewport({ width: vp.w, height: vp.h });
+    await page.goto(`http://127.0.0.1:${PORT}/app/dashboard.html?demo`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+      localStorage.setItem('sebaEntreprise', JSON.stringify({ nom: 'Menage Pro Test', secteur: 'menage', couleur: '#00FF9D', services: ['Menage'], slug: 'menage-pro-test', deviseSymbole: '€' }));
+      localStorage.setItem('seba_calibration_seen', '1');
+      // File longue simulée : 200 opérations en attente + 1 échec définitif.
+      const ops = [];
+      for (let i = 0; i < 200; i++) ops.push({ id: 'op' + i, coll: 'clients', entityId: 'c' + i, op: 'update', patch: {}, attempts: 0 });
+      localStorage.setItem('seba_sync_queue', JSON.stringify(ops));
+      localStorage.setItem('seba_failed_ops', JSON.stringify([{ id: 'f1', coll: 'clients', entityId: 'c1', op: 'update', patch: {}, attempts: 5 }]));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/app/dashboard.html?demo`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 1500));
+
+    const info = await page.evaluate(() => {
+      const ind = document.getElementById('seba-sync-indicator');
+      const fab = document.querySelector('.ai-chat-fab');
+      const retryBtn = ind ? ind.querySelector('button') : null;
+      const cards = Array.from(document.querySelectorAll('.db-panel, .db-alerts'));
+      const indRect = ind ? ind.getBoundingClientRect() : null;
+      const fabRect = fab ? fab.getBoundingClientRect() : null;
+      const cardOverlaps = indRect ? cards.filter(c => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && !(indRect.left >= r.right || indRect.right <= r.left || indRect.top >= r.bottom || indRect.bottom <= r.top);
+      }).length : 0;
+      return {
+        indVisible: !!ind && getComputedStyle(ind).display !== 'none',
+        indRect: indRect ? { left: indRect.left, right: indRect.right, top: indRect.top, bottom: indRect.bottom, width: indRect.width, height: indRect.height } : null,
+        fabRect: fabRect ? { left: fabRect.left, right: fabRect.right, top: fabRect.top, bottom: fabRect.bottom } : null,
+        retryVisible: !!retryBtn && retryBtn.getBoundingClientRect().width > 0 && retryBtn.getBoundingClientRect().height > 0,
+        cardOverlapCount: cardOverlaps,
+        hasHorizontalScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
+        dashboardStillClickable: !!document.getElementById('db-menu-btn'),
+      };
+    });
+    assert(info.indVisible, `${vp.w}px: indicateur de synchronisation visible avec file longue + échec`);
+    assert(info.cardOverlapCount === 0, `${vp.w}px: aucun chevauchement avec une carte du dashboard (observe ${info.cardOverlapCount})`);
+    if (info.indRect && info.fabRect) assert(!intersects(info.indRect, info.fabRect), `${vp.w}px: aucun chevauchement avec le FAB IA`);
+    assert(info.retryVisible, `${vp.w}px: bouton "Réessayer" toujours accessible`);
+    assert(!info.hasHorizontalScroll, `${vp.w}px: aucun débordement horizontal`);
+    assert(info.dashboardStillClickable, `${vp.w}px: contenu du dashboard toujours accessible`);
+
+    await page.evaluate(() => { localStorage.removeItem('seba_sync_queue'); localStorage.removeItem('seba_failed_ops'); });
     await page.close();
   }
 

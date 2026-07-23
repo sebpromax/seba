@@ -236,15 +236,119 @@
      Visible uniquement si une operation est en attente ou a echoue.
      Aucune couleur en dur : uniquement des tokens CSS deja definis par
      chaque page (theme.css pour les pages pro-global, Tactical Dark pour
-     dashboard.html) -- voir tools/check-design-system.js. */
+     dashboard.html) -- voir tools/check-design-system.js.
+
+     fix(sync-ui) 2026-07-24 : ce widget partageait EXACTEMENT le coin
+     bas-droit du FAB IA (.ai-chat-fab, ai-assistant.js -- bottom:28/right:28,
+     z-index:300) et, sur mobile, chevauchait la navigation inferieure des
+     portails (.et-bottom-nav, espace-terrain.html -- position:fixed sur
+     toute la largeur). Un widget position:fixed EST toujours dans le
+     viewport, a tout defilement -- sur une page plus haute que l'ecran
+     (le nouveau dashboard command-center en particulier), aucun decalage
+     vertical ne peut a lui seul garantir zero chevauchement avec UNE carte
+     de contenu normal, puisque le contenu defile SOUS un point fixe quel
+     qu'il soit. La seule zone reellement et TOUJOURS vide de cartes, a
+     n'importe quelle position de defilement, est le rail lateral
+     (.sidebar, colonne dediee, aucune carte n'y vit jamais) en desktop, et
+     la bande du mobile-header sticky (toujours au-dessus du flux) en
+     mobile. Le widget est donc ancre dans CES zones plutot que flotter
+     au hasard au-dessus du contenu :
+       - desktop (sidebar visible) : coin bas de la colonne sidebar --
+         aucune carte n'y vit jamais, a n'importe quelle position de
+         defilement (contrairement a un point fixe flottant au-dessus du
+         contenu, qui recouvre systematiquement CE QUI DEFILE dessous) ;
+       - mobile (.mobile-header sticky present) : le widget devient un
+         ENFANT du bandeau lui-meme (position:absolute dans ce conteneur
+         sticky), jamais superpose au flux de contenu qui commence
+         toujours EN DESSOUS du bandeau ;
+       - repli (ni sidebar ni mobile-header trouves) : coin bas-droit
+         classique avec degagement dynamique du FAB/de la nav inferieure.
+     Aucun changement de la logique T3 (loadQueue/loadFailed/scheduleSyncWorker/
+     retrySyncNow) ci-dessous : uniquement la presentation. */
   let _syncIndicatorEl = null;
+  let _syncIndicatorStyleInjected = false;
+  function ensureSyncIndicatorStyle() {
+    if (_syncIndicatorStyleInjected || typeof document === 'undefined' || !document.head) return;
+    const style = document.createElement('style');
+    style.id = 'seba-sync-indicator-style';
+    style.textContent =
+      '#seba-sync-indicator{position:fixed;right:16px;left:auto;bottom:var(--seba-sync-bottom,16px);z-index:250;' +
+      'display:none;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--rs,8px);' +
+      'background:var(--white);border:1px solid var(--border);color:var(--ink);font-size:.82rem;' +
+      'box-shadow:var(--shadow-md,0 4px 16px rgba(0,0,0,.4));' +
+      'max-width:min(320px,calc(100vw - 32px));max-height:120px;overflow-y:auto;box-sizing:border-box;}' +
+      '#seba-sync-indicator .seba-sync-indicator-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '#seba-sync-indicator button{flex-shrink:0;}' +
+      /* Desktop (sidebar visible, colonne 220px reelle sur les pages pro) :
+         ancre dans le coin bas de CETTE colonne -- jamais une carte de
+         contenu n'y vit, quel que soit le defilement. Largeur reduite pour
+         tenir dans la colonne (texte tronque proprement, titre complet au
+         survol). */
+      '@media (min-width:769px){#seba-sync-indicator{left:16px;right:auto;max-width:190px;}}' +
+      '@media (max-width:768px){#seba-sync-indicator{right:12px;max-width:calc(100vw - 24px);}}' +
+      /* Ancrage dans .mobile-header (JS: placeSyncIndicator()) -- widget
+         reparente comme enfant du bandeau sticky, jamais superpose au
+         contenu qui commence toujours en dessous. Compact (place partagee
+         avec logo + hamburger) : largeur, hauteur et police reduites. */
+      '#seba-sync-indicator.seba-sync-in-header{position:absolute;top:50%;bottom:auto;left:auto;right:52px;' +
+      'transform:translateY(-50%);max-width:min(150px,calc(100vw - 190px));max-height:none;padding:6px 8px;' +
+      'gap:6px;font-size:.72rem;box-shadow:none;}' +
+      '#seba-sync-indicator.seba-sync-in-header button{padding:3px 7px;font-size:.68rem;}';
+    document.head.appendChild(style);
+    _syncIndicatorStyleInjected = true;
+  }
+  /* Reparente le widget dans .mobile-header (bandeau sticky, jamais
+     recouvert par le contenu qui defile) quand il est visible -- sinon le
+     laisse en enfant de body avec le positionnement fixe (coin de sidebar
+     en desktop, repli bas-droit sinon). Rappele a chaque updateSyncIndicator()
+     et au redimensionnement : la bascule desktop/mobile peut survenir a
+     tout moment (fenetre redimensionnee, rotation d'ecran). */
+  function placeSyncIndicator(el) {
+    if (!el) return;
+    let header = null;
+    try {
+      const h = document.querySelector('.mobile-header');
+      if (h && getComputedStyle(h).display !== 'none' && h.getBoundingClientRect().height > 0) header = h;
+    } catch (e) {}
+    if (header) {
+      if (el.parentNode !== header) header.appendChild(el);
+      el.classList.add('seba-sync-in-header');
+    } else {
+      if (el.parentNode !== document.body) document.body.appendChild(el);
+      el.classList.remove('seba-sync-in-header');
+    }
+  }
+  /* Decalage vertical necessaire pour degager le FAB IA et toute navigation
+     inferieure pleine largeur en repli bas-droit (widget PAS ancre dans
+     .mobile-header), et le pied de sidebar (.sidebar-footer, desktop) --
+     obstacles reellement presents et visibles sur CETTE page a cet instant,
+     jamais une valeur supposee a l'avance. Sans objet quand le widget est
+     ancre dans .mobile-header (position:absolute dans ce conteneur, aucun
+     decalage de viewport a calculer). */
+  function computeSyncIndicatorBottom() {
+    let clearance = 16;
+    try {
+      ['.ai-chat-fab', '.et-bottom-nav', '.mob-bottom-nav', '.bottom-nav', '.sidebar-footer'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (!el || getComputedStyle(el).display === 'none') return;
+        const rect = el.getBoundingClientRect();
+        // Ignore un element hors-champ (largeur/hauteur nulle, ou entierement
+        // au-dessus/en-dessous du viewport -- ex. sidebar-footer d'un menu
+        // mobile ferme, translate() hors ecran mais display toujours "flex").
+        if (rect.height <= 0 || rect.width <= 0 || rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) return;
+        const fromBottom = Math.round(window.innerHeight - rect.top) + 12;
+        if (fromBottom > clearance) clearance = fromBottom;
+      });
+    } catch (e) {}
+    return clearance;
+  }
   function ensureSyncIndicatorEl() {
+    ensureSyncIndicatorStyle();
     if (_syncIndicatorEl || typeof document === 'undefined' || !document.body) return _syncIndicatorEl;
     const el = document.createElement('div');
     el.id = 'seba-sync-indicator';
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite'); // role="status" l'implique deja, explicite ici pour la compatibilite des lecteurs d'ecran les moins recents
-    el.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2000;display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--rs,8px);background:var(--white);border:1px solid var(--border);color:var(--ink);font-size:.82rem;box-shadow:var(--shadow-md,0 4px 16px rgba(0,0,0,.4));';
     const label = document.createElement('span');
     label.className = 'seba-sync-indicator-label';
     const btn = document.createElement('button');
@@ -256,7 +360,51 @@
     el.appendChild(btn);
     document.body.appendChild(el);
     _syncIndicatorEl = el;
+    if (typeof window !== 'undefined') {
+      const recompute = () => {
+        if (!_syncIndicatorEl || _syncIndicatorEl.style.display === 'none') return;
+        placeSyncIndicator(_syncIndicatorEl);
+        if (_syncIndicatorEl.classList.contains('seba-sync-in-header')) {
+          // Ancre dans le bandeau sticky : position:absolute dans ce
+          // conteneur, aucun degagement de viewport ni reservation de
+          // page a calculer (le bandeau n'est jamais recouvert par le
+          // contenu, qui commence toujours en dessous de lui).
+          releaseBottomSpace();
+          return;
+        }
+        const bottomOffset = computeSyncIndicatorBottom();
+        _syncIndicatorEl.style.setProperty('--seba-sync-bottom', bottomOffset + 'px');
+        reserveBottomSpace(bottomOffset + _syncIndicatorEl.offsetHeight + 16);
+      };
+      window.addEventListener('resize', recompute);
+      // Le FAB IA (ai-assistant.js) et les navigations inferieures des
+      // portails sont charges en <script defer> : pas encore montes au
+      // moment ou ce widget s'auto-injecte (seba-data.js n'est pas differe).
+      // 'load' (apres TOUS les scripts differes) + un court delai de secours
+      // couvrent un montage encore plus tardif (composant qui s'auto-monte
+      // apres son propre fetch/init asynchrone).
+      window.addEventListener('load', recompute);
+      setTimeout(recompute, 800);
+    }
     return el;
+  }
+  /* Un widget position:fixed peut toujours degager UN obstacle connu (FAB,
+     nav) mais pas le contenu de page lui-meme, qui remplit toute la hauteur
+     du document -- sans reserver l'equivalent en padding-bottom, la derniere
+     carte d'une page (ex. "Paiements a surveiller" du dashboard) finit
+     TOUJOURS sous ce widget des que la page est assez longue. Reserve donc
+     un espace reel en bas du document, degage seulement quand le widget est
+     cache -- jamais applique en permanence (aucune page n'a de padding en
+     trop tant qu'aucune synchro n'est en attente/en echec). */
+  let _origBodyPaddingBottom = null;
+  function reserveBottomSpace(px) {
+    if (typeof document === 'undefined' || !document.body) return;
+    if (_origBodyPaddingBottom === null) _origBodyPaddingBottom = document.body.style.paddingBottom || '';
+    document.body.style.paddingBottom = 'calc(' + (_origBodyPaddingBottom || '0px') + ' + ' + px + 'px)';
+  }
+  function releaseBottomSpace() {
+    if (typeof document === 'undefined' || !document.body || _origBodyPaddingBottom === null) return;
+    document.body.style.paddingBottom = _origBodyPaddingBottom;
   }
   function updateSyncIndicator() {
     if (typeof document === 'undefined') return;
@@ -265,12 +413,25 @@
       if (!el) return;
       const pending = loadQueue().length;
       const failed = loadFailed().length;
-      if (pending === 0 && failed === 0) { el.style.display = 'none'; return; }
+      if (pending === 0 && failed === 0) { el.style.display = 'none'; releaseBottomSpace(); return; }
+      placeSyncIndicator(el);
       el.style.display = 'flex';
       const parts = [];
       if (pending > 0) parts.push(pending === 1 ? '1 modification en attente' : pending + ' modifications en attente');
       if (failed > 0) parts.push(failed === 1 ? '1 echec definitif' : failed + ' echecs definitifs');
-      el.querySelector('.seba-sync-indicator-label').textContent = parts.join(' · ');
+      const label = el.querySelector('.seba-sync-indicator-label');
+      label.textContent = parts.join(' · ');
+      label.title = parts.join(' · '); // texte complet au survol si tronque par l'ellipsis CSS
+      if (el.classList.contains('seba-sync-in-header')) {
+        // Ancre dans le bandeau sticky : jamais recouvert par le contenu,
+        // aucune reservation de page necessaire.
+        releaseBottomSpace();
+      } else {
+        const bottomOffset = computeSyncIndicatorBottom();
+        el.style.setProperty('--seba-sync-bottom', bottomOffset + 'px');
+        // Mesure APRES affichage (display:flex) pour avoir une hauteur reelle.
+        reserveBottomSpace(bottomOffset + el.offsetHeight + 16);
+      }
     };
     if (document.body) render();
     else document.addEventListener('DOMContentLoaded', render, { once: true });
