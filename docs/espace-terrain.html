@@ -22,43 +22,85 @@
 html,body{overflow-x:hidden;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;}
 a{color:inherit;text-decoration:none;}
-button,input,textarea{font-family:'Inter',sans-serif;}
+button,input,textarea,select{font-family:'Inter',sans-serif;}
 
-.et-wrap{max-width:640px;margin:0 auto;padding:24px 20px 60px;padding-bottom:max(60px, calc(20px + env(safe-area-inset-bottom, 0px)));}
+/* ── En-tête ── */
+.et-header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.et-header h1{font-size:1.15rem;font-weight:800;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.et-header p{font-size:.8rem;color:var(--text-2);margin-top:2px;}
+.et-header-side{text-align:right;flex-shrink:0;}
+.et-mission-count{font-size:.78rem;font-weight:700;color:var(--emerald);}
+.et-conn-status{font-size:.68rem;color:var(--text-2);margin-top:2px;display:flex;align-items:center;gap:5px;justify-content:flex-end;}
+.et-conn-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);flex-shrink:0;}
+.et-conn-dot.offline{background:var(--danger-text);}
+.et-conn-dot.pending{background:var(--badge-warning-txt);}
 
-.et-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;}
-.et-greeting h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
-.et-greeting p{font-size:.86rem;color:var(--text-2);}
-.et-logout{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);padding:9px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;min-height:48px;}
-
+/* ── Layout ── */
+.et-wrap{max-width:640px;margin:0 auto;padding:20px 20px 100px;}
+.et-view{display:none;}
+.et-view.active{display:block;}
 .et-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
+.et-offline-banner{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger-text);border-radius:var(--rs);padding:10px 14px;font-size:.82rem;font-weight:600;margin-bottom:16px;text-align:center;}
 
+/* ── Mission prioritaire (encadré) ── */
+.et-priority-wrap{border:1.5px solid var(--emerald);border-radius:var(--r);padding:4px;margin-bottom:24px;}
+.et-priority-wrap.late{border-color:var(--danger-text);}
+.et-priority-label{font-size:.72rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px 0;}
+.et-priority-wrap.late .et-priority-label{color:var(--danger-text);}
+.et-priority-ok{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;display:flex;align-items:center;gap:10px;color:var(--badge-success-txt);font-weight:600;font-size:.92rem;margin-bottom:24px;}
+
+/* ── Carte mission (réutilisée telle quelle depuis la version d'origine) ── */
 .et-mission{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;transition:opacity var(--t-std,.25s) var(--ease-std,ease);}
 .et-mission.done{opacity:.6;}
 .et-mission-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .et-mission-time{font-size:.82rem;font-weight:700;color:var(--emerald);}
 .et-mission-badge{font-size:.72rem;padding:3px 9px;border-radius:12px;font-weight:600;background:var(--bg);color:var(--text-2);}
 .et-mission-badge.done{background:var(--badge-success-bg);color:var(--emerald);}
+.et-mission-badge.en-cours{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+.et-mission-badge.en-retard{background:var(--danger-bg);color:var(--danger-text);}
 .et-mission-client{font-weight:600;font-size:1rem;margin-bottom:2px;}
-.et-mission-service{font-size:.86rem;color:var(--text-2);margin-bottom:12px;}
+.et-mission-service{font-size:.86rem;color:var(--text-2);margin-bottom:8px;}
+.et-mission-addr{font-size:.84rem;color:var(--text-2);margin-bottom:12px;}
 .et-mission-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .et-btn-msg{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;cursor:pointer;min-height:48px;}
 .et-btn-terminer{background:var(--emerald);border:none;color:var(--on-emerald);padding:8px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:700;cursor:pointer;min-height:48px;}
+.et-btn-terminer:disabled{opacity:.5;cursor:not-allowed;}
 @media (hover:hover){.et-btn-terminer:hover{opacity:.9;}}
 @media (hover:none){.et-btn-terminer:active{opacity:.85;}}
+.et-mission-status-note{font-size:.8rem;margin-top:8px;}
+.et-mission-status-note.ok{color:var(--emerald);}
+.et-mission-status-note.err{color:var(--danger-text);}
 
 .et-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
 
-.et-messaging{margin-top:32px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
-.et-msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+/* ── Liste compacte (Missions du jour / Toutes mes missions) ── */
+.et-list-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:4px 18px;}
+.et-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.et-list-row:last-child{border-bottom:none;}
+.et-list-main{min-width:0;flex:1;}
+.et-list-title{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.et-list-meta{font-size:.76rem;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── Détail mission ── */
+.et-detail-back{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;font-weight:700;color:var(--text-2);background:none;border:none;cursor:pointer;padding:8px 0;min-height:44px;margin-bottom:12px;}
+.et-detail-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.et-detail-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text-2);font-weight:700;margin-bottom:4px;}
+.et-detail-value{font-size:.9rem;}
+.et-consignes{font-size:.86rem;color:var(--ink);margin-top:6px;padding:10px 12px;background:var(--bg);border-radius:var(--rs);}
+.et-maps-link{display:block;width:100%;text-align:center;background:var(--white);color:var(--ink);border:1.5px solid var(--border);padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;}
+
+/* ── Messagerie / profil ── */
+.et-messaging{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
+.et-msg-thread{max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
 .et-msg-bubble{background:var(--bg);border-radius:10px;padding:9px 12px;font-size:.86rem;}
 .et-msg-meta{font-size:.72rem;color:var(--text-2);margin-top:3px;}
 .et-msg-empty{font-size:.84rem;color:var(--text-2);text-align:center;padding:12px 0;}
 .et-msg-row{display:flex;gap:8px;}
-.et-msg-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;min-height:48px;-webkit-appearance:none;appearance:none;}
+.et-msg-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;-webkit-appearance:none;appearance:none;}
 .et-msg-input:focus{border-color:var(--emerald);outline:none;}
 .et-msg-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
 .et-msg-send:disabled,.et-btn-msg:disabled{opacity:.5;cursor:not-allowed;}
+.et-logout{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);padding:9px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;min-height:48px;width:100%;}
 
 @media (hover: hover) {
   .et-logout:hover{opacity:.85;}
@@ -69,15 +111,28 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   .et-btn-msg:active{border-color:var(--emerald);color:var(--emerald);}
 }
 
+/* ── Navigation mobile inférieure ── */
+.et-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--white);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);}
+.et-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 4px 8px;min-height:56px;color:var(--text-2);background:none;border:none;cursor:pointer;font-family:inherit;}
+.et-nav-item.active{color:var(--emerald);}
+.et-nav-ico{font-size:1.1rem;line-height:1;}
+.et-nav-label{font-size:.64rem;font-weight:600;}
+
+.et-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
+.et-error-screen{max-width:420px;margin:80px auto;text-align:center;padding:0 20px;}
+.et-error-screen h2{font-size:1.2rem;margin-bottom:10px;}
+.et-error-screen p{font-size:.9rem;color:var(--text-2);margin-bottom:20px;}
+
 /* Modal message rapide (repli, missions sans requestId -- creees avant
    assignation.html ou hors de ce flux) */
 .et-modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
 .et-modal-overlay.open{display:flex;}
-.et-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:360px;}
+.et-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:380px;max-height:85vh;max-height:85dvh;overflow-y:auto;}
 .et-modal h3{font-size:1rem;margin-bottom:4px;}
 .et-modal p{font-size:.82rem;color:var(--text-2);margin-bottom:14px;}
-.et-modal textarea{width:100%;min-height:90px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;resize:vertical;margin-bottom:14px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
-.et-modal textarea:focus{border-color:var(--emerald);outline:none;}
+.et-modal textarea,.et-modal select{width:100%;min-height:90px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;resize:vertical;margin-bottom:14px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
+.et-modal select{min-height:48px;}
+.et-modal textarea:focus,.et-modal select:focus{border-color:var(--emerald);outline:none;}
 .et-modal-actions{display:flex;gap:10px;}
 .et-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;min-height:48px;}
 .et-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
@@ -146,47 +201,102 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .cm-validate:disabled{opacity:.5;cursor:not-allowed;}
 
 @media (max-width: 768px) {
-  .et-msg-input,.et-modal textarea,.et-pw-row input,.cm-textarea{font-size:16px;}
+  .et-msg-input,.et-modal textarea,.et-modal select,.et-pw-row input,.cm-textarea{font-size:16px;}
   .et-mission-actions{gap:12px;}
 }
 </style>
 </head>
 <body>
 
-<div class="et-wrap" id="et-wrap" style="display:none;">
-  <div class="et-header">
-    <div class="et-greeting">
+<div class="et-loading" id="et-loading">Chargement…</div>
+
+<div class="et-error-screen" id="et-error-screen" style="display:none;">
+  <h2>Compte non lié</h2>
+  <p id="et-error-msg">Ce compte n'est rattaché à aucune entreprise. Contactez votre employeur ou déconnectez-vous.</p>
+  <button class="et-btn-terminer" style="width:100%;max-width:260px;" onclick="handleLogout()">Se déconnecter</button>
+</div>
+
+<div id="et-app" style="display:none;">
+  <header class="et-header">
+    <div>
       <h1 id="et-greeting">Bonjour</h1>
       <p id="et-date"></p>
     </div>
-    <button class="et-logout" onclick="handleLogout()">Se déconnecter</button>
-  </div>
-
-  <div class="et-section-title">Planning du jour</div>
-  <div id="et-missions"></div>
-
-  <div class="et-messaging">
-    <div class="et-section-title" style="margin-bottom:14px;">Messages</div>
-    <div class="et-msg-thread" id="et-msg-thread"></div>
-    <div class="et-msg-row">
-      <input type="text" class="et-msg-input" id="et-msg-input" placeholder="Écrire à votre patron..." onkeydown="if(event.key==='Enter')envoyerMessagePatron();">
-      <button class="et-msg-send" onclick="envoyerMessagePatron()">Envoyer</button>
+    <div class="et-header-side">
+      <div class="et-mission-count" id="et-mission-count">0 mission</div>
+      <div class="et-conn-status"><span class="et-conn-dot" id="et-conn-dot"></span><span id="et-conn-label">En ligne</span></div>
     </div>
+  </header>
+
+  <div class="et-wrap">
+    <!-- ═══ Aujourd'hui ═══ -->
+    <section class="et-view active" id="view-aujourdhui" aria-label="Aujourd'hui">
+      <div id="et-offline-banner" class="et-offline-banner" style="display:none;">Hors ligne — les actions seront enregistrées dès le retour du réseau.</div>
+      <div id="et-priority-zone"></div>
+
+      <div class="et-section-title">Missions du jour</div>
+      <div id="et-today-list"></div>
+    </section>
+
+    <!-- ═══ Missions (toutes dates) ═══ -->
+    <section class="et-view" id="view-missions" aria-label="Missions">
+      <div class="et-section-title">Toutes mes missions</div>
+      <div id="et-all-missions-list"></div>
+    </section>
+
+    <!-- ═══ Détail mission ═══ -->
+    <section class="et-view" id="view-detail" aria-label="Détail mission">
+      <button type="button" class="et-detail-back" onclick="switchView(_detailReturnView || 'aujourdhui')">← Retour</button>
+      <div id="et-detail-content"></div>
+    </section>
+
+    <!-- ═══ Messages ═══ -->
+    <section class="et-view" id="view-messages" aria-label="Messages">
+      <div class="et-section-title">Messages</div>
+      <div class="et-messaging">
+        <div class="et-msg-thread" id="et-msg-thread"></div>
+        <div class="et-msg-row">
+          <input type="text" class="et-msg-input" id="et-msg-input" placeholder="Écrire à votre patron..." onkeydown="if(event.key==='Enter')envoyerMessagePatron();">
+          <button class="et-msg-send" onclick="envoyerMessagePatron()">Envoyer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Profil ═══ -->
+    <section class="et-view" id="view-profil" aria-label="Profil">
+      <div class="et-section-title">Mon profil</div>
+      <div class="et-messaging" style="margin-bottom:20px;">
+        <div class="et-detail-label">Nom</div>
+        <div class="et-detail-value" id="et-profil-nom">—</div>
+        <div class="et-detail-block">
+          <div class="et-detail-label">Rôle</div>
+          <div class="et-detail-value" id="et-profil-role">—</div>
+        </div>
+      </div>
+
+      <div class="et-section-title">Mon mot de passe</div>
+      <div class="et-messaging" style="margin-bottom:20px;">
+        <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
+        <div class="et-pw-row">
+          <input type="password" class="et-msg-input" id="et-pw-new" placeholder="Nouveau mot de passe" minlength="6">
+          <input type="password" class="et-msg-input" id="et-pw-confirm" placeholder="Confirmez" minlength="6">
+        </div>
+        <button class="et-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
+        <p id="et-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
+      </div>
+
+      <button class="et-logout" onclick="handleLogout()">Se déconnecter</button>
+    </section>
   </div>
 
-  <div class="et-messaging" id="et-pw-panel">
-    <div class="et-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
-    <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
-    <div class="et-pw-row">
-      <input type="password" class="et-msg-input" id="et-pw-new" placeholder="Nouveau mot de passe" minlength="6">
-      <input type="password" class="et-msg-input" id="et-pw-confirm" placeholder="Confirmez" minlength="6">
-    </div>
-    <button class="et-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
-    <p id="et-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
-  </div>
+  <!-- Navigation mobile inférieure -->
+  <nav class="et-bottom-nav" aria-label="Navigation principale">
+    <button type="button" class="et-nav-item active" data-view="aujourdhui" onclick="switchView('aujourdhui')"><span class="et-nav-ico">🏠</span><span class="et-nav-label">Aujourd'hui</span></button>
+    <button type="button" class="et-nav-item" data-view="missions" onclick="switchView('missions')"><span class="et-nav-ico">🧹</span><span class="et-nav-label">Missions</span></button>
+    <button type="button" class="et-nav-item" data-view="messages" onclick="switchView('messages')"><span class="et-nav-ico">💬</span><span class="et-nav-label">Messages</span></button>
+    <button type="button" class="et-nav-item" data-view="profil" onclick="switchView('profil')"><span class="et-nav-ico">👤</span><span class="et-nav-label">Profil</span></button>
+  </nav>
 </div>
-
-<div class="et-loading" id="et-loading" style="text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;">Chargement…</div>
 
 <!-- Repli : missions sans requestId (creees avant assignation.html) -->
 <div class="et-modal-overlay" id="et-modal-overlay">
@@ -197,6 +307,30 @@ button,input,textarea{font-family:'Inter',sans-serif;}
     <div class="et-modal-actions">
       <button class="et-modal-cancel" onclick="closeMissionModal()">Annuler</button>
       <button class="et-modal-send" onclick="envoyerMessageMission()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Signalement de problème (typé -- reutilise seba_messages, jamais un
+     systeme parallele : type + identifiant de mission encodes dans le
+     texte, retrouvable par le patron depuis le meme canal de messagerie
+     qu'employe-fiche.html lit deja). -->
+<div class="et-modal-overlay" id="et-report-overlay">
+  <div class="et-modal">
+    <h3>Signaler un problème</h3>
+    <p>Décrivez ce qui bloque sur cette mission.</p>
+    <select id="et-report-type">
+      <option value="acces_impossible">Accès impossible</option>
+      <option value="client_absent">Client absent</option>
+      <option value="materiel_manquant">Matériel manquant</option>
+      <option value="retard">Retard</option>
+      <option value="dommage">Dommage</option>
+      <option value="autre">Autre</option>
+    </select>
+    <textarea id="et-report-comment" placeholder="Commentaire (optionnel)" maxlength="500"></textarea>
+    <div class="et-modal-actions">
+      <button class="et-modal-cancel" onclick="closeReportModal()">Annuler</button>
+      <button class="et-modal-send" id="et-report-send" onclick="submitReport()">Envoyer</button>
     </div>
   </div>
 </div>
@@ -253,37 +387,276 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   if (c) document.documentElement.style.setProperty('--emerald', c);
 })();
 
+const REPORT_TYPE_LABELS = {
+  acces_impossible: 'Accès impossible', client_absent: 'Client absent',
+  materiel_manquant: 'Matériel manquant', retard: 'Retard', dommage: 'Dommage', autre: 'Autre',
+};
+const MISSION_STATUS_LABEL = { 'a-venir': 'À faire', 'en-cours': 'En cours', 'en-retard': 'En retard', 'terminee': 'Terminée' };
+
 /* Date ISO en heure LOCALE, meme convention que seba-data.js (localISO) --
    jamais toISOString() qui peut basculer au jour precedent en UTC. */
 function todayISOLocal() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 let _profile = null; // { employe, account, employe_id }
-let _missionContext = null; // intervention ciblee par le modal Message
+let _missionContext = null; // intervention ciblee par le modal Message (repli)
+let _missions = [];
+let _missionsById = {};
+let _detailMissionId = null;
+let _detailReturnView = 'aujourdhui';
+
+/* ═══════════════════════════════════════════════════════════════
+   buildEmployeePortalViewModel(interventions, currentUser) — point
+   d'entrée UNIQUE de calcul des zones du dashboard employé. Synchrone
+   par contrat (2 arguments exacts, voir livraison) : unreadMessages est
+   rempli par l'appelant après coup (les messages sont chargés
+   séparément, de façon asynchrone -- voir refreshAllViews()).
+   Priorité imposée : mission en cours > prochaine mission du jour >
+   mission en retard > état vide (dans cet ordre précis).
+═══════════════════════════════════════════════════════════════ */
+function buildEmployeePortalViewModel(interventions, currentUser) {
+  const list = interventions || [];
+  const todayStr = todayISOLocal();
+  const now = new Date();
+  const todayMissions = list.filter(i => i.date === todayStr).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const isDone = i => !!i.done;
+  const isLate = i => {
+    if (isDone(i) || i.statut === 'en_cours' || !i.time) return false;
+    const parts = i.time.split(':').map(Number);
+    const t = new Date(now); t.setHours(parts[0] || 0, parts[1] || 0, 0, 0);
+    return now > t;
+  };
+  const currentMission = todayMissions.find(i => !isDone(i) && i.statut === 'en_cours') || null;
+  const lateMissions = todayMissions.filter(isLate);
+  const nextMission = todayMissions.find(i => !isDone(i) && i.statut !== 'en_cours' && !isLate(i)) || null;
+  const completedMissions = todayMissions.filter(isDone);
+  return { currentMission, nextMission, todayMissions, lateMissions, completedMissions, unreadMessages: 0 };
+}
+
+function missionStatusKey(i) {
+  if (i.done) return 'terminee';
+  if (i.statut === 'en_cours') return 'en-cours';
+  if (i.time) {
+    const now = new Date();
+    const parts = i.time.split(':').map(Number);
+    const t = new Date(now); t.setHours(parts[0] || 0, parts[1] || 0, 0, 0);
+    if (now > t) return 'en-retard';
+  }
+  return 'a-venir';
+}
 
 (async function init() {
-  if (!window.SebaDB) return;
-  const session = await SebaDB.employeePortal.session();
+  if (!window.SebaDB) { showError('Le service de données est indisponible. Réessayez plus tard.'); return; }
+  let session;
+  try { session = await SebaDB.employeePortal.session(); } catch (e) { showError('Connexion impossible. Réessayez.'); return; }
   if (!session) { window.location.href = 'employe-connexion.html'; return; }
 
-  _profile = await SebaDB.employeePortal.profile();
-  if (!_profile || !_profile.ok) {
-    window.location.href = 'employe-connexion.html';
+  let profileRes;
+  try { profileRes = await SebaDB.employeePortal.profile(); } catch (e) { showError('Impossible de charger votre profil.'); return; }
+  if (!profileRes || !profileRes.ok) {
+    // Compte non lié à une entreprise : jamais de faux dashboard, erreur
+    // contrôlée avec déconnexion possible (exigence explicite) -- avant ce
+    // correctif la page redirigeait silencieusement vers
+    // employe-connexion.html, sans jamais expliquer pourquoi.
+    showError((profileRes && profileRes.error) || 'Ce compte n\'est rattaché à aucune entreprise.');
     return;
   }
+  _profile = profileRes;
 
   document.getElementById('et-loading').style.display = 'none';
-  document.getElementById('et-wrap').style.display = 'block';
+  document.getElementById('et-app').style.display = 'block';
 
+  // Prénom RÉEL de l'employé -- jamais le nom de l'entreprise.
   const emp = _profile.employe || {};
   document.getElementById('et-greeting').textContent = 'Bonjour ' + (emp.prenom || '');
   document.getElementById('et-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('et-profil-nom').textContent = (emp.prenom || '') + ' ' + (emp.nom || '');
+  document.getElementById('et-profil-role').textContent = emp.role || 'Non renseigné';
 
-  renderMissions();
+  await refreshAllViews();
   renderMessages();
+  if (window.SebaDB.onChange) SebaDB.onChange(() => refreshAllViews());
 })();
+
+function showError(msg) {
+  document.getElementById('et-loading').style.display = 'none';
+  document.getElementById('et-error-msg').textContent = msg;
+  document.getElementById('et-error-screen').style.display = 'block';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ORCHESTRATION -- charge TOUTES les missions (toutes dates, RPC
+   get_my_employee_interventions() SANS argument -- distincte de
+   interventionsForDate(_date), qui reste disponible/inchangée mais
+   n'est plus appelée par cette page), construit le view-model, peuple
+   les 3 zones (prioritaire, jour, toutes) + l'en-tête.
+═══════════════════════════════════════════════════════════════ */
+async function refreshAllViews() {
+  try {
+    _missions = await SebaDB.employeePortal.interventions() || [];
+    _missionsById = {};
+    _missions.forEach(m => { _missionsById[m.id] = m; });
+
+    const vm = buildEmployeePortalViewModel(_missions, _profile);
+    document.getElementById('et-mission-count').textContent = vm.todayMissions.length + ' mission' + (vm.todayMissions.length > 1 ? 's' : '') + ' aujourd\'hui';
+
+    renderPriority(vm);
+    renderTodayList(vm);
+    renderAllMissions();
+    renderConnState();
+    if (_detailMissionId) renderDetail(_detailMissionId);
+  } catch (err) {
+    console.error('[espace-terrain] rendu impossible :', err);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDU — carte mission complète (réutilisée dans la zone prioritaire
+   ET dans le détail), et listes compactes.
+═══════════════════════════════════════════════════════════════ */
+function renderMissionCard(m, returnView) {
+  const statusKey = missionStatusKey(m);
+  const started = m.statut === 'en_cours' && !m.done;
+  return '<div class="et-mission' + (m.done ? ' done' : '') + '">' +
+    '<div class="et-mission-top">' +
+      '<span class="et-mission-time">' + escapeHtml(m.time || '') + '</span>' +
+      '<span class="et-mission-badge ' + statusKey + '">' + (MISSION_STATUS_LABEL[statusKey] || statusKey) + '</span>' +
+    '</div>' +
+    '<div class="et-mission-client">' + escapeHtml(m.clientName || 'Client') + '</div>' +
+    '<div class="et-mission-service">' + escapeHtml(m.service || '') + '</div>' +
+    (m.adresse ? '<div class="et-mission-addr">' + escapeHtml(m.adresse) + '</div>' : '') +
+    '<div class="et-mission-actions">' +
+      (m.requestId
+        ? '<button class="et-btn-msg" onclick="openMissionChat(\'' + m.id + '\')">💬 Chat</button>'
+        : '<button class="et-btn-msg" onclick="openMissionModal(\'' + m.id + '\',\'' + escapeHtml(m.clientName || '').replace(/'/g, "\\'") + '\')">Message</button>') +
+      '<button class="et-btn-msg" onclick="openReportModal(\'' + m.id + '\')">⚠ Signaler</button>' +
+      '<button class="et-btn-msg" onclick="openMissionDetail(\'' + m.id + '\',\'' + (returnView || 'aujourdhui') + '\')">Voir la mission</button>' +
+      (!m.done && !started ? '<button class="et-btn-terminer" id="et-start-' + m.id + '" onclick="demarrerMission(\'' + m.id + '\')">▶ Démarrer</button>' : '') +
+      (!m.done ? '<button class="et-btn-terminer" onclick="openCloseMissionModal(\'' + m.id + '\')">✓ Terminer la mission</button>' : '') +
+    '</div>' +
+    '<div class="et-mission-status-note" id="et-status-note-' + m.id + '"></div>' +
+  '</div>';
+}
+
+function renderPriority(vm) {
+  const el = document.getElementById('et-priority-zone');
+  const mission = vm.currentMission || vm.nextMission || vm.lateMissions[0] || null;
+  if (!mission) { el.innerHTML = '<div class="et-priority-ok">✓ Aucune mission en attente pour le moment.</div>'; return; }
+  const late = missionStatusKey(mission) === 'en-retard';
+  const label = vm.currentMission ? 'Mission en cours' : (late ? 'Mission en retard' : 'Prochaine mission');
+  el.innerHTML = '<div class="et-priority-wrap' + (late ? ' late' : '') + '">' +
+    '<div class="et-priority-label">' + label + '</div>' +
+    renderMissionCard(mission, 'aujourdhui') +
+  '</div>';
+}
+
+function renderTodayList(vm) {
+  const el = document.getElementById('et-today-list');
+  if (!vm.todayMissions.length) { el.innerHTML = '<div class="et-empty">Aucune mission assignée pour aujourd\'hui.</div>'; return; }
+  el.innerHTML = '<div class="et-list-card">' + vm.todayMissions.map(m => {
+    const statusKey = missionStatusKey(m);
+    return '<div class="et-list-row" onclick="openMissionDetail(\'' + m.id + '\',\'aujourdhui\')">' +
+      '<div class="et-list-main">' +
+        '<div class="et-list-title">' + escapeHtml(m.time || '') + ' · ' + escapeHtml(m.clientName || 'Client') + '</div>' +
+        '<div class="et-list-meta">' + escapeHtml(m.adresse || 'Adresse non renseignée') + '</div>' +
+      '</div>' +
+      '<span class="et-mission-badge ' + statusKey + '">' + (MISSION_STATUS_LABEL[statusKey] || statusKey) + '</span>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderAllMissions() {
+  const el = document.getElementById('et-all-missions-list');
+  if (!_missions.length) { el.innerHTML = '<div class="et-empty">Aucune mission assignée pour le moment.</div>'; return; }
+  const sorted = _missions.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+  el.innerHTML = '<div class="et-list-card">' + sorted.map(m => {
+    const statusKey = missionStatusKey(m);
+    return '<div class="et-list-row" onclick="openMissionDetail(\'' + m.id + '\',\'missions\')">' +
+      '<div class="et-list-main">' +
+        '<div class="et-list-title">' + escapeHtml(m.date || '') + ' ' + escapeHtml(m.time || '') + ' · ' + escapeHtml(m.clientName || 'Client') + '</div>' +
+        '<div class="et-list-meta">' + escapeHtml(m.service || '') + '</div>' +
+      '</div>' +
+      '<span class="et-mission-badge ' + statusKey + '">' + (MISSION_STATUS_LABEL[statusKey] || statusKey) + '</span>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderDetail(id) {
+  const m = _missionsById[id];
+  const box = document.getElementById('et-detail-content');
+  if (!m) { box.innerHTML = '<div class="et-empty">Mission introuvable.</div>'; return; }
+  const mapsUrl = m.adresse ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(m.adresse) : null;
+  box.innerHTML = renderMissionCard(m, _detailReturnView) +
+    '<div class="et-detail-block">' +
+      '<div class="et-detail-label">Horaires</div>' +
+      '<div class="et-detail-value">' + escapeHtml(m.date || '') + (m.time ? ' à ' + escapeHtml(m.time) : '') + '</div>' +
+    '</div>' +
+    (mapsUrl ? '<div class="et-detail-block"><a href="' + mapsUrl + '" target="_blank" rel="noopener" class="et-maps-link">🧭 Itinéraire</a></div>' : '') +
+    (m.consignes ? '<div class="et-detail-block"><div class="et-detail-label">Consignes</div><div class="et-consignes">' + escapeHtml(m.consignes) + '</div></div>' : '');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════════ */
+function switchView(name) {
+  document.querySelectorAll('.et-view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === name));
+}
+function openMissionDetail(id, returnView) {
+  _detailMissionId = id;
+  _detailReturnView = returnView || 'aujourdhui';
+  renderDetail(id);
+  document.querySelectorAll('.et-view').forEach(v => v.classList.toggle('active', v.id === 'view-detail'));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DÉMARRER (nouveau, RPC update_my_employee_intervention_status --
+   distincte de close_my_intervention/"Terminer la mission" ci-dessous,
+   inchangée, qui reste le flux complet rapport+photo). L'existant
+   autorisait déjà "Terminer" sans passer par un état "démarré" -- ce
+   comportement est conservé tel quel (bouton Terminer toujours visible
+   pour toute mission non close), Démarrer s'ajoute simplement en amont.
+═══════════════════════════════════════════════════════════════ */
+async function demarrerMission(id) {
+  const notes = document.querySelectorAll('#et-status-note-' + id);
+  const btn = document.getElementById('et-start-' + id);
+  if (btn) btn.disabled = true;
+  notes.forEach(n => { n.textContent = 'Enregistrement…'; n.className = 'et-mission-status-note'; });
+  const res = await SebaDB.employeePortal.updateStatus(id, 'en_cours');
+  if (res && res.ok) {
+    const m = _missionsById[id];
+    if (m) m.statut = 'en_cours';
+    await refreshAllViews();
+  } else {
+    if (btn) btn.disabled = false;
+    notes.forEach(n => { n.textContent = (res && res.error) || 'Échec de l\'enregistrement.'; n.className = 'et-mission-status-note err'; });
+  }
+}
+
+/* ── Connexion (en ligne/hors ligne + synchronisation T3) ── */
+function renderConnState() {
+  const dot = document.getElementById('et-conn-dot');
+  const label = document.getElementById('et-conn-label');
+  const banner = document.getElementById('et-offline-banner');
+  if (!navigator.onLine) {
+    dot.className = 'et-conn-dot offline'; label.textContent = 'Hors ligne'; banner.style.display = 'block';
+    return;
+  }
+  banner.style.display = 'none';
+  if (typeof SebaDB.syncStatus === 'function') {
+    const s = SebaDB.syncStatus();
+    if (s.failed > 0) { dot.className = 'et-conn-dot offline'; label.textContent = 'Synchro : action requise'; return; }
+    if (s.pending > 0 || s.syncing) { dot.className = 'et-conn-dot pending'; label.textContent = 'Synchronisation…'; return; }
+  }
+  dot.className = 'et-conn-dot'; label.textContent = 'En ligne';
+}
+window.addEventListener('online', renderConnState);
+window.addEventListener('offline', renderConnState);
 
 async function modifierMonMotDePasse() {
   const newPw = document.getElementById('et-pw-new').value;
@@ -299,13 +672,9 @@ async function modifierMonMotDePasse() {
     status.style.color = 'var(--danger-text)';
     return;
   }
-  const btn = document.querySelector('#et-pw-panel .et-msg-send');
-  if (btn.disabled) return; // anti double-tap : requête déjà en vol
-  btn.disabled = true;
   status.textContent = 'Enregistrement…';
   status.style.color = '';
   const res = await SebaDB.employeePortal.setPassword(newPw);
-  btn.disabled = false;
   if (res.ok) {
     status.textContent = 'Mot de passe modifié.';
     status.style.color = 'var(--emerald)';
@@ -315,50 +684,6 @@ async function modifierMonMotDePasse() {
     status.textContent = res.error || 'Échec de la modification.';
     status.style.color = 'var(--danger-text)';
   }
-}
-
-/* Planning du jour -- via employeePortal.interventionsForDate() (RPC
-   get_my_employee_interventions cote Supabase, l'employe ne peut pas lire
-   le blob JSONB du patron directement -- filtre local en mode demo).
-   Interventions n'ont AUCUN champ financier (clientId/clientName/service/
-   date/time/done/employeId uniquement) : le CA est donc structurellement
-   absent de cette vue, jamais masque a la volee -- il n'y a rien a
-   retirer. */
-let _missionsById = {};
-
-async function renderMissions() {
-  const box = document.getElementById('et-missions');
-  const today = todayISOLocal();
-  const res = await SebaDB.employeePortal.interventionsForDate(today);
-  const missions = ((res && res.interventions) || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-  _missionsById = {};
-  missions.forEach(m => { _missionsById[m.id] = m; });
-
-  if (!missions.length) {
-    box.innerHTML = '<div class="et-empty">Aucune mission assignée pour aujourd\'hui.</div>';
-    return;
-  }
-
-  box.innerHTML = missions.map(m => (
-    '<div class="et-mission' + (m.done ? ' done' : '') + '">' +
-      '<div class="et-mission-top">' +
-        '<span class="et-mission-time">' + (m.time || '') + '</span>' +
-        '<span class="et-mission-badge' + (m.done ? ' done' : '') + '">' + (m.done ? 'Terminée' : 'À faire') + '</span>' +
-      '</div>' +
-      '<div class="et-mission-client">' + escapeHtml(m.clientName || 'Client') + '</div>' +
-      '<div class="et-mission-service">' + escapeHtml(m.service || '') + '</div>' +
-      '<div class="et-mission-actions">' +
-        (m.requestId
-          ? '<button class="et-btn-msg" onclick="openMissionChat(\'' + m.id + '\')">💬 Chat</button>'
-          : '<button class="et-btn-msg" onclick="openMissionModal(\'' + m.id + '\',\'' + escapeHtml(m.clientName || '').replace(/'/g, "\\'") + '\')">Message</button>') +
-        (!m.done ? '<button class="et-btn-terminer" onclick="openCloseMissionModal(\'' + m.id + '\')">✓ Terminer la mission</button>' : '') +
-      '</div>' +
-    '</div>'
-  )).join('');
-}
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function openMissionModal(interventionId, clientName) {
@@ -387,9 +712,39 @@ async function envoyerMessageMission() {
   renderMessages();
 }
 
+/* ── Signalement de problème typé (NOUVEAU) -- reutilise seba_messages,
+   jamais un systeme parallele : encode le type + l'identifiant de
+   mission dans le texte, lisible et retrouvable par le patron depuis le
+   meme canal de messagerie que les echanges classiques
+   (employe-fiche.html les lit deja tous). ── */
+let _reportMissionId = null;
+function openReportModal(missionId) {
+  _reportMissionId = missionId;
+  document.getElementById('et-report-type').value = 'acces_impossible';
+  document.getElementById('et-report-comment').value = '';
+  document.getElementById('et-report-overlay').classList.add('open');
+}
+function closeReportModal() { document.getElementById('et-report-overlay').classList.remove('open'); _reportMissionId = null; }
+async function submitReport() {
+  if (!_reportMissionId) return;
+  const type = document.getElementById('et-report-type').value;
+  const comment = document.getElementById('et-report-comment').value.trim();
+  const mission = _missionsById[_reportMissionId];
+  const btn = document.getElementById('et-report-send');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const texte = '[SIGNALEMENT] ' + REPORT_TYPE_LABELS[type] + ' — Mission : ' +
+    (mission ? (mission.service || mission.id) + ' (' + (mission.clientName || '') + ')' : _reportMissionId) +
+    (comment ? ' — ' + comment : '');
+  await window.SebaQuotes.createMessage({ account: _profile.account, employeId: _profile.employe_id, expediteurRole: 'employe', destinataireRole: 'patron', texte });
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  closeReportModal();
+  renderMessages();
+}
+
 async function renderMessages() {
   const box = document.getElementById('et-msg-thread');
-  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor || !_profile) return;
   const msgs = await window.SebaQuotes.messagesFor('employe', _profile.employe_id, _profile.account);
   box.innerHTML = msgs.length
     ? msgs.map(m => '<div class="et-msg-bubble">' + escapeHtml(m.texte) +
@@ -480,7 +835,7 @@ async function sendMissionChatMessage() {
   renderMissionChatThread(mission);
 }
 
-// ── Clôture de mission ("Terminer la mission", 2026-07-20) ─────────────
+// ── Clôture de mission ("Terminer la mission", 2026-07-20) -- INCHANGÉE ──
 let _closingInterventionId = null;
 let _closingPhotoFile = null;
 function openCloseMissionModal(interventionId) {
@@ -569,7 +924,7 @@ async function validerCloture() {
   // Cloture reussie meme si la photo a echoue (jamais bloquant) -- mais
   // dans ce cas precis on laisse la modale ouverte un instant avec le
   // message, plutot que de la refermer sans que l'employe ait pu le lire.
-  await renderMissions();
+  await refreshAllViews();
   if (warning) {
     document.getElementById('cm-status').style.color = 'var(--emerald)';
     document.getElementById('cm-status').textContent = 'Mission clôturée. ' + warning;
