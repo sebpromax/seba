@@ -112,6 +112,15 @@
   /* ALERTE FACTURES IMPAYÉES */
   .alert-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--badge-error-bg);color:var(--badge-error-txt);margin-left:10px;}
 
+  /* DONNÉES INCOMPLÈTES */
+  #incomplete-data-banner{background:var(--badge-warning-bg);color:var(--badge-warning-txt);border-radius:var(--rs);padding:10px 14px;margin-bottom:20px;font-size:0.84rem;display:flex;align-items:flex-start;gap:8px;}
+
+  /* CHAMPS MÉTIER ÉDITABLES */
+  .metier-field-input{width:100%;border:1px solid transparent;background:transparent;color:var(--ink);font-size:0.9rem;font-family:'Inter',sans-serif;padding:3px 6px;border-radius:6px;margin-left:-6px;}
+  .metier-field-input:hover{border-color:var(--border);}
+  .metier-field-input:focus{border-color:var(--emerald);outline:none;background:var(--bg);}
+  .metier-field-input::placeholder{color:var(--text-2);font-style:italic;}
+
   /* MESSAGERIE (journal patron + reponses du client depuis son Espace Client) */
   .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
   .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
@@ -279,15 +288,24 @@
     <!-- STATS RAPIDES -->
     <div class="stats-row">
       <div class="stat-card">
-        <span class="slabel">CA total</span>
+        <span class="slabel">CA encaissé</span>
         <span class="svalue moss">570 €</span>
       </div>
       <div class="stat-card">
         <span class="slabel">Interventions</span>
         <span class="svalue">6</span>
       </div>
+      <div class="stat-card" id="solde-attente-card">
+        <span class="slabel">Solde en attente</span>
+        <span class="svalue">0 €</span>
+      </div>
+      <div class="stat-card" id="solde-retard-card">
+        <span class="slabel">Solde en retard</span>
+        <span class="svalue">0 €</span>
+      </div>
       <span id="unpaid-alert"></span>
     </div>
+    <div id="incomplete-data-banner" style="display:none;"></div>
 
     <div class="content-grid">
 
@@ -516,74 +534,51 @@
   } catch(e) {}
   // ──────────────────────────────────────────────────────────────────────────
 
-  // Valeurs de démonstration des champs clients spécifiques par secteur.
-  // Organisé par secteur, puis par nom de champ tel que défini dans
-  // businessTypes[secteur].clientFields.
-  const DEMO_CLIENT_FIELDS = {
-    menage: {
-      'fréquence':          'Toutes les 2 semaines',
-      'surface':            '75 m², 3 pièces',
-      'animaux':            '1 chat (litière à éviter le vendredi)',
-      'produits préférés':  'Produits écologiques uniquement',
-      'pièces sensibles':   'Bureau — ne pas déplacer les papiers',
-      "code d'accès":       'Boîte à clés — code 4471',
-      'consignes':          'Sonner deux fois, le chat peut sortir',
-      'photos avant/après': '4 photos disponibles (dernière visite)',
-    },
-    conciergerie: {
-      'logement':             'Studio Bellecour, 3e étage, sans ascenseur',
-      'propriétaire':         'M. et Mme Avril (contact secondaire)',
-      'voyageurs':            '2 adultes — séjour de 4 nuits',
-      'check-in':             '16h00 — code autonome',
-      'check-out':            '10h00',
-      'linge':                'Kit 2 personnes — change à chaque séjour',
-      'clés':                 'Boîte à clés sécurisée, façade',
-      'inventaire':           'Vérifié le 18 juin — complet',
-      'rapport propriétaire': 'Envoyé automatiquement après chaque séjour',
-    },
-    jardinage: {
-      'surface extérieure':  '320 m² avec haie périphérique',
-      'fréquence':           'Mensuelle, toute l\'année',
-      'accès jardin':        'Portillon latéral — code 0892',
-      'déchets verts':       'Évacuation incluse',
-      'matériel nécessaire': 'Tondeuse + taille-haie électrique',
-      'saisonnalité':        'Intervention renforcée mars à octobre',
-      'photos':              '3 photos disponibles (dernière intervention)',
-    },
-    maintenance: {
-      'problème signalé':       'Fuite sous l\'évier de la cuisine',
-      'diagnostic':             'Joint à remplacer — confirmé sur place',
-      'photos client':          '2 photos envoyées par le client',
-      'matériel à prévoir':     'Joint plomberie + clé à sangle',
-      'urgence':                'Non — intervention sous 48h',
-      "rapport d'intervention": 'À rédiger après passage',
-    },
-  };
-
-  /* Insère un bloc "Informations métier" dans #sector-info-container,
-     juste après le bloc Informations générique existant.
-     Ne génère rien si le secteur courant ne définit pas de champs clients
-     (pressing, autre — clientFields vide). */
-  function renderSectorInfo() {
+  /* fix(crm) 2026-07-24 : ce panneau affichait jusqu'ici DEMO_CLIENT_FIELDS
+     -- des valeurs fictives codées en dur ("1 chat, litière à éviter le
+     vendredi") affichées à l'IDENTIQUE pour TOUS les clients du secteur,
+     y compris appelé une fois pour toutes AVANT même de savoir quel client
+     est ouvert. Remplacé par des champs RÉELS, éditables et persistants,
+     stockés sur le client lui-même (client.champsMetier, objet clé/valeur
+     -- clé = intitulé exact de businessTypes[secteur].clientFields). Vide
+     tant que le patron ne l'a pas renseigné : jamais une valeur inventée.
+     Rendu déplacé dans renderClientFiche() (a besoin du client réel). */
+  function renderSectorInfo(client) {
+    const container = document.getElementById('sector-info-container');
     const bt = window.businessTypes[currentSector];
-    if (!bt || !bt.clientFields.length) return;
+    if (!bt || !bt.clientFields.length) { container.innerHTML = ''; return; }
 
-    const demoValues = DEMO_CLIENT_FIELDS[currentSector] || {};
-    const rows = bt.clientFields.map(field => `
+    const champs = (client && client.champsMetier) || {};
+    const rows = bt.clientFields.map(field => {
+      const val = champs[field] || '';
+      return `
         <div class="info-row">
-          <span class="info-label">${field}</span>
-          <span class="info-value">${demoValues[field] || '—'}</span>
-        </div>`).join('');
+          <span class="info-label">${esc(field)}</span>
+          <input type="text" class="metier-field-input" data-field="${esc(field)}"
+            value="${esc(val)}" placeholder="Non renseigné"
+            onchange="saveChampMetier(this.dataset.field, this.value)">
+        </div>`;
+    }).join('');
 
-    document.getElementById('sector-info-container').innerHTML = `
+    container.innerHTML = `
       <div class="panel">
-        <span class="panel-eyebrow">Informations ${bt.label.toLowerCase()}</span>
+        <span class="panel-eyebrow">Informations ${esc(bt.label.toLowerCase())}</span>
         <div class="info-list">${rows}
         </div>
       </div>`;
   }
 
-  renderSectorInfo();
+  async function saveChampMetier(field, value) {
+    if (!_id) return;
+    const client = SebaDB.get('clients', _id);
+    if (!client) return;
+    const champsMetier = Object.assign({}, client.champsMetier || {});
+    if (value.trim()) champsMetier[field] = value.trim();
+    else delete champsMetier[field];
+    SebaDB.update('clients', _id, { champsMetier });
+    SebaDB.log('client', 'Information "' + field + '" mise à jour — ' + (client.prenom + ' ' + client.nom), 'client-fiche.html?id=' + _id);
+    renderIncompleteDataFlag(SebaDB.get('clients', _id));
+  }
 
   const _n = new URLSearchParams(window.location.search).get('nom');
   const _id = new URLSearchParams(window.location.search).get('id');
@@ -621,6 +616,43 @@
     document.querySelector('.stats-row').style.display = 'none';
     document.querySelector('.content-grid').style.display = 'none';
     document.getElementById('client-not-found').style.display = 'block';
+  }
+
+  /* Solde client réel : uniquement les factures réellement liées à ce
+     client (facturesList, déjà filtré par clientId dans renderClientFiche).
+     "En attente" = émises, non payées, non en retard. "En retard" =
+     statut 'retard' (voir seba-data.js, même vocabulaire que factures.html). */
+  function renderSoldeClient(facturesList) {
+    const enAttente = facturesList.filter(f => f.status === 'attente').reduce((s, f) => s + (f.amount || 0), 0);
+    const enRetard = facturesList.filter(f => f.status === 'retard').reduce((s, f) => s + (f.amount || 0), 0);
+    const attenteEl = document.querySelector('#solde-attente-card .svalue');
+    const retardEl = document.querySelector('#solde-retard-card .svalue');
+    if (attenteEl) attenteEl.textContent = enAttente.toLocaleString('fr-FR') + ' €';
+    if (retardEl) {
+      retardEl.textContent = enRetard.toLocaleString('fr-FR') + ' €';
+      retardEl.style.color = enRetard > 0 ? 'var(--danger-text)' : '';
+    }
+  }
+
+  /* Détection des données incomplètes -- signaux réels uniquement (email,
+     adresse, contact manquants) : jamais un score fabriqué, juste la liste
+     concrète de ce qui manque réellement sur CE client. */
+  function renderIncompleteDataFlag(client) {
+    const banner = document.getElementById('incomplete-data-banner');
+    if (!banner || !client) return;
+    const missing = [];
+    if (!client.contact) missing.push('contact (email ou téléphone)');
+    if (!client.adresse) missing.push('adresse');
+    if (!client.email) missing.push('email de connexion');
+    const bt = window.businessTypes[currentSector];
+    if (bt && bt.clientFields.length) {
+      const champs = client.champsMetier || {};
+      const missingFields = bt.clientFields.filter(f => !champs[f]);
+      if (missingFields.length === bt.clientFields.length && bt.clientFields.length > 0) missing.push('informations ' + bt.label.toLowerCase());
+    }
+    if (!missing.length) { banner.style.display = 'none'; return; }
+    banner.style.display = 'flex';
+    banner.innerHTML = '<span aria-hidden="true">⚠</span><span>Informations incomplètes : ' + esc(missing.join(', ')) + '.</span>';
   }
 
   function renderClientFiche() {
@@ -685,16 +717,35 @@
     const emailInput = document.getElementById('client-email-input');
     if (emailInput) emailInput.value = client.email || '';
 
-    // Historique des interventions.
+    // Informations métier réelles (voir renderSectorInfo() plus bas --
+    // remplace les valeurs fictives DEMO_CLIENT_FIELDS retirées).
+    renderSectorInfo(client);
+
+    // Solde client réel + détection des données incomplètes.
+    renderSoldeClient(facturesList);
+    renderIncompleteDataFlag(client);
+
+    // Historique des interventions -- durée réelle (client.duree, saisie
+    // sur planning.html depuis le correctif feature/dashboard-command-center
+    // du 2026-07-24 -- absente sur les interventions créées avant cette
+    // date, affichée "—" dans ce cas, jamais inventée). Montant : aucun
+    // champ ne relie une intervention à un montant précis dans le modèle
+    // réel (le montant vit sur le devis/la facture, pas l'intervention) --
+    // laissé "—" plutôt que de deviner un rapprochement fragile par
+    // date/service.
     const histBody = document.querySelectorAll('.panel table tbody')[0];
     histBody.innerHTML = interventions.length
-      ? interventions.map(i => '<tr>' +
+      ? interventions.map(i => {
+          const statutKey = i.done ? 'terminee' : (i.statut === 'en_cours' ? 'en-cours' : 'a-venir');
+          const statutBadge = { terminee: ['signe', 'Terminée'], 'en-cours': ['attente', 'En cours'], 'a-venir': ['expire', 'À venir'] }[statutKey];
+          return '<tr>' +
           '<td><span class="num">' + fmtDateFr(i.date) + ' · ' + esc(i.time || '') + '</span></td>' +
           '<td>' + esc(i.service || '—') + '</td>' +
-          '<td>—</td>' +
+          '<td>' + esc(i.duree || '—') + '</td>' +
           '<td class="amount">—</td>' +
-          '<td><span class="badge ' + (i.done ? 'signe' : 'attente') + '">' + (i.done ? 'Terminée' : 'À venir') + '</span></td>' +
-        '</tr>').join('')
+          '<td><span class="badge ' + statutBadge[0] + '">' + statutBadge[1] + '</span></td>' +
+        '</tr>';
+        }).join('')
       : '<tr><td colspan="5" style="color:var(--text-2);">Aucune intervention enregistrée pour ce client.</td></tr>';
 
     // Devis & factures liés, fusionnés et triés par date décroissante.
