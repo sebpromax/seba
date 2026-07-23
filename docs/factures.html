@@ -212,7 +212,7 @@
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucune facture.</td></tr>'; return; }
     tbody.innerHTML = list.map(f => {
       const s = STATUS[f.status] || STATUS.attente;
-      return '<tr><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
+      return '<tr data-fid="' + f.id + '"><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
         '<td class="amount">' + f.amount + ' ' + sym + '</td>' +
         '<td><span class="badge ' + s.cls + '">' + s.lbl(f) + '</span></td>' +
         '<td class="row-action"><span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span>' +
@@ -273,6 +273,36 @@
       });
     });
   });
+
+  /* Filtre initial depuis l'URL (dashboard.html -> factures.html?status=retard,
+     etc.) -- convention introduite ici (aucune page de liste ne lisait de
+     query param avant ce correctif). Utilise les VRAIS statuts factures
+     (payee/attente/retard, voir seba-data.js) en query param -- traduits
+     ici vers le nommage interne des onglets (signe/attente/expire, herite
+     de devis.html) pour ne pas changer le marquage existant du DOM. */
+  (function applyStatusFromUrl() {
+    const status = new URLSearchParams(location.search).get('status');
+    if (!status) return;
+    const toTabFilter = { payee: 'signe', attente: 'attente', retard: 'expire' };
+    const tabFilter = toTabFilter[status] || status;
+    const tab = document.querySelector('.tab[data-filter="' + CSS.escape(tabFilter) + '"]');
+    if (tab) tab.click();
+  })();
+
+  /* Mise en evidence d'une facture precise depuis l'URL (recherche globale
+     et "Paiements a surveiller" du dashboard.html -> factures.html?highlight=id)
+     -- aucune fiche facture dediee n'existe (contrairement a client-fiche.html/
+     employe-fiche.html), la ligne de tableau EST la fiche : on la met en
+     evidence et on y scrolle. */
+  (function highlightFromUrl() {
+    const id = new URLSearchParams(location.search).get('highlight');
+    if (!id) return;
+    const row = document.querySelector('tr[data-fid="' + CSS.escape(id) + '"]');
+    if (!row) return;
+    row.style.outline = '2px solid var(--emerald)';
+    row.style.outlineOffset = '-2px';
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  })();
 
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {

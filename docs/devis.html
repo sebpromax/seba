@@ -522,6 +522,27 @@
   renderTabs();
   SebaDB.onChange(() => refreshFromDB());
 
+  /* Filtre initial depuis l'URL (dashboard.html -> devis.html?status=attente,
+     etc.) -- convention introduite ici (aucune page de liste ne lisait de
+     query param avant ce correctif), valeurs alignees sur les statuts reels
+     (attente/signe/expire, voir data-filter ci-dessus). Statut inconnu ou
+     absent : comportement par defaut inchange (onglet "Tous"). */
+  (function applyStatusFromUrl() {
+    const status = new URLSearchParams(location.search).get('status');
+    if (!status) return;
+    const tab = document.querySelector('#devis-tabs .tab[data-filter="' + CSS.escape(status) + '"]');
+    if (tab) tab.click();
+  })();
+
+  /* Ouverture directe d'un devis precis depuis l'URL (recherche globale du
+     dashboard.html -> devis.html?open=%230119) -- openSheet() existe deja
+     (clic sur une ligne), simplement jamais declenchable depuis l'URL avant
+     ce correctif. */
+  (function openFromUrl() {
+    const num = new URLSearchParams(location.search).get('open');
+    if (num) openSheet(num);
+  })();
+
   document.addEventListener('keydown', e => { if (e.key==='Escape') closeSheet(); });
 </script>
 </body>
