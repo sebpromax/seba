@@ -22,19 +22,37 @@
 <script src="../analytics-init.js" defer></script>
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
- * Dashboard patron — même socle visuel que clients/planning/devis/reglages
- * (pro-global.css + theme.css, aucune exception Tactical Dark). Refonte
- * 2026-07-22 : remplace la grille de widgets personnalisable par une
- * structure fixe, priorisée, sans élément purement décoratif.
+ * Dashboard patron — Command Center (feature/dashboard-command-center).
+ * Même socle visuel que clients/planning/devis/reglages (pro-global.css +
+ * theme.css, aucune exception Tactical Dark). Grille 12 colonnes, une seule
+ * source de données (buildOwnerDashboardViewModel), aucune donnée mockée
+ * dans le HTML. Transitions <=180ms, pas d'animation permanente.
  * ══════════════════════════════════════════════════════════════════════════ */
+:root { --search-overlay-bg: rgba(20,22,26,.35); }
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Inter', sans-serif; }
 .mono-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
 .layout { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
 
-/* ── En-tête pleine largeur ── */
-.db-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+/* ── Barre de commande ── */
+.cmd-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.cmd-search-trigger { flex: 1; min-width: 180px; max-width: 360px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); color: var(--text-2); font-size: .86rem; cursor: pointer; transition: border-color .15s ease; }
+.cmd-search-trigger:hover, .cmd-search-trigger:focus-visible { border-color: var(--emerald); }
+.cmd-search-trigger kbd { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: .68rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text-2); }
+.cmd-period { height: 40px; padding: 0 12px; background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); color: var(--ink); font-size: .84rem; font-family: inherit; cursor: pointer; }
+.cmd-custom-range { display: none; align-items: center; gap: 6px; }
+.cmd-custom-range.open { display: flex; }
+.cmd-custom-range input { height: 40px; padding: 0 10px; background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); font-size: .82rem; font-family: inherit; color: var(--ink); }
+.cmd-date { font-size: .82rem; color: var(--text-2); white-space: nowrap; }
+.cmd-sync { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--text-2); white-space: nowrap; }
+.cmd-sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); flex-shrink: 0; }
+.cmd-sync-dot.pending { background: var(--amber); }
+.cmd-sync-dot.failed { background: var(--critical); }
+.cmd-sync-retry { font-size: .78rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; padding: 2px 4px; }
+
+/* ── En-tête ── */
+.db-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .db-header-left { min-width: 0; }
 .db-greeting { font-size: 1.4rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .db-date { font-size: .84rem; color: var(--text-2); margin-top: 3px; text-transform: capitalize; }
@@ -52,18 +70,36 @@ body { font-family: 'Inter', sans-serif; }
 .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
 .menu-deconnect { color: var(--text-2) !important; }
 
-/* ── Ligne 1 : À traiter maintenant (compact, pas des cartes décoratives) ── */
+/* ── Recherche globale ── */
+.cmd-search-overlay { position: fixed; inset: 0; background: var(--search-overlay-bg); z-index: 500; display: none; align-items: flex-start; justify-content: center; padding: 12vh 20px 20px; }
+.cmd-search-overlay.open { display: flex; }
+.cmd-search-panel { background: var(--white); border-radius: var(--r); width: 100%; max-width: 560px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); overflow: hidden; }
+.cmd-search-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cmd-search-input-row input { flex: 1; border: none; outline: none; font-size: 1rem; font-family: inherit; color: var(--ink); background: none; }
+.cmd-search-close { background: none; border: none; color: var(--text-2); cursor: pointer; font-size: .8rem; padding: 4px 8px; }
+.cmd-search-results { overflow-y: auto; flex: 1; }
+.cmd-result-group-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); padding: 10px 18px 4px; }
+.cmd-result-row { display: flex; align-items: center; gap: 10px; padding: 10px 18px; cursor: pointer; }
+.cmd-result-row:hover, .cmd-result-row.active { background: var(--row-hover-bg); }
+.cmd-result-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: .78rem; flex-shrink: 0; color: var(--text-2); }
+.cmd-result-main { min-width: 0; flex: 1; }
+.cmd-result-title { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-result-sub { font-size: .76rem; color: var(--text-2); }
+.cmd-search-empty { padding: 32px 18px; text-align: center; color: var(--text-2); font-size: .88rem; }
+
+/* ── Ligne 1 : À traiter maintenant ── */
 .db-alerts { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 20px; overflow: hidden; }
-.db-alert-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.db-alert-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .db-alert-row:last-child { border-bottom: none; }
 .db-alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .db-alert-dot.high { background: var(--critical); }
 .db-alert-dot.medium { background: var(--amber); }
 .db-alert-dot.low { background: var(--text-2); }
-.db-alert-label { flex: 1; min-width: 0; font-size: .88rem; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-alert-label { flex: 1; min-width: 160px; font-size: .88rem; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-alert-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: .85rem; color: var(--ink); flex-shrink: 0; }
-.db-alert-action { flex-shrink: 0; font-size: .8rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: var(--rs); white-space: nowrap; }
+.db-alert-action { flex-shrink: 0; font-size: .8rem; font-weight: 600; color: var(--emerald); background: none; border: 1px solid transparent; cursor: pointer; padding: 6px 10px; border-radius: var(--rs); white-space: nowrap; }
 .db-alert-action:hover { background: var(--bg); }
+.db-alert-action:disabled { opacity: .5; cursor: default; }
 .db-alert-ok { display: flex; align-items: center; gap: 10px; padding: 16px 18px; color: var(--badge-success-txt); font-size: .88rem; font-weight: 600; }
 
 /* ── Grille 12 colonnes ── */
@@ -78,91 +114,148 @@ body { font-family: 'Inter', sans-serif; }
 }
 
 .db-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; }
-.db-panel-title { font-size: .95rem; font-weight: 700; color: var(--ink); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
-.db-panel-title a { font-size: .78rem; font-weight: 600; color: var(--emerald); }
+.db-panel-title { font-size: .95rem; font-weight: 700; color: var(--ink); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.db-panel-title a, .db-panel-title button.linklike { font-size: .78rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
 
-/* ── Aujourd'hui (liste chronologique, pas un tableau) ── */
+/* ── Planning du jour ── */
 .db-job-list { display: flex; flex-direction: column; }
-.db-job-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.db-job-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .db-job-row:last-child { border-bottom: none; }
-.db-job-time { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 600; color: var(--text-2); }
+.db-job-time { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 600; color: var(--text-2); line-height: 1.35; }
+.db-job-time .end { display: block; font-size: .68rem; color: var(--text-2); opacity: .7; }
 .db-job-main { min-width: 0; }
 .db-job-title { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-job-sub { font-size: .78rem; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; line-height: 1.35; }
-.db-job-side { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.db-job-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 .db-job-status { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
 .db-job-status.a-venir { background: var(--badge-info-bg); color: var(--badge-info-txt); }
 .db-job-status.en-cours { background: var(--badge-warning-bg); color: var(--badge-warning-txt); }
 .db-job-status.terminee { background: var(--badge-success-bg); color: var(--badge-success-txt); }
 .db-job-status.en-retard { background: var(--badge-error-bg); color: var(--badge-error-txt); }
 .db-job-status.non-assignee { background: var(--badge-info-bg); color: var(--badge-info-txt); }
-.db-job-open { font-size: .78rem; font-weight: 600; color: var(--emerald); background: none; border: none; cursor: pointer; padding: 4px 6px; }
+.db-job-btn { font-size: .76rem; font-weight: 600; color: var(--ink); background: var(--bg); border: 1px solid var(--border); cursor: pointer; padding: 5px 9px; border-radius: var(--rs); white-space: nowrap; transition: border-color .15s ease; }
+.db-job-btn:hover { border-color: var(--emerald); color: var(--emerald); }
+.db-job-btn.primary { background: var(--emerald); color: var(--on-emerald); border-color: var(--emerald); }
+.db-job-btn:disabled { opacity: .5; cursor: default; }
+.db-job-expand { grid-column: 1 / -1; padding: 10px 0 0; display: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+.db-job-expand.open { display: flex; }
+.db-job-expand select, .db-job-expand input { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--rs); font-size: .82rem; font-family: inherit; background: var(--white); color: var(--ink); }
 .db-empty { padding: 32px 16px; text-align: center; color: var(--text-2); font-size: .88rem; }
 .db-skeleton-row { height: 44px; border-radius: var(--rs); background: var(--bg); margin-bottom: 8px; }
 
 /* ── Résumé financier ── */
 .db-fin-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .db-fin-row:last-child { border-bottom: none; }
-.db-fin-label { font-size: .82rem; color: var(--text-2); }
+.db-fin-row.clickable { cursor: pointer; }
+.db-fin-row.clickable:hover .db-fin-label { color: var(--emerald); }
+.db-fin-label { font-size: .82rem; color: var(--text-2); transition: color .15s ease; }
 .db-fin-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: .95rem; color: var(--ink); }
 .db-fin-value .u { font-size: .78rem; font-weight: 500; color: var(--text-2); margin-left: 2px; }
 .db-fin-delta { font-size: .72rem; font-weight: 600; margin-left: 6px; }
 .db-fin-delta.up { color: var(--emerald); }
 .db-fin-delta.down { color: var(--amber); }
+.db-forecast { margin-top: 12px; padding: 12px; background: var(--bg); border-radius: var(--rs); font-size: .78rem; color: var(--text-2); line-height: 1.5; }
+.db-forecast strong { color: var(--ink); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.db-watchlist { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.db-watchlist-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); margin-bottom: 8px; }
+.db-watchlist-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: .82rem; cursor: pointer; }
+.db-watchlist-row:hover .wl-name { color: var(--emerald); }
+.wl-name { color: var(--ink); transition: color .15s ease; }
+.wl-amount { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; }
+.wl-amount.late { color: var(--critical); }
 
-/* ── Pipeline commercial (étapes, pas un graphique) ── */
-.db-pipeline-steps { display: flex; gap: 6px; margin-bottom: 14px; }
-.db-pipeline-step { flex: 1; text-align: center; }
+/* ── Pipeline commercial ── */
+.db-pipeline-steps { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.db-pipeline-step { flex: 1; min-width: 60px; text-align: center; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
 .db-pipeline-bar { height: 6px; border-radius: 4px; background: var(--bg); margin-bottom: 6px; overflow: hidden; }
 .db-pipeline-bar-fill { height: 100%; background: var(--emerald); border-radius: 4px; }
 .db-pipeline-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
-.db-pipeline-lbl { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
-.db-pipeline-conversion { font-size: .82rem; color: var(--text-2); padding-top: 10px; border-top: 1px solid var(--border); }
-.db-pipeline-conversion strong { color: var(--emerald); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.db-pipeline-lbl { font-size: .66rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+.db-pipeline-foot { display: flex; justify-content: space-between; font-size: .82rem; color: var(--text-2); padding-top: 10px; border-top: 1px solid var(--border); }
+.db-pipeline-foot strong { color: var(--emerald); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
-/* ── Recommandations (max 2) ── */
+/* ── Équipe et capacité ── */
+.db-team-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.db-team-row:last-child { border-bottom: none; }
+.db-team-row:hover .team-name { color: var(--emerald); }
+.team-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.team-dot.normale { background: var(--emerald); }
+.team-dot.sous-charge { background: var(--text-2); }
+.team-dot.surcharge { background: var(--critical); }
+.team-name { font-size: .86rem; font-weight: 600; color: var(--ink); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }
+.team-meta { font-size: .76rem; color: var(--text-2); white-space: nowrap; }
+.db-team-summary { display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+.db-team-stat { flex: 1; min-width: 80px; }
+.db-team-stat-val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 1.1rem; color: var(--ink); }
+.db-team-stat-lbl { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+.db-team-conflict { margin-top: 10px; padding: 8px 10px; background: var(--badge-error-bg); color: var(--badge-error-txt); border-radius: var(--rs); font-size: .76rem; }
+
+/* ── Alertes clients ── */
+.db-client-alert { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.db-client-alert:last-child { border-bottom: none; }
+.db-client-alert:hover .ca-name { color: var(--emerald); }
+.ca-name { font-size: .86rem; font-weight: 600; color: var(--ink); transition: color .15s ease; }
+.ca-reasons { font-size: .76rem; color: var(--text-2); margin-top: 2px; }
+
+/* ── Recommandations ── */
 .db-reco { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .db-reco:last-child { border-bottom: none; }
 .db-reco-title { font-size: .86rem; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
 .db-reco-desc { font-size: .78rem; color: var(--text-2); line-height: 1.4; margin-bottom: 8px; }
 .db-reco-cta { font-size: .78rem; font-weight: 600; color: var(--emerald); }
 
-/* ── Zone secondaire (indicateurs non actionnables, poids visuel faible) ── */
-.db-secondary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-top: 6px; }
-@media (max-width: 640px) { .db-secondary { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-.db-secondary-item { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--rs); }
-.db-secondary-label { font-size: .68rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-.db-secondary-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 1rem; color: var(--text-2); }
+/* ── Activité récente ── */
+.db-activity-row { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.db-activity-row:last-child { border-bottom: none; }
+.db-activity-row:hover .act-label { color: var(--emerald); }
+.act-time { font-size: .72rem; color: var(--text-2); flex-shrink: 0; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.act-label { font-size: .84rem; color: var(--ink); transition: color .15s ease; }
 
 /* ── États ── */
 .db-error-banner { background: var(--badge-error-bg); color: var(--badge-error-txt); border-radius: var(--rs); padding: 12px 16px; margin-bottom: 16px; font-size: .86rem; }
+.db-inline-status { font-size: .78rem; margin-top: 6px; }
+.db-inline-status.ok { color: var(--badge-success-txt); }
+.db-inline-status.err { color: var(--critical); }
 
-/* ── Bouton primaire / secondaire (réutilise .btn-em existant du site) ── */
+/* ── Boutons ── */
 .db-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; background: var(--emerald); color: var(--on-emerald); font-family: 'Inter', sans-serif; font-size: .88rem; font-weight: 600; border-radius: var(--rs); border: none; cursor: pointer; white-space: nowrap; }
 .db-btn-secondary { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--white); color: var(--ink); border: 1.5px solid var(--border); border-radius: var(--rs); cursor: pointer; }
 .db-btn-secondary:hover { border-color: var(--ink); }
 
-/* Focus visible cohérent (déjà global via pro-global.css :focus-visible, rappelé ici pour les nouveaux composants) */
-.db-alert-action:focus-visible, .db-job-open:focus-visible, .db-btn-secondary:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; }
+.db-alert-action:focus-visible, .db-job-open:focus-visible, .db-btn-secondary:focus-visible, .db-job-btn:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; }
 
-/* Animations courtes uniquement (<=200ms) */
 .db-panel, .db-alerts { transition: border-color .15s ease; }
+button, a { transition: color .15s ease, border-color .15s ease, background-color .15s ease; }
+
+#mobile-current-mission { display: none; }
 
 /* ── Mobile (<768px) ── */
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
   .main { padding: 20px 16px calc(88px + env(safe-area-inset-bottom,0px)) !important; }
-  .db-header { flex-direction: column; align-items: stretch; }
+  .cmd-bar { order: 1; }
+  .db-header { order: 2; flex-direction: column; align-items: stretch; }
   .db-header-actions { justify-content: flex-end; }
-  .db-btn-primary.full-mobile { width: 100%; justify-content: center; order: -1; }
+  .db-btn-primary.full-mobile { width: 100%; justify-content: center; }
+  #mobile-current-mission { order: 3; display: block; }
+  #db-alerts { order: 4; }
+  #db-grid-planning { order: 5; }
+  #db-grid-finance { order: 6; }
+  #db-grid-pipeline { order: 7; }
+  #db-grid-team { order: 8; }
+  #db-grid-clientalerts { order: 9; }
+  #db-grid-activity { order: 10; }
+  #dash-content { display: flex; flex-direction: column; }
   .db-grid { gap: 14px; }
   .db-panel { padding: 14px 16px; }
-  /* Cibles tactiles >= 44px (contrainte mobile explicite) -- desktop garde
-     une densité plus fine (souris), uniquement relevé sous ce seuil. */
-  .db-btn-primary, .db-btn-secondary, .db-alert-action, .db-job-open { min-height: 44px; }
+  .cmd-bar { gap: 8px; }
+  .cmd-search-trigger { max-width: none; }
+  .cmd-period, .cmd-custom-range input { font-size: .8rem; }
+  /* Cibles tactiles >= 44px */
+  .db-btn-primary, .db-btn-secondary, .db-alert-action, .db-job-btn, .cmd-search-trigger, .cmd-period, .cmd-sync-retry { min-height: 44px; }
   .db-btn-secondary { min-width: 44px; }
-  .db-alert-row { padding: 8px 18px; }
-  .db-job-row { padding: 8px 0; }
+  .db-alert-row { padding: 10px 18px; }
+  .db-job-row { padding: 10px 0; }
 }
 </style>
 </head>
@@ -172,8 +265,8 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <script>
 (function(){
-  window.addEventListener('offline', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='block'; });
-  window.addEventListener('online', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='none'; });
+  window.addEventListener('offline', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='block'; if(window.renderConnState) renderConnState(); });
+  window.addEventListener('online', () => { const b=document.getElementById('offline-banner'); if(b) b.style.display='none'; if(window.renderConnState) renderConnState(); });
 })();
 </script>
 
@@ -204,7 +297,43 @@ body { font-family: 'Inter', sans-serif; }
     <div id="dash-content">
       <div id="db-error-banner" class="db-error-banner" style="display:none;" role="alert"></div>
 
-      <!-- En-tête pleine largeur -->
+      <!-- Barre de commande -->
+      <div class="cmd-bar">
+        <button type="button" class="cmd-search-trigger" id="cmd-search-trigger" onclick="openSearch()" aria-haspopup="dialog">
+          🔍 Rechercher un client, devis, facture, intervention, employé… <kbd>Ctrl K</kbd>
+        </button>
+        <select class="cmd-period" id="cmd-period" onchange="onPeriodChange()" aria-label="Période">
+          <option value="7d">7 jours</option>
+          <option value="30d">30 jours</option>
+          <option value="month" selected>Mois courant</option>
+          <option value="quarter">Trimestre</option>
+          <option value="custom">Personnalisé…</option>
+        </select>
+        <div class="cmd-custom-range" id="cmd-custom-range">
+          <input type="date" id="cmd-custom-from" onchange="onCustomRangeChange()">
+          <span style="color:var(--text-2);font-size:.8rem;">→</span>
+          <input type="date" id="cmd-custom-to" onchange="onCustomRangeChange()">
+        </div>
+        <div class="cmd-sync" id="cmd-sync">
+          <span class="cmd-sync-dot" id="cmd-sync-dot"></span>
+          <span id="cmd-sync-label">À jour</span>
+          <button type="button" class="cmd-sync-retry" id="cmd-sync-retry" style="display:none;" onclick="retrySyncFromBar()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Recherche globale -->
+      <div class="cmd-search-overlay" id="cmd-search-overlay" onclick="if(event.target===this)closeSearch()">
+        <div class="cmd-search-panel" role="dialog" aria-modal="true" aria-label="Recherche">
+          <div class="cmd-search-input-row">
+            <span aria-hidden="true">🔍</span>
+            <input type="text" id="cmd-search-input" placeholder="Rechercher…" oninput="renderSearchResults()" onkeydown="handleSearchKeydown(event)">
+            <button type="button" class="cmd-search-close" onclick="closeSearch()">Échap</button>
+          </div>
+          <div class="cmd-search-results" id="cmd-search-results"></div>
+        </div>
+      </div>
+
+      <!-- En-tête -->
       <header class="db-header">
         <div class="db-header-left">
           <h1 class="db-greeting" id="db-greeting">Bonjour !</h1>
@@ -212,11 +341,12 @@ body { font-family: 'Inter', sans-serif; }
         </div>
         <div class="db-header-actions">
           <button type="button" class="db-btn-primary full-mobile" onclick="window.location.href='../planning.html'">+ Nouvelle intervention</button>
-          <button type="button" class="db-btn-secondary" id="db-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Autres actions" onclick="toggleSecondaryMenu(event)">⋯</button>
+          <button type="button" class="db-btn-secondary" id="db-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Créer" onclick="toggleSecondaryMenu(event)">⋯</button>
           <div class="db-secondary-menu" id="db-secondary-menu" role="menu">
-            <a href="../clients.html" role="menuitem">Nouveau client</a>
-            <a href="../devis-nouveau.html" role="menuitem">Nouveau devis</a>
-            <a href="../factures-nouvelle.html" role="menuitem">Nouvelle facture</a>
+            <a href="../clients.html" role="menuitem">Client</a>
+            <a href="../devis-nouveau.html" role="menuitem">Devis</a>
+            <a href="../planning.html" role="menuitem">Intervention</a>
+            <a href="../factures-nouvelle.html" role="menuitem">Facture</a>
           </div>
           <div class="avatar-wrap">
             <button type="button" class="avatar" id="avatar" aria-haspopup="true" aria-expanded="false" aria-label="Menu du compte" onclick="toggleUserMenu(event)">—</button>
@@ -229,13 +359,16 @@ body { font-family: 'Inter', sans-serif; }
         </div>
       </header>
 
+      <!-- Mission actuelle (mobile uniquement) -->
+      <div id="mobile-current-mission"></div>
+
       <!-- Ligne 1 — À traiter maintenant -->
       <section class="db-alerts" id="db-alerts" aria-label="Actions prioritaires">
         <div class="db-skeleton-row" style="margin:14px 18px;"></div>
       </section>
 
-      <!-- Colonne principale (8) + Résumé financier (4) -->
-      <div class="db-grid">
+      <!-- Planning (8) + Finances (4) -->
+      <div class="db-grid" id="db-grid-planning">
         <div class="db-col-8">
           <div class="db-panel">
             <div class="db-panel-title"><span>Aujourd'hui</span><a href="../planning.html">Voir le planning →</a></div>
@@ -244,7 +377,7 @@ body { font-family: 'Inter', sans-serif; }
             </div>
           </div>
         </div>
-        <div class="db-col-4">
+        <div class="db-col-4" id="db-grid-finance">
           <div class="db-panel">
             <div class="db-panel-title"><span>Résumé financier</span><a href="../factures.html">Factures →</a></div>
             <div id="db-finance"></div>
@@ -252,15 +385,31 @@ body { font-family: 'Inter', sans-serif; }
         </div>
       </div>
 
-      <!-- Activité commerciale (7) + Recommandations (5) -->
-      <div class="db-grid">
+      <!-- Pipeline (7) + Équipe (5) -->
+      <div class="db-grid" id="db-grid-pipeline">
         <div class="db-col-7">
           <div class="db-panel">
-            <div class="db-panel-title"><span>Activité commerciale</span><a href="../devis.html">Voir les devis →</a></div>
+            <div class="db-panel-title"><span>Pipeline commercial</span><a href="../devis.html">Voir les devis →</a></div>
             <div id="db-pipeline"></div>
           </div>
         </div>
-        <div class="db-col-5">
+        <div class="db-col-5" id="db-grid-team">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Équipe et capacité</span><a href="../equipe.html">Voir l'équipe →</a></div>
+            <div id="db-team"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertes clients (7) + Recommandations (5) -->
+      <div class="db-grid" id="db-grid-clientalerts">
+        <div class="db-col-7">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Alertes clients</span><a href="../clients.html">Voir les clients →</a></div>
+            <div id="db-client-alerts"></div>
+          </div>
+        </div>
+        <div class="db-col-5" id="db-reco-panel" style="display:none;">
           <div class="db-panel">
             <div class="db-panel-title"><span>Recommandations Seba</span></div>
             <div id="db-recos"></div>
@@ -268,8 +417,15 @@ body { font-family: 'Inter', sans-serif; }
         </div>
       </div>
 
-      <!-- Zone secondaire — indicateurs non actionnables, poids visuel faible -->
-      <div class="db-secondary" id="db-secondary"></div>
+      <!-- Activité récente -->
+      <div class="db-grid" id="db-grid-activity">
+        <div class="db-col-12">
+          <div class="db-panel">
+            <div class="db-panel-title"><span>Activité récente</span></div>
+            <div id="db-activity"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -278,12 +434,6 @@ body { font-family: 'Inter', sans-serif; }
 <script src="../seba-data.js"></script>
 <script src="../services/config-dashboard.js"></script>
 <script src="../services/contract-billing.js"></script>
-<!-- buildWidgetCtx/evaluateRules/RULES (moteur de recommandations,
-     réutilisé tel quel pour ne jamais afficher de recommandation
-     générique) -- voir aussi commentaire en tête de widgets.js.
-     widget-v2-framework.js reste nécessaire : widgets.js déclare encore des
-     classes qui étendent WidgetV2 au chargement (ReferenceError sinon),
-     même si cette page n'instancie plus aucun widget de grille V2. -->
 <script src="../services/widget-v2-framework.js"></script>
 <script src="../widgets.js"></script>
 <script src="../ai-assistant.js" defer></script>
@@ -294,9 +444,11 @@ body { font-family: 'Inter', sans-serif; }
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════════
-   DASHBOARD_DEMO_DATA — toutes les valeurs mockées regroupées ici,
-   par secteur. Rien d'autre dans le HTML/JS ne code une donnée
-   d'exemple en dur (refonte produit, 2026-07-22).
+   DASHBOARD_DEMO_DATA — utilisé UNIQUEMENT quand le compte n'a
+   encore aucune donnée réelle (SebaDB.hasData() === false), pour ne
+   jamais montrer un dashboard totalement vide à un nouvel inscrit.
+   Dès qu'une seule donnée réelle existe, plus aucune valeur d'ici
+   n'est utilisée (voir buildOwnerDashboardViewModel).
 ═══════════════════════════════════════════════════════════════ */
 const DASHBOARD_DEMO_DATA = {
   menage: {
@@ -306,18 +458,11 @@ const DASHBOARD_DEMO_DATA = {
       { time: '14:00', client: 'Mme Bernard', service: 'Ménage hebdomadaire', adresse: '9 bd Victor Hugo, Nice', employe: 'Sarah Dupont', statut: 'a-venir' },
       { time: '17:00', client: 'Sophie Lacroix', service: "Visite d'estimation", adresse: '2 rue Masséna, Nice', employe: null, statut: 'non-assignee' },
     ],
-    recommendations: [
-      { title: '2 devis en attente depuis plus de 7 jours', desc: 'Un dossier oublié dans le pipeline coûte cher.', cta: 'Voir les devis', href: '../devis.html' },
-      { title: '5 interventions sans demande d\'avis', desc: 'Demandez un retour à vos clients récents.', cta: 'Voir les clients', href: '../clients.html' },
-    ],
     finance: { caMois: 2840, encaisse: 2840, enAttente: 380, impaye: 0, deltaPct: 12 },
     pipeline: { prospects: 6, devisEnvoyes: 4, devisAcceptes: 2, devisRefuses: 1, tauxConversion: 33 },
   },
   autre: {
     jobs: [],
-    recommendations: [
-      { title: 'Créez votre premier devis', desc: 'Simulez un devis pour découvrir le parcours complet.', cta: 'Créer un devis', href: '../devis-nouveau.html' },
-    ],
     finance: { caMois: 0, encaisse: 0, enAttente: 0, impaye: 0, deltaPct: null },
     pipeline: { prospects: 0, devisEnvoyes: 0, devisAcceptes: 0, devisRefuses: 0, tauxConversion: null },
   },
@@ -329,218 +474,477 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function fmtMoney(n, sym) { return (n || 0).toLocaleString('fr-FR') + ' ' + (sym || '€'); }
+function todayISOLocal(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function parseDureeToMinutes(str) {
+  if (!str) return null;
+  const m = /^(\d+)h(\d{2})?$/.exec(String(str).trim());
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0);
+}
+function addMinutesToTime(time, minutes) {
+  if (!time || minutes == null) return null;
+  const parts = time.split(':').map(Number);
+  const total = (parts[0] || 0) * 60 + (parts[1] || 0) + minutes;
+  const hh = Math.floor(total / 60) % 24, mm = total % 60;
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+function periodRange(period, activeDateISO, customFrom, customTo) {
+  if (period === 'custom' && customFrom && customTo) {
+    return { start: new Date(customFrom + 'T00:00:00'), end: new Date(customTo + 'T23:59:59') };
+  }
+  const base = activeDateISO ? new Date(activeDateISO + 'T12:00:00') : new Date();
+  const end = new Date(base); end.setHours(23, 59, 59, 999);
+  const start = new Date(base); start.setHours(0, 0, 0, 0);
+  if (period === '7d') start.setDate(start.getDate() - 6);
+  else if (period === '30d') start.setDate(start.getDate() - 29);
+  else if (period === 'month') start.setDate(1);
+  else if (period === 'quarter') { const q = Math.floor(start.getMonth() / 3); start.setMonth(q * 3, 1); }
+  return { start, end };
+}
+function inRange(dateStr, range) {
+  if (!dateStr) return false;
+  const d = new Date(String(dateStr).slice(0, 10) + 'T12:00:00');
+  return d >= range.start && d <= range.end;
+}
 
 /* ═══════════════════════════════════════════════════════════════
-   buildDashboardViewModel(state) — point d'entrée UNIQUE de lecture
-   des données. Aucun composant ne lit directement SebaDB/localStorage
-   ailleurs : tout passe par l'objet retourné ici.
+   buildOwnerDashboardViewModel(state, options) — point d'entrée
+   UNIQUE de calcul du dashboard patron. Aucun composant ne recalcule
+   séparément ses propres chiffres : tout passe par l'objet retourné
+   ici. state contient les collections réelles déjà chargées
+   (synchrones : clients/devis/factures/interventions/employes/journal
+   via SebaDB.list(), + messages/clientRequests pré-chargés
+   asynchrone par l'appelant, voir refreshAll()).
 ═══════════════════════════════════════════════════════════════ */
-function buildDashboardViewModel(state) {
-  const biz = state.biz;
-  const secteur = biz.secteur || 'autre';
-  const demo = DASHBOARD_DEMO_DATA[secteur] || DASHBOARD_DEMO_DATA.autre;
-  const sym = biz.deviseSymbole || '€';
-  const hasRealData = !!(window.SebaDB && SebaDB.hasData());
+function buildOwnerDashboardViewModel(state, options) {
+  options = options || {};
+  const period = options.period || 'month';
+  const activeDateISO = options.activeDate || todayISOLocal();
+  const range = periodRange(period, activeDateISO, options.customFrom, options.customTo);
 
-  let todayJobs, financeSummary, salesPipeline, urgentActions;
+  const clients = state.clients || [], devis = state.devis || [], factures = state.factures || [],
+        interventions = state.interventions || [], employes = state.employes || [],
+        journal = state.journal || [], messages = state.messages || [], clientRequests = state.clientRequests || [];
+  const syncStatus = state.syncStatus || { pending: 0, failed: 0, syncing: false };
 
-  if (hasRealData) {
-    const DB = window.SebaDB;
-    const m = DB.metrics();
-    const clientsById = {}; DB.list('clients').forEach(c => { clientsById[c.id] = c; });
-    const now = new Date();
+  const clientsById = {}; clients.forEach(c => { clientsById[c.id] = c; });
+  const employesById = {}; employes.forEach(e => { employesById[e.id] = e; });
+  const now = new Date();
+  const todayISO = todayISOLocal(now);
 
-    todayJobs = m.interventionsJour.map(i => {
-      const cl = clientsById[i.clientId];
-      let statut = i.done ? 'terminee' : 'a-venir';
-      if (!i.done && i.time) {
-        const [h, mn] = i.time.split(':').map(Number);
-        const jobTime = new Date(now); jobTime.setHours(h || 0, mn || 0, 0, 0);
-        if (now > jobTime) statut = 'en-retard';
-      }
-      return {
-        time: i.time || '', client: i.clientName || (cl && cl.nom) || 'Client', service: i.service || '',
-        adresse: (cl && cl.adresse) || '', employe: i.employeNom || null,
-        statut: i.employeNom ? statut : 'non-assignee', id: i.id,
-      };
-    });
+  function empName(id) { const e = employesById[id]; return e ? (e.prenom + ' ' + e.nom) : null; }
+  function clientAdresse(id) { const c = clientsById[id]; return (c && c.adresse) || ''; }
+  function clientName(id) { const c = clientsById[id]; return c ? (c.prenom + ' ' + c.nom) : 'Client'; }
 
-    const facturesRetard = DB.list('factures').filter(f => f.status === 'retard');
-    const facturesAttente = DB.list('factures').filter(f => f.status === 'attente');
-    financeSummary = {
-      caMois: m.caMois,
-      encaisse: m.caMois,
-      enAttente: facturesAttente.reduce((s, f) => s + (f.amount || 0), 0),
-      impaye: facturesRetard.reduce((s, f) => s + (f.amount || 0), 0),
-      deltaPct: null,
-    };
-
-    const devisAll = DB.list('devis');
-    const devisEnvoyes = devisAll.filter(d => d.status === 'attente').length;
-    const devisAcceptes = devisAll.filter(d => d.status === 'signe').length;
-    const devisRefuses = devisAll.filter(d => d.status === 'refuse' || d.status === 'expire').length;
-    const totalDevis = devisEnvoyes + devisAcceptes + devisRefuses;
-    salesPipeline = {
-      prospects: DB.list('clients').filter(c => c.statut === 'attente').length,
-      devisEnvoyes, devisAcceptes, devisRefuses,
-      tauxConversion: totalDevis > 0 ? Math.round((devisAcceptes / totalDevis) * 100) : null,
-    };
-
-    urgentActions = buildUrgentActions({ facturesRetard, devisAll, todayJobs, syncStatus: currentSyncStatus() });
-  } else {
-    todayJobs = demo.jobs;
-    financeSummary = demo.finance;
-    salesPipeline = demo.pipeline;
-    urgentActions = buildUrgentActions({ facturesRetard: [], devisAll: [], todayJobs, syncStatus: currentSyncStatus(), demoMode: true });
+  function statusKeyFor(i) {
+    if (i.done) return 'terminee';
+    if (i.statut === 'en_cours') return 'en-cours';
+    if (!i.employeId) return 'non-assignee';
+    if (i.time) {
+      const parts = i.time.split(':').map(Number);
+      const t = new Date(now); t.setHours(parts[0] || 0, parts[1] || 0, 0, 0);
+      if (i.date === todayISO && now > t) return 'en-retard';
+    }
+    if (i.date && i.date < todayISO) return 'en-retard';
+    return 'a-venir';
   }
 
-  const recommendations = (hasRealData && typeof evaluateRules === 'function')
-    ? (() => {
-        try {
-          const ctx = buildWidgetCtx({ biz, demo: { recos: demo.recommendations.map(r => ({ cls: 'em', title: r.title, desc: r.desc, cta: r.cta, href: r.href })) }, secteur, sectorLabel: secteur, nom: biz.nom, couleur: biz.couleur, services: biz.services || [], slug: '', sym });
-          const evaluated = evaluateRules(ctx).map(r => ({ title: r.title, desc: r.desc, cta: r.cta, href: r.href }));
-          return evaluated.length ? evaluated.slice(0, 2) : demo.recommendations.slice(0, 2);
-        } catch (e) { return demo.recommendations.slice(0, 2); }
-      })()
-    : demo.recommendations.slice(0, 2);
+  const enriched = interventions.map(i => {
+    const dureeMin = parseDureeToMinutes(i.duree);
+    return Object.assign({}, i, {
+      employeNom: i.employeName || empName(i.employeId) || null,
+      adresse: clientAdresse(i.clientId),
+      dureeMin,
+      heureFin: dureeMin != null ? addMinutesToTime(i.time, dureeMin) : null,
+      statutKey: statusKeyFor(i),
+    });
+  });
+
+  const todayInterventions = enriched.filter(i => i.date === todayISO).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const upcomingInterventions = enriched
+    .filter(i => i.date > todayISO && !i.done)
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))
+    .slice(0, 8);
+
+  /* ── Pipeline commercial ── */
+  const prospects = clients.filter(c => c.statut === 'attente' || c.statut === 'relance').length;
+  const devisEnvoyes = devis.filter(d => d.status === 'attente').length;
+  const devisAcceptes = devis.filter(d => d.status === 'signe').length;
+  const devisRefuses = devis.filter(d => d.status === 'refuse').length;
+  const devisExpires = devis.filter(d => d.status === 'expire').length;
+  const decided = devisAcceptes + devisRefuses + devisExpires; // jamais les brouillons/en attente au dénominateur
+  const tauxConversion = decided > 0 ? Math.round((devisAcceptes / decided) * 100) : null;
+  const pipelineValue = devis.filter(d => d.status === 'attente' || d.status === 'signe').reduce((s, d) => s + (d.amount || 0), 0);
+  const salesPipeline = { prospects, devisEnvoyes, devisAcceptes, devisRefuses, devisExpires, decided, tauxConversion, pipelineValue };
+
+  /* ── Finances ── */
+  const facturesPayeesPeriod = factures.filter(f => f.status === 'payee' && inRange(f.paidAt || f.date, range));
+  const caFacturePeriod = factures.filter(f => inRange(f.date, range)).reduce((s, f) => s + (f.amount || 0), 0);
+  const encaissePeriod = facturesPayeesPeriod.reduce((s, f) => s + (f.amount || 0), 0);
+  const facturesEnAttente = factures.filter(f => f.status === 'attente');
+  const facturesRetard = factures.filter(f => f.status === 'retard');
+  const enAttenteTotal = facturesEnAttente.reduce((s, f) => s + (f.amount || 0), 0);
+  const retardTotal = facturesRetard.reduce((s, f) => s + (f.amount || 0), 0);
+  const panierMoyen = facturesPayeesPeriod.length ? Math.round(encaissePeriod / facturesPayeesPeriod.length) : null;
+  const rangeLenMs = range.end.getTime() - range.start.getTime();
+  const prevRange = { start: new Date(range.start.getTime() - rangeLenMs - 864e5), end: new Date(range.start.getTime() - 864e5) };
+  const encaissePrev = factures.filter(f => f.status === 'payee' && inRange(f.paidAt || f.date, prevRange)).reduce((s, f) => s + (f.amount || 0), 0);
+  const deltaPct = encaissePrev > 0 ? Math.round(((encaissePeriod - encaissePrev) / encaissePrev) * 100) : null;
+  const financeSummary = { caFacture: caFacturePeriod, encaisse: encaissePeriod, enAttente: enAttenteTotal, retard: retardTotal, panierMoyen, deltaPct };
+  const cashForecast = { montant: enAttenteTotal, factureCount: facturesEnAttente.length, horizonJours: 30 };
+  const paiementsASurveiller = factures
+    .filter(f => f.status === 'attente' || f.status === 'retard')
+    .sort((a, b) => (b.status === 'retard' ? 1 : 0) - (a.status === 'retard' ? 1 : 0) || (b.amount || 0) - (a.amount || 0))
+    .slice(0, 5);
+
+  /* ── Équipe et capacité ── */
+  const employesActifs = employes.filter(e => e.actif);
+  const parEmployeAujourdhui = {};
+  todayInterventions.forEach(i => { if (i.employeId) (parEmployeAujourdhui[i.employeId] = parEmployeAujourdhui[i.employeId] || []).push(i); });
+  const nonAssigneesToday = todayInterventions.filter(i => !i.employeId).length;
+  const conflicts = [];
+  Object.keys(parEmployeAujourdhui).forEach(eid => {
+    const list = parEmployeAujourdhui[eid].filter(i => i.time && i.heureFin).sort((a, b) => a.time.localeCompare(b.time));
+    for (let k = 0; k < list.length - 1; k++) {
+      if (list[k].heureFin > list[k + 1].time) conflicts.push({ employeId: eid, employeNom: empName(eid), a: list[k], b: list[k + 1] });
+    }
+  });
+  const teamCapacity = {
+    employesActifsCount: employesActifs.length,
+    planifiesAujourdhuiCount: Object.keys(parEmployeAujourdhui).length,
+    nonAssignees: nonAssigneesToday,
+    parEmploye: employesActifs.map(e => {
+      const jobs = parEmployeAujourdhui[e.id] || [];
+      const minutes = jobs.reduce((s, i) => s + (i.dureeMin || 0), 0);
+      let charge = 'normale';
+      if (jobs.length === 0) charge = 'sous-charge';
+      else if (jobs.length >= 4) charge = 'surcharge';
+      return { id: e.id, nom: e.prenom + ' ' + e.nom, missionsAujourdhui: jobs.length, minutes, charge };
+    }),
+    conflicts,
+  };
+
+  /* ── Alertes clients (signaux réels uniquement, aucun score fabriqué) ── */
+  const clientAlerts = [];
+  clients.forEach(c => {
+    const reasons = [];
+    const fRetard = factures.filter(f => f.clientId === c.id && f.status === 'retard');
+    if (fRetard.length) reasons.push(fRetard.length + ' facture(s) en retard');
+    const demandes = clientRequests.filter(r => r.clientId === c.id && r.statut === 'nouvelle');
+    if (demandes.length) reasons.push(demandes.length + ' demande(s) non traitée(s)');
+    const signalements = messages.filter(m => m.clientId === c.id && /^\[SIGNALEMENT\]/.test(m.texte || ''));
+    if (signalements.length) reasons.push(signalements.length + ' problème(s) signalé(s)');
+    const nonLus = messages.filter(m => m.clientId === c.id && m.destinataireRole === 'patron' && !m.lu && !/^\[SIGNALEMENT\]/.test(m.texte || ''));
+    if (nonLus.length) reasons.push(nonLus.length + ' message(s) non lu(s)');
+    const devisAttente = devis.filter(d => d.clientId === c.id && d.status === 'attente');
+    if (devisAttente.length) reasons.push(devisAttente.length + ' devis en attente');
+    if (!c.email && !c.adresse) reasons.push('Informations incomplètes');
+    if (reasons.length) clientAlerts.push({ clientId: c.id, clientName: c.prenom + ' ' + c.nom, reasons });
+  });
+
+  /* ── Recommandations (max 3, factuelles, jamais génériques) ── */
+  const recommendations = [];
+  const demainISO = todayISOLocal(new Date(now.getTime() + 864e5));
+  const demainSansEmploye = enriched.filter(i => i.date === demainISO && !i.employeId).length;
+  if (demainSansEmploye > 0) {
+    recommendations.push({
+      title: demainSansEmploye + ' intervention' + (demainSansEmploye > 1 ? 's' : '') + ' de demain n\'' + (demainSansEmploye > 1 ? 'ont' : 'a') + ' aucun employé assigné',
+      desc: 'Risque de mission manquée ou de retard le jour même.', cta: 'Assigner maintenant', href: '../assignation.html',
+    });
+  }
+  const facturesRetard15 = facturesRetard.filter(f => Math.floor((Date.now() - new Date(f.date)) / 864e5) > 15);
+  if (recommendations.length < 3 && facturesRetard15.length > 0) {
+    recommendations.push({
+      title: facturesRetard15.length + ' facture' + (facturesRetard15.length > 1 ? 's dépassent' : ' dépasse') + ' son échéance de plus de 15 jours',
+      desc: 'Impact direct sur votre trésorerie.', cta: 'Relancer', href: '../factures.html?status=retard',
+    });
+  }
+  if (recommendations.length < 3 && tauxConversion != null && tauxConversion < 30 && decided >= 3) {
+    recommendations.push({
+      title: 'Votre taux d\'acceptation des devis est de ' + tauxConversion + '% sur les ' + decided + ' derniers devis décidés',
+      desc: 'Une part importante de vos devis n\'aboutit pas.', cta: 'Voir les devis', href: '../devis.html?status=expire',
+    });
+  }
+
+  /* ── Centre d'actions (ordre imposé) ── */
+  const priorityActions = [];
+  if (syncStatus.failed > 0) priorityActions.push({ level: 'high', type: 'sync', label: 'Synchronisation(s) en échec', count: syncStatus.failed, cta: 'Réessayer la synchronisation', action: 'retrySync' });
+  const enRetardCount = todayInterventions.filter(i => i.statutKey === 'en-retard').length;
+  if (enRetardCount > 0) priorityActions.push({ level: 'high', type: 'retard', label: 'Intervention(s) en retard', count: enRetardCount, cta: 'Voir le planning', href: '../planning.html?date=' + todayISO });
+  if (nonAssigneesToday > 0) priorityActions.push({ level: 'medium', type: 'non-assignee', label: 'Intervention(s) sans employé', count: nonAssigneesToday, cta: 'Assigner', href: '../assignation.html' });
+  if (facturesRetard.length > 0) priorityActions.push({ level: 'high', type: 'facture', label: 'Facture(s) échues et impayées', count: facturesRetard.length, cta: 'Ouvrir les factures', href: '../factures.html?status=retard' });
+  if (devisEnvoyes > 0) priorityActions.push({ level: 'low', type: 'devis', label: 'Devis sans réponse', count: devisEnvoyes, cta: 'Relancer', href: '../devis.html?status=attente' });
+  const messagesNonLus = messages.filter(m => m.destinataireRole === 'patron' && !m.lu).length;
+  const demandesNonTraitees = clientRequests.filter(r => r.statut === 'nouvelle').length;
+  if ((messagesNonLus + demandesNonTraitees) > 0) priorityActions.push({ level: 'low', type: 'message', label: 'Demande(s) ou message(s) non lu(s)', count: messagesNonLus + demandesNonTraitees, cta: 'Lire', href: '../assignation.html' });
+  const sansAdresse = todayInterventions.filter(i => !i.adresse).length;
+  if (sansAdresse > 0) priorityActions.push({ level: 'low', type: 'adresse', label: 'Intervention(s) sans adresse renseignée', count: sansAdresse, cta: 'Compléter', href: '../planning.html?date=' + todayISO });
+
+  const recentActivity = journal.filter(j => j.ts).slice(0, 12);
 
   return {
-    todayJobs, urgentActions, financeSummary, salesPipeline, recommendations,
-    syncStatus: currentSyncStatus(),
-    secteur, sym, nom: biz.nom || 'Mon entreprise',
+    priorityActions, todayInterventions, upcomingInterventions, salesPipeline, financeSummary,
+    cashForecast, paiementsASurveiller, teamCapacity, clientAlerts, recentActivity,
+    syncStatus, recommendations, period, activeDateISO,
+    secteur: state.biz.secteur, sym: state.biz.deviseSymbole || '€', nom: state.biz.nom || 'Mon entreprise',
+    hasRealData: state.hasRealData,
   };
-}
-
-function currentSyncStatus() {
-  try {
-    if (window.SebaDB && typeof SebaDB.syncStatus === 'function') return SebaDB.syncStatus();
-  } catch (e) {}
-  return { pending: 0, failed: 0, syncing: false };
-}
-
-/* Ordre imposé : erreurs de synchro, interventions non assignées, factures
-   impayées, devis en attente, demandes clients non lues. Masque les lignes
-   à zéro ; "Tout est à jour" si tout est à zéro. */
-function buildUrgentActions({ facturesRetard, devisAll, todayJobs, syncStatus, demoMode }) {
-  const actions = [];
-  if (syncStatus && (syncStatus.failed > 0)) {
-    actions.push({ level: 'high', label: 'Erreur de synchronisation', count: syncStatus.failed, cta: 'Réessayer', action: () => { if (window.SebaDB) SebaDB.retrySyncNow(); } });
-  }
-  const nonAssignees = (todayJobs || []).filter(j => j.statut === 'non-assignee').length;
-  if (nonAssignees > 0) actions.push({ level: 'medium', label: 'Intervention(s) non assignée(s)', count: nonAssignees, cta: 'Assigner', href: '../assignation.html' });
-  const impayees = (facturesRetard || []).length;
-  if (impayees > 0) actions.push({ level: 'high', label: 'Facture(s) impayée(s)', count: impayees, cta: 'Relancer', href: '../factures.html' });
-  const devisAttente = demoMode ? 2 : (devisAll || []).filter(d => d.status === 'attente').length;
-  if (devisAttente > 0) actions.push({ level: 'low', label: 'Devis en attente de réponse', count: devisAttente, cta: 'Voir les devis', href: '../devis.html' });
-  return actions;
 }
 
 /* ═══════════════════════════════════════════════════════════════
    RENDU
 ═══════════════════════════════════════════════════════════════ */
+const STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard', 'non-assignee': 'Non assignée' };
+
 function renderAlerts(actions) {
   const el = document.getElementById('db-alerts');
-  if (!actions.length) {
-    el.innerHTML = '<div class="db-alert-ok">✓ Tout est à jour</div>';
-    return;
-  }
-  el.innerHTML = actions.map(a => (
+  if (!actions.length) { el.innerHTML = '<div class="db-alert-ok">✓ Tout est à jour</div>'; return; }
+  el.innerHTML = actions.map((a, i) => (
     '<div class="db-alert-row">' +
       '<span class="db-alert-dot ' + a.level + '" aria-hidden="true"></span>' +
       '<span class="db-alert-label">' + esc(a.label) + '</span>' +
       '<span class="db-alert-count mono-num">' + a.count + '</span>' +
-      '<button type="button" class="db-alert-action" data-action-idx="' + actions.indexOf(a) + '">' + esc(a.cta) + '</button>' +
+      '<button type="button" class="db-alert-action" data-action-idx="' + i + '">' + esc(a.cta) + '</button>' +
     '</div>'
   )).join('');
   el.querySelectorAll('.db-alert-action').forEach((btn, i) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const a = actions[i];
-      if (a.action) a.action();
-      else if (a.href) window.location.href = a.href;
+      if (a.action === 'retrySync') {
+        btn.disabled = true; btn.textContent = 'Synchronisation…';
+        try { if (window.SebaDB) SebaDB.retrySyncNow(); } finally {
+          setTimeout(() => { btn.disabled = false; btn.textContent = a.cta; refreshAll(); }, 900);
+        }
+      } else if (a.href) window.location.href = a.href;
     });
   });
 }
 
-const STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard', 'non-assignee': 'Non assignée' };
+function jobActionsHtml(j) {
+  const btns = [];
+  btns.push('<button type="button" class="db-job-btn" data-open="' + j.id + '">Ouvrir</button>');
+  if (!j.employeId) btns.push('<button type="button" class="db-job-btn" data-assign="' + j.id + '">Assigner</button>');
+  else btns.push('<button type="button" class="db-job-btn" data-assign="' + j.id + '">Réassigner</button>');
+  if (!j.done && j.statutKey !== 'en-cours') btns.push('<button type="button" class="db-job-btn primary" data-start="' + j.id + '">Démarrer</button>');
+  if (!j.done) btns.push('<button type="button" class="db-job-btn primary" data-finish="' + j.id + '">Terminer</button>');
+  if (!j.done) btns.push('<button type="button" class="db-job-btn" data-postpone="' + j.id + '">Reporter</button>');
+  return btns.join('');
+}
 
-function renderJobs(jobs) {
+function renderJobs(jobs, employesList) {
   const el = document.getElementById('db-job-list');
   if (!jobs.length) { el.innerHTML = '<div class="db-empty">Aucune intervention prévue aujourd\'hui. <a href="../planning.html" style="color:var(--emerald);font-weight:600;">Planifier →</a></div>'; return; }
   el.innerHTML = jobs.map(j => (
-    '<div class="db-job-row">' +
-      '<div class="db-job-time mono-num">' + esc(j.time) + '</div>' +
+    '<div class="db-job-row" data-row="' + j.id + '">' +
+      '<div class="db-job-time mono-num">' + esc(j.time) + (j.heureFin ? '<span class="end">→ ' + esc(j.heureFin) + '</span>' : '') + '</div>' +
       '<div class="db-job-main">' +
-        '<div class="db-job-title">' + esc(j.client) + ' — ' + esc(j.service) + '</div>' +
-        '<div class="db-job-sub">' + esc(j.adresse || 'Adresse non renseignée') + (j.employe ? ' · ' + esc(j.employe) : '') + '</div>' +
+        '<div class="db-job-title">' + esc(j.clientName || 'Client') + ' — ' + esc(j.service) + '</div>' +
+        '<div class="db-job-sub">' + esc(j.adresse || 'Adresse non renseignée') + (j.employeNom ? ' · ' + esc(j.employeNom) : '') + '</div>' +
       '</div>' +
       '<div class="db-job-side">' +
-        '<span class="db-job-status ' + j.statut + '">' + (STATUS_LABEL[j.statut] || j.statut) + '</span>' +
-        '<button type="button" class="db-job-open" onclick="window.location.href=\'../planning.html\'">Ouvrir</button>' +
+        '<span class="db-job-status ' + j.statutKey + '">' + (STATUS_LABEL[j.statutKey] || j.statutKey) + '</span>' +
+        jobActionsHtml(j) +
       '</div>' +
+      '<div class="db-job-expand" id="expand-' + j.id + '"></div>' +
+      '<div class="db-inline-status" id="status-' + j.id + '"></div>' +
     '</div>'
   )).join('');
+
+  el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { window.location.href = '../planning.html?date=' + (jobs.find(j => j.id === b.dataset.open) || {}).date; }));
+  el.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => runJobAction(b, b.dataset.start, { statut: 'en_cours' }, 'Mission démarrée.')));
+  el.querySelectorAll('[data-finish]').forEach(b => b.addEventListener('click', () => runJobAction(b, b.dataset.finish, { done: true, statut: 'terminee' }, 'Mission terminée.')));
+  el.querySelectorAll('[data-assign]').forEach(b => b.addEventListener('click', () => toggleAssignExpand(b.dataset.assign, employesList)));
+  el.querySelectorAll('[data-postpone]').forEach(b => b.addEventListener('click', () => togglePostponeExpand(b.dataset.postpone)));
+}
+
+async function runJobAction(btn, id, patch, successMsg) {
+  const statusEl = document.getElementById('status-' + id);
+  const row = document.querySelector('[data-row="' + id + '"]');
+  row.querySelectorAll('button').forEach(b => b.disabled = true);
+  if (statusEl) { statusEl.textContent = 'Enregistrement…'; statusEl.className = 'db-inline-status'; }
+  try {
+    const updated = window.SebaDB.update('interventions', id, patch);
+    if (!updated) throw new Error('Intervention introuvable.');
+    if (statusEl) { statusEl.textContent = successMsg; statusEl.className = 'db-inline-status ok'; }
+    setTimeout(refreshAll, 400);
+  } catch (e) {
+    row.querySelectorAll('button').forEach(b => b.disabled = false);
+    if (statusEl) { statusEl.textContent = 'Échec : ' + e.message; statusEl.className = 'db-inline-status err'; }
+  }
+}
+
+function toggleAssignExpand(id, employesList) {
+  const box = document.getElementById('expand-' + id);
+  const isOpen = box.classList.contains('open');
+  document.querySelectorAll('.db-job-expand.open').forEach(b => b.classList.remove('open'));
+  if (isOpen) return;
+  box.innerHTML = '<select id="assign-select-' + id + '"><option value="">— Non assigné —</option>' +
+    employesList.map(e => '<option value="' + e.id + '">' + esc(e.prenom + ' ' + e.nom) + '</option>').join('') +
+    '</select><button type="button" class="db-job-btn primary" id="assign-confirm-' + id + '">Confirmer</button>';
+  box.classList.add('open');
+  document.getElementById('assign-confirm-' + id).addEventListener('click', () => {
+    const sel = document.getElementById('assign-select-' + id);
+    const empId = sel.value || null;
+    const empName = empId ? sel.options[sel.selectedIndex].text : null;
+    runJobAction(sel, id, { employeId: empId, employeName: empName }, empId ? 'Employé assigné.' : 'Assignation retirée.');
+  });
+}
+
+function togglePostponeExpand(id) {
+  const box = document.getElementById('expand-' + id);
+  const isOpen = box.classList.contains('open');
+  document.querySelectorAll('.db-job-expand.open').forEach(b => b.classList.remove('open'));
+  if (isOpen) return;
+  box.innerHTML = '<input type="date" id="postpone-date-' + id + '"><button type="button" class="db-job-btn primary" id="postpone-confirm-' + id + '">Confirmer</button>';
+  box.classList.add('open');
+  document.getElementById('postpone-confirm-' + id).addEventListener('click', () => {
+    const inp = document.getElementById('postpone-date-' + id);
+    if (!inp.value) return;
+    runJobAction(inp, id, { date: inp.value }, 'Intervention reportée au ' + new Date(inp.value + 'T12:00:00').toLocaleDateString('fr-FR') + '.');
+  });
 }
 
 function renderFinance(f, sym) {
   const el = document.getElementById('db-finance');
   const rows = [
-    { label: 'CA du mois', value: f.caMois, delta: f.deltaPct },
-    { label: 'Encaissé', value: f.encaisse },
-    { label: 'En attente', value: f.enAttente },
-    { label: 'Impayé', value: f.impaye },
+    { label: 'Facturé (période)', value: f.caFacture, delta: null, href: '../factures.html' },
+    { label: 'Encaissé', value: f.encaisse, delta: f.deltaPct, href: '../factures.html?status=payee' },
+    { label: 'En attente', value: f.enAttente, delta: null, href: '../factures.html?status=attente' },
+    { label: 'En retard', value: f.retard, delta: null, href: '../factures.html?status=retard' },
   ];
+  if (f.panierMoyen != null) rows.push({ label: 'Panier moyen', value: f.panierMoyen, delta: null, href: null });
   el.innerHTML = rows.map(r => (
-    '<div class="db-fin-row">' +
+    '<div class="db-fin-row' + (r.href ? ' clickable' : '') + '"' + (r.href ? ' data-href="' + r.href + '"' : '') + '>' +
       '<span class="db-fin-label">' + r.label + '</span>' +
       '<span class="db-fin-value mono-num">' + fmtMoney(r.value, sym) +
-        (r.delta != null ? '<span class="db-fin-delta ' + (r.delta >= 0 ? 'up' : 'down') + '">' + (r.delta >= 0 ? '↑' : '↓') + r.delta + '% vs mois dernier</span>' : '') +
+        (r.delta != null ? '<span class="db-fin-delta ' + (r.delta >= 0 ? 'up' : 'down') + '">' + (r.delta >= 0 ? '↑' : '↓') + Math.abs(r.delta) + '% vs période précédente</span>' : '') +
       '</span>' +
     '</div>'
   )).join('');
+  el.querySelectorAll('[data-href]').forEach(row => row.addEventListener('click', () => { window.location.href = row.dataset.href; }));
+}
+
+function renderForecastAndWatchlist(vm) {
+  const el = document.getElementById('db-finance');
+  const forecastHtml = '<div class="db-forecast">Estimation d\'encaissement à 30 jours (basée sur les ' + vm.cashForecast.factureCount + ' facture(s) en attente existantes, jamais une certitude) : <strong>' + fmtMoney(vm.cashForecast.montant, vm.sym) + '</strong></div>';
+  let watchHtml = '';
+  if (vm.paiementsASurveiller.length) {
+    watchHtml = '<div class="db-watchlist"><div class="db-watchlist-title">Paiements à surveiller</div>' +
+      vm.paiementsASurveiller.map(f => (
+        '<div class="db-watchlist-row" data-fid="' + f.id + '">' +
+          '<span class="wl-name">' + esc(f.clientName) + ' — ' + esc(f.num) + '</span>' +
+          '<span class="wl-amount' + (f.status === 'retard' ? ' late' : '') + '">' + fmtMoney(f.amount, vm.sym) + '</span>' +
+        '</div>'
+      )).join('') + '</div>';
+  }
+  el.insertAdjacentHTML('beforeend', forecastHtml + watchHtml);
+  el.querySelectorAll('[data-fid]').forEach(row => row.addEventListener('click', () => { window.location.href = '../factures.html?highlight=' + row.dataset.fid; }));
 }
 
 function renderPipeline(p) {
   const el = document.getElementById('db-pipeline');
   const steps = [
-    { label: 'Prospects', n: p.prospects },
-    { label: 'Devis envoyés', n: p.devisEnvoyes },
-    { label: 'Devis acceptés', n: p.devisAcceptes },
-    { label: 'Devis refusés', n: p.devisRefuses },
+    { label: 'Prospects', n: p.prospects, status: null },
+    { label: 'Devis envoyés', n: p.devisEnvoyes, status: 'attente' },
+    { label: 'Devis acceptés', n: p.devisAcceptes, status: 'signe' },
+    { label: 'Devis refusés', n: p.devisRefuses, status: 'refuse' },
+    { label: 'Devis expirés', n: p.devisExpires, status: 'expire' },
   ];
   const max = Math.max(1, ...steps.map(s => s.n));
   el.innerHTML =
     '<div class="db-pipeline-steps">' +
-    steps.map(s => (
-      '<div class="db-pipeline-step">' +
+    steps.map((s, i) => (
+      '<button type="button" class="db-pipeline-step" data-step="' + i + '">' +
         '<div class="db-pipeline-bar"><div class="db-pipeline-bar-fill" style="width:' + Math.round((s.n / max) * 100) + '%"></div></div>' +
         '<div class="db-pipeline-num mono-num">' + s.n + '</div>' +
         '<div class="db-pipeline-lbl">' + s.label + '</div>' +
-      '</div>'
+      '</button>'
     )).join('') +
     '</div>' +
-    '<div class="db-pipeline-conversion">Taux de conversion : ' + (p.tauxConversion != null ? '<strong>' + p.tauxConversion + '%</strong>' : '—') + '</div>';
+    '<div class="db-pipeline-foot"><span>Taux de conversion (' + p.decided + ' devis décidés) : ' + (p.tauxConversion != null ? '<strong>' + p.tauxConversion + '%</strong>' : '—') + '</span>' +
+    '<span>Valeur pipeline : <strong class="mono-num">' + fmtMoney(p.pipelineValue, window.__dashSym || '€') + '</strong></span></div>';
+  el.querySelectorAll('[data-step]').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      const step = steps[i];
+      window.location.href = step.status ? '../devis.html?status=' + step.status : '../clients.html';
+    });
+  });
+}
+
+function renderTeam(t) {
+  const el = document.getElementById('db-team');
+  let html = '<div class="db-team-summary">' +
+    '<div class="db-team-stat"><div class="db-team-stat-val mono-num">' + t.employesActifsCount + '</div><div class="db-team-stat-lbl">Actifs</div></div>' +
+    '<div class="db-team-stat"><div class="db-team-stat-val mono-num">' + t.planifiesAujourdhuiCount + '</div><div class="db-team-stat-lbl">Planifiés aujourd\'hui</div></div>' +
+    '<div class="db-team-stat"><div class="db-team-stat-val mono-num">' + t.nonAssignees + '</div><div class="db-team-stat-lbl">Non assignées</div></div>' +
+  '</div>';
+  if (!t.parEmploye.length) {
+    html += '<div class="db-empty">Aucun employé actif. <a href="../equipe.html" style="color:var(--emerald);font-weight:600;">Ajouter →</a></div>';
+  } else {
+    html += t.parEmploye.map(e => (
+      '<div class="db-team-row" data-eid="' + e.id + '">' +
+        '<span class="team-dot ' + e.charge + '"></span>' +
+        '<span class="team-name">' + esc(e.nom) + '</span>' +
+        '<span class="team-meta">' + e.missionsAujourdhui + ' mission' + (e.missionsAujourdhui > 1 ? 's' : '') + (e.minutes ? ' · ' + Math.round(e.minutes / 60 * 10) / 10 + 'h' : '') + '</span>' +
+      '</div>'
+    )).join('');
+  }
+  if (t.conflicts.length) {
+    html += t.conflicts.map(c => '<div class="db-team-conflict">⚠ Conflit horaire pour ' + esc(c.employeNom || 'un employé') + ' (' + esc(c.a.time) + '–' + esc(c.a.heureFin) + ' / ' + esc(c.b.time) + ')</div>').join('');
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('[data-eid]').forEach(row => row.addEventListener('click', () => { window.location.href = '../employe-fiche.html?id=' + row.dataset.eid; }));
+}
+
+function renderClientAlerts(alerts) {
+  const el = document.getElementById('db-client-alerts');
+  if (!alerts.length) { el.innerHTML = '<div class="db-empty">Aucun client ne nécessite d\'attention particulière.</div>'; return; }
+  el.innerHTML = alerts.map(a => (
+    '<div class="db-client-alert" data-cid="' + a.clientId + '">' +
+      '<div><div class="ca-name">' + esc(a.clientName) + '</div><div class="ca-reasons">' + esc(a.reasons.join(' · ')) + '</div></div>' +
+    '</div>'
+  )).join('');
+  el.querySelectorAll('[data-cid]').forEach(row => row.addEventListener('click', () => { window.location.href = '../client-fiche.html?id=' + row.dataset.cid; }));
 }
 
 function renderRecos(recos) {
+  const panel = document.getElementById('db-reco-panel');
   const el = document.getElementById('db-recos');
-  if (!recos.length) { el.innerHTML = '<div class="db-empty">Aucune recommandation pour le moment.</div>'; return; }
-  el.innerHTML = recos.slice(0, 2).map(r => (
+  if (!recos.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  el.innerHTML = recos.slice(0, 3).map(r => (
     '<div class="db-reco">' +
       '<div class="db-reco-title">' + esc(r.title) + '</div>' +
       '<div class="db-reco-desc">' + esc(r.desc) + '</div>' +
-      '<a class="db-reco-cta" href="' + esc(r.href || '#') + '">' + esc(r.cta) + ' →</a>' +
+      '<a class="db-reco-cta" href="' + esc(r.href) + '">' + esc(r.cta) + ' →</a>' +
     '</div>'
   )).join('');
 }
 
-function renderSecondary(vm) {
-  const el = document.getElementById('db-secondary');
-  el.innerHTML = [
-    { label: 'Clients actifs', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.list('clients').filter(c => c.statut === 'actif').length : 3 },
-    { label: 'Interventions (mois)', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.metrics().interventionsMois : 8 },
-    { label: 'Équipe active', value: (window.SebaDB && SebaDB.hasData()) ? SebaDB.list('employes').filter(e => e.actif).length : 2 },
-    { label: 'Synchronisation', value: vm.syncStatus.syncing ? 'En cours' : (vm.syncStatus.pending > 0 ? vm.syncStatus.pending + ' en attente' : (vm.syncStatus.failed > 0 ? vm.syncStatus.failed + ' échec(s)' : 'À jour')) },
-  ].map(s => '<div class="db-secondary-item"><div class="db-secondary-label">' + s.label + '</div><div class="db-secondary-value">' + s.value + '</div></div>').join('');
+function renderActivity(items) {
+  const el = document.getElementById('db-activity');
+  if (!items.length) { el.innerHTML = '<div class="db-empty">Aucune activité récente.</div>'; return; }
+  el.innerHTML = items.map(j => (
+    '<div class="db-activity-row" data-href="' + esc(j.href || '#') + '">' +
+      '<span class="act-time mono-num">' + new Date(j.ts).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + new Date(j.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '</span>' +
+      '<span class="act-label">' + esc(j.label) + '</span>' +
+    '</div>'
+  )).join('');
+  el.querySelectorAll('[data-href]').forEach(row => row.addEventListener('click', () => { if (row.dataset.href !== '#') window.location.href = '../' + row.dataset.href.replace(/^\.\.\//, ''); }));
+}
+
+function renderMobileCurrentMission(vm) {
+  const el = document.getElementById('mobile-current-mission');
+  const mission = vm.todayInterventions.find(i => i.statutKey === 'en-cours') || vm.todayInterventions.find(i => !i.done) || null;
+  if (!mission) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="db-panel" style="margin-bottom:16px;border-color:var(--emerald);">' +
+    '<div class="db-panel-title"><span>' + (mission.statutKey === 'en-cours' ? 'Mission en cours' : 'Prochaine mission') + '</span></div>' +
+    '<div class="db-job-title">' + esc(mission.clientName || 'Client') + ' — ' + esc(mission.service) + '</div>' +
+    '<div class="db-job-sub">' + esc(mission.time || '') + (mission.adresse ? ' · ' + esc(mission.adresse) : '') + '</div>' +
+  '</div>';
 }
 
 function renderErrorBanner(msg) {
@@ -550,29 +954,109 @@ function renderErrorBanner(msg) {
   el.style.display = 'block';
 }
 
-function renderDashboard(biz) {
-  const nom = biz.nom || 'Mon entreprise';
-  const h = new Date().getHours();
-  const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
-  document.getElementById('db-greeting').textContent = salut + ', ' + nom + ' !';
-  document.getElementById('db-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const av = document.getElementById('avatar');
-  av.style.background = biz.couleur || 'var(--emerald)';
-  av.textContent = nom.charAt(0).toUpperCase();
+/* ═══════════════════════════════════════════════════════════════
+   ÉTAT + ORCHESTRATION
+═══════════════════════════════════════════════════════════════ */
+let _biz = null;
+let _period = 'month';
+let _customFrom = null, _customTo = null;
+let _prefetchedMessages = [];
+let _prefetchedRequests = [];
+let _lastVm = null;
 
+function currentSyncStatus() {
+  try { if (window.SebaDB && typeof SebaDB.syncStatus === 'function') return SebaDB.syncStatus(); } catch (e) {}
+  return { pending: 0, failed: 0, syncing: false };
+}
+
+function collectState(biz) {
+  const hasRealData = !!(window.SebaDB && SebaDB.hasData());
+  if (hasRealData) {
+    return {
+      biz,
+      clients: SebaDB.list('clients'), devis: SebaDB.list('devis'), factures: SebaDB.list('factures'),
+      interventions: SebaDB.list('interventions'), employes: SebaDB.list('employes'), journal: SebaDB.journal(50),
+      messages: _prefetchedMessages, clientRequests: _prefetchedRequests, syncStatus: currentSyncStatus(),
+      hasRealData: true,
+    };
+  }
+  const secteur = biz.secteur || 'autre';
+  const demo = DASHBOARD_DEMO_DATA[secteur] || DASHBOARD_DEMO_DATA.autre;
+  const todayISO = todayISOLocal();
+  return {
+    biz,
+    clients: [], devis: [], factures: [],
+    interventions: demo.jobs.map((j, i) => ({ id: 'demo-' + i, date: todayISO, time: j.time, clientName: j.client, service: j.service, employeName: j.employe, employeId: j.employe ? 'demo-emp-' + i : null, done: j.statut === 'terminee' })),
+    employes: [], journal: [], messages: [], clientRequests: [], syncStatus: currentSyncStatus(),
+    hasRealData: false,
+  };
+}
+
+async function refreshAll() {
   try {
     renderErrorBanner(null);
-    const vm = buildDashboardViewModel({ biz });
-    renderAlerts(vm.urgentActions);
-    renderJobs(vm.todayJobs);
+    const state = collectState(_biz);
+    window.__dashSym = state.biz.deviseSymbole || '€';
+    const vm = buildOwnerDashboardViewModel(state, { period: _period, customFrom: _customFrom, customTo: _customTo });
+    _lastVm = vm;
+    renderAlerts(vm.priorityActions);
+    renderJobs(vm.todayInterventions, state.employes.filter(e => e.actif));
     renderFinance(vm.financeSummary, vm.sym);
+    renderForecastAndWatchlist(vm);
     renderPipeline(vm.salesPipeline);
+    renderTeam(vm.teamCapacity);
+    renderClientAlerts(vm.clientAlerts);
     renderRecos(vm.recommendations);
-    renderSecondary(vm);
+    renderActivity(vm.recentActivity);
+    renderMobileCurrentMission(vm);
+    renderConnState();
   } catch (err) {
     console.error('[dashboard] rendu impossible :', err);
     renderErrorBanner('Impossible de charger certaines données du tableau de bord. Réessayez ou rechargez la page.');
   }
+}
+
+async function prefetchAsync() {
+  try { if (window.SebaDB && SebaDB.messages) _prefetchedMessages = await SebaDB.messages.list({}); } catch (e) { _prefetchedMessages = []; }
+  try { if (window.SebaDB && SebaDB.clientPortal && SebaDB.clientPortal.requests) _prefetchedRequests = await SebaDB.clientPortal.requests.list(); } catch (e) { _prefetchedRequests = []; }
+}
+
+function renderDashboard(biz) {
+  _biz = biz;
+  const h = new Date().getHours();
+  const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  document.getElementById('db-greeting').textContent = salut + ', ' + (biz.nom || 'Mon entreprise') + ' !';
+  document.getElementById('db-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const av = document.getElementById('avatar');
+  av.style.background = biz.couleur || 'var(--emerald)';
+  av.textContent = (biz.nom || 'M').charAt(0).toUpperCase();
+  refreshAll();
+}
+
+function renderConnState() {
+  const dot = document.getElementById('cmd-sync-dot');
+  const label = document.getElementById('cmd-sync-label');
+  const retry = document.getElementById('cmd-sync-retry');
+  if (!navigator.onLine) { dot.className = 'cmd-sync-dot failed'; label.textContent = 'Hors ligne'; retry.style.display = 'none'; return; }
+  const s = currentSyncStatus();
+  if (s.failed > 0) { dot.className = 'cmd-sync-dot failed'; label.textContent = s.failed + ' échec(s) de synchro'; retry.style.display = 'inline'; return; }
+  if (s.syncing || s.pending > 0) { dot.className = 'cmd-sync-dot pending'; label.textContent = s.pending > 0 ? s.pending + ' en attente' : 'Synchronisation…'; retry.style.display = 'none'; return; }
+  dot.className = 'cmd-sync-dot'; label.textContent = 'À jour'; retry.style.display = 'none';
+}
+function retrySyncFromBar() { if (window.SebaDB) SebaDB.retrySyncNow(); setTimeout(refreshAll, 900); }
+window.addEventListener('online', renderConnState);
+window.addEventListener('offline', renderConnState);
+
+/* ── Filtre de période ── */
+function onPeriodChange() {
+  _period = document.getElementById('cmd-period').value;
+  document.getElementById('cmd-custom-range').classList.toggle('open', _period === 'custom');
+  if (_period !== 'custom') refreshAll();
+}
+function onCustomRangeChange() {
+  _customFrom = document.getElementById('cmd-custom-from').value || null;
+  _customTo = document.getElementById('cmd-custom-to').value || null;
+  if (_customFrom && _customTo) refreshAll();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -585,7 +1069,7 @@ if (!biz || !biz.secteur) {
   document.getElementById('empty-state').style.display = 'block';
   document.getElementById('dash-content').style.display = 'none';
 } else {
-  renderDashboard(biz);
+  prefetchAsync().then(() => renderDashboard(biz));
   if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
 }
 
@@ -608,10 +1092,78 @@ document.addEventListener('click', () => {
   document.getElementById('user-menu').classList.remove('open');
   document.getElementById('db-secondary-menu').classList.remove('open');
 });
+
+/* ── Recherche globale ── */
+let _searchActiveIdx = -1;
+let _searchResults = [];
+function openSearch() {
+  document.getElementById('cmd-search-overlay').classList.add('open');
+  const inp = document.getElementById('cmd-search-input');
+  inp.value = '';
+  renderSearchResults();
+  setTimeout(() => inp.focus(), 30);
+}
+function closeSearch() {
+  document.getElementById('cmd-search-overlay').classList.remove('open');
+}
+function searchIcon(kind) { return { client: '👤', devis: '📄', facture: '🧾', intervention: '🗓', employe: '🧑‍🔧' }[kind] || '•'; }
+function renderSearchResults() {
+  const q = document.getElementById('cmd-search-input').value.trim().toLowerCase();
+  const el = document.getElementById('cmd-search-results');
+  if (!window.SebaDB || !SebaDB.hasData()) { el.innerHTML = '<div class="cmd-search-empty">Aucune donnée à rechercher pour le moment.</div>'; _searchResults = []; return; }
+  const groups = [
+    { kind: 'client', label: 'Clients', items: SebaDB.list('clients').map(c => ({ id: c.id, title: c.prenom + ' ' + c.nom, sub: c.contact || c.email || '', href: '../client-fiche.html?id=' + c.id })) },
+    { kind: 'devis', label: 'Devis', items: SebaDB.list('devis').map(d => ({ id: d.id, title: d.num + ' — ' + d.clientName, sub: d.service || '', href: '../devis.html?open=' + encodeURIComponent(d.num) })) },
+    { kind: 'facture', label: 'Factures', items: SebaDB.list('factures').map(f => ({ id: f.id, title: f.num + ' — ' + f.clientName, sub: f.service || '', href: '../factures.html?highlight=' + f.id })) },
+    { kind: 'intervention', label: 'Interventions', items: SebaDB.list('interventions').map(i => ({ id: i.id, title: (i.clientName || 'Client') + ' — ' + (i.service || ''), sub: (i.date || '') + ' ' + (i.time || ''), href: '../planning.html?date=' + i.date })) },
+    { kind: 'employe', label: 'Employés', items: SebaDB.list('employes').map(e => ({ id: e.id, title: e.prenom + ' ' + e.nom, sub: e.role || '', href: '../employe-fiche.html?id=' + e.id })) },
+  ];
+  const flat = [];
+  let html = '';
+  groups.forEach(g => {
+    const matches = q ? g.items.filter(it => (it.title + ' ' + it.sub).toLowerCase().includes(q)) : g.items.slice(0, 5);
+    if (!matches.length) return;
+    html += '<div class="cmd-result-group-label">' + g.label + '</div>';
+    matches.slice(0, 8).forEach(it => {
+      const idx = flat.length;
+      flat.push(it);
+      html += '<div class="cmd-result-row" data-idx="' + idx + '"><span class="cmd-result-icon">' + searchIcon(g.kind) + '</span><div class="cmd-result-main"><div class="cmd-result-title">' + esc(it.title) + '</div><div class="cmd-result-sub">' + esc(it.sub) + '</div></div></div>';
+    });
+  });
+  _searchResults = flat;
+  _searchActiveIdx = flat.length ? 0 : -1;
+  el.innerHTML = html || '<div class="cmd-search-empty">Aucun résultat pour « ' + esc(q) + ' ».</div>';
+  el.querySelectorAll('.cmd-result-row').forEach((row, i) => {
+    if (i === 0) row.classList.add('active');
+    row.addEventListener('click', () => { window.location.href = flat[i].href; });
+  });
+}
+function handleSearchKeydown(e) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!_searchResults.length) return;
+    _searchActiveIdx = (e.key === 'ArrowDown') ? Math.min(_searchActiveIdx + 1, _searchResults.length - 1) : Math.max(_searchActiveIdx - 1, 0);
+    document.querySelectorAll('.cmd-result-row').forEach((r, i) => r.classList.toggle('active', i === _searchActiveIdx));
+    const active = document.querySelector('.cmd-result-row.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    if (_searchActiveIdx >= 0 && _searchResults[_searchActiveIdx]) window.location.href = _searchResults[_searchActiveIdx].href;
+  }
+}
 document.addEventListener('keydown', (e) => {
+  const overlayOpen = document.getElementById('cmd-search-overlay').classList.contains('open');
   if (e.key === 'Escape') {
+    if (overlayOpen) closeSearch();
     document.getElementById('user-menu').classList.remove('open');
     document.getElementById('db-secondary-menu').classList.remove('open');
+    document.querySelectorAll('.db-job-expand.open').forEach(b => b.classList.remove('open'));
+    return;
+  }
+  if (overlayOpen) return;
+  const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+  if ((e.key === '/' && !typing) || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
+    e.preventDefault();
+    openSearch();
   }
 });
 

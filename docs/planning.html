@@ -282,7 +282,19 @@
   btnPrev.addEventListener('click', () => renderWeek(weekOffset - 1));
   btnNext.addEventListener('click', () => renderWeek(weekOffset + 1));
 
-  renderWeek(0);
+  /* Semaine initiale depuis l'URL (dashboard.html -> planning.html?date=
+     YYYY-MM-DD) -- convention introduite ici (aucune lecture de query param
+     avant ce correctif). Date invalide/absente : comportement par defaut
+     inchange (semaine courante). */
+  (function initialWeekFromUrl() {
+    const dateParam = new URLSearchParams(location.search).get('date');
+    if (!dateParam || !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) { renderWeek(0); return; }
+    const target = new Date(dateParam + 'T00:00:00');
+    if (isNaN(target.getTime())) { renderWeek(0); return; }
+    const targetMonday = addDays(target, -((target.getDay() + 6) % 7));
+    const diffWeeks = Math.round((targetMonday.getTime() - BASE_MONDAY.getTime()) / (7 * 864e5));
+    renderWeek(diffWeeks);
+  })();
 
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   try {
@@ -456,7 +468,11 @@
     const clientName = sel.options[sel.selectedIndex].text;
     const employeId = empSel.value || null;
     const employeName = employeId ? empSel.options[empSel.selectedIndex].text : null;
-    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false, employeId, employeName });
+    // Duree deja saisie dans le formulaire (ss-duration) mais jusqu'ici
+    // jamais transmise a SebaDB.create -- aucune intervention n'avait de
+    // duree reelle, empechant tout calcul d'heure de fin/charge fiable.
+    const duree = document.getElementById('ss-duration').value || null;
+    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false, employeId, employeName, duree });
     SebaDB.log('intervention', 'Intervention planifiée — ' + clientName + ' · ' + service + (employeName ? ' · ' + employeName : ''), 'planning.html');
     closeSheet();
     renderWeek(weekOffset);
