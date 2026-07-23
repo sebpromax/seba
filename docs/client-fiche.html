@@ -435,6 +435,10 @@
             <button class="btn-em" onclick="definirEmailClient()">Enregistrer</button>
           </div>
           <p class="msg-note" id="client-email-status" style="margin-top:8px;"></p>
+          <div id="invitation-status-row" style="display:none;margin-top:6px;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="invitation-status-badge" class="msg-note"></span>
+            <button type="button" id="invitation-retry-btn" class="btn-em" style="display:none;" onclick="reessayerInvitationClient()">Réessayer l'envoi</button>
+          </div>
         </div>
 
         <!-- DEMANDES (Espace Client) -->
@@ -684,6 +688,7 @@
     renderDemandes();
     const emailInput = document.getElementById('client-email-input');
     if (emailInput) emailInput.value = client.email || '';
+    if (client.email) renderInvitationStatus();
 
     // Historique des interventions.
     const histBody = document.querySelectorAll('.panel table tbody')[0];
@@ -881,8 +886,12 @@
   }
 
   // Email de connexion -- SebaDB.update() classique pour la fiche + provision()
-  // pour inviter (auth.admin.inviteUserByEmail, le client choisit lui-meme son
-  // mot de passe). Meme pattern que definirEmailEmploye() sur employe-fiche.html.
+  // pour inviter. Meme pattern que definirEmailEmploye() sur employe-fiche.html.
+  //
+  // fix/invitation-delivery (2026-07-23) : le succes n'est plus affiche des
+  // que l'appel HTTP reussit -- provision() renvoie desormais le resultat
+  // REEL de l'envoi (email_status 'sent'|'failed'), jamais un faux message
+  // de succes quand Resend refuse le message.
   async function definirEmailClient() {
     const inp = document.getElementById('client-email-input');
     const status = document.getElementById('client-email-status');
@@ -897,14 +906,72 @@
     status.style.color = '';
     SebaDB.update('clients', _id, { email });
     const prov = await SebaDB.clientPortal.provision(_id, email);
-    if (prov.ok) {
-      status.textContent = prov.already_provisioned ? 'Email enregistré (accès déjà existant).' : 'Email enregistré, invitation envoyée.';
-      status.style.color = 'var(--emerald)';
-      SebaDB.log('client', 'Email de connexion défini — ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
-    } else {
+    if (!prov.ok) {
       status.textContent = 'Email enregistré, mais accès non créé : ' + (prov.error || 'erreur inconnue.');
       status.style.color = 'var(--danger-text)';
+      return;
     }
+    if (prov.already_provisioned) {
+      status.textContent = 'Email enregistré (accès déjà existant).';
+      status.style.color = 'var(--emerald)';
+    } else if (prov.email_status === 'sent') {
+      status.textContent = 'Email enregistré, invitation envoyée.';
+      status.style.color = 'var(--emerald)';
+    } else {
+      status.textContent = 'Email enregistré, mais l\'envoi de l\'invitation a échoué : ' + (prov.email_error || 'erreur inconnue.');
+      status.style.color = 'var(--danger-text)';
+    }
+    SebaDB.log('client', 'Email de connexion défini — ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
+    renderInvitationStatus();
+  }
+
+  /* Statut d'envoi affiché en continu (pas seulement juste après un clic
+     "Enregistrer") -- lu depuis invitation_log via
+     SebaDB.clientPortal.invitationStatus(). Affiche aussi le bouton
+     "Réessayer l'envoi" uniquement quand la dernière tentative a échoué. */
+  async function renderInvitationStatus() {
+    if (!_id || !window.SebaDB) return;
+    const row = document.getElementById('invitation-status-row');
+    const badge = document.getElementById('invitation-status-badge');
+    const retryBtn = document.getElementById('invitation-retry-btn');
+    const info = await SebaDB.clientPortal.invitationStatus(_id);
+    if (!info) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+    if (info.status === 'sent') {
+      badge.textContent = 'Statut : Invitation envoyée';
+      badge.style.color = 'var(--emerald)';
+      retryBtn.style.display = 'none';
+    } else if (info.status === 'failed') {
+      badge.textContent = 'Statut : Échec (' + (info.error_message || 'erreur inconnue') + ')';
+      badge.style.color = 'var(--danger-text)';
+      retryBtn.style.display = 'inline-block';
+    } else {
+      badge.textContent = 'Statut : En attente';
+      badge.style.color = '';
+      retryBtn.style.display = 'none';
+    }
+  }
+
+  async function reessayerInvitationClient() {
+    const retryBtn = document.getElementById('invitation-retry-btn');
+    const inp = document.getElementById('client-email-input');
+    const status = document.getElementById('client-email-status');
+    if (!_id || !window.SebaDB || retryBtn.disabled) return;
+    retryBtn.disabled = true;
+    retryBtn.textContent = 'Envoi…';
+    status.textContent = 'Nouvelle tentative d\'envoi…';
+    status.style.color = '';
+    const prov = await SebaDB.clientPortal.provision(_id, inp.value.trim().toLowerCase(), true);
+    retryBtn.disabled = false;
+    retryBtn.textContent = 'Réessayer l\'envoi';
+    if (prov.ok && prov.email_status === 'sent') {
+      status.textContent = 'Invitation renvoyée avec succès.';
+      status.style.color = 'var(--emerald)';
+    } else {
+      status.textContent = (prov.email_error || prov.error || 'Échec de la nouvelle tentative.');
+      status.style.color = 'var(--danger-text)';
+    }
+    renderInvitationStatus();
   }
 
   /* ── Messagerie (journal patron + reponses du client depuis son Espace

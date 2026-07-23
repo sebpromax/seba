@@ -52,6 +52,13 @@ migrations/2026-07-23-employee-portal-missions.sql
 # close_my_intervention(...) (baseline, sections 35/36) -- ajouts purs.
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-23-invitation-delivery-log.sql
+# Statut d'envoi persistant des invitations client/employé (table
+# invitation_log : pending/sent/failed, resend_id, error_message normalisé,
+# historique append-only par tentative). Ecriture service_role uniquement
+# (Edge Functions), lecture RLS limitée au patron propriétaire du compte.
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════

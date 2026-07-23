@@ -740,7 +740,14 @@
        seba_client_session_demo -- trois roles "connectes" en demo sur le
        meme navigateur ne doivent jamais se marcher dessus. ── */
     employeePortal: {
-      async provision(employeId, email) {
+      /* fix/invitation-delivery (2026-07-23) : retourne desormais le
+         resultat REEL de l'envoi (email_status 'sent'|'failed' + email_error),
+         jamais un simple {ok:true} qui ne refletait que "l'appel HTTP a
+         reussi" -- succes/echec d'ENVOI sont deux choses distinctes (voir
+         employe-provision.ts). retry:true renvoie un nouveau lien a un
+         compte deja provisionne (bouton "Reessayer l'envoi"), sans jamais
+         creer un second lien employe_accounts. */
+      async provision(employeId, email, retry) {
         email = (email || '').trim().toLowerCase();
         if (!email) return { ok: false, error: 'Email requis.' };
         if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
@@ -749,11 +756,11 @@
             const res = await fetch(cfg.supabaseUrl + '/functions/v1/employe-provision', {
               method: 'POST',
               headers: adapter._headers({ 'Content-Type': 'application/json' }),
-              body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, email }),
+              body: JSON.stringify({ account: adapter._accountId(), employe_id: employeId, email, retry: !!retry }),
             });
             const respBody = await res.json().catch(() => ({}));
             if (!res.ok) return { ok: false, error: respBody.error || ('Erreur serveur (HTTP ' + res.status + ')') };
-            return { ok: true };
+            return respBody;
           } catch (e) {
             return { ok: false, error: 'Connexion impossible : ' + e.message };
           }
@@ -763,7 +770,27 @@
         if (!emp) return { ok: false, error: 'Employé introuvable.' };
         emp.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- simule un mot de passe deja choisi (pas d'email reel envoye en local)
         persist();
-        return { ok: true };
+        return { ok: true, already_provisioned: false, email_status: 'sent' };
+      },
+
+      /* Dernier statut d'envoi connu pour cet employe (lecture RLS directe
+         de invitation_log, reservee au patron proprietaire du compte --
+         voir migrations/2026-07-23-invitation-delivery-log.sql). Utilise
+         par employe-fiche.html pour afficher le vrai statut au chargement
+         de la page, pas seulement juste apres un clic "Enregistrer". */
+      async invitationStatus(employeId) {
+        if (!hasSupabase || !adapter._hasSession(window.SEBA_CONFIG)) return null;
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const url = cfg.supabaseUrl + '/rest/v1/invitation_log?select=status,error_message,attempted_at'
+            + '&account=eq.' + encodeURIComponent(adapter._accountId())
+            + '&invitation_type=eq.employe&target_id=eq.' + encodeURIComponent(employeId)
+            + '&order=attempted_at.desc&limit=1';
+          const res = await fetch(url, { headers: adapter._headers() });
+          if (!res.ok) return null;
+          const rows = await res.json();
+          return rows && rows[0] ? rows[0] : null;
+        } catch (e) { return null; }
       },
 
       async login(email, password) {
@@ -978,7 +1005,14 @@
          appelle). Appelee par clients.html (creation) et
          client-fiche.html (retrofit si l'email est ajoute apres coup)
          des qu'un email existe. */
-      async provision(clientId, email) {
+      /* fix/invitation-delivery (2026-07-23) : retourne desormais le
+         resultat REEL de l'envoi (email_status 'sent'|'failed' + email_error),
+         jamais un simple {ok:true} qui ne refletait que "l'appel HTTP a
+         reussi" -- succes/echec d'ENVOI sont deux choses distinctes (voir
+         client-provision.ts). retry:true renvoie un nouveau lien a un
+         compte deja provisionne (bouton "Reessayer l'envoi"), sans jamais
+         creer un second lien client_accounts. */
+      async provision(clientId, email, retry) {
         email = (email || '').trim().toLowerCase();
         if (!email) return { ok: false, error: 'Email requis.' };
         if (hasSupabase && adapter._hasSession(window.SEBA_CONFIG)) {
@@ -987,11 +1021,11 @@
             const res = await fetch(cfg.supabaseUrl + '/functions/v1/client-provision', {
               method: 'POST',
               headers: adapter._headers({ 'Content-Type': 'application/json' }),
-              body: JSON.stringify({ account: adapter._accountId(), client_id: clientId, email }),
+              body: JSON.stringify({ account: adapter._accountId(), client_id: clientId, email, retry: !!retry }),
             });
             const respBody = await res.json().catch(() => ({}));
             if (!res.ok) return { ok: false, error: respBody.error || ('Erreur serveur (HTTP ' + res.status + ')') };
-            return { ok: true };
+            return respBody;
           } catch (e) {
             return { ok: false, error: 'Connexion impossible : ' + e.message };
           }
@@ -1001,7 +1035,27 @@
         if (!client) return { ok: false, error: 'Client introuvable.' };
         client.pwLocal = '1234'; // clair, mode demo/file:// uniquement -- simule un mot de passe deja choisi (pas d'email reel envoye en local)
         persist();
-        return { ok: true };
+        return { ok: true, already_provisioned: false, email_status: 'sent' };
+      },
+
+      /* Dernier statut d'envoi connu pour ce client (lecture RLS directe de
+         invitation_log, reservee au patron proprietaire du compte -- voir
+         migrations/2026-07-23-invitation-delivery-log.sql). Utilise par
+         client-fiche.html pour afficher le vrai statut au chargement de la
+         page, pas seulement juste apres un clic "Enregistrer". */
+      async invitationStatus(clientId) {
+        if (!hasSupabase || !adapter._hasSession(window.SEBA_CONFIG)) return null;
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const url = cfg.supabaseUrl + '/rest/v1/invitation_log?select=status,error_message,attempted_at'
+            + '&account=eq.' + encodeURIComponent(adapter._accountId())
+            + '&invitation_type=eq.client&target_id=eq.' + encodeURIComponent(clientId)
+            + '&order=attempted_at.desc&limit=1';
+          const res = await fetch(url, { headers: adapter._headers() });
+          if (!res.ok) return null;
+          const rows = await res.json();
+          return rows && rows[0] ? rows[0] : null;
+        } catch (e) { return null; }
       },
 
       async login(email, password) {
