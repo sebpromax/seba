@@ -841,6 +841,64 @@
         } catch (e) { return { ok: false, error: e.message }; }
       },
 
+      /* Toutes les missions assignees a l'employe connecte, TOUTES dates
+         confondues (contrairement a interventionsForDate ci-dessus, scopee
+         a un seul jour) -- dashboard employe (mission en cours/prochaine/
+         en retard) et liste "Missions" completes, espace-terrain.html.
+         RPC dediee get_my_employee_interventions() (SANS argument, surcharge
+         de la version datee -- migrations/2026-07-23-employee-portal-missions.sql),
+         enrichie cote serveur de l'adresse du client (seul champ ajoute,
+         l'employe n'ayant sinon aucun moyen de lire state.clients). Retourne
+         toujours un tableau (jamais {ok,...} ici, RPC recente qui suit le
+         contrat des RPC clientPortal.devis()/factures()/interventions()). */
+      async interventions() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_employee_interventions', {});
+          return res.error ? [] : (res.data || []);
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return [];
+          const clientsById = {}; state.clients.forEach(c => { clientsById[c.id] = c; });
+          return state.interventions
+            .filter(i => i.employeId === demo.employeId)
+            .map(i => Object.assign({}, i, { adresse: (clientsById[i.clientId] || {}).adresse || '' }));
+        } catch (e) { return []; }
+      },
+
+      /* Changement de statut simple (Demarrer -> en_cours, Terminer ->
+         terminee), distinct de closeIntervention ci-dessous (rapport+photo,
+         flux plus lourd deja cable) -- RPC dediee
+         update_my_employee_intervention_status, seuls 'en_cours'/'terminee'
+         acceptes cote serveur (jamais un statut arbitraire envoye par le
+         navigateur, verifie a nouveau ici cote client par simple prudence
+         UX, la vraie garantie est serveur). */
+      async updateStatus(interventionId, status) {
+        if (status !== 'en_cours' && status !== 'terminee') return { ok: false, error: 'Statut non autorisé.' };
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('update_my_employee_intervention_status', {
+            p_intervention_id: interventionId, p_status: status,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const interv = state.interventions.find(i => i.id === interventionId);
+          if (!interv) return { ok: false, error: 'Intervention inconnue.' };
+          if (interv.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+          interv.statut = status;
+          interv.done = status === 'terminee';
+          persist();
+          return { ok: true, intervention: interv };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
       /* Clôture de mission (espace-terrain.html, "Terminer la mission",
          2026-07-20) -- l'employe n'a AUCUN droit d'ecriture direct ni sur
          seba_state ni sur client_requests (memes RLS que interventionsForDate

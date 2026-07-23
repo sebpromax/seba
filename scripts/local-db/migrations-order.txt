@@ -43,6 +43,15 @@ migrations/2026-07-23-client-portal-data-rls.sql
 # patron), sans policy SELECT directe possible sans fuiter tout le patron.
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-23-employee-portal-missions.sql
+# Portail employé : ajoute get_my_employee_interventions() (sans argument,
+# toutes dates, enrichi de l'adresse client) et
+# update_my_employee_intervention_status(p_intervention_id, p_status)
+# (en_cours/terminee uniquement, verrouillage FOR UPDATE, ne touche que le
+# statut). N'altère pas get_my_employee_interventions(_date text) ni
+# close_my_intervention(...) (baseline, sections 35/36) -- ajouts purs.
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
