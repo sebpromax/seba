@@ -436,13 +436,25 @@ async function buildClientPortalViewModel(currentUser) {
     : [];
   const unread = messages.filter(m => m.expediteurRole !== 'client' && !m.luParClient).length;
 
-  // Données locales (mode démo/local uniquement -- un client cloud réel
-  // n'a pas accès en lecture à devis/factures/interventions du patron,
-  // RLS auth.uid()=user_id du patron -- voir supabase-schema.sql. Pas de
-  // mock de repli ici : une vraie donnée absente reste simplement vide,
-  // jamais remplacée par une fausse valeur.
+  // Devis/factures/interventions : en session cloud reelle, passe par les
+  // RPC dediees (get_my_client_devis/factures/interventions -- migrations/
+  // 2026-07-23-client-portal-data-rls.sql) qui filtrent cote serveur par
+  // account ET client_id, RLS-safe. En mode local/demo, lit directement
+  // SebaDB.list() et filtre par clientId (aucune RPC disponible en local).
+  // Pas de mock de repli : une vraie donnee absente reste simplement vide,
+  // jamais remplacee par une fausse valeur.
   let quotes = [], invoices = [], nextIntervention = null;
-  if (!hasRemoteSession()) {
+  if (hasRemoteSession()) {
+    try {
+      quotes = await SebaDB.clientPortal.devis() || [];
+      invoices = await SebaDB.clientPortal.factures() || [];
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const upcoming = (await SebaDB.clientPortal.interventions() || [])
+        .filter(i => !i.done && i.date >= todayStr)
+        .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+      nextIntervention = upcoming[0] || null;
+    } catch (e) { /* RPC indisponible -- reste vide, honnete */ }
+  } else {
     try {
       quotes = (SebaDB.list('devis') || []).filter(d => d.clientId === clientId);
       invoices = (SebaDB.list('factures') || []).filter(f => f.clientId === clientId);

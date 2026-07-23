@@ -36,6 +36,13 @@ migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql
 # et rend create_profile_and_company idempotente/sûre en cas d'appel concurrent.
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-23-client-portal-data-rls.sql
+# Portail client : ajoute get_my_client_devis()/get_my_client_factures()/
+# get_my_client_interventions() (RPC SECURITY DEFINER, lecture seule) --
+# devis/factures/interventions vivent dans seba_state.state (JSONB par
+# patron), sans policy SELECT directe possible sans fuiter tout le patron.
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
