@@ -998,6 +998,39 @@
         } catch (e) { return { ok: false, error: e.message }; }
       },
 
+      /* Devis/factures/interventions du client connecte -- jamais lus
+         directement depuis seba_state en session cloud reelle (RLS refuse,
+         meme raison que profile() ci-dessus : ces 3 entites vivent dans le
+         blob JSONB du PATRON). Chacune passe par sa RPC SECURITY DEFINER
+         dediee (get_my_client_devis/factures/interventions,
+         migrations/2026-07-23-client-portal-data-rls.sql), qui retrouve le
+         rattachement via client_accounts et filtre explicitement par
+         account ET client_id -- jamais tout le blob du patron. En mode
+         local/demo (pas de session Supabase reelle), retourne null : le
+         appelant lit alors SebaDB.list() directement et filtre lui-meme
+         par clientId (chemin deja existant, inchange). */
+      async devis() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_devis', {});
+          return res.error ? [] : (res.data || []);
+        }
+        return null;
+      },
+      async factures() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_factures', {});
+          return res.error ? [] : (res.data || []);
+        }
+        return null;
+      },
+      async interventions() {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_interventions', {});
+          return res.error ? [] : (res.data || []);
+        }
+        return null;
+      },
+
       /* Auto-service : le client change son propre mot de passe depuis
          client-espace.html, a tout moment (miroir de
          employeePortal.setPassword ci-dessus). */
