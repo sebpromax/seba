@@ -4,445 +4,222 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>if(typeof extDomain==='undefined')window.extDomain='';</script>
-<title>Seba — Développez votre activité en toute confiance.</title>
+<title>Seba — Gérez toute votre entreprise de services depuis un seul endroit.</title>
 <link rel="canonical" href="https://sebpromax.github.io/seba/index.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Seba">
-<meta property="og:title" content="Seba — Devis, factures, planning, clients : toute votre activité au même endroit">
-<meta property="og:description" content="Seba remplace vos tableurs, votre agenda et vos relances par un seul outil. Créez un devis, planifiez, encaissez — sans jamais ressaisir.">
+<meta property="og:title" content="Seba — Clients, planning, devis, factures et équipes réunis dans un seul outil">
+<meta property="og:description" content="Seba centralise votre activité de terrain : clients, planning, devis, factures et équipes. Simple à configurer, pensé pour le terrain.">
 <meta property="og:url" content="https://sebpromax.github.io/seba/index.html">
 <meta property="og:image" content="https://sebpromax.github.io/seba/icon-512.png">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Seba","url":"https://sebpromax.github.io/seba/","logo":"https://sebpromax.github.io/seba/icon-512.png"},{"@type":"SoftwareApplication","name":"Seba","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://sebpromax.github.io/seba/","description":"Logiciel de gestion pour entreprises de terrain : clients, devis, factures, planning et équipe centralisés dans un seul outil.","offers":{"@type":"Offer","price":"19","priceCurrency":"EUR","url":"https://sebpromax.github.io/seba/tarifs.html"}}]}</script>
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <meta name="description" content="Seba centralise la planification, les devis, la facturation et le suivi financier des entreprises de services, en un seul espace de travail.">
-<!-- Geist Sans (spec Dual-Tone) : logotype + accroche hero. display=swap,
-     poids limités à ceux réellement utilisés (300/500/600/800). -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
-  :root{--em-bright:#14B8A6;--footer-mute:#718096;
-    /* ── Design system : couleurs ── */
-    --em:#0D9488; --ink:#0a0a0c; --surface:#0f1115; --t2:#94A3B8; --t3:#64748B; --bd:rgba(255,255,255,.1);
-    /* ── Encre Vivante (SebaFX) : le fond murmure en --fx-glint, seules les
-       actions utilisateur allument --em ── */
-    --fx-deep:#050507; --fx-deep2:#0b0f19; --fx-glint:#00C896; --fx-mist:#94A3B8;
-    /* ── Dual-Tone Spectrum (spec fondateur 2026-07-11) : Bleu Abyssal /
-       Cyan Émeraude — scopé hero + navigation + fond cinétique ── */
-    --db-teal:#0D9488; --pure-white:#FFFFFF;
-    --zinc-400:#A1A1AA; --zinc-500:#71717A; --zinc-600:#52525B;
-    --zinc-700:#3F3F46; --zinc-800:#27272A; --zinc-900:#18181B; --zinc-950:#09090B;
-    --grid-node:rgba(63,63,70,.4);
-    --atmo-glint:rgba(255,255,255,.03); --atmo-teal:rgba(13,148,136,.04);
-    --cta-inset:rgba(255,255,255,.2); --cta-inset-h:rgba(255,255,255,.25);
-    --cta-sh-dark:rgba(0,0,0,.5); --cta-glow:rgba(13,148,136,.18);
-    --cta-glow-h:rgba(13,148,136,.4); --cta-sh-teal-h:rgba(13,148,136,.3);
-    --cta-act-in:rgba(0,0,0,.6); --cta-act-in2:rgba(0,0,0,.2);
-    --pulse-from:rgba(13,148,136,.7); --pulse-to:rgba(13,148,136,0);
-    /* ── Échelle d'espacement (base 4px) ── */
-    --spacing-1:4px; --spacing-2:8px; --spacing-3:12px; --spacing-4:16px; --spacing-5:20px;
-    --spacing-6:24px; --spacing-7:32px; --spacing-8:40px; --spacing-9:48px; --spacing-10:64px;
-    /* ── Typographie ── */
-    --font-size-xs:.72rem; --font-size-sm:.84rem; --font-size-base:.95rem;
-    --font-size-lg:1.15rem; --font-size-xl:1.5rem; --font-size-2xl:2.1rem;
-    --line-height-tight:1.12; --line-height-base:1.5;
-    /* ── Ombres et lueurs ── */
-    --shadow-sm:0 1px 4px rgba(0,0,0,.2);
-    --shadow-md:0 4px 16px rgba(0,0,0,.3);
-    --shadow-lg:0 16px 48px rgba(0,0,0,.45);
-    --shadow-glow:0 0 28px rgba(13,148,136,.45),0 0 60px rgba(13,148,136,.18);
-  --dt-a00:rgba(13,148,136,0);--dt-a03:rgba(13,148,136,0.03);--dt-a05:rgba(13,148,136,0.05);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a22:rgba(13,148,136,0.22);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a40:rgba(13,148,136,0.4);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a60:rgba(13,148,136,0.6);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--mist:#94A3B8;--blk-a20:rgba(0,0,0,.2);--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--w-a40:rgba(255,255,255,.4);--dt-deep:#12332E;--dt-glass:rgba(4,47,42,.4);--surface-2:#111115;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--blk-a35:rgba(0,0,0,.35);--blk-a40:rgba(0,0,0,.4);--w-a025:rgba(255,255,255,.025);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a16:rgba(255,255,255,.16);--w-a35:rgba(255,255,255,.35);--deep-2:#0d0f12;--dt-tint:#CCFBF1;--blk-a06:rgba(0,0,0,.06);--slate-200:#E2E8F0;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;--w-a07:rgba(255,255,255,.07);--w-a10:rgba(255,255,255,.1);--dt-strong:#0F766E;}
+  :root{
+    --bg:#0a0a0c;
+    --surface:#131417;
+    --surface-2:#1a1c20;
+    --border:rgba(255,255,255,.10);
+    --border-strong:rgba(255,255,255,.22);
+    --text:#f4f4f5;
+    --text-2:#a1a1aa;
+    --text-3:#71717a;
+    --accent:#0D9488;
+    --accent-soft:rgba(13,148,136,.10);
+    --accent-border:rgba(13,148,136,.32);
+    --on-accent:#ffffff;
+    --shadow:rgba(0,0,0,.35);
+    --overlay:rgba(8,8,10,.97);
+    --nav-bg:rgba(10,10,12,.92);
+    --danger:#EF4444;
+  }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  /* ── Grille cinétique (kinetic-grid.js, spec Dual-Tone) : remplace le
-     shader fluide sur CETTE page. contain:strict isole le layout/paint. ── */
-  #kinetic-grid{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;contain:strict;background:var(--zinc-950);}
-  /* Chrominance des profondeurs : deux halos radiaux au-dessus de la grille
-     (body::after paint APRES le canvas enfant — un seul pseudo, deux fonds). */
-  body::after{
-    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:
-      radial-gradient(circle at 20% 30%, var(--atmo-glint) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, var(--atmo-teal) 0%, transparent 50%);
-    will-change:transform;transform:translateZ(0);
-  }
-  /* overflow-x:hidden -- plusieurs halos decoratifs (radial-gradient,
-     position:absolute) ont des largeurs fixes en pixels (200-600px) sans
-     plafond responsive : sur mobile ils depassent le viewport et rendent
-     toute la page scrollable horizontalement (le hamburger de nav semblait
-     "sorti de l'ecran" alors que .nav-wrap lui-meme est correct -- c'est
-     le body entier qui debordait). Audit mobile 2026-07-19. */
-  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  body{margin:0;font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  h1,h2,h3{letter-spacing:-0.02em;margin:0;}
+  p{margin:0;}
   a{color:inherit;text-decoration:none;}
+  ul{margin:0;padding:0;list-style:none;}
+  img{max-width:100%;display:block;}
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
 
-  .btn-seba{
-    display:inline-flex;align-items:center;gap:8px;
-    background:var(--db-teal);color:var(--btn-ink);
-    font-weight:700;letter-spacing:-0.01em;
-    border-radius:12px;
-    transition:box-shadow .25s,transform .2s;
-    box-shadow:0 0 0 0 var(--dt-a00);
-  }
-  .btn-seba:hover{
-    box-shadow:0 0 28px var(--dt-a45),0 0 60px var(--dt-a18);
-    transform:translateY(-2px);
-  }
-  .btn-seba-outline{
-    display:inline-flex;align-items:center;gap:8px;
-    background:transparent;color:var(--db-teal);
-    border:1px solid var(--dt-a30);
-    font-weight:600;letter-spacing:-0.01em;
-    border-radius:12px;
-    transition:border-color .2s,background .2s,box-shadow .25s,transform .2s;
-  }
-  .btn-seba-outline:hover{
-    border-color:var(--db-teal);background:var(--dt-a06);
-    box-shadow:0 0 18px var(--dt-a18);
-    transform:translateY(-2px);
-  }
+  .wrap{width:90%;max-width:1140px;margin:0 auto;}
+  .section{padding:88px 0;}
+  .section-head{max-width:640px;margin:0 auto 48px;text-align:center;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.76rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:100px;padding:6px 14px;margin-bottom:16px;}
+  .section-head h2{font-size:clamp(1.6rem,3vw,2.3rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:12px;}
+  .section-head p{color:var(--text-2);font-size:.98rem;line-height:1.6;}
 
-  /* ── Hero Dual-Tone (spec fondateur 2026-07-11) ── */
-  .hero-title{
-    font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;
-    font-weight:800;font-size:clamp(2.5rem,5vw,4.5rem);
-    line-height:1.05;letter-spacing:-0.05em;
-    margin:0 auto 20px;text-wrap:balance;max-width:950px;
-    color:var(--pure-white);
+  /* ── Boutons (une seule couleur d'accent, transitions courtes) ── */
+  .btn-primary,.btn-secondary{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-weight:700;font-size:.95rem;letter-spacing:-0.01em;
+    padding:14px 26px;border-radius:10px;min-height:48px;
+    transition:background-color .18s ease,border-color .18s ease,color .18s ease;
+    cursor:pointer;border:1.5px solid transparent;
   }
-  .hero-line{display:block;} /* rupture physique en 2 lignes : le dégradé ne bave jamais sur la ligne 1 */
-  .hero-title-grad{color:var(--pure-white);} /* fallback moteurs sans clip:text */
-  @supports((-webkit-background-clip:text) or (background-clip:text)){
-    .hero-title-grad{
-      /* Spec pivot émeraude : Blanc Pur 30% -> Vert Émeraude 100% */
-      background:linear-gradient(to right,var(--pure-white) 30%,var(--db-teal) 100%);
-      -webkit-background-clip:text;background-clip:text;
-      -webkit-text-fill-color:transparent;color:transparent;
-    }
-  }
-  .hero-subtitle{
-    font-size:clamp(1.1rem,2vw,1.25rem);line-height:1.6;
-    color:var(--zinc-500);max-width:720px;margin:0 auto 40px;text-wrap:pretty;
-  }
-  .cta-main{
-    padding:16px 32px;font-size:16px;font-weight:600;border-radius:8px;
-    display:inline-flex;align-items:center;justify-content:center;
-    border:none;cursor:pointer;position:relative;isolation:isolate;overflow:hidden;
-    background:linear-gradient(135deg,var(--em-bright) 0%,var(--db-teal) 100%);
-    color:var(--pure-white);
-    box-shadow:inset 0 1px 0 var(--cta-inset),0 1px 3px var(--cta-sh-dark),0 4px 12px var(--cta-glow);
-    transition:transform 0.4s cubic-bezier(0.16,1,0.3,1),box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
-  }
-  .cta-main:hover{
-    transform:translateY(-2px) scale(1.01);
-    box-shadow:inset 0 1px 0 var(--cta-inset-h),0 12px 24px var(--cta-glow-h),0 0 30px var(--cta-sh-teal-h);
-  }
-  .cta-main:active{
-    transform:translateY(1px) scale(0.97);
-    box-shadow:inset 0 3px 8px var(--cta-act-in),inset 0 1px 0 var(--cta-act-in2);
-    filter:brightness(0.85);
-    transition:transform 0.05s linear,filter 0.05s linear,box-shadow 0.05s linear;
-  }
-  .cta-subtext{margin-top:24px;font-size:13px;color:var(--zinc-600);letter-spacing:0.02em;display:block;}
+  .btn-primary{background:var(--accent);color:var(--on-accent);}
+  .btn-primary:hover{background:var(--accent);border-color:var(--on-accent);}
+  .btn-secondary{background:transparent;color:var(--text);border-color:var(--border-strong);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
 
-  .headline-gradient{
-    /* Degrade retire (audit 2026-07-08) : le vert doit rester reserve aux
-       statuts/CTA, pas decorer le texte de titre. Blanc plein a la place. */
-    color:var(--pure-white);
-  }
-
-  .badge-glow{
-    display:inline-flex;align-items:center;gap:6px;
-    background:var(--dt-a07);
-    border:1px solid var(--dt-a20);
-    color:var(--dt-a85);
-    border-radius:100px;
-    font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-    padding:5px 14px;
-    box-shadow:0 0 16px var(--dt-a10);
-  }
-  .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);}
-  @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
-
-  .glass{
-    background:var(--w-a03);
-    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-    border:1px solid var(--w-a07);
-    border-radius:20px;
-  }
-
-  .feat-card{
-    background:var(--w-a025);
-    border:1px solid var(--zinc-800); /* spec Dual-Tone : bordure fine zinc */
-    border-radius:16px;
-    padding:28px 24px;
-    transition:border-color .25s,transform .25s;
-  }
-  .feat-card:hover{border-color:var(--db-teal);transform:translateY(-3px);} /* illumination Bleu Abyssal */
-  .feat-icon{
-    width:44px;height:44px;border-radius:10px;
-    background:var(--dt-a08);border:1px solid var(--dt-a15);
-    display:flex;align-items:center;justify-content:center;font-size:1.2rem;
-    margin-bottom:16px;
-  }
-
-  .glow-sep{
-    height:1px;
-    background:linear-gradient(90deg,transparent 0%,var(--dt-a25) 40%,var(--dt-a25) 60%,transparent 100%);
-  }
-
-  .noise::after{
-    content:'';position:absolute;inset:0;pointer-events:none;
-    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    opacity:.45;
-  }
-
-  .db-sidebar{
-    background:var(--surface-2);border-right:1px solid var(--w-a06);
-    width:52px;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:12px;
-    border-radius:20px 0 0 20px;
-  }
-  .db-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 8px var(--dt-a60);}
-  .db-nav-item{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:rgba(255,255,255,.25);transition:background .2s;}
-  .db-nav-item.act{background:var(--dt-a10);color:var(--db-teal);}
-  .db-main{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
-  .db-stat{background:var(--w-a03);border:1px solid var(--w-a06);border-radius:10px;padding:12px;flex:1;}
-  .db-stat-val{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em;color:var(--pure-white);}
-  .db-stat-lbl{font-size:.6rem;color:var(--w-a35);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
-  .db-row{display:flex;gap:8px;}
-  .db-bar{height:4px;border-radius:2px;background:var(--db-teal);box-shadow:0 0 6px var(--dt-a50);}
-  .db-bar-bg{height:4px;border-radius:2px;background:var(--w-a06);overflow:hidden;margin-top:8px;}
-  .db-chip{display:inline-flex;align-items:center;gap:4px;font-size:.58rem;padding:3px 8px;border-radius:100px;font-weight:600;}
-  .db-chip.green{background:var(--dt-a10);color:var(--db-teal);}
-  .db-chip.orange{background:rgba(255,165,0,.1);color:rgba(255,165,0,.8);}
-  .db-invoice{background:var(--w-a025);border:1px solid var(--w-a05);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;}
-  .db-invoice-name{font-size:.62rem;color:var(--w-a70);font-weight:600;}
-  .db-invoice-amt{font-size:.68rem;font-weight:700;color:var(--pure-white);}
-
+  /* ── Navigation ── */
   .nav-wrap{
-    position:fixed;top:0;left:0;right:0;z-index:200;
-    padding:0 max(24px,calc((100vw - 1140px)/2));
+    position:sticky;top:0;left:0;right:0;z-index:200;
+    padding:0 max(20px,calc((100vw - 1140px)/2));
     height:64px;
     display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-    background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-    border-bottom:1px solid var(--w-a05);
+    background:var(--nav-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
   }
-  .nav-logo{font-family:'Geist',Inter,system-ui,sans-serif;font-size:20px;letter-spacing:-0.03em;display:flex;align-items:center;gap:6px;justify-self:start;}
-  .nav-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--db-teal);animation:pulse-glow 4s cubic-bezier(0.4,0,0.6,1) infinite;}
-  .nav-center{justify-self:center;display:flex;align-items:center;gap:40px;} /* respiration (spec : 2 liens seulement) */
-  .nav-link{position:relative;font-size:14px;color:var(--zinc-500);font-weight:500;transition:color .2s cubic-bezier(0.16,1,0.3,1);}
-  .nav-link::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:0;height:1px;background:var(--pure-white);transition:width .25s cubic-bezier(0.16,1,0.3,1);}
-  .nav-link:hover{color:var(--pure-white);}
-  .nav-link:hover::after{width:100%;}
+  .nav-logo{font-size:19px;font-weight:800;letter-spacing:-0.02em;display:flex;align-items:center;gap:7px;justify-self:start;}
+  .nav-logo-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .nav-center{justify-self:center;display:flex;align-items:center;gap:28px;}
+  .nav-link{font-size:14px;color:var(--text-2);font-weight:500;transition:color .18s ease;}
+  .nav-link:hover{color:var(--text);}
   .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
-  /* ── Header Dual-Tone (spec fondateur) ── */
-  .nav-connexion{font-size:14px;color:var(--zinc-500);font-weight:500;padding:8px 16px;transition:color .2s;}
-  .nav-connexion:hover{color:var(--pure-white);}
-  .btn-header-cta{
-    display:inline-flex;align-items:center;
-    background:var(--zinc-900);color:var(--pure-white);
-    border:1px solid var(--zinc-800);
-    font-weight:500;font-size:14px;
-    border-radius:8px;padding:8px 16px;
-    transition:all .2s;
-  }
-  .btn-header-cta:hover{background:var(--zinc-800);border-color:var(--zinc-700);}
-  .logo-se{font-weight:800;color:var(--pure-white);}
-  .logo-ba{font-weight:300;color:var(--zinc-400);}
-  @keyframes pulse-glow{
-    0%{box-shadow:0 0 0 0 var(--pulse-from);}
-    100%{box-shadow:0 0 0 8px var(--pulse-to);}
-  }
+  .nav-connexion{font-size:14px;color:var(--text-2);font-weight:500;padding:8px 6px;transition:color .18s ease;}
+  .nav-connexion:hover{color:var(--text);}
+  .btn-header-cta{display:inline-flex;align-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:8px;padding:9px 18px;transition:opacity .18s ease;}
+  .btn-header-cta:hover{opacity:.9;}
 
   .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;z-index:201;justify-self:end;}
-  .hamburger span{width:22px;height:2px;background:var(--w-a70);border-radius:2px;transition:transform .3s,opacity .3s;display:block;}
+  .hamburger span{width:22px;height:2px;background:var(--text);border-radius:2px;transition:transform .18s ease,opacity .18s ease;display:block;}
   .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
-  .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+  .hamburger.open span:nth-child(2){opacity:0;}
   .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
 
   .mobile-menu{
-    position:fixed;inset:0;z-index:202;
-    background:var(--mob-overlay-bg);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
-    padding:32px 24px;
-    opacity:0;pointer-events:none;transition:opacity .3s ease;
+    position:fixed;inset:0;z-index:250;background:var(--overlay);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    padding:32px 24px;opacity:0;pointer-events:none;transition:opacity .18s ease;
   }
   .mobile-menu.open{opacity:1;pointer-events:auto;}
-  .mob-brand{display:flex;align-items:center;gap:8px;font-size:1.35rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:8px;}
-  .mob-brand-dot{width:9px;height:9px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
-  .mob-link{
-    font-size:clamp(1.7rem,7vw,2.3rem);font-weight:800;letter-spacing:-0.03em;
-    color:var(--w-a85);padding:6px 24px;transition:color .2s;
-    width:100%;text-align:center;display:block;
-  }
-  .mob-link:hover,.mob-link:active{color:var(--db-teal);}
-  .mob-sep{width:48px;height:1px;background:var(--w-a10);margin:4px 0;}
-  .mob-conn{
-    font-size:1.05rem;font-weight:600;color:var(--w-a85);padding:6px 24px;transition:color .2s;
-    display:block;text-align:center;
-  }
-  .mob-conn:hover,.mob-conn:active{color:var(--db-teal);}
-  .mob-cta{width:100%;max-width:280px;padding:14px 24px !important;font-size:1rem;margin-top:4px;justify-content:center;text-align:center;}
-  .mob-close{
-    position:absolute;top:24px;right:24px;
-    background:var(--w-a08);border:1px solid var(--w-a12);border-radius:50%;
-    width:48px;height:48px;font-size:1.2rem;color:var(--w-a80);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-    transition:background .2s,color .2s,transform .2s;z-index:1;
-  }
-  .mob-close:hover{background:var(--w-a16);color:var(--pure-white);transform:rotate(90deg);}
-  .mob-close:active{transform:scale(.9);}
+  .mob-link{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;color:var(--text);padding:8px 24px;width:100%;text-align:center;}
+  .mob-sep{width:48px;height:1px;background:var(--border-strong);margin:6px 0;}
+  .mob-conn{font-size:1.05rem;font-weight:600;color:var(--text);padding:14px 24px;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;}
+  .mob-cta{width:100%;max-width:280px;margin-top:4px;}
+  .mob-close{position:absolute;top:22px;right:22px;background:var(--surface);border:1px solid var(--border-strong);border-radius:50%;width:44px;height:44px;font-size:1.2rem;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 
-  #cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a30);box-shadow:0 0 14px var(--dt-a30);will-change:transform;transition:opacity .3s;}
-  @media(hover:none){#cursor-trail{display:none;}}
-
-  .can-animate body{animation:pgFadeIn .35s ease;}
-  @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-
-  /* Conteneur fluide — utilisé dans toutes les sections */
-  .fluid-wrap{width:90%;max-width:600px;margin-left:auto;margin-right:auto;}
-
-  @media(max-width:768px){
+  @media(max-width:860px){
     .nav-wrap{grid-template-columns:1fr auto;}
     .nav-center,.nav-right{display:none;}
     .hamburger{display:flex;}
   }
 
-  .hero-section{
-    position:relative;overflow:hidden;
-    min-height:100vh;
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    padding:0 max(24px,calc((100vw - 1140px)/2));
+  /* ── Hero ── */
+  .hero-section{padding:72px max(20px,calc((100vw - 1140px)/2)) 0;text-align:center;}
+  .hero-title{font-size:clamp(2rem,4.4vw,3.4rem);font-weight:800;line-height:1.12;letter-spacing:-0.03em;max-width:920px;margin:0 auto 20px;}
+  .hero-subtitle{font-size:clamp(1.02rem,1.6vw,1.2rem);line-height:1.6;color:var(--text-2);max-width:640px;margin:0 auto 32px;}
+  .hero-ctas{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:16px;}
+  .hero-proof{font-size:.82rem;color:var(--text-3);margin-bottom:40px;}
+  .hero-visual{max-width:1040px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 24px 60px var(--shadow);}
+  .hero-visual img{width:100%;height:auto;}
+
+  /* ── Problème ── */
+  .problem-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);}
+  .problem-item{display:flex;align-items:flex-start;gap:14px;padding:18px 22px;border-bottom:1px solid var(--border);font-size:.95rem;color:var(--text);line-height:1.5;}
+  .problem-item:last-child{border-bottom:none;}
+  .problem-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:6px;}
+
+  /* ── Produit (4 blocs) ── */
+  .product-blocks{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+  .product-block{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;}
+  .product-block-num{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--accent);margin-bottom:10px;}
+  .product-block h3{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
+  .product-block p{color:var(--text-2);font-size:.9rem;line-height:1.55;margin-bottom:16px;}
+  .product-block img{width:100%;border-radius:10px;border:1px solid var(--border);}
+  @media(max-width:900px){.product-blocks{grid-template-columns:1fr;}}
+
+  /* ── Parcours (horizontal desktop / vertical mobile) ── */
+  .parcours-track{display:flex;gap:0;}
+  .parcours-step{flex:1;padding:0 14px;position:relative;}
+  .parcours-step:first-child{padding-left:0;}
+  .parcours-step:last-child{padding-right:0;}
+  .parcours-num{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);border:1px solid var(--accent-border);color:var(--accent);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+  .parcours-line{position:absolute;top:16px;left:calc(-50% + 16px);right:calc(50% + 16px);height:1px;background:var(--border-strong);}
+  .parcours-step:first-child .parcours-line{display:none;}
+  .parcours-step h3{font-size:.92rem;font-weight:700;margin-bottom:6px;}
+  .parcours-step p{font-size:.82rem;color:var(--text-2);line-height:1.55;}
+  @media(max-width:860px){
+    .parcours-track{flex-direction:column;gap:28px;padding-left:24px;}
+    .parcours-step{padding:0 0 0 20px;border-left:1px solid var(--border-strong);}
+    .parcours-step:last-child{border-left:1px solid var(--border-strong);}
+    .parcours-line{display:none;}
+    .parcours-num{margin-left:-36px;margin-bottom:10px;}
   }
-  .section{
-    padding-top:130px;padding-bottom:130px;
-    padding-left:max(24px,calc((100vw - 1140px)/2));
-    padding-right:max(24px,calc((100vw - 1140px)/2));
-  }
+
+  /* ── Portails ── */
+  .portals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+  .portal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;}
+  .portal-icon{width:44px;height:44px;border-radius:10px;background:var(--accent-soft);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:16px;}
+  .portal-card h3{font-size:1.1rem;font-weight:700;margin-bottom:14px;}
+  .portal-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
+  .portal-list li{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text-2);line-height:1.5;}
+  .portal-check{color:var(--accent);flex-shrink:0;font-weight:800;}
+  .portal-link{margin-top:auto;font-size:.9rem;font-weight:700;color:var(--accent);display:inline-flex;align-items:center;gap:6px;}
+  @media(max-width:768px){.portals-grid{grid-template-columns:1fr;}}
+
+  /* ── Secteurs ── */
+  .sector-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .sector-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 16px;text-align:center;}
+  .sector-num{font-size:.7rem;font-weight:800;color:var(--accent);margin-bottom:10px;letter-spacing:.05em;}
+  .sector-card h3{font-size:.95rem;font-weight:700;}
+  @media(max-width:860px){.sector-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.sector-grid{grid-template-columns:1fr;}}
+
+  /* ── Preuve produit ── */
+  .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .proof-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px;text-align:center;}
+  .proof-card h3{font-size:1rem;font-weight:700;margin-bottom:10px;color:var(--accent);}
+  .proof-card p{font-size:.88rem;color:var(--text-2);line-height:1.55;}
+  @media(max-width:860px){.proof-grid{grid-template-columns:1fr;}}
+
+  /* ── CTA final ── */
+  .cta-final{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:64px 32px;text-align:center;}
+  .cta-final h2{font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.2;max-width:640px;margin:0 auto 28px;}
+  .cta-final-links{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:center;}
+  .cta-final-secondary{font-size:.92rem;font-weight:600;color:var(--text-2);}
+  .cta-final-secondary:hover{color:var(--text);}
+
+  /* ── Footer ── */
+  footer{border-top:1px solid var(--border);padding:32px max(20px,calc((100vw - 1140px)/2));}
+  .footer-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;}
+  .footer-brand{display:flex;align-items:center;gap:8px;font-weight:700;}
+  .footer-copy{color:var(--text-3);font-size:.78rem;}
+  .footer-links{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--text-2);}
+  .footer-links a:hover{color:var(--text);}
+
   @media(max-width:768px){
-    .hero-section{padding:0 24px;}
-    .section{padding-top:94px;padding-bottom:94px;padding-left:24px;padding-right:24px;}
+    .section{padding:64px 0;}
+    .wrap{width:88%;}
   }
-
-  .stat-item{text-align:center;}
-  .stat-val{font-size:clamp(2rem,4vw,2.8rem);font-weight:800;letter-spacing:-0.04em;color:var(--pure-white);}
-  .stat-unit{color:var(--db-teal);}
-  .stat-lbl{font-size:.78rem;color:var(--mist);margin-top:4px;}
-
-  .proc-num{
-    width:36px;height:36px;border-radius:10px;
-    background:var(--dt-a08);border:1px solid var(--dt-a20);
-    color:var(--db-teal);font-weight:700;font-size:.85rem;
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
-  }
-
-  @keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-  .ticker-track{animation:ticker 30s linear infinite;white-space:nowrap;display:flex;gap:0;}
-  .ticker-track:hover{animation-play-state:paused;}
-
-  .hero-glow{
-    /* Halo retire (audit 2026-07-08) : lisait "glow tech/hype" plutot
-       qu'institutionnel pour une cible PME traditionnelle. */
-    display:none;
-  }
-
-  .bento-white{
-    background:var(--pure-white);border-radius:20px;overflow:hidden;
-    box-shadow:0 24px 64px var(--blk-a35),0 4px 16px var(--blk-a20);
-    display:flex;flex-direction:column;
-  }
-  .can-animate .bento-white{transition:transform .3s,box-shadow .3s;}
-  .can-animate .bento-white:hover{transform:translateY(-6px);box-shadow:0 32px 80px var(--blk-a40),0 4px 16px var(--blk-a20);}
-  .bento-mock{background:#F8FAFC;border-bottom:1px solid #E8EEF4;padding:20px;position:relative;flex-shrink:0;}
-  .bento-foot{padding:16px 20px 20px;background:var(--pure-white);}
-  .bento-lbl{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:6px;}
-  .bento-desc{font-size:.82rem;color:#64748B;line-height:1.6;margin:0;}
-
-  /* ── Smart Header ────────────────────────────────────────────────────── */
-  .nav-wrap{transition:transform .3s ease;}
-  .nav-wrap.nav-hidden{transform:translateY(-100%);}
-  html:not(.can-animate) .nav-wrap{transition:none;}
-
-  /* ── Hero feature cards ─────────────────────────────────────────────── */
-  .hero-feats{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
-    margin-top:48px;width:100%;max-width:960px;text-align:left;
-  }
-  .hero-feat{
-    background:var(--w-a03);border:1px solid var(--w-a07);
-    border-radius:14px;padding:18px 20px;
-    display:flex;align-items:flex-start;gap:14px;
-    transition:border-color .2s;
-  }
-  .hero-feat:hover{border-color:var(--dt-a20);}
-  .hero-feat-icon{
-    width:36px;height:36px;border-radius:9px;
-    background:var(--dt-a08);border:1px solid var(--dt-a15);
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
-  .hero-feat-name{font-size:.88rem;font-weight:700;color:var(--pure-white);letter-spacing:-0.01em;margin-bottom:4px;}
-  .hero-feat-desc{font-size:.75rem;color:var(--mist);line-height:1.5;}
-  @media(max-width:768px){
-    .hero-feats{grid-template-columns:1fr;margin-top:32px;}
-  }
-
-  /* ── Conditional animations ─────────────────────────────────────────── */
-  .can-animate .badge-dot{animation:pulse-dot 2s infinite;}
-
-  /* ── Feature cards — refined hover ── */
-  .feat-card{position:relative;overflow:hidden;}
-  .feat-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--fcx,50%) var(--fcy,50%),var(--dt-a05) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
-  .can-animate .feat-card:hover::before{opacity:1;}
-  .can-animate .feat-card:hover{border-color:var(--db-teal);transform:translateY(-4px);}
-
-  /* ── Hero stats row — count-up shimmer ── */
-  @keyframes shimmer{0%,100%{opacity:.8}50%{opacity:1}}
-  .can-animate .stat-val{animation:shimmer 3s ease-in-out infinite;}
-
-  /* ── Section badge glow pulse ── */
-  @keyframes badgeGlow{0%,100%{box-shadow:0 0 16px var(--dt-a10);}50%{box-shadow:0 0 28px var(--dt-a22),0 0 50px var(--dt-a08);}}
-  .can-animate .badge-glow{animation:badgeGlow 3s ease-in-out infinite;}
-</style>
-<script>
-/* Performance Detector — runs sync before first paint */
-!function(){
-  var reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  var conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-  var slow=conn&&(conn.saveData||['slow-2g','2g','3g'].includes(conn.effectiveType));
-  if(!reduced&&!slow) document.documentElement.classList.add('can-animate');
-}();
-</script>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0c">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
-<style>
-/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
-   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
-   pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
-h2,h3{letter-spacing:-0.04em;}
-p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
-<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <!-- ══ NAVIGATION ══ -->
 <nav class="nav-wrap">
-  <a href="index.html" class="nav-logo">
-    <span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span>
-  </a>
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link">Fonctionnalités</a>
-    <a href="tarifs.html"  class="nav-link">Tarifs</a>
-    <a href="faq.html"     class="nav-link">FAQ</a>
+    <a href="product.html" class="nav-link">Produit</a>
+    <a href="#secteurs" class="nav-link">Pour qui</a>
+    <a href="comment-ca-marche.html" class="nav-link">Fonctionnement</a>
+    <a href="tarifs.html" class="nav-link">Tarifs</a>
   </div>
   <div class="nav-right">
-    <a href="connexion.html"  class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-header-cta">Créer mon espace</a>
+    <a href="connexion.html" class="nav-connexion">Connexion</a>
+    <a href="onboarding.html" class="btn-header-cta">Essayer Seba</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()">
     <span></span><span></span><span></span>
@@ -451,524 +228,195 @@ p{letter-spacing:-0.02em;}
 
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
-  <div class="mob-brand"><span class="mob-brand-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
-  <a href="tarifs.html"  class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"     class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
+  <a href="#secteurs" class="mob-link" onclick="closeMobileMenu()">Pour qui</a>
+  <a href="comment-ca-marche.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnement</a>
+  <a href="tarifs.html" class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Créer mon espace</a>
+  <a href="onboarding.html" class="btn-primary mob-cta" onclick="closeMobileMenu()">Essayer Seba</a>
 </div>
 
-
 <!-- ══ 1. HERO ══ -->
-<section class="hero-section">
-  <div class="hero-glow"></div>
-  <div style="position:relative;z-index:1;text-align:center;width:min(950px,90%);margin:0 auto;">
-    <h1 class="hero-title"><span class="hero-line">Clients. Plannings. Factures.</span><span class="hero-title-grad hero-line">Pilotez tout votre écosystème.</span></h1>
-    <p class="hero-subtitle">
-      Le compagnon unique qui centralise l'intégralité de votre activité. Libérez votre esprit du stress administratif : plus un seul oubli, plus aucun retard, tout est sous contrôle au même endroit.
-    </p>
-    <a href="onboarding.html" class="cta-main">Créer mon espace gratuit</a>
-    <span class="cta-subtext">Essai gratuit 14 jours · Sans carte bancaire · Conforme Facturation 2026</span>
+<section class="hero-section" id="hero">
+  <h1 class="hero-title">Gérez toute votre entreprise de services depuis un seul endroit.</h1>
+  <p class="hero-subtitle">Clients, planning, devis, factures et équipes réunis dans un outil simple, pensé pour le terrain.</p>
+  <div class="hero-ctas">
+    <a href="onboarding.html" class="btn-primary">Créer mon espace</a>
+    <a href="#produit" class="btn-secondary">Voir comment ça fonctionne</a>
+  </div>
+  <p class="hero-proof">Configuration en quelques minutes · Sans carte bancaire</p>
+  <div class="hero-visual">
+    <img src="marketing/preview-dashboard.png" width="1440" height="860" loading="eager" alt="Tableau de bord Seba : missions du jour, résumé financier et recommandations">
   </div>
 </section>
 
-
-<!-- ══ 2. PROCESS ══ -->
-<section class="section">
-  <div style="text-align:center;margin-bottom:56px;">
-    <div class="badge-glow" style="margin-bottom:20px;">Simple · Rapide · Universel</div>
-    <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;">
-      Comment ça marche ?
-    </h2>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;position:relative;">
-    <div style="position:absolute;top:18px;left:calc(100%/8);right:calc(100%/8);height:1px;background:linear-gradient(90deg,transparent,var(--dt-a20),var(--dt-a20),transparent);pointer-events:none;"></div>
-
-    <div style="padding:0 24px 0 0;position:relative;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num">1</div>
-        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
-      </div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Configurez votre espace</div>
-      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Vos infos, votre image de marque. En 2 minutes, sans engagement.</div>
+<!-- ══ 2. PROBLÈME ══ -->
+<section class="section" id="probleme">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Le quotidien sans Seba</div>
+      <h2>Ce que vous vivez chaque semaine</h2>
     </div>
-
-    <div style="padding:0 24px;position:relative;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num">2</div>
-        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
-      </div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Ajoutez vos services</div>
-      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Définissez vos offres, tarifs et disponibilités en quelques clics.</div>
-    </div>
-
-    <div style="padding:0 24px;position:relative;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num">3</div>
-        <div style="flex:1;height:1px;background:var(--dt-a15);"></div>
-      </div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">Partagez votre lien</div>
-      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Un lien universel — vos clients accèdent à tout, sans application à installer.</div>
-    </div>
-
-    <div style="padding:0 0 0 24px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div class="proc-num" style="background:var(--dt-a15);border-color:var(--db-teal);">4</div>
-      </div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;color:var(--em);">Opérationnel.</div>
-      <div style="color:var(--mist);font-size:.83rem;line-height:1.6;">Vos processus tournent en arrière-plan. Concentrez-vous sur votre métier.</div>
-    </div>
+    <ul class="problem-list">
+      <li class="problem-item"><span class="problem-dot"></span>Les informations client sont dispersées entre appels, SMS et fichiers séparés.</li>
+      <li class="problem-item"><span class="problem-dot"></span>Le planning de l'équipe change sans que tout le monde soit informé à temps.</li>
+      <li class="problem-item"><span class="problem-dot"></span>Des devis restent sans réponse et des factures partent sans relance.</li>
+      <li class="problem-item"><span class="problem-dot"></span>Les employés découvrent leur mission sans consignes ni adresse précise.</li>
+      <li class="problem-item"><span class="problem-dot"></span>Les clients rappellent pour savoir si et quand ils seront servis.</li>
+    </ul>
   </div>
 </section>
 
-
-
-<!-- ══ 4. PROBLEM ══ -->
-<div class="glow-sep" style="margin:0 max(24px,calc((100vw - 1140px)/2));"></div>
-
-<section class="section">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
-
-    <div>
-      <div class="badge-glow" style="margin-bottom:24px;">Le Problème</div>
-      <h2 style="font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:20px;">
-        Vos outils dispersés<br>vous coûtent cher.
-      </h2>
-      <p style="color:var(--mist);line-height:1.75;margin-bottom:32px;font-size:.95rem;">
-        Relances manuelles, données dupliquées, facturation en retard — chaque semaine, des heures perdues sur de l'administratif qui devrait tourner seul.
-      </p>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          Devis perdus dans les fils de mails
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          Relances manuelles qui épuisent votre temps
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          Planning d'équipe ingérable
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:.88rem;">
-          Facturation accumulée chaque soir
-        </div>
+<!-- ══ 3. PRODUIT ══ -->
+<section class="section" id="produit">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Comment Seba fonctionne</div>
+      <h2>Quatre étapes, un seul outil.</h2>
+    </div>
+    <div class="product-blocks">
+      <div class="product-block">
+        <div class="product-block-num">01 — CENTRALISER</div>
+        <h3>Centraliser</h3>
+        <p>Clients, adresses, consignes et historique.</p>
+        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba avec historique des interventions et informations de service">
       </div>
-    </div>
-
-    <div class="glass" style="padding:28px;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.08) 0%,transparent 70%);pointer-events:none;"></div>
-      <div style="font-size:.7rem;color:var(--footer-mute);margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Sans Seba — Une journée ordinaire</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">"Vous avez reçu mon devis ?" (3ème relance)</span>
-          <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−25 min</span>
-        </div>
-        <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">Facture ressaisie à la main</span>
-          <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−40 min</span>
-        </div>
-        <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.82rem;color:var(--w-a70);">Créneau raté → client mécontent</span>
-          <span style="font-size:.7rem;color:rgba(239,68,68,.7);">−60 min</span>
-        </div>
-        <div style="border-top:1px solid var(--w-a06);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:.78rem;color:var(--w-a40);">Temps perdu par semaine</span>
-          <span style="font-size:1rem;font-weight:700;color:rgba(239,68,68,.8);">+8h</span>
-        </div>
+      <div class="product-block">
+        <div class="product-block-num">02 — ORGANISER</div>
+        <h3>Organiser</h3>
+        <p>Planning, interventions et assignation des équipes.</p>
+        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba avec interventions assignées à l'équipe">
       </div>
-    </div>
-
-  </div>
-</section>
-
-
-<!-- ══ 5. SOLUTION — DASHBOARD ══ -->
-<div class="glow-sep" style="margin:0 max(24px,calc((100vw - 1140px)/2));"></div>
-
-<section id="demo" class="section">
-
-  <div style="text-align:center;margin-bottom:48px;">
-    <div class="badge-glow" style="margin-bottom:20px;">La Solution</div>
-    <h2 style="font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:16px;">
-      Un seul espace pour tout piloter.
-    </h2>
-    <p style="color:var(--mist);font-size:.95rem;max-width:480px;margin:0 auto;">
-      Devis, factures, planning, relation client — centralisés dans un espace de travail unique et fluide.
-    </p>
-  </div>
-
-  <div style="position:relative;max-width:900px;margin:0 auto;">
-
-    <div style="position:absolute;top:50%;left:20%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,var(--dt-a07) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
-    <div style="position:absolute;top:30%;right:10%;transform:translate(50%,-50%);width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,100,255,.05) 0%,transparent 70%);pointer-events:none;z-index:0;"></div>
-
-    <div style="position:relative;z-index:1;border-radius:24px;padding:1px;background:linear-gradient(135deg,var(--dt-a20) 0%,var(--w-a05) 50%,var(--dt-a08) 100%);">
-      <div style="border-radius:23px;overflow:hidden;background:var(--surface-2);">
-
-        <div style="background:var(--deep-2);border-bottom:1px solid var(--w-a05);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
-            <div style="width:1px;height:16px;background:var(--w-a08);margin:0 8px;"></div>
-            <div style="font-size:.7rem;color:rgba(255,255,255,.2);font-weight:500;">seba.app/dashboard</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--dt-deep),var(--db-teal));font-size:.6rem;font-weight:700;color:var(--btn-ink);display:flex;align-items:center;justify-content:center;">A</div>
-            <span style="font-size:.7rem;color:var(--w-a35);">Alex D.</span>
-          </div>
-        </div>
-
-        <div style="display:flex;height:380px;">
-
-          <div class="db-sidebar">
-            <div class="db-dot" style="margin-bottom:8px;"></div>
-            <div class="db-nav-item act" title="Tableau de bord">T</div>
-            <div class="db-nav-item" title="Clients">C</div>
-            <div class="db-nav-item" title="Planning">P</div>
-            <div class="db-nav-item" title="Devis">D</div>
-            <div class="db-nav-item" title="Factures">F</div>
-            <div style="flex:1;"></div>
-            <div class="db-nav-item" title="Réglages">R</div>
-          </div>
-
-          <div class="db-main">
-
-            <div class="db-row">
-              <div class="db-stat" style="flex:1.5;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                  <div>
-                    <div class="db-stat-lbl">Revenu ce mois</div>
-                    <div class="db-stat-val">14 280 <span style="font-size:.65rem;color:var(--w-a35);">€</span></div>
-                  </div>
-                  <span class="db-chip green">+12%</span>
-                </div>
-                <div class="db-bar-bg"><div class="db-bar" style="width:68%;"></div></div>
-              </div>
-              <div class="db-stat">
-                <div class="db-stat-lbl">Projets</div>
-                <div class="db-stat-val">47</div>
-                <div class="db-bar-bg"><div class="db-bar" style="width:80%;background:var(--em-bright);box-shadow:0 0 6px var(--dt-a40);"></div></div>
-              </div>
-              <div class="db-stat">
-                <div class="db-stat-lbl">En attente</div>
-                <div class="db-stat-val">3</div>
-                <span class="db-chip orange" style="margin-top:6px;">Relancer</span>
-              </div>
-            </div>
-
-            <div style="font-size:.6rem;color:rgba(255,255,255,.2);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Dernières factures</div>
-            <div style="display:flex;flex-direction:column;gap:5px;">
-              <div class="db-invoice">
-                <div>
-                  <div class="db-invoice-name">Dupont SARL — Entretien mensuel</div>
-                  <div style="font-size:.56rem;color:rgba(255,255,255,.25);margin-top:1px;">Envoyée · 07 juil. 2026</div>
-                </div>
-                <div style="text-align:right;">
-                  <div class="db-invoice-amt">950 €</div>
-                  <span class="db-chip green" style="font-size:.52rem;padding:2px 6px;">Payée</span>
-                </div>
-              </div>
-              <div class="db-invoice">
-                <div>
-                  <div class="db-invoice-name">Résidence Les Tilleuls — Nettoyage vitres</div>
-                  <div style="font-size:.56rem;color:rgba(255,255,255,.25);margin-top:1px;">Envoyée · 10 juil. 2026</div>
-                </div>
-                <div style="text-align:right;">
-                  <div class="db-invoice-amt">1 200 €</div>
-                  <span class="db-chip green" style="font-size:.52rem;padding:2px 6px;">Payée</span>
-                </div>
-              </div>
-              <div class="db-invoice">
-                <div>
-                  <div class="db-invoice-name">M. Bernard — Intervention plomberie</div>
-                  <div style="font-size:.56rem;color:rgba(255,255,255,.25);margin-top:1px;">Envoyée · 14 juil. 2026</div>
-                </div>
-                <div style="text-align:right;">
-                  <div class="db-invoice-amt">2 800 €</div>
-                  <span class="db-chip orange" style="font-size:.52rem;padding:2px 6px;">En attente</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="db-row" style="margin-top:auto;gap:6px;">
-              <div style="flex:1;background:var(--dt-a07);border:1px solid var(--dt-a15);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">S</span>
-                <span style="font-size:.62rem;font-weight:600;color:var(--db-teal);">Nouveau Devis</span>
-              </div>
-              <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">P</span>
-                <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Planning</span>
-              </div>
-              <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <span style="font-size:.75rem;">E</span>
-                <span style="font-size:.62rem;font-weight:600;color:rgba(255,255,255,.5);">Clients</span>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-
+      <div class="product-block">
+        <div class="product-block-num">03 — VENDRE</div>
+        <h3>Vendre</h3>
+        <p>Devis, validation client et facturation.</p>
+        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Liste des devis Seba avec statuts en attente, signés et expirés">
       </div>
-    </div>
-
-    <div class="glass" style="position:absolute;bottom:-20px;right:40px;padding:12px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 20px 48px rgba(0,0,0,.5);">
-      <div style="width:36px;height:36px;border-radius:10px;background:var(--dt-a10);border:1px solid var(--dt-a20);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">S</div>
-      <div>
-        <div style="font-size:.78rem;font-weight:700;color:var(--pure-white);">Du devis au paiement</div>
-        <div style="font-size:.68rem;color:var(--dt-a70);font-weight:600;">en quelques minutes</div>
+      <div class="product-block">
+        <div class="product-block-num">04 — SUIVRE</div>
+        <h3>Suivre</h3>
+        <p>Paiements, rentabilité et actions prioritaires.</p>
+        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Liste des factures Seba avec statuts payée, en attente et en retard">
       </div>
-    </div>
-
-  </div>
-</section>
-
-
-<!-- ══ 5. FEATURES — BENTO GRID ══ -->
-<section class="section">
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;" id="bento-grid">
-
-    <!-- Card 1: Team & Resource Scheduling -->
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Planning Intelligent</h3>
-      <div class="bento-white">
-      <div class="bento-mock">
-        <div style="display:flex;gap:3px;margin-bottom:8px;">
-          <div style="width:36px;"></div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">LUN</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">MAR</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--pure-white);font-weight:700;background:var(--db-teal);border-radius:4px;padding:2px 0;">MER</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">JEU</div>
-          <div style="flex:1;text-align:center;font-size:.5rem;color:var(--mist);font-weight:600;padding:2px 0;">VEN</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Alex</div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:var(--dt-strong);font-weight:600;white-space:nowrap;overflow:hidden;">Client A</span></div>
-            <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
-            <div style="flex:1;height:20px;"></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Sara</div>
-            <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:var(--dt-strong);font-weight:600;white-space:nowrap;overflow:hidden;">Client B</span></div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
-            <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;background:var(--dt-tint);border-radius:4px;border-left:3px solid var(--db-teal);"></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:3px;">
-            <div style="width:36px;font-size:.5rem;color:var(--mist);font-weight:600;">Jade</div>
-            <div style="flex:1;height:20px;background:#fff7ed;border-radius:4px;border-left:3px solid #f97316;display:flex;align-items:center;padding-left:5px;"><span style="font-size:.45rem;color:#c2410c;font-weight:600;white-space:nowrap;overflow:hidden;">Client C</span></div>
-            <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;"></div>
-            <div style="flex:1;height:20px;background:#fff7ed;border-radius:4px;border-left:3px solid #f97316;"></div>
-            <div style="flex:1;height:20px;background:#fff7ed;border-radius:4px;border-left:3px solid #f97316;"></div>
-          </div>
-        </div>
-      </div>
-      <div class="bento-foot">
-        <div class="bento-lbl">Planning équipe &amp; ressources</div>
-        <p class="bento-desc">Optimisez les affectations et suivez la charge de travail en temps réel.</p>
-      </div>
-    </div>
-    </div>
-
-    <!-- Card 2: Proposals & Billing (Featured) -->
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Devis &amp; Facturation</h3>
-      <div class="bento-white" style="box-shadow:0 24px 64px var(--dt-a15),0 4px 16px var(--blk-a20);">
-      <div class="bento-mock" style="background:#F0FDF4;">
-        <div style="position:absolute;top:-1px;right:16px;background:var(--db-teal);color:var(--btn-ink);font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:0 0 10px 10px;box-shadow:0 4px 12px var(--dt-a35);">Signé en quelques min</div>
-        <div style="background:var(--pure-white);border:1px solid var(--dt-tint);border-radius:10px;padding:12px;box-shadow:0 2px 8px var(--blk-a06);">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-            <div>
-              <div style="font-size:.72rem;font-weight:900;color:var(--ink);letter-spacing:.04em;">SEBA</div>
-              <div style="font-size:.5rem;color:var(--mist);margin-top:1px;">Devis n°2048</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:.5rem;color:var(--mist);">James M.</div>
-              <div style="font-size:.78rem;font-weight:800;color:var(--ink);letter-spacing:-0.02em;">320,00 €</div>
-            </div>
-          </div>
-          <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <div style="width:18px;height:18px;border-radius:50%;background:var(--db-teal);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--pure-white);font-weight:700;">✓</div>
-            <span style="font-size:.62rem;font-weight:700;color:var(--dt-strong);">Signé</span>
-          </div>
-        </div>
-      </div>
-      <div class="bento-foot">
-        <div class="bento-lbl">Devis &amp; Facturation</div>
-        <p class="bento-desc">Créez, envoyez et faites signer vos devis en quelques minutes.</p>
-      </div>
-    </div>
-    </div>
-
-    <!-- Card 3: Financial Performance Dashboard -->
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <h3 style="text-align:center;font-weight:700;font-size:1rem;letter-spacing:-0.02em;color:var(--pure-white);margin:0;">Performance Financière</h3>
-      <div class="bento-white">
-      <div class="bento-mock">
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <div style="flex:1;background:var(--pure-white);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:.46rem;color:var(--mist);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Revenu ce mois</div>
-            <div style="font-size:.88rem;font-weight:800;color:var(--ink);letter-spacing:-0.03em;">14 280 €</div>
-          </div>
-          <div style="flex:1;background:var(--pure-white);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:.46rem;color:var(--mist);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Marge nette</div>
-            <div style="font-size:.88rem;font-weight:800;color:var(--db-teal);letter-spacing:-0.03em;">+34%</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:4px;height:52px;padding:0 2px;">
-          <div style="flex:1;background:var(--dt-tint);border-radius:3px 3px 0 0;height:32%;"></div>
-          <div style="flex:1;background:var(--dt-tint);border-radius:3px 3px 0 0;height:54%;"></div>
-          <div style="flex:1;background:#BBF7D0;border-radius:3px 3px 0 0;height:42%;"></div>
-          <div style="flex:1;background:#86EFAC;border-radius:3px 3px 0 0;height:68%;"></div>
-          <div style="flex:1;background:#4ADE80;border-radius:3px 3px 0 0;height:55%;"></div>
-          <div style="flex:1;background:var(--db-teal);border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 8px var(--dt-a40);"></div>
-        </div>
-      </div>
-      <div class="bento-foot">
-        <div class="bento-lbl">Tableau de bord financier</div>
-        <p class="bento-desc">Suivez votre revenu, vos marges et votre trésorerie sur chaque projet.</p>
-      </div>
-    </div>
-    </div>
-
-  </div>
-</section>
-
-
-<!-- ══ 6. DEUX PORTAILS ══ -->
-<div class="glow-sep" style="margin:0 max(24px,calc((100vw - 1140px)/2));"></div>
-
-<section class="section">
-  <div style="text-align:center;margin-bottom:48px;">
-    <div class="badge-glow" style="margin-bottom:20px;">Inclus, pas en option</div>
-    <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;">
-      Deux portails, un seul outil.
-    </h2>
-    <p style="color:var(--mist);font-size:.95rem;max-width:520px;margin:16px auto 0;">
-      Vos clients suivent leurs interventions sans vous appeler. Votre équipe terrain travaille depuis son téléphone, sans jamais voir les données des autres.
-    </p>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;" id="portals-grid">
-    <div class="feat-card">
-      <div class="feat-icon">🔗</div>
-      <h3 style="font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;">Portail Client</h3>
-      <p style="color:var(--mist);font-size:.85rem;line-height:1.6;margin:0;">Accès par lien, sans mot de passe à retenir : devis, factures, planning des interventions et messagerie directe avec vous.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📱</div>
-      <h3 style="font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;">Portail Employé Terrain</h3>
-      <p style="color:var(--mist);font-size:.85rem;line-height:1.6;margin:0;">Une app mobile pour votre équipe : missions du jour, itinéraire, démarrer/terminer une intervention, signaler un problème — chacun ne voit que ce qui lui est assigné.</p>
     </div>
   </div>
 </section>
 
+<!-- ══ 4. PARCOURS ══ -->
+<section class="section" id="parcours">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Un seul flux</div>
+      <h2>De la demande au paiement</h2>
+    </div>
+    <div class="parcours-track">
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">1</div><h3>Client enregistré</h3><p>Le client est enregistré dans votre fiche clients.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">2</div><h3>Devis envoyé</h3><p>Le devis est créé et envoyé pour signature.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">3</div><h3>Intervention planifiée</h3><p>L'intervention est planifiée sur le calendrier de l'équipe.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">4</div><h3>Mission assignée</h3><p>L'employé reçoit sa mission avec les consignes.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">5</div><h3>Client informé</h3><p>Le client suit l'avancement de la prestation.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">6</div><h3>Facture envoyée</h3><p>La facture part automatiquement, sans ressaisie.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 5. PORTAILS ══ -->
+<section class="section" id="portails">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Inclus, pas en option</div>
+      <h2>Deux portails, un seul outil.</h2>
+      <p>Vos clients suivent leurs interventions sans vous appeler. Votre équipe terrain travaille depuis son téléphone, sans jamais voir les données des autres.</p>
+    </div>
+    <div class="portals-grid" id="portals-grid">
+      <div class="portal-card">
+        <div class="portal-icon">🔗</div>
+        <h3>Portail Client</h3>
+        <ul class="portal-list">
+          <li><span class="portal-check">✓</span>Suivre ses demandes</li>
+          <li><span class="portal-check">✓</span>Consulter ses interventions</li>
+          <li><span class="portal-check">✓</span>Lire ses devis et factures</li>
+          <li><span class="portal-check">✓</span>Échanger avec l'entreprise</li>
+        </ul>
+        <a href="client-espace.html" class="portal-link">Découvrir l'espace client →</a>
+      </div>
+      <div class="portal-card">
+        <div class="portal-icon">📱</div>
+        <h3>Portail Employé Terrain</h3>
+        <ul class="portal-list">
+          <li><span class="portal-check">✓</span>Voir ses missions</li>
+          <li><span class="portal-check">✓</span>Consulter les consignes</li>
+          <li><span class="portal-check">✓</span>Démarrer et terminer une intervention</li>
+          <li><span class="portal-check">✓</span>Signaler un problème</li>
+        </ul>
+        <a href="espace-terrain.html" class="portal-link">Découvrir l'espace terrain →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 6. SECTEURS ══ -->
+<section class="section" id="secteurs">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Pour qui</div>
+      <h2>Conçu pour votre métier de terrain</h2>
+    </div>
+    <div class="sector-grid">
+      <div class="sector-card"><div class="sector-num">01</div><h3>Ménage</h3></div>
+      <div class="sector-card"><div class="sector-num">02</div><h3>Conciergerie</h3></div>
+      <div class="sector-card"><div class="sector-num">03</div><h3>Maintenance</h3></div>
+      <div class="sector-card"><div class="sector-num">04</div><h3>Activité personnalisée</h3></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 7. PREUVE PRODUIT ══ -->
+<section class="section" id="preuve">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Ce que ça change</div>
+      <h2>Un seul outil, moins de friction</h2>
+    </div>
+    <div class="proof-grid">
+      <div class="proof-card"><h3>Moins de double saisie</h3><p>Une seule fiche client, utilisée par le devis, la facture et le planning.</p></div>
+      <div class="proof-card"><h3>Moins d'oublis</h3><p>Les relances de devis et de factures partent sans que vous ayez à y penser.</p></div>
+      <div class="proof-card"><h3>Une information accessible à chacun</h3><p>Le patron, l'employé et le client voient chacun exactement ce qui le concerne.</p></div>
+    </div>
+  </div>
+</section>
 
 <!-- ══ CTA FINAL ══ -->
 <section class="section">
-  <div style="position:relative;border-radius:24px;overflow:hidden;padding:72px 48px;text-align:center;background:linear-gradient(135deg,var(--dt-a05) 0%,var(--dt-glass) 50%,var(--dt-a03) 100%);border:1px solid var(--dt-a12);">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:300px;border-radius:50%;background:radial-gradient(ellipse,var(--dt-a08) 0%,transparent 70%);pointer-events:none;"></div>
-    <div style="position:relative;z-index:1;">
-      <h2 style="font-size:clamp(1.8rem,4vw,3.2rem);font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:16px;">
-        <span class="headline-gradient">Votre activité mérite<br>mieux que des rustines.</span>
-      </h2>
-      <p style="color:var(--mist);font-size:.95rem;margin-bottom:40px;max-width:440px;margin-left:auto;margin-right:auto;">
-        Rejoignez les professionnels qui ont repris le contrôle de leur business.
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:28px;">
-        <a href="onboarding.html" class="btn-seba" style="padding:16px 36px;font-size:1.05rem;">
-          Créer mon espace gratuit
-        </a>
+  <div class="wrap">
+    <div class="cta-final">
+      <h2>Votre entreprise mérite mieux qu'un cahier et plusieurs applications.</h2>
+      <div class="cta-final-links">
+        <a href="onboarding.html" class="btn-primary">Créer mon espace Seba</a>
+        <a href="connexion.html" class="cta-final-secondary">Se connecter</a>
       </div>
     </div>
   </div>
 </section>
 
-
 <!-- ══ FOOTER ══ -->
-<footer style="background:var(--zinc-950);border-top:1px solid var(--w-a05);padding:28px max(24px,calc((100vw - 1140px)/2));">
-  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div class="nav-logo-dot"></div>
-      <span style="font-weight:700;letter-spacing:-0.02em;"><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></span>
-    </div>
-    <p style="color:var(--footer-mute);font-size:.78rem;text-align:center;flex:1;">
-      © 2026 Seba — Conçu pour les entreprises de services.
-    </p>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:.78rem;color:var(--footer-mute);">
-      <a href="product.html">Fonctionnalités</a>
+<footer>
+  <div class="footer-row">
+    <div class="footer-brand"><span class="nav-logo-dot"></span>Seba</div>
+    <p class="footer-copy">© 2026 Seba — Conçu pour les entreprises de services.</p>
+    <div class="footer-links">
+      <a href="product.html">Produit</a>
+      <a href="comment-ca-marche.html">Fonctionnement</a>
       <a href="tarifs.html">Tarifs</a>
       <a href="faq.html">FAQ</a>
       <a href="connexion.html">Connexion</a>
       <a href="mentions-legales.html">Mentions légales</a>
-      <a href="cgu.html">CGU</a>
       <a href="politique-confidentialite.html">Confidentialité</a>
     </div>
   </div>
 </footer>
-
-<style>
-/* ── Fluid Layout Mobile ──────────────────────────────────────────── */
-@media(max-width:768px){
-  /* Colonnes → pile verticale */
-  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;gap:32px !important;}
-  div[style*="grid-template-columns:repeat(auto-fit,minmax(220px"]{grid-template-columns:1fr !important;gap:32px !important;}
-  div[style*="grid-template-columns:repeat(auto-fit,minmax(260px"]{grid-template-columns:1fr !important;}
-  /* Gaps excessifs */
-  div[style*="gap:80px"]{gap:32px !important;}
-  /* Glass cards */
-  .glass[style*="padding:56px"]{padding:28px !important;}
-  /* Footer */
-  footer > div{flex-direction:column;text-align:center;gap:20px;}
-  /* Dashboard mini-mock */
-  .db-sidebar{display:none;}
-  .db-main{padding:12px;}
-  /* Bento */
-  #bento-grid,#portals-grid{grid-template-columns:1fr !important;}
-  /* Halos décoratifs (radial-gradient, position:absolute) : largeurs fixes
-     en pixels sans plafond responsive -> débordement horizontal du body
-     sur mobile (même anti-pattern déjà documenté pour la nav, cf. commentaire
-     overflow-x:hidden ci-dessus -- ces halos-ci n'étaient pas couverts).
-     Purement décoratif (pointer-events:none) : réduire la taille ne change
-     rien fonctionnellement. */
-  div[style*="width:200px;height:200px;border-radius:50%"]{width:120px !important;height:120px !important;}
-  div[style*="width:400px;height:400px;border-radius:50%"]{width:180px !important;height:180px !important;}
-  div[style*="width:300px;height:300px;border-radius:50%"]{width:100px !important;height:100px !important;}
-  div[style*="width:600px;height:300px;border-radius:50%"]{width:260px !important;height:140px !important;}
-  /* Sections : padding réduit */
-  .section{
-    padding-top:64px !important;
-    padding-bottom:64px !important;
-    padding-left:max(20px,calc((100vw - 600px)/2)) !important;
-    padding-right:max(20px,calc((100vw - 600px)/2)) !important;
-  }
-  .hero-section{padding-left:20px !important;padding-right:20px !important;}
-  /* Texte héro — line-height 1.05 inline trop serré sur 4 lignes mobiles,
-     le span gradient débordait de son h1 (superposition visuelle) */
-  .hero-section h1{font-size:clamp(2rem,9vw,3.2rem) !important;line-height:var(--line-height-tight) !important;}
-  .hero-section p{font-size:1rem !important;max-width:100% !important;}
-}
-
-@media(max-width:480px){
-  /* Boutons pleine largeur */
-  .btn-seba,.btn-seba-outline{width:100%;justify-content:center;padding:16px 24px !important;}
-  /* CTA flex → colonne */
-  div[style*="display:flex;flex-wrap:wrap;gap:14px;justify-content:center"]{flex-direction:column;align-items:stretch;}
-  /* Bento 3col → 1col */
-  div[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr !important;}
-  /* Process steps → 1col */
-  div[style*="grid-template-columns:repeat(auto-fit,minmax(220px"]{grid-template-columns:1fr !important;}
-  /* Dashboard mock : responsive height */
-  div[style*="height:380px"]{height:auto !important;min-height:260px;}
-  /* Bento mock : hauteur auto */
-  .bento-mock{min-height:100px;}
-}
-</style>
 
 <script>
 function toggleMobileMenu(){
@@ -982,134 +430,6 @@ function closeMobileMenu(){
   document.body.style.overflow='';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
-
-/* Smart Header — hide on scroll down, reveal on scroll up */
-(function(){
-  const nav=document.querySelector('.nav-wrap');
-  let lastY=0,ticking=false;
-  window.addEventListener('scroll',function(){
-    if(!ticking){
-      requestAnimationFrame(function(){
-        const y=window.scrollY;
-        if(y>80){
-          if(y>lastY) nav.classList.add('nav-hidden');
-          else nav.classList.remove('nav-hidden');
-        } else {
-          nav.classList.remove('nav-hidden');
-        }
-        lastY=y;
-        ticking=false;
-      });
-      ticking=true;
-    }
-  },{passive:true});
-})();
-
-(function(){
-  if(window.matchMedia('(hover:none)').matches) return;
-  const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);
-  /* Styled by enhanced cursor trail block below */
-})();
-
-document.querySelectorAll('a[href]').forEach(a=>{
-  const h=a.getAttribute('href');
-  if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){
-    a.addEventListener('click',e=>{
-      e.preventDefault();
-      document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';
-      setTimeout(()=>{window.location.href=h;},230);
-    });
-  }
-});
-
-/* ── Feat card radial glow on mousemove ────────────────────── */
-document.querySelectorAll('.feat-card,.hero-feat').forEach(card=>{
-  card.addEventListener('mousemove',e=>{
-    const r=card.getBoundingClientRect();
-    card.style.setProperty('--fcx',((e.clientX-r.left)/r.width*100)+'%');
-    card.style.setProperty('--fcy',((e.clientY-r.top)/r.height*100)+'%');
-  });
-});
-
-/* ── Scroll Reveal ─────────────────────────────────────────── */
-(function(){
-  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
-  const style=document.createElement('style');
-  style.textContent=`
-    .sr{opacity:0;transform:translateY(22px);transition:opacity .65s cubic-bezier(0.22,1,.36,1),transform .65s cubic-bezier(0.22,1,.36,1);}
-    .sr.sr-v{opacity:1;transform:none;}
-    .sr-d1{transition-delay:.08s;} .sr-d2{transition-delay:.16s;} .sr-d3{transition-delay:.24s;} .sr-d4{transition-delay:.32s;}
-    .sr-scale{opacity:0;transform:scale(0.96) translateY(12px);transition:opacity .6s cubic-bezier(0.22,1,.36,1),transform .6s cubic-bezier(0.22,1,.36,1);}
-    .sr-scale.sr-v{opacity:1;transform:none;}
-  `;
-  document.head.appendChild(style);
-
-  /* Tag sections + children */
-  const sections=document.querySelectorAll('.section,.hero-feats');
-  sections.forEach(sec=>{
-    /* Immediate children block-elements */
-    Array.from(sec.children).forEach((child,i)=>{
-      if(child.tagName==='DIV'||child.tagName==='H2'||child.tagName==='P'){
-        child.classList.add('sr','sr-d'+Math.min(i+1,4));
-      }
-    });
-    /* Feat cards */
-    sec.querySelectorAll('.feat-card,.hero-feat,.bento-white').forEach((el,i)=>{
-      el.classList.add('sr','sr-d'+Math.min(i+1,4));
-    });
-    /* Process steps */
-    sec.querySelectorAll('.proc-num').forEach((el,i)=>{
-      el.closest('div[style*="padding"]')?.classList.add('sr','sr-d'+Math.min(i+1,4));
-    });
-    /* Stat items */
-    sec.querySelectorAll('.stat-item').forEach((el,i)=>{
-      el.classList.add('sr','sr-d'+Math.min(i+1,4));
-    });
-  });
-
-  const obs=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        e.target.classList.add('sr-v');
-        obs.unobserve(e.target);
-      }
-    });
-  },{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
-
-  document.querySelectorAll('.sr,.sr-scale').forEach(el=>obs.observe(el));
-})();
-
-/* ── Enhanced cursor trail ─────────────────────────────────── */
-(function(){
-  if(window.matchMedia('(hover:none)').matches) return;
-  const el=document.getElementById('cursor-trail');
-  if(!el) return;
-  /* Make it larger and add a ring */
-  el.style.cssText='position:fixed;pointer-events:none;z-index:9999;width:8px;height:8px;border-radius:50%;background:var(--dt-a50);box-shadow:0 0 12px var(--dt-a60),0 0 24px var(--dt-a15);will-change:transform;mix-blend-mode:screen;';
-  /* ring follower */
-  const ring=document.createElement('div');
-  ring.style.cssText='position:fixed;pointer-events:none;z-index:9998;width:28px;height:28px;border-radius:50%;border:1px solid var(--dt-a25);will-change:transform;transition:none;';
-  document.body.appendChild(ring);
-  let mx=0,my=0,tx=0,ty=0,rx=0,ry=0;
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-  (function loop(){
-    tx+=(mx-tx)*.18; ty+=(my-ty)*.18;
-    rx+=(mx-rx)*.08; ry+=(my-ry)*.08;
-    el.style.transform=`translate(${tx-4}px,${ty-4}px)`;
-    ring.style.transform=`translate(${rx-14}px,${ry-14}px)`;
-    requestAnimationFrame(loop);
-  })();
-  /* shrink on links/buttons */
-  document.addEventListener('mouseover',e=>{
-    if(e.target.closest('a,button')){
-      el.style.transform+=' scale(1.6)';
-      ring.style.borderColor='var(--dt-a50)';
-    }
-  });
-})();
 </script>
-<!-- Grille cinétique (spec Dual-Tone) : Canvas 2D vanilla, zéro dépendance —
-     remplace le shader Three.js sur cette page (-~150 Ko CDN). -->
-<script src="kinetic-grid.js"></script>
 </body>
 </html>
