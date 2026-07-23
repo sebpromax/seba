@@ -30,33 +30,10 @@ const browser = await puppeteer.launch({
 });
 
 const page = await browser.newPage();
-const errs = [];
-page.on('pageerror', (e) => errs.push({ where: 'CURRENT', type: 'pageerror', text: String(e) }));
-page.on('console', (msg) => {
-  if (msg.type() === 'error') {
-    const text = msg.text();
-    if (IGNORE.some(rx => rx.test(text))) return;
-    errs.push({ where: 'CURRENT', type: 'console', text });
-  }
-});
-page.on('requestfailed', (req) => {
-  const f = req.failure();
-  const t = f ? f.errorText : '';
-  if (IGNORE.some(rx => rx.test(t)) || IGNORE.some(rx => rx.test(req.url()))) return;
-  errs.push({ where: 'CURRENT', type: 'requestfailed', text: `${req.url()} :: ${t}` });
-});
 
 let phase = 'init';
 function mark(p) { phase = p; }
-function collectErrs() {
-  const mine = errs.filter(e => e.where === 'CURRENT').map(e => ({ ...e, phase }));
-  return mine;
-}
-// re-tag as we go: snapshot approach - store phase per error at push time instead
 const taggedErrs = [];
-page.removeAllListeners('pageerror');
-page.removeAllListeners('console');
-page.removeAllListeners('requestfailed');
 page.on('pageerror', (e) => taggedErrs.push({ phase, type: 'pageerror', text: String(e) }));
 page.on('console', (msg) => {
   if (msg.type() === 'error') {
@@ -97,267 +74,160 @@ try {
       nom: 'Menage Pro Test', secteur: 'menage', couleur: '#00FF9D',
       services: ['Menage'], slug: 'menage-pro-test', deviseSymbole: '€',
     }));
-    // QA 2026-07-08 : sans ce flag, showCalibration() (dashboard.html) ouvre la
-    // Planète de Calibration à chaque rechargement (elle ne s'affiche qu'une fois
-    // par navigateur via ce flag) — l'overlay plein écran (position:fixed;inset:0)
-    // reste ouvert ~5s et intercepte silencieusement les clics de test suivants
-    // (ex. "Valider" sur un Vecteur d'Action), produisant un FINDING trompeur sans
-    // rapport avec le widget testé. Ce script teste le dashboard "utilisateur
-    // revenant", pas la cérémonie elle-même (non couverte ici) : on la marque donc
-    // comme déjà vue, comme le ferait un vrai utilisateur au 2e chargement.
     localStorage.setItem('seba_calibration_seen', '1');
   });
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
   await new Promise(r => setTimeout(r, 1500));
   await page.screenshot({ path: path.join(outDir, '01-populated-state.png'), fullPage: false });
 
-  const basicInfo = await page.evaluate(() => ({
-    title: document.title,
-    widgetCount: document.querySelectorAll('.widget-shell').length,
-    serenityCanvas: !!document.querySelector('.serenity-canvas'),
-    actionStreamChildren: document.querySelectorAll('#action-stream > *').length,
-    horizonCanvas: !!document.getElementById('horizon-line'),
-    timelineCanvas: !!document.getElementById('timeline-life'),
-  }));
-  log('basic', JSON.stringify(basicInfo));
-  if (basicInfo.widgetCount === 0) finding('No .widget-shell elements rendered after seeding + reload (populated state looks empty)');
-
-  // 2. Serenity Score hover
-  mark('2-serenity-hover');
-  const serenityWidget = await page.$('.widget-shell[data-widget-id="serenity-score"]');
-  if (serenityWidget) {
-    const box = await serenityWidget.boundingBox();
-    if (box) {
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await new Promise(r => setTimeout(r, 600));
-      await serenityWidget.screenshot({ path: path.join(outDir, '02-serenity-hover.png') });
-      const orbitInfo = await page.evaluate(() => {
-        const labels = document.querySelectorAll('.serenity-orbit-label, [class*="orbit"]');
-        return { orbitLabelCount: labels.length };
-      });
-      log('serenity', JSON.stringify(orbitInfo));
-    } else {
-      finding('Serenity widget found but has no bounding box (hidden/zero-size)');
-    }
-  } else {
-    finding('Serenity Score widget (.widget-shell[data-widget-id="serenity-score"]) not found in DOM');
-  }
-
-  // 3. Action stream - Valider button dismissal
-  mark('3-action-stream-valider');
-  const actionCardsBefore = await page.$$eval('#action-stream [class*="action-card"], #action-stream > *', els => els.length);
-  log('action-stream', `cards before: ${actionCardsBefore}`);
-  const validerBtn = await page.$('#action-stream button');
-  if (validerBtn) {
-    const btnText = await page.evaluate(el => el.textContent, validerBtn);
-    await validerBtn.click();
-    await new Promise(r => setTimeout(r, 800));
-    const actionCardsAfter = await page.$$eval('#action-stream [class*="action-card"], #action-stream > *', els => els.length);
-    log('action-stream', `clicked btn "${btnText.trim()}", cards after: ${actionCardsAfter}`);
-    await page.screenshot({ path: path.join(outDir, '03-action-stream-after-dismiss.png') });
-    if (actionCardsAfter >= actionCardsBefore && actionCardsBefore > 0) {
-      finding(`Action Stream: clicking "${btnText.trim()}" did not reduce card count (before=${actionCardsBefore}, after=${actionCardsAfter})`);
-    }
-  } else {
-    finding('Action Stream (#action-stream): no buttons found to click (Valider button missing)');
-  }
-
-  // 4. Horizon line hover + resize
-  mark('4-horizon-hover-resize');
-  const horizonCanvas = await page.$('#horizon-line');
-  if (horizonCanvas) {
-    const box = await horizonCanvas.boundingBox();
-    if (box) {
-      await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2);
-      await new Promise(r => setTimeout(r, 300));
-      await page.mouse.move(box.x + box.width * 0.6, box.y + box.height / 2);
-      await new Promise(r => setTimeout(r, 300));
-      const tooltip = await page.evaluate(() => {
-        const t = document.querySelector('[class*="horizon-tooltip"], [class*="tooltip"]');
-        return t ? { text: t.textContent.trim(), visible: getComputedStyle(t).display !== 'none' && getComputedStyle(t).opacity !== '0' } : null;
-      });
-      log('horizon', 'tooltip: ' + JSON.stringify(tooltip));
-      await page.screenshot({ path: path.join(outDir, '04-horizon-hover.png') });
-      // resize
-      const prevVp = page.viewport();
-      await page.setViewport({ width: prevVp.width - 200, height: prevVp.height });
-      await new Promise(r => setTimeout(r, 500));
-      const sizeAfterResize = await page.evaluate(() => {
-        const c = document.getElementById('horizon-line');
-        return { w: c.width, h: c.height, clientW: c.clientWidth };
-      });
-      log('horizon', 'after resize: ' + JSON.stringify(sizeAfterResize));
-      await page.screenshot({ path: path.join(outDir, '04b-horizon-after-resize.png') });
-      await page.setViewport(prevVp);
-      await new Promise(r => setTimeout(r, 400));
-    } else {
-      finding('Horizon line canvas (#horizon-line) found but zero-size / not visible');
-    }
-  } else {
-    finding('Horizon line canvas (#horizon-line) not found in DOM');
-  }
-
-  // 5. Timeline de Vie hover + resize
-  // QA 2026-07-08 : .timeline-life-rail est caché en CSS sous 1180px par design
-  // (audit 3.4 — la boucle rAF associée est même volontairement arrêtée en dessous
-  // de ce seuil, cf. widgets.js renderTimelineLife). Sur le viewport mobile
-  // (390px), un canvas zero-size est donc le comportement ATTENDU, pas un bug :
-  // ne pas le signaler comme un FINDING, seulement le journaliser.
-  mark('5-timeline-hover-resize');
-  const timelineCanvas = await page.$('#timeline-life');
-  if (timelineCanvas) {
-    const box = await timelineCanvas.boundingBox();
-    const vpWidth = page.viewport().width;
-    if (box) {
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.4);
-      await new Promise(r => setTimeout(r, 400));
-      await page.screenshot({ path: path.join(outDir, '05-timeline-hover.png') });
-    } else if (vpWidth < 1181) {
-      log('timeline', `zero-size canvas at ${vpWidth}px viewport — attendu (rail masqué < 1180px par design, audit 3.4)`);
-    } else {
-      finding('Timeline de Vie canvas (#timeline-life) found but zero-size / not visible');
-    }
-  } else {
-    finding('Timeline de Vie canvas (#timeline-life) not found in DOM');
-  }
-
-  // 6. Customize mode / drag and drop
-  mark('6-customize-mode');
-  await page.evaluate(() => { if (typeof toggleCustomizeMode === 'function') toggleCustomizeMode(); });
-  await new Promise(r => setTimeout(r, 600));
-  const customizeState = await page.evaluate(() => ({
-    bodyHasClass: document.body.classList.contains('customize-mode'),
-    dragHandles: document.querySelectorAll('.widget-drag-handle').length,
-  }));
-  log('customize', JSON.stringify(customizeState));
-  if (!customizeState.bodyHasClass) finding('toggleCustomizeMode() did not add "customize-mode" class to body');
-  if (customizeState.dragHandles === 0) finding('Customize mode active but no .widget-drag-handle elements found');
-  await page.screenshot({ path: path.join(outDir, '06-customize-mode.png') });
-  await page.evaluate(() => { if (typeof toggleCustomizeMode === 'function') toggleCustomizeMode(); });
-  await new Promise(r => setTimeout(r, 400));
-
-  // 7. Extension drawer
-  mark('7-ext-drawer');
-  const extTrigger = await page.$('#ext-drawer-trigger');
-  if (extTrigger) {
-    await extTrigger.click();
-    await new Promise(r => setTimeout(r, 600));
-    const drawerState = await page.evaluate(() => {
-      const drawer = document.getElementById('ext-drawer');
-      const tiles = document.querySelectorAll('#ext-drawer-body .ext-tile, #ext-drawer-body [class*="ext-tile"]');
-      return {
-        open: drawer.classList.contains('open'),
-        tileCount: tiles.length,
-        tileTexts: Array.from(tiles).map(t => t.textContent.trim().slice(0, 40)),
-      };
-    });
-    log('ext-drawer', JSON.stringify(drawerState));
-    if (!drawerState.open) finding('Extension drawer (#ext-drawer) did not open after clicking trigger');
-    if (drawerState.tileCount < 3) finding(`Extension drawer expected >=3 tiles (Nouveau Graphique / Bloc-notes / Flux RSS Finance), found ${drawerState.tileCount}: ${JSON.stringify(drawerState.tileTexts)}`);
-    await page.screenshot({ path: path.join(outDir, '07-ext-drawer-open.png') });
-    await page.evaluate(() => { if (typeof closeExtDrawer === 'function') closeExtDrawer(); });
-    await new Promise(r => setTimeout(r, 400));
-  } else {
-    finding('Extension drawer trigger (#ext-drawer-trigger) not found in DOM');
-  }
-
-  // 8. Conscience Seba aura notifications
-  // NB (audit 1.1, 2026-07-07) : triggerAuraDemo() n'est plus auto-déclenché au
-  // chargement (c'était un scénario de test "client X" affiché à tout utilisateur
-  // réel à chaque F5) — on le force nous-mêmes ici pour tester le mécanisme, et on
-  // attend au moins le délai du 1er scénario (2500ms) avant de vérifier.
-  mark('8-aura-notifications');
-  await page.evaluate(() => { if (typeof triggerAuraDemo === 'function') triggerAuraDemo(); });
-  await new Promise(r => setTimeout(r, 3000));
-  let auraCard = await page.$('#aura-stack .aura-card');
-  if (auraCard) {
-    await page.screenshot({ path: path.join(outDir, '08-aura-visible.png') });
-    const ignoreBtn = await page.$('#aura-stack .aura-btn.ignore');
-    if (ignoreBtn) {
-      await ignoreBtn.click();
-      await new Promise(r => setTimeout(r, 700));
-      const stillThere = await page.$('#aura-stack .aura-card');
-      log('aura', `after ignore click, card present: ${!!stillThere}`);
-      await page.screenshot({ path: path.join(outDir, '08b-aura-after-ignore.png') });
-    } else {
-      finding('Aura card visible but no .aura-btn.ignore button found');
-    }
-    // trigger again for validate test
-    await page.evaluate(() => { if (typeof triggerAuraDemo === 'function') triggerAuraDemo(); });
-    await new Promise(r => setTimeout(r, 3000));
-    const validateBtn = await page.$('#aura-stack .aura-btn.validate');
-    if (validateBtn) {
-      await validateBtn.click();
-      await new Promise(r => setTimeout(r, 700));
-      log('aura', 'validate button clicked ok');
-    } else {
-      log('aura', 'no validate button found on second trigger (may have been one-shot)');
-    }
-  } else {
-    finding('Conscience Seba aura notification (#aura-stack .aura-card) never appeared, even after triggerAuraDemo()');
-  }
-
-  // 9. Focus mode
-  mark('9-focus-mode');
-  await page.keyboard.press('f');
-  await new Promise(r => setTimeout(r, 600));
-  const focusState = await page.evaluate(() => {
-    const overlay = document.getElementById('focus-overlay');
-    const canvas = document.getElementById('focus-serenity-canvas');
-    const actionLine = document.getElementById('focus-action-line');
+  /* ═══════════════════════════════════════════════════════════════
+     Dashboard patron actuel (socle visuel pro-global, commit 1a0f841) --
+     remplace les assertions de l'ancien dashboard Tactical Dark
+     (Serenity Score / Action Stream / Horizon / Timeline de Vie / Focus
+     Mode), retire du DOM depuis ce commit et jamais restaure. Selecteurs
+     verifies directement dans docs/app/dashboard.html.
+  ═══════════════════════════════════════════════════════════════ */
+  mark('2-basic-sections');
+  const basicInfo = await page.evaluate(() => {
+    const btnPrimary = document.querySelector('.db-btn-primary');
+    const panelTitles = Array.from(document.querySelectorAll('.db-panel-title span')).map(s => s.textContent.trim());
     return {
-      overlayExists: !!overlay,
-      overlayOpen: overlay ? overlay.classList.contains('open') : false,
-      bodyHasFocusClass: document.body.classList.contains('focus-active'),
-      canvasSize: canvas ? { w: canvas.width, h: canvas.height } : null,
-      actionText: actionLine ? actionLine.textContent.trim() : null,
+      title: document.title,
+      primaryBtnText: btnPrimary ? btnPrimary.textContent.trim() : null,
+      alertsSectionPresent: !!document.getElementById('db-alerts'),
+      alertsChildren: document.getElementById('db-alerts') ? document.getElementById('db-alerts').children.length : 0,
+      panelTitles,
+      jobListChildren: document.getElementById('db-job-list') ? document.getElementById('db-job-list').children.length : 0,
+      financeChildren: document.getElementById('db-finance') ? document.getElementById('db-finance').children.length : 0,
     };
   });
-  log('focus-mode', JSON.stringify(focusState));
-  if (!focusState.overlayOpen) finding('Pressing "F" did not open Focus Mode overlay (#focus-overlay missing "open" class)');
-  if (focusState.canvasSize && (focusState.canvasSize.w === 0 || focusState.canvasSize.h === 0)) finding('Focus Mode Serenity canvas has zero size');
-  await page.screenshot({ path: path.join(outDir, '09-focus-mode-on.png') });
-  await page.keyboard.press('Escape');
-  await new Promise(r => setTimeout(r, 600));
-  const afterEsc = await page.evaluate(() => ({
-    overlayOpen: document.getElementById('focus-overlay')?.classList.contains('open'),
-    bodyHasFocusClass: document.body.classList.contains('focus-active'),
-  }));
-  log('focus-mode', 'after escape: ' + JSON.stringify(afterEsc));
-  if (afterEsc.overlayOpen) finding('Escape key did not close Focus Mode overlay');
-  await page.screenshot({ path: path.join(outDir, '09b-focus-mode-off.png') });
+  log('basic', JSON.stringify(basicInfo));
 
-  // 10. Theme toggle
-  mark('10-theme-toggle');
-  await page.evaluate(() => { if (window.sebaTheme) sebaTheme.toggle(); });
-  await new Promise(r => setTimeout(r, 700));
-  const themeState = await page.evaluate(() => ({
-    htmlTheme: document.documentElement.getAttribute('data-theme') || document.documentElement.className,
-    bgColor: getComputedStyle(document.body).backgroundColor,
-  }));
-  log('theme', JSON.stringify(themeState));
-  await page.screenshot({ path: path.join(outDir, '10-theme-toggled.png') });
-  // toggle back
-  await page.evaluate(() => { if (window.sebaTheme) sebaTheme.toggle(); });
-  await new Promise(r => setTimeout(r, 500));
-
-  // 12. Rapid interaction stress test
-  mark('12-stress-test');
-  for (let i = 0; i < 6; i++) {
-    await page.evaluate((i) => {
-      if (typeof toggleCustomizeMode === 'function' && i % 2 === 0) toggleCustomizeMode();
-      if (typeof toggleFocusMode === 'function' && i % 3 === 0) toggleFocusMode();
-      if (window.sebaTheme && i % 2 === 1) sebaTheme.toggle();
-    }, i);
-    await new Promise(r => setTimeout(r, 100));
+  if (!basicInfo.primaryBtnText || !basicInfo.primaryBtnText.includes('Nouvelle intervention')) {
+    finding(`Bouton "Nouvelle intervention" absent ou texte inattendu (observe: ${JSON.stringify(basicInfo.primaryBtnText)})`);
   }
-  await new Promise(r => setTimeout(r, 500));
-  const stressState = await page.evaluate(() => ({
-    bodyClasses: document.body.className,
-    widgetGridVisible: !!document.querySelector('.widget-grid'),
+  if (!basicInfo.alertsSectionPresent) {
+    finding('Section "À traiter maintenant" (#db-alerts, aria-label="Actions prioritaires") absente du DOM');
+  } else if (basicInfo.alertsChildren === 0) {
+    finding('Section "À traiter maintenant" (#db-alerts) présente mais vide après seed + reload');
+  }
+  if (!basicInfo.panelTitles.includes("Aujourd'hui")) {
+    finding(`Section "Aujourd'hui" absente (titres de panneaux observés: ${JSON.stringify(basicInfo.panelTitles)})`);
+  } else if (basicInfo.jobListChildren === 0) {
+    finding('Section "Aujourd\'hui" présente mais #db-job-list est vide après seed + reload');
+  }
+  if (!basicInfo.panelTitles.includes('Résumé financier')) {
+    finding(`Section "Résumé financier" absente (titres de panneaux observés: ${JSON.stringify(basicInfo.panelTitles)})`);
+  } else if (basicInfo.financeChildren === 0) {
+    finding('Section "Résumé financier" présente mais #db-finance est vide après seed + reload');
+  }
+  await page.screenshot({ path: path.join(outDir, '02-sections-check.png') });
+
+  // Navigation Dashboard -> Clients -> Dashboard (liens reels generes par
+  // sidebar.js, jamais une URL devinee en dur -- voir docs/sidebar.js
+  // resolveHref()).
+  mark('3-nav-dashboard-clients-dashboard');
+  // Sur mobile la sidebar est hors-champ tant que le hamburger ne l'ouvre
+  // pas (meme flux qu'un vrai utilisateur -- toggleSidebar(), dashboard.html)
+  // : sans ca les liens existent en DOM mais sont non-cliquables (masques).
+  if (vp === 'mobile') {
+    await page.evaluate(() => { if (typeof toggleSidebar === 'function') toggleSidebar(); });
+    await new Promise(r => setTimeout(r, 400));
+  }
+  const clientsLinkHandle = await page.evaluateHandle(() => {
+    const links = Array.from(document.querySelectorAll('#sidebar a, .sidebar a, nav a'));
+    return links.find(a => a.textContent.trim().includes('Clients')) || null;
+  });
+  const clientsLink = clientsLinkHandle.asElement();
+  if (clientsLink) {
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => null),
+      clientsLink.click(),
+    ]);
+    await new Promise(r => setTimeout(r, 800));
+    const onClients = /clients\.html/.test(page.url());
+    if (!onClients) finding(`Navigation vers Clients a échoué (URL observée: ${page.url()})`);
+    log('nav', `Dashboard -> Clients : ${page.url()}`);
+
+    if (vp === 'mobile') {
+      await page.evaluate(() => { if (typeof toggleSidebar === 'function') toggleSidebar(); });
+      await new Promise(r => setTimeout(r, 400));
+    }
+    const dashLinkHandle = await page.evaluateHandle(() => {
+      const links = Array.from(document.querySelectorAll('#sidebar a, .sidebar a, nav a'));
+      return links.find(a => a.textContent.trim().includes('Tableau de bord')) || null;
+    });
+    const dashLink = dashLinkHandle.asElement();
+    if (dashLink) {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => null),
+        dashLink.click(),
+      ]);
+      await new Promise(r => setTimeout(r, 800));
+      const backOnDash = /dashboard\.html/.test(page.url());
+      if (!backOnDash) finding(`Navigation retour vers Dashboard a échoué (URL observée: ${page.url()})`);
+      log('nav', `Clients -> Dashboard : ${page.url()}`);
+    } else {
+      finding('Lien de navigation "Tableau de bord" introuvable dans la sidebar depuis Clients');
+    }
+  } else {
+    finding('Lien de navigation "Clients" introuvable dans la sidebar du dashboard');
+  }
+
+  // Aucune barre de scroll horizontale
+  mark('4-no-horizontal-scroll');
+  const scrollState = await page.evaluate(() => ({
+    hasHorizontalScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
   }));
-  log('stress', JSON.stringify(stressState));
-  await page.screenshot({ path: path.join(outDir, '12-after-stress-test.png') });
+  log('scroll', JSON.stringify(scrollState));
+  if (scrollState.hasHorizontalScroll) {
+    finding(`Scroll horizontal détecté (scrollWidth=${scrollState.scrollWidth}, clientWidth=${scrollState.clientWidth})`);
+  }
+
+  // Aucune collision mobile entre les actions d'en-tete et la navigation.
+  // NB : cette page (dashboard patron, pro-global) n'a pas de FAB IA -- ce
+  // composant n'existe que sur le portail employe terrain (espace-terrain.html,
+  // hors perimetre de ce script). Le controle porte ici sur les elements
+  // d'action reels de cette page (bouton principal, menu secondaire, avatar,
+  // hamburger de sidebar) : aucun ne doit se chevaucher visuellement.
+  if (vp === 'mobile') {
+    mark('5-mobile-collision-check');
+    const overlapInfo = await page.evaluate(() => {
+      function rectOf(sel) {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return null;
+        return { sel, top: r.top, left: r.left, right: r.right, bottom: r.bottom };
+      }
+      function intersects(a, b) {
+        return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      }
+      const rects = ['#hamburger', '.db-btn-primary', '#db-menu-btn', '#avatar']
+        .map(rectOf)
+        .filter(Boolean);
+      const collisions = [];
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          if (intersects(rects[i], rects[j])) collisions.push([rects[i].sel, rects[j].sel]);
+        }
+      }
+      return { rectCount: rects.length, collisions };
+    });
+    log('mobile-collision', JSON.stringify(overlapInfo));
+    if (overlapInfo.collisions.length > 0) {
+      finding(`Collision mobile détectée entre éléments d'action : ${JSON.stringify(overlapInfo.collisions)}`);
+    }
+    await page.screenshot({ path: path.join(outDir, '05-mobile-header.png') });
+  }
+
+  // Chargement sans erreur console (verification explicite, en plus de la
+  // capture continue taggedErrs ci-dessous).
+  if (taggedErrs.length > 0) {
+    finding(`Erreurs console/page capturées pendant l'exécution : ${JSON.stringify(taggedErrs)}`);
+  }
 
 } catch (e) {
   finding(`SCRIPT EXCEPTION during phase "${phase}": ${e.message}`);
@@ -372,3 +242,4 @@ console.log(JSON.stringify(results.findings, null, 2));
 fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify({ ...results, errors: taggedErrs }, null, 2));
 
 await browser.close();
+process.exit(results.findings.length > 0 ? 1 : 0);
