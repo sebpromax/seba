@@ -3,84 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<script>(function(){try{var t=localStorage.getItem('seba_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Espace Client — Seba</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
 <script src="theme.js"></script>
-<!-- Page PRIVEE mais PAS guard.js : contrairement a l'espace terrain
-     (badge sur l'appareil patron), le client a sa PROPRE session
-     Supabase Auth independante -- la verification se fait plus bas via
+<!-- Page PRIVEE mais PAS guard.js : le client a sa PROPRE session Supabase
+     Auth independante -- la verification se fait via
      SebaDB.clientPortal.session()/profile(), pas via un pre-requis de
      session patron sur cet appareil. -->
 <script src="auth.js"></script>
 <style>
-:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);}
+:root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);
+  /* Navigation latérale compacte client (toujours sombre, même rationale
+     que .sidebar patron dans pro-global.css -- rail de navigation qui ne
+     suit jamais le thème clair/sombre du canvas). Réutilise --ink-inverse/
+     --sidebar-hover-bg/--sidebar-hover-ink déjà définis dans theme.css pour
+     le même besoin côté patron ; tokens propres uniquement pour les 3
+     valeurs sans équivalent partagé. */
+  --cp-nav-bg:#0B0C0E; --cp-nav-border:rgba(255,255,255,.08); --cp-nav-text:rgba(255,255,255,.6); --cp-nav-active-bg:rgba(0,255,157,.08);
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{overflow-x:hidden;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;}
 a{color:inherit;text-decoration:none;}
 button,input,textarea{font-family:'Inter',sans-serif;}
+.mono-num{font-variant-numeric:tabular-nums;}
 
-.ce-wrap{max-width:680px;margin:0 auto;padding:24px 20px 60px;padding-bottom:max(60px, calc(20px + env(safe-area-inset-bottom, 0px)));}
+/* ── En-tête ── */
+.cp-header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.cp-brand{min-width:0;}
+.cp-brand-name{font-size:.78rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cp-greeting{font-size:1.1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cp-header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.cp-icon-btn{position:relative;width:44px;height:44px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.cp-icon-btn:hover{border-color:var(--ink);}
+.cp-unread-badge{position:absolute;top:-4px;right:-4px;background:var(--emerald);color:var(--on-emerald);font-size:.62rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.cp-avatar{width:44px;height:44px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;cursor:pointer;user-select:none;}
+.cp-avatar-wrap{position:relative;}
+.cp-user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:180px;z-index:200;box-shadow:var(--shadow-md);display:none;}
+.cp-user-menu.open{display:block;}
+.cp-user-menu a,.cp-user-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:6px;font-size:.88rem;color:var(--ink);background:none;border:none;cursor:pointer;font-family:inherit;}
+.cp-user-menu a:hover,.cp-user-menu button:hover{background:var(--bg);}
+.cp-sync-note{font-size:.68rem;color:var(--text-2);margin-top:2px;}
 
-.ce-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
-.ce-brand{display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:800;letter-spacing:-0.03em;width:100%;margin-bottom:8px;}
-.ce-brand-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);flex-shrink:0;}
-.ce-brand .b-se{color:var(--ink);}
-.ce-brand .b-ba{font-weight:300;color:var(--text-2);}
-.ce-greeting h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
-.ce-greeting p{font-size:.86rem;color:var(--text-2);}
-.ce-actions{display:flex;gap:10px;flex-wrap:wrap;}
-.ce-btn-new{background:var(--emerald);color:var(--on-emerald);border:none;padding:10px 18px;border-radius:var(--rs);font-size:.86rem;font-weight:700;cursor:pointer;min-height:48px;}
-.ce-logout{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);padding:10px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;min-height:48px;}
-@media (hover: hover) {
-  .ce-btn-new:hover{opacity:.9;}
-  .ce-logout:hover{opacity:.85;}
+/* ── Layout ── */
+.cp-wrap{max-width:720px;margin:0 auto;padding:20px 20px 100px;}
+.cp-section{margin-bottom:24px;}
+.cp-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);font-weight:700;margin-bottom:10px;}
+
+/* ── Action prioritaire ── */
+.cp-priority{background:var(--white);border:1.5px solid var(--emerald);border-radius:var(--r);padding:18px 20px;}
+.cp-priority-ok{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;display:flex;align-items:center;gap:10px;color:var(--badge-success-txt);font-weight:600;font-size:.92rem;}
+.cp-priority-label{font-size:.72rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.cp-priority-title{font-size:1rem;font-weight:700;margin-bottom:4px;}
+.cp-priority-desc{font-size:.86rem;color:var(--text-2);margin-bottom:14px;}
+.cp-priority-actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ── Cartes / boutons génériques ── */
+.cp-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;}
+.cp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:var(--rs);font-size:.86rem;font-weight:700;cursor:pointer;border:none;white-space:nowrap;}
+.cp-btn-primary{background:var(--emerald);color:var(--on-emerald);}
+.cp-btn-primary:hover{opacity:.9;}
+.cp-btn-secondary{background:var(--white);color:var(--ink);border:1.5px solid var(--border) !important;}
+.cp-btn-secondary:hover{border-color:var(--ink) !important;}
+.cp-btn-danger{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border) !important;}
+.cp-empty{text-align:center;padding:28px 16px;color:var(--text-2);font-size:.86rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);}
+
+/* ── Prochaine intervention ── */
+.cp-interv-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.cp-interv-when{font-size:.78rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.03em;}
+.cp-interv-service{font-size:1.02rem;font-weight:700;margin-top:4px;}
+.cp-interv-addr{font-size:.84rem;color:var(--text-2);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cp-interv-employe{font-size:.82rem;color:var(--text-2);margin-top:6px;}
+.cp-interv-consignes{font-size:.82rem;color:var(--ink);margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--rs);}
+.cp-interv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+/* ── Listes compactes (demandes / devis / factures / documents) ── */
+.cp-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.cp-list-row:last-child{border-bottom:none;}
+.cp-list-main{min-width:0;flex:1;}
+.cp-list-title{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cp-list-meta{font-size:.76rem;color:var(--text-2);margin-top:2px;}
+.cp-list-side{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.cp-list-amount{font-weight:700;font-size:.9rem;}
+.cp-badge{font-size:.7rem;padding:3px 9px;border-radius:12px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--text-2);}
+.cp-badge.recue,.cp-badge.nouvelle{background:var(--badge-info-bg);color:var(--badge-info-txt);}
+.cp-badge.en_preparation,.cp-badge.en_cours,.cp-badge.a-payer,.cp-badge.attente{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+.cp-badge.devis_envoye,.cp-badge.planifiee{background:var(--badge-info-bg);color:var(--emerald);}
+.cp-badge.terminee,.cp-badge.payee,.cp-badge.signe{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+.cp-badge.annulee,.cp-badge.refuse,.cp-badge.retard{background:var(--danger-bg);color:var(--danger-text);}
+.cp-link-btn{font-size:.8rem;font-weight:700;color:var(--emerald);background:none;border:none;cursor:pointer;padding:8px 6px;min-height:44px;}
+
+/* ── Messages (aperçu) ── */
+.cp-msg-preview{display:flex;align-items:flex-start;gap:12px;}
+.cp-msg-preview-body{flex:1;min-width:0;}
+.cp-msg-preview-from{font-size:.78rem;font-weight:700;color:var(--text-2);}
+.cp-msg-preview-text{font-size:.88rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cp-msg-preview-time{font-size:.74rem;color:var(--text-2);margin-top:2px;}
+
+/* ── Documents ── */
+.cp-doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.cp-doc-item{border:1px solid var(--border);border-radius:var(--rs);padding:12px;text-align:center;cursor:pointer;background:var(--white);}
+.cp-doc-item:hover{border-color:var(--emerald);}
+.cp-doc-ico{font-size:1.4rem;margin-bottom:6px;}
+.cp-doc-label{font-size:.76rem;color:var(--text-2);}
+
+/* ── Navigation mobile inférieure ── */
+.cp-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--white);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);}
+.cp-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 4px 8px;min-height:56px;color:var(--text-2);background:none;border:none;cursor:pointer;font-family:inherit;}
+.cp-nav-item.active{color:var(--emerald);}
+.cp-nav-ico{font-size:1.1rem;line-height:1;}
+.cp-nav-label{font-size:.64rem;font-weight:600;}
+/* ── Navigation latérale compacte (desktop) ── */
+.cp-side-nav{display:none;position:fixed;left:0;top:0;bottom:0;width:200px;background:var(--cp-nav-bg);color:var(--ink-inverse);flex-direction:column;padding:24px 0;z-index:60;}
+.cp-side-brand{padding:0 20px 18px;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--cp-nav-border);margin-bottom:12px;}
+.cp-side-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);}
+.cp-side-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.88rem;color:var(--cp-nav-text);cursor:pointer;}
+.cp-side-item:hover{background:var(--sidebar-hover-bg);color:var(--sidebar-hover-ink);}
+.cp-side-item.active{color:var(--emerald);background:var(--cp-nav-active-bg);}
+
+/* Bascule mobile/desktop -- APRÈS les règles de base ci-dessus (même
+   spécificité qu'un override en media query : l'ordre de déclaration
+   décide, jamais l'inverse) pour que ces overrides gagnent réellement.
+   Un bug d'ordre inverse laissait .cp-side-nav en display:none à toute
+   largeur -- corrigé ici (2026-07-23). */
+@media (min-width:900px){
+  .cp-bottom-nav{display:none;}
+  .cp-side-nav{display:flex;}
+  .cp-wrap{max-width:1000px;padding-left:220px;}
+  .cp-header{padding-left:240px;}
 }
-@media (hover: none) {
-  .ce-btn-new:active{opacity:.85;}
-  .ce-logout:active{opacity:.75;}
-}
 
-.ce-section-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--emerald);font-weight:700;margin-bottom:12px;}
-.ce-section-title.ce-section-title-2{margin-top:32px;}
+.cp-view{display:none;}
+.cp-view.active{display:block;}
 
-.ce-request-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-.ce-request{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 20px;transition:border-color var(--t-std,.25s) var(--ease-std,ease),box-shadow var(--t-std,.25s) var(--ease-std,ease);}
-@media (hover: hover) {
-  .ce-request:hover{border-color:var(--module-hover-border);box-shadow:var(--shadow-glow);}
-}
-@media (hover: none) {
-  .ce-request:active{border-color:var(--module-hover-border);}
-}
-.ce-request-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
-.ce-request-title{font-weight:600;font-size:.96rem;}
-.ce-badge{font-size:.72rem;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--text-2);}
-.ce-badge.nouvelle{background:var(--badge-info-bg);color:var(--text-2);}
-.ce-badge.en_cours{background:var(--badge-success-bg);color:var(--emerald);}
-.ce-badge.terminee{background:var(--bg);color:var(--text-2);}
-.ce-badge.annulee{background:var(--danger-bg);color:var(--danger-text);}
-.ce-request-meta{font-size:.82rem;color:var(--text-2);margin-bottom:10px;}
-.ce-request-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.ce-request-chat-btn{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:var(--rs);font-size:.8rem;font-weight:600;cursor:pointer;min-height:48px;display:inline-flex;align-items:center;gap:6px;}
-@media (hover:hover){.ce-request-chat-btn:hover{border-color:var(--emerald);color:var(--emerald);}}
-@media (hover:none){.ce-request-chat-btn:active{border-color:var(--emerald);color:var(--emerald);}}
+.cp-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
+.cp-error-screen{max-width:420px;margin:80px auto;text-align:center;padding:0 20px;}
+.cp-error-screen h2{font-size:1.2rem;margin-bottom:10px;}
+.cp-error-screen p{font-size:.9rem;color:var(--text-2);margin-bottom:20px;}
 
-.ce-empty{text-align:center;padding:40px 20px;color:var(--text-2);font-size:.9rem;background:var(--white);border:1.5px dashed var(--border);border-radius:var(--r);grid-column:1/-1;}
-
-.ce-messaging{margin-top:32px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;}
-.ce-msg-thread{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
-.ce-msg-bubble{background:var(--bg);border-radius:10px;padding:9px 12px;font-size:.86rem;}
-.ce-msg-meta{font-size:.72rem;color:var(--text-2);margin-top:3px;}
-.ce-msg-empty{font-size:.84rem;color:var(--text-2);text-align:center;padding:12px 0;}
-.ce-msg-row{display:flex;gap:8px;}
-.ce-msg-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:.88rem;min-height:48px;-webkit-appearance:none;appearance:none;}
-.ce-msg-input:focus{border-color:var(--emerald);outline:none;}
-.ce-msg-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
-.ce-msg-send:disabled{opacity:.5;cursor:not-allowed;}
-
+/* ── Modales (demande / chat / photo) réutilisées telles quelles ── */
 .ce-modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
 .ce-modal-overlay.open{display:flex;}
 .ce-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:380px;}
@@ -93,23 +157,12 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .ce-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
 .ce-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
 .ce-modal-send:disabled{opacity:.5;cursor:not-allowed;}
+.ce-confirm-danger .ce-modal-send{background:var(--danger-text);}
 
-.ce-loading{text-align:center;padding:60px 20px;color:var(--text-2);font-size:.9rem;}
-
-/* ── Chat de mission (tripartite Patron/Employé/Client, 2026-07-20) ──
-   Feuille ancrée en bas sur mobile (le clavier réduit la hauteur du
-   viewport -> le panneau, contraint en max-height:85dvh, se redimensionne
-   avec lui : le champ de saisie reste toujours visible juste au-dessus du
-   clavier, jamais de position:fixed collé au bas de l'écran qui risquerait
-   d'être recouvert -- voir cahier des charges mobile 2026-07-19, point 4).
-   Modale centrée classique dès 640px. */
 .mc-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:flex-end;justify-content:center;z-index:600;}
 .mc-overlay.open{display:flex;}
 .mc-panel{background:var(--white);width:100%;max-width:480px;border-radius:var(--r) var(--r) 0 0;display:flex;flex-direction:column;max-height:85vh;max-height:85dvh;}
-@media (min-width:640px){
-  .mc-overlay{align-items:center;padding:20px;}
-  .mc-panel{border-radius:var(--r);max-height:80vh;max-height:80dvh;}
-}
+@media (min-width:640px){.mc-overlay{align-items:center;padding:20px;}.mc-panel{border-radius:var(--r);max-height:80vh;max-height:80dvh;}}
 .mc-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;}
 .mc-title{font-weight:700;font-size:1rem;}
 .mc-sub{font-size:.8rem;color:var(--text-2);margin-top:2px;}
@@ -122,7 +175,6 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .mc-bubble{padding:9px 13px;border-radius:14px;font-size:.88rem;line-height:1.4;word-break:break-word;}
 .mc-row.self .mc-bubble{background:var(--emerald);color:var(--on-emerald);border-bottom-right-radius:4px;}
 .mc-row.other .mc-bubble{background:var(--bg);color:var(--ink);border:1px solid var(--border);border-bottom-left-radius:4px;}
-.mc-time{font-size:.68rem;color:var(--text-2);margin-top:3px;padding:0 3px;}
 .mc-empty{text-align:center;color:var(--text-2);font-size:.86rem;padding:28px 0;}
 .mc-input-row{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(14px, calc(10px + env(safe-area-inset-bottom,0px)));}
 .mc-input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;-webkit-appearance:none;appearance:none;}
@@ -130,8 +182,6 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .mc-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:0 18px;border-radius:var(--rs);font-weight:700;font-size:.86rem;cursor:pointer;min-height:48px;flex-shrink:0;}
 .mc-send:disabled{opacity:.5;cursor:not-allowed;}
 
-/* ── Visionneuse photo de clôture (2026-07-20b) -- URL signee generee a
-   la demande (bucket prive), jamais mise en cache. ── */
 .pv-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);display:none;align-items:center;justify-content:center;z-index:700;padding:20px;}
 .pv-overlay.open{display:flex;}
 .pv-panel{background:var(--white);border-radius:var(--r);padding:20px;max-width:520px;width:100%;position:relative;}
@@ -139,89 +189,159 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .pv-body{text-align:center;padding:24px 10px 4px;color:var(--text-2);font-size:.9rem;}
 .pv-body img{max-width:100%;border-radius:var(--rs);display:block;margin:0 auto;}
 
-.ce-pw-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-.ce-pw-row input{flex:1;min-width:120px;min-height:48px;-webkit-appearance:none;appearance:none;}
-
-@media (max-width: 768px) {
-  .ce-msg-input,.ce-modal input,.ce-pw-row input{font-size:16px;}
-  .ce-actions{gap:12px;}
-  .ce-header{gap:12px;}
-}
-
-/* ── Tablette/Desktop : grille (cahier des charges "adaptation
-   multi-supports stricte", 2026-07-19) ── */
-@media (min-width: 640px) {
-  /* Cartes de demandes sur plusieurs colonnes des que la largeur le
-     permet -- auto-fill+minmax : jamais moins de 260px par carte, donc
-     jamais de debordement meme si le nombre de colonnes change. */
-  .ce-request-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
-}
-@media (min-width: 900px) {
-  .ce-wrap{max-width:1100px;padding-left:32px;padding-right:32px;}
-  .ce-brand{width:auto;margin-bottom:0;margin-right:auto;order:-1;}
-  .ce-header{align-items:center;}
-
-  /* Colonne principale (demandes en cours + historique) + colonne
-     laterale (messagerie + mot de passe), cote a cote -- minmax(0,1fr)
-     jamais 1fr seul (piste de grille qui grandit au-dela du viewport,
-     voir CLAUDE.md "Lecons apprises"). */
-  .ce-main-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:28px;align-items:start;}
-  .ce-col-side{position:sticky;top:24px;}
-  .ce-col-side .ce-messaging{margin-top:0;}
-  .ce-col-side .ce-messaging + .ce-messaging{margin-top:20px;}
-}
+@media (max-width:768px){ .ce-modal input,.mc-input{font-size:16px;} }
 </style>
 </head>
 <body>
 
-<div class="ce-wrap" id="ce-wrap" style="display:none;">
-  <div class="ce-header">
-    <div class="ce-brand" aria-hidden="true"><span class="ce-brand-dot"></span><span><span class="b-se">Se</span><span class="b-ba">ba</span></span></div>
-    <div class="ce-greeting">
-      <h1 id="ce-greeting">Bonjour</h1>
-      <p id="ce-date"></p>
-    </div>
-    <div class="ce-actions">
-      <button class="ce-btn-new" onclick="openNewRequestModal()">+ Nouvelle demande</button>
-      <button class="ce-logout" onclick="handleLogout()">Se déconnecter</button>
-    </div>
-  </div>
+<div id="cp-loading" class="cp-loading">Chargement…</div>
 
-  <div class="ce-main-grid">
-    <div class="ce-col-main">
-      <div class="ce-section-title">Mes demandes en cours</div>
-      <div id="ce-requests-active" class="ce-request-grid"></div>
-
-      <div class="ce-section-title ce-section-title-2">Historique</div>
-      <div id="ce-requests-history" class="ce-request-grid"></div>
-    </div>
-
-    <div class="ce-col-side">
-      <div class="ce-messaging">
-        <div class="ce-section-title" style="margin-bottom:14px;">Messages</div>
-        <div class="ce-msg-thread" id="ce-msg-thread"></div>
-        <div class="ce-msg-row">
-          <input type="text" class="ce-msg-input" id="ce-msg-input" placeholder="Écrire à votre prestataire..." onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
-          <button class="ce-msg-send" onclick="envoyerMessagePrestataire()">Envoyer</button>
-        </div>
-      </div>
-
-      <div class="ce-messaging" id="ce-pw-panel">
-        <div class="ce-section-title" style="margin-bottom:14px;">Mon mot de passe</div>
-        <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
-        <div class="ce-pw-row">
-          <input type="password" class="ce-msg-input" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6">
-          <input type="password" class="ce-msg-input" id="ce-pw-confirm" placeholder="Confirmez" minlength="6">
-        </div>
-        <button class="ce-msg-send" style="width:100%;padding:11px;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
-        <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
-      </div>
-    </div>
-  </div>
+<div id="cp-error-screen" class="cp-error-screen" style="display:none;">
+  <h2>Compte non lié</h2>
+  <p id="cp-error-msg">Ce compte n'est rattaché à aucune entreprise. Contactez votre prestataire ou déconnectez-vous.</p>
+  <button class="cp-btn cp-btn-secondary" onclick="handleLogout()">Se déconnecter</button>
 </div>
 
-<div class="ce-loading" id="ce-loading">Chargement…</div>
+<div id="cp-app" style="display:none;">
+  <!-- Navigation latérale compacte (desktop uniquement) -->
+  <nav class="cp-side-nav" id="cp-side-nav">
+    <div class="cp-side-brand"><span class="cp-side-dot"></span>Seba</div>
+    <div class="cp-side-item active" data-view="accueil" onclick="switchView('accueil')">🏠 Accueil</div>
+    <div class="cp-side-item" data-view="demandes" onclick="switchView('demandes')">📋 Demandes</div>
+    <div class="cp-side-item" data-view="interventions" onclick="switchView('interventions')">🧹 Interventions</div>
+    <div class="cp-side-item" data-view="documents" onclick="switchView('documents')">📁 Documents</div>
+    <div class="cp-side-item" data-view="messages" onclick="switchView('messages')">💬 Messages</div>
+  </nav>
 
+  <!-- En-tête -->
+  <header class="cp-header">
+    <div class="cp-brand">
+      <div class="cp-brand-name" id="cp-brand-name">Entreprise</div>
+      <div class="cp-greeting" id="cp-greeting">Bonjour</div>
+      <div class="cp-sync-note" id="cp-sync-note" style="display:none;"></div>
+    </div>
+    <div class="cp-header-actions">
+      <button type="button" class="cp-icon-btn" aria-label="Messages" onclick="switchView('messages')">
+        💬<span class="cp-unread-badge" id="cp-unread-badge" style="display:none;">0</span>
+      </button>
+      <div class="cp-avatar-wrap">
+        <button type="button" class="cp-avatar" id="cp-avatar" aria-haspopup="true" aria-expanded="false" aria-label="Menu du compte" onclick="toggleUserMenu(event)">—</button>
+        <div class="cp-user-menu" id="cp-user-menu" role="menu">
+          <a href="#" role="menuitem" onclick="event.preventDefault();switchView('compte');">Mon compte</a>
+          <button type="button" role="menuitem" onclick="handleLogout()">Se déconnecter</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="cp-wrap">
+    <!-- ═══ Accueil ═══ -->
+    <section class="cp-view active" id="view-accueil" aria-label="Accueil">
+      <div class="cp-section" id="cp-priority-zone"></div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Prochaine intervention</div>
+        <div id="cp-next-intervention"></div>
+      </div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Suivi des demandes</div>
+        <div id="cp-requests-preview"></div>
+      </div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Devis</div>
+        <div id="cp-quotes-preview"></div>
+      </div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Factures</div>
+        <div id="cp-invoices-preview"></div>
+      </div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Messages</div>
+        <div id="cp-messages-preview"></div>
+      </div>
+
+      <div class="cp-section">
+        <div class="cp-section-title">Documents</div>
+        <div id="cp-documents-preview"></div>
+      </div>
+    </section>
+
+    <!-- ═══ Demandes ═══ -->
+    <section class="cp-view" id="view-demandes" aria-label="Demandes">
+      <div class="cp-section" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="cp-section-title" style="margin-bottom:0;">Mes demandes</div>
+        <button type="button" class="cp-btn cp-btn-primary" onclick="openNewRequestModal()">+ Nouvelle demande</button>
+      </div>
+      <div class="cp-section"><div id="cp-requests-full"></div></div>
+    </section>
+
+    <!-- ═══ Interventions ═══ -->
+    <section class="cp-view" id="view-interventions" aria-label="Interventions">
+      <div class="cp-section-title">Interventions</div>
+      <div id="cp-interventions-full"></div>
+    </section>
+
+    <!-- ═══ Documents ═══ -->
+    <section class="cp-view" id="view-documents" aria-label="Documents">
+      <div class="cp-section">
+        <div class="cp-section-title">Devis</div>
+        <div id="cp-quotes-full"></div>
+      </div>
+      <div class="cp-section">
+        <div class="cp-section-title">Factures</div>
+        <div id="cp-invoices-full"></div>
+      </div>
+      <div class="cp-section">
+        <div class="cp-section-title">Comptes rendus &amp; photos</div>
+        <div id="cp-reports-full"></div>
+      </div>
+    </section>
+
+    <!-- ═══ Messages ═══ -->
+    <section class="cp-view" id="view-messages" aria-label="Messages">
+      <div class="cp-section-title">Messages</div>
+      <div class="cp-card">
+        <div class="ce-msg-thread" id="ce-msg-thread" style="max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="ce-msg-input" placeholder="Écrire à votre prestataire..." style="flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;" onkeydown="if(event.key==='Enter')envoyerMessagePrestataire();">
+          <button type="button" class="cp-btn cp-btn-primary" onclick="envoyerMessagePrestataire()">Envoyer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Compte ═══ -->
+    <section class="cp-view" id="view-compte" aria-label="Mon compte">
+      <div class="cp-section-title">Mon mot de passe</div>
+      <div class="cp-card">
+        <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="password" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
+          <input type="password" id="ce-pw-confirm" placeholder="Confirmez" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
+        </div>
+        <button type="button" class="cp-btn cp-btn-primary" style="width:100%;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
+        <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <button type="button" class="cp-btn cp-btn-danger" onclick="handleLogout()">Se déconnecter</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Navigation mobile inférieure -->
+  <nav class="cp-bottom-nav" aria-label="Navigation principale">
+    <button type="button" class="cp-nav-item active" data-view="accueil" onclick="switchView('accueil')"><span class="cp-nav-ico">🏠</span><span class="cp-nav-label">Accueil</span></button>
+    <button type="button" class="cp-nav-item" data-view="demandes" onclick="switchView('demandes')"><span class="cp-nav-ico">📋</span><span class="cp-nav-label">Demandes</span></button>
+    <button type="button" class="cp-nav-item" data-view="interventions" onclick="switchView('interventions')"><span class="cp-nav-ico">🧹</span><span class="cp-nav-label">Interventions</span></button>
+    <button type="button" class="cp-nav-item" data-view="documents" onclick="switchView('documents')"><span class="cp-nav-ico">📁</span><span class="cp-nav-label">Documents</span></button>
+    <button type="button" class="cp-nav-item" data-view="messages" onclick="switchView('messages')"><span class="cp-nav-ico">💬</span><span class="cp-nav-label">Messages</span></button>
+  </nav>
+</div>
+
+<!-- Nouvelle demande -->
 <div class="ce-modal-overlay" id="ce-modal-overlay">
   <div class="ce-modal">
     <h3>Nouvelle demande</h3>
@@ -234,14 +354,23 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
-<!-- Chat de mission (tripartite) -- ouvert depuis une carte de demande -->
+<!-- Confirmation devis (action financière -- confirmation obligatoire) -->
+<div class="ce-modal-overlay" id="ce-confirm-overlay">
+  <div class="ce-modal">
+    <h3 id="ce-confirm-title">Confirmer</h3>
+    <p id="ce-confirm-desc"></p>
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeConfirmModal()">Annuler</button>
+      <button class="ce-modal-send" id="ce-confirm-btn">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chat de mission (tripartite) -->
 <div class="mc-overlay" id="mc-overlay">
   <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Chat de la demande">
     <div class="mc-header">
-      <div>
-        <div class="mc-title" id="mc-title">Chat</div>
-        <div class="mc-sub" id="mc-sub"></div>
-      </div>
+      <div><div class="mc-title" id="mc-title">Chat</div><div class="mc-sub" id="mc-sub"></div></div>
       <button class="mc-close" onclick="closeMissionChat()" aria-label="Fermer">&times;</button>
     </div>
     <div class="mc-thread" id="mc-thread-mission"></div>
@@ -263,167 +392,476 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <script>
-let _profile = null; // { client, account, client_id }
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   CLIENT_PORTAL_DEMO_DATA — seules valeurs mockées de cette page,
+   utilisées UNIQUEMENT si aucune donnée réelle n'est disponible
+   (refonte produit, 2026-07-22).
+═══════════════════════════════════════════════════════════════ */
+const CLIENT_PORTAL_DEMO_DATA = {
+  nextIntervention: null,
+  quotes: [],
+  invoices: [],
+};
 
 function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function fmtMoney(n) { return (n || 0).toLocaleString('fr-FR') + ' €'; }
 
-const STATUT_LABELS = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+const REQUEST_STATUT_LABELS = { nouvelle: 'Reçue', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+const DEVIS_STATUT_LABELS = { attente: 'En attente', signe: 'Accepté', refuse: 'Refusé', expire: 'Expiré' };
+const FACTURE_STATUT_LABELS = { attente: 'À payer', payee: 'Payée', retard: 'En retard', annulee: 'Annulée' };
+const FACTURE_CSS = { attente: 'a-payer', payee: 'payee', retard: 'retard', annulee: 'annulee' };
 
-(async function init() {
-  if (!window.SebaDB) return;
-  const session = await SebaDB.clientPortal.session();
-  if (!session) { window.location.href = 'client-connexion.html'; return; }
+let _profile = null;
+let _requestsById = {};
 
-  _profile = await SebaDB.clientPortal.profile();
-  if (!_profile || !_profile.ok) {
-    window.location.href = 'client-connexion.html';
-    return;
+/* ═══════════════════════════════════════════════════════════════
+   buildClientPortalViewModel(state, currentUser) — point d'entrée
+   UNIQUE de lecture des données pour tous les composants de cette page.
+═══════════════════════════════════════════════════════════════ */
+async function buildClientPortalViewModel(currentUser) {
+  const account = currentUser.account;
+  const clientId = currentUser.client_id;
+  const client = currentUser.client || {};
+
+  const requests = await SebaDB.clientPortal.requests.list(account, clientId);
+  _requestsById = {};
+  requests.forEach(r => { _requestsById[r.id] = r; });
+
+  const messages = (window.SebaQuotes && window.SebaQuotes.messagesFor)
+    ? await window.SebaQuotes.messagesFor('client', clientId, account)
+    : [];
+  const unread = messages.filter(m => m.expediteurRole !== 'client' && !m.luParClient).length;
+
+  // Devis/factures/interventions : en session cloud reelle, passe par les
+  // RPC dediees (get_my_client_devis/factures/interventions -- migrations/
+  // 2026-07-23-client-portal-data-rls.sql) qui filtrent cote serveur par
+  // account ET client_id, RLS-safe. En mode local/demo, lit directement
+  // SebaDB.list() et filtre par clientId (aucune RPC disponible en local).
+  // Pas de mock de repli : une vraie donnee absente reste simplement vide,
+  // jamais remplacee par une fausse valeur.
+  let quotes = [], invoices = [], nextIntervention = null;
+  if (hasRemoteSession()) {
+    try {
+      quotes = await SebaDB.clientPortal.devis() || [];
+      invoices = await SebaDB.clientPortal.factures() || [];
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const upcoming = (await SebaDB.clientPortal.interventions() || [])
+        .filter(i => !i.done && i.date >= todayStr)
+        .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+      nextIntervention = upcoming[0] || null;
+    } catch (e) { /* RPC indisponible -- reste vide, honnete */ }
+  } else {
+    try {
+      quotes = (SebaDB.list('devis') || []).filter(d => d.clientId === clientId);
+      invoices = (SebaDB.list('factures') || []).filter(f => f.clientId === clientId);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const upcoming = (SebaDB.list('interventions') || [])
+        .filter(i => i.clientId === clientId && !i.done && i.date >= todayStr)
+        .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+      nextIntervention = upcoming[0] || null;
+    } catch (e) { /* mode démo non initialisé -- reste vide, honnête */ }
   }
 
-  document.getElementById('ce-loading').style.display = 'none';
-  document.getElementById('ce-wrap').style.display = 'block';
+  const priorityAction = buildPriorityAction({ quotes, invoices, nextIntervention, unread, requests });
+
+  return {
+    priorityAction, nextIntervention, requests, quotes, invoices, messages, unread,
+    documents: buildDocuments({ quotes, invoices, requests }),
+    client, account, clientId,
+  };
+}
+
+function hasRemoteSession() {
+  return !!(window.sebaAuth && sebaAuth.isConfigured);
+}
+
+/* Une seule action principale, dans cet ordre : devis à accepter/refuser,
+   facture à payer, intervention à confirmer, message non lu, problème signalé. */
+function buildPriorityAction({ quotes, invoices, nextIntervention, unread, requests }) {
+  const devisAttente = quotes.find(d => d.status === 'attente');
+  if (devisAttente) return { type: 'devis', label: 'Un devis attend votre réponse', desc: (devisAttente.numero || devisAttente.num || '') + ' · ' + fmtMoney(devisAttente.amount), targetId: devisAttente.id };
+  const factureAttente = invoices.find(f => f.status === 'attente' || f.status === 'retard');
+  if (factureAttente) return { type: 'facture', label: 'Une facture est à régler', desc: (factureAttente.numero || factureAttente.num || '') + ' · ' + fmtMoney(factureAttente.amount), targetId: factureAttente.id };
+  if (nextIntervention && !nextIntervention.confirmed) return { type: 'intervention', label: 'Confirmez votre prochaine intervention', desc: nextIntervention.service || '' };
+  if (unread > 0) return { type: 'message', label: unread + ' message(s) non lu(s)', desc: 'Votre prestataire vous a écrit.' };
+  const pb = requests.find(r => r.statut === 'nouvelle' && /probl[eè]me/i.test(r.titre || ''));
+  if (pb) return { type: 'probleme', label: 'Problème signalé en attente', desc: pb.titre };
+  return null;
+}
+
+function buildDocuments({ quotes, invoices, requests }) {
+  const photos = requests.filter(r => r.photoPath).map(r => ({ type: 'photo', label: 'Photo — ' + r.titre, path: r.photoPath }));
+  return {
+    devis: quotes, factures: invoices, photos,
+    autres: [],
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDU
+═══════════════════════════════════════════════════════════════ */
+function renderPriority(pa) {
+  const el = document.getElementById('cp-priority-zone');
+  if (!pa) { el.innerHTML = '<div class="cp-priority-ok">✓ Tout est à jour</div>'; return; }
+  const actionBtn = {
+    devis: '<button type="button" class="cp-btn cp-btn-primary" onclick="switchView(\'documents\')">Voir le devis</button>',
+    facture: '<button type="button" class="cp-btn cp-btn-primary" onclick="switchView(\'documents\')">Voir la facture</button>',
+    intervention: '<button type="button" class="cp-btn cp-btn-primary" onclick="switchView(\'interventions\')">Voir l\'intervention</button>',
+    message: '<button type="button" class="cp-btn cp-btn-primary" onclick="switchView(\'messages\')">Ouvrir les messages</button>',
+    probleme: '<button type="button" class="cp-btn cp-btn-primary" onclick="switchView(\'demandes\')">Voir la demande</button>',
+  }[pa.type] || '';
+  el.innerHTML = '<div class="cp-priority">' +
+    '<div class="cp-priority-label">Action prioritaire</div>' +
+    '<div class="cp-priority-title">' + escapeHtml(pa.label) + '</div>' +
+    '<div class="cp-priority-desc">' + escapeHtml(pa.desc || '') + '</div>' +
+    '<div class="cp-priority-actions">' + actionBtn + '</div>' +
+  '</div>';
+}
+
+const INTERV_STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard' };
+
+function renderNextIntervention(vm) {
+  const target = document.getElementById('cp-next-intervention');
+  const i = vm.nextIntervention;
+  if (!i) { target.innerHTML = '<div class="cp-empty">Aucune intervention prévue pour le moment.</div>'; document.getElementById('cp-interventions-full').innerHTML = target.innerHTML; return; }
+  const statut = i.done ? 'terminee' : 'a-venir';
+  const actions = [];
+  if (!i.done) {
+    if (!i.confirmed) actions.push('<button type="button" class="cp-btn cp-btn-primary" onclick="confirmerIntervention(\'' + i.id + '\')">Confirmer</button>');
+    actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="openNewRequestModal(\'Demande de changement — \' + ' + JSON.stringify(i.service || '') + ')">Demander un changement</button>');
+    actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="openNewRequestModal(\'Problème signalé — \' + ' + JSON.stringify(i.service || '') + ')">Signaler un problème</button>');
+  }
+  actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="switchView(\'messages\')">Envoyer un message</button>');
+  const html = '<div class="cp-card">' +
+    '<div class="cp-interv-row">' +
+      '<div>' +
+        '<div class="cp-interv-when">' + escapeHtml(i.date || '') + (i.time ? ' · ' + escapeHtml(i.time) : '') + '</div>' +
+        '<div class="cp-interv-service">' + escapeHtml(i.service || 'Intervention') + '</div>' +
+      '</div>' +
+      '<span class="cp-badge ' + statut + '">' + (INTERV_STATUS_LABEL[statut] || statut) + '</span>' +
+    '</div>' +
+    '<div class="cp-interv-addr">' + escapeHtml(i.adresse || 'Adresse non renseignée') + '</div>' +
+    (i.employeNom ? '<div class="cp-interv-employe">Intervenant : ' + escapeHtml(i.employeNom) + '</div>' : '') +
+    (i.consignes ? '<div class="cp-interv-consignes">' + escapeHtml(i.consignes) + '</div>' : '') +
+    '<div class="cp-interv-actions">' + actions.join('') + '</div>' +
+    '<div style="margin-top:12px;"><button type="button" class="cp-link-btn" onclick="switchView(\'interventions\')">Voir les détails →</button></div>' +
+  '</div>';
+  target.innerHTML = html;
+  document.getElementById('cp-interventions-full').innerHTML = html;
+}
+function confirmerIntervention(id) {
+  // Confirmation cliente d'une intervention -- pas de champ dédié côté
+  // backend aujourd'hui (interventions est patron-only, RLS) : enregistré
+  // localement pour le mode démo, sans appel réseau fictif en mode cloud.
+  if (!hasRemoteSession()) {
+    try {
+      const items = SebaDB.list('interventions');
+      const it = items.find(x => x.id === id);
+      if (it) SebaDB.update('interventions', id, { confirmed: true });
+    } catch (e) {}
+  }
+  refreshView();
+}
+
+function renderRequestRow(r) {
+  return '<div class="cp-list-row">' +
+    '<div class="cp-list-main">' +
+      '<div class="cp-list-title">' + escapeHtml(r.titre) + '</div>' +
+      '<div class="cp-list-meta">' + escapeHtml(r.createdAt || '') + (r.intervenantNom ? ' · ' + escapeHtml(r.intervenantNom) : '') + '</div>' +
+    '</div>' +
+    '<div class="cp-list-side">' +
+      '<span class="cp-badge ' + escapeHtml(r.statut) + '">' + (REQUEST_STATUT_LABELS[r.statut] || r.statut) + '</span>' +
+      '<button type="button" class="cp-link-btn" onclick="openMissionChat(\'' + r.id + '\')">Chat</button>' +
+      (r.photoPath ? '<button type="button" class="cp-link-btn" onclick="verPhotoMission(\'' + escapeHtml(r.photoPath) + '\')">Photo</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+function renderRequests(vm) {
+  const preview = document.getElementById('cp-requests-preview');
+  const full = document.getElementById('cp-requests-full');
+  if (!vm.requests.length) {
+    const empty = '<div class="cp-empty">Aucune demande pour le moment. <button type="button" class="cp-link-btn" onclick="openNewRequestModal()">+ Nouvelle demande</button></div>';
+    preview.innerHTML = empty; full.innerHTML = empty;
+    return;
+  }
+  const rows = vm.requests.map(renderRequestRow).join('');
+  const wrapped = '<div class="cp-card">' + rows + '</div>';
+  preview.innerHTML = '<div class="cp-card">' + vm.requests.slice(0, 3).map(renderRequestRow).join('') + '</div>';
+  full.innerHTML = wrapped;
+}
+
+function renderQuoteRow(d) {
+  const canAct = d.status === 'attente';
+  return '<div class="cp-list-row">' +
+    '<div class="cp-list-main">' +
+      '<div class="cp-list-title">' + escapeHtml(d.num || d.numero || 'Devis') + '</div>' +
+      '<div class="cp-list-meta">' + escapeHtml(d.date || '') + ' · <span class="mono-num">' + fmtMoney(d.amount) + '</span></div>' +
+    '</div>' +
+    '<div class="cp-list-side">' +
+      '<span class="cp-badge ' + (d.status || '') + '">' + (DEVIS_STATUT_LABELS[d.status] || d.status || '') + '</span>' +
+      '<button type="button" class="cp-link-btn" onclick="alert(\'Consultation du devis — fonctionnalité à brancher sur le document réel.\')">Consulter</button>' +
+      (canAct ? '<button type="button" class="cp-link-btn" onclick="confirmDevisAction(\'' + d.id + '\',\'signe\')">Accepter</button>' +
+                '<button type="button" class="cp-link-btn" style="color:var(--danger-text);" onclick="confirmDevisAction(\'' + d.id + '\',\'refuse\')">Refuser</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+function renderQuotes(vm) {
+  const preview = document.getElementById('cp-quotes-preview');
+  const full = document.getElementById('cp-quotes-full');
+  if (!vm.quotes.length) {
+    const empty = '<div class="cp-empty">Aucun devis pour le moment.</div>';
+    preview.innerHTML = empty; full.innerHTML = empty;
+    return;
+  }
+  const html = '<div class="cp-card">' + vm.quotes.map(renderQuoteRow).join('') + '</div>';
+  preview.innerHTML = '<div class="cp-card">' + vm.quotes.slice(0, 3).map(renderQuoteRow).join('') + '</div>';
+  full.innerHTML = html;
+}
+function confirmDevisAction(id, newStatus) {
+  const label = newStatus === 'signe' ? 'accepter' : 'refuser';
+  openConfirmModal('Confirmer', 'Voulez-vous vraiment ' + label + ' ce devis ? Cette action ne peut pas être annulée facilement.', () => {
+    if (!hasRemoteSession()) {
+      try { SebaDB.update('devis', id, { status: newStatus }); } catch (e) {}
+    }
+    closeConfirmModal();
+    refreshView();
+  });
+}
+
+function renderInvoiceRow(f) {
+  return '<div class="cp-list-row">' +
+    '<div class="cp-list-main">' +
+      '<div class="cp-list-title">' + escapeHtml(f.num || f.numero || 'Facture') + '</div>' +
+      '<div class="cp-list-meta">Échéance ' + escapeHtml(f.dateEcheance || f.date || '') + '</div>' +
+    '</div>' +
+    '<div class="cp-list-side">' +
+      '<span class="mono-num cp-list-amount">' + fmtMoney(f.amount) + '</span>' +
+      '<span class="cp-badge ' + (FACTURE_CSS[f.status] || '') + '">' + (FACTURE_STATUT_LABELS[f.status] || f.status || '') + '</span>' +
+      '<button type="button" class="cp-link-btn" onclick="alert(\'Consultation de la facture — fonctionnalité à brancher sur le document réel.\')">Consulter</button>' +
+      (f.paymentLink ? '<button type="button" class="cp-link-btn" onclick="window.open(' + JSON.stringify(f.paymentLink) + ',\'_blank\')">Payer</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+function renderInvoices(vm) {
+  const preview = document.getElementById('cp-invoices-preview');
+  const full = document.getElementById('cp-invoices-full');
+  if (!vm.invoices.length) {
+    const empty = '<div class="cp-empty">Aucune facture pour le moment.</div>';
+    preview.innerHTML = empty; full.innerHTML = empty;
+    return;
+  }
+  const html = '<div class="cp-card">' + vm.invoices.map(renderInvoiceRow).join('') + '</div>';
+  preview.innerHTML = '<div class="cp-card">' + vm.invoices.slice(0, 3).map(renderInvoiceRow).join('') + '</div>';
+  full.innerHTML = html;
+}
+
+function renderMessagesPreview(vm) {
+  const el = document.getElementById('cp-messages-preview');
+  const last = vm.messages[vm.messages.length - 1];
+  const badge = document.getElementById('cp-unread-badge');
+  if (vm.unread > 0) { badge.style.display = 'flex'; badge.textContent = String(vm.unread); } else { badge.style.display = 'none'; }
+  if (!last) { el.innerHTML = '<div class="cp-empty">Aucun message pour le moment.</div>'; return; }
+  el.innerHTML = '<div class="cp-card cp-msg-preview">' +
+    '<div class="cp-msg-preview-body">' +
+      '<div class="cp-msg-preview-from">' + (last.expediteurRole === 'client' ? 'Vous' : 'Votre prestataire') + (vm.unread > 0 ? ' · ' + vm.unread + ' non lu(s)' : '') + '</div>' +
+      '<div class="cp-msg-preview-text">' + escapeHtml(last.texte) + '</div>' +
+      '<div class="cp-msg-preview-time">' + escapeHtml(last.createdAt || '') + '</div>' +
+    '</div>' +
+    '<button type="button" class="cp-btn cp-btn-secondary" onclick="switchView(\'messages\')">Ouvrir</button>' +
+  '</div>';
+}
+
+function renderDocuments(vm) {
+  const preview = document.getElementById('cp-documents-preview');
+  const reportsFull = document.getElementById('cp-reports-full');
+  const docs = vm.documents;
+  const items = [];
+  docs.devis.forEach(d => items.push({ ico: '📄', label: 'Devis ' + (d.num || d.numero || '') }));
+  docs.factures.forEach(f => items.push({ ico: '🧾', label: 'Facture ' + (f.num || f.numero || '') }));
+  docs.photos.forEach(p => items.push({ ico: '📷', label: p.label, path: p.path }));
+  if (!items.length) {
+    const empty = '<div class="cp-empty">Aucun document disponible pour le moment.</div>';
+    preview.innerHTML = empty; reportsFull.innerHTML = empty;
+    return;
+  }
+  const grid = '<div class="cp-doc-grid">' + items.map(it =>
+    '<div class="cp-doc-item" ' + (it.path ? 'onclick="verPhotoMission(' + JSON.stringify(it.path) + ')"' : '') + '>' +
+      '<div class="cp-doc-ico">' + it.ico + '</div><div class="cp-doc-label">' + escapeHtml(it.label) + '</div>' +
+    '</div>'
+  ).join('') + '</div>';
+  preview.innerHTML = grid;
+  reportsFull.innerHTML = docs.photos.length
+    ? '<div class="cp-doc-grid">' + docs.photos.map(p => '<div class="cp-doc-item" onclick="verPhotoMission(' + JSON.stringify(p.path) + ')"><div class="cp-doc-ico">📷</div><div class="cp-doc-label">' + escapeHtml(p.label) + '</div></div>').join('') + '</div>'
+    : '<div class="cp-empty">Aucun compte rendu ou photo pour le moment.</div>';
+}
+
+async function refreshView() {
+  try {
+    const vm = await buildClientPortalViewModel(_profile);
+    renderPriority(vm.priorityAction);
+    renderNextIntervention(vm);
+    renderRequests(vm);
+    renderQuotes(vm);
+    renderInvoices(vm);
+    renderMessagesPreview(vm);
+    renderDocuments(vm);
+  } catch (err) {
+    console.error('[client-espace] rendu impossible :', err);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION (vues)
+═══════════════════════════════════════════════════════════════ */
+function switchView(name) {
+  document.querySelectorAll('.cp-view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === name));
+  if (name === 'messages') renderMessages();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT — session/profil, puis état chargé ou erreur contrôlée.
+═══════════════════════════════════════════════════════════════ */
+(async function init() {
+  if (!window.SebaDB) { showError('Le service de données est indisponible. Réessayez plus tard.'); return; }
+  let session;
+  try { session = await SebaDB.clientPortal.session(); } catch (e) { showError('Connexion impossible. Réessayez.'); return; }
+  if (!session) { window.location.href = 'client-connexion.html'; return; }
+
+  let profileRes;
+  try { profileRes = await SebaDB.clientPortal.profile(); } catch (e) { showError('Impossible de charger votre profil.'); return; }
+  if (!profileRes || !profileRes.ok) {
+    // Compte non lié à une entreprise : jamais de faux tableau de bord,
+    // erreur contrôlée avec déconnexion possible (exigence explicite).
+    showError((profileRes && profileRes.error) || 'Ce compte n\'est rattaché à aucune entreprise.');
+    return;
+  }
+  _profile = profileRes;
+
+  document.getElementById('cp-loading').style.display = 'none';
+  document.getElementById('cp-app').style.display = 'block';
 
   const client = _profile.client || {};
-  document.getElementById('ce-greeting').textContent = 'Bonjour ' + (client.prenom || '');
-  document.getElementById('ce-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('cp-brand-name').textContent = client.entrepriseNom || 'Votre prestataire';
+  document.getElementById('cp-greeting').textContent = 'Bonjour ' + (client.prenom || '');
+  const av = document.getElementById('cp-avatar');
+  av.textContent = (client.prenom || 'C').charAt(0).toUpperCase();
 
-  renderRequests();
-  renderMessages();
+  const syncNote = document.getElementById('cp-sync-note');
+  if (typeof SebaDB.syncStatus === 'function') {
+    const s = SebaDB.syncStatus();
+    if (s.pending > 0 || s.failed > 0) {
+      syncNote.style.display = 'block';
+      syncNote.textContent = s.failed > 0 ? 'Synchronisation : action requise' : 'Synchronisation en cours…';
+    }
+  }
+
+  await refreshView();
+  if (window.SebaDB.onChange) SebaDB.onChange(() => refreshView());
 })();
 
-// Auto-service : le client change son propre mot de passe depuis ici, a
-// tout moment -- miroir de modifierMonMotDePasse() sur espace-terrain.html.
+function showError(msg) {
+  document.getElementById('cp-loading').style.display = 'none';
+  document.getElementById('cp-error-msg').textContent = msg;
+  document.getElementById('cp-error-screen').style.display = 'block';
+}
+
+/* ── Menus ── */
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('cp-user-menu');
+  const open = m.classList.toggle('open');
+  document.getElementById('cp-avatar').setAttribute('aria-expanded', String(open));
+}
+document.addEventListener('click', () => document.getElementById('cp-user-menu').classList.remove('open'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('cp-user-menu').classList.remove('open'); });
+
+/* ── Mot de passe ── */
 async function modifierMonMotDePasse() {
   const newPw = document.getElementById('ce-pw-new').value;
   const confirmPw = document.getElementById('ce-pw-confirm').value;
   const status = document.getElementById('ce-pw-status');
-  if (newPw.length < 6) {
-    status.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
-    status.style.color = 'var(--danger-text)';
-    return;
-  }
-  if (newPw !== confirmPw) {
-    status.textContent = 'Les deux mots de passe ne correspondent pas.';
-    status.style.color = 'var(--danger-text)';
-    return;
-  }
-  const btn = document.querySelector('#ce-pw-panel .ce-msg-send');
-  if (btn.disabled) return; // anti double-tap : requête déjà en vol
-  btn.disabled = true;
-  status.textContent = 'Enregistrement…';
-  status.style.color = '';
+  if (newPw.length < 6) { status.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; status.style.color = 'var(--danger-text)'; return; }
+  if (newPw !== confirmPw) { status.textContent = 'Les deux mots de passe ne correspondent pas.'; status.style.color = 'var(--danger-text)'; return; }
+  status.textContent = 'Enregistrement…'; status.style.color = '';
   const res = await SebaDB.clientPortal.setPassword(newPw);
-  btn.disabled = false;
   if (res.ok) {
-    status.textContent = 'Mot de passe modifié.';
-    status.style.color = 'var(--emerald)';
-    document.getElementById('ce-pw-new').value = '';
-    document.getElementById('ce-pw-confirm').value = '';
+    status.textContent = 'Mot de passe modifié.'; status.style.color = 'var(--emerald)';
+    document.getElementById('ce-pw-new').value = ''; document.getElementById('ce-pw-confirm').value = '';
   } else {
-    status.textContent = res.error || 'Échec de la modification.';
-    status.style.color = 'var(--danger-text)';
+    status.textContent = res.error || 'Échec de la modification.'; status.style.color = 'var(--danger-text)';
   }
-}
-
-let _requestsById = {};
-
-function renderRequestCard(r) {
-  return '<div class="ce-request">' +
-      '<div class="ce-request-top">' +
-        '<span class="ce-request-title">' + escapeHtml(r.titre) + '</span>' +
-        '<span class="ce-badge ' + escapeHtml(r.statut) + '">' + (STATUT_LABELS[r.statut] || r.statut) + '</span>' +
-      '</div>' +
-      '<div class="ce-request-meta">' + (r.intervenantNom ? 'Intervenant : ' + escapeHtml(r.intervenantNom) : 'Pas encore assignée') + '</div>' +
-      '<div class="ce-request-actions">' +
-        '<button type="button" class="ce-request-chat-btn" onclick="openMissionChat(\'' + r.id + '\')">💬 Chat</button>' +
-        (r.photoPath ? '<button type="button" class="ce-request-chat-btn" onclick="verPhotoMission(\'' + escapeHtml(r.photoPath) + '\')">📷 Voir la photo</button>' : '') +
-      '</div>' +
-    '</div>';
-}
-
-async function renderRequests() {
-  const activeBox = document.getElementById('ce-requests-active');
-  const historyBox = document.getElementById('ce-requests-history');
-  const requests = await SebaDB.clientPortal.requests.list(_profile.account, _profile.client_id);
-  _requestsById = {};
-  requests.forEach(r => { _requestsById[r.id] = r; });
-
-  const active = requests.filter(r => r.statut === 'nouvelle' || r.statut === 'en_cours');
-  const history = requests.filter(r => r.statut === 'terminee' || r.statut === 'annulee');
-
-  activeBox.innerHTML = active.length
-    ? active.map(renderRequestCard).join('')
-    : '<div class="ce-empty">Aucune demande en cours. Cliquez sur "+ Nouvelle demande" pour en créer une.</div>';
-
-  historyBox.innerHTML = history.length
-    ? history.map(renderRequestCard).join('')
-    : '<div class="ce-empty">Aucun historique pour l\'instant.</div>';
-}
-
-function openNewRequestModal() {
-  document.getElementById('ce-modal-titre').value = '';
-  document.getElementById('ce-modal-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('ce-modal-titre').focus(), 100);
-}
-function closeNewRequestModal() {
-  document.getElementById('ce-modal-overlay').classList.remove('open');
-}
-async function submitNewRequest() {
-  const titre = document.getElementById('ce-modal-titre').value.trim();
-  if (!titre) return;
-  const btn = document.querySelector('.ce-modal-send');
-  if (btn.disabled) return; // anti double-tap
-  btn.disabled = true;
-  btn.textContent = 'Envoi…';
-  await SebaDB.clientPortal.requests.create(_profile.account, _profile.client_id, titre);
-  btn.disabled = false;
-  btn.textContent = 'Envoyer';
-  closeNewRequestModal();
-  renderRequests();
-}
-
-async function renderMessages() {
-  const box = document.getElementById('ce-msg-thread');
-  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
-  const msgs = await window.SebaQuotes.messagesFor('client', _profile.client_id, _profile.account);
-  box.innerHTML = msgs.length
-    ? msgs.map(m => '<div class="ce-msg-bubble">' + escapeHtml(m.texte) +
-        '<div class="ce-msg-meta">' + (m.expediteurRole === 'client' ? 'Vous' : 'Votre prestataire') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
-    : '<div class="ce-msg-empty">Aucun message pour l\'instant.</div>';
-  box.scrollTop = box.scrollHeight;
-}
-
-async function envoyerMessagePrestataire() {
-  const inp = document.getElementById('ce-msg-input');
-  const texte = inp.value.trim();
-  if (!texte) return;
-  const btn = document.querySelector('.ce-msg-row .ce-msg-send');
-  if (btn.disabled) return; // anti double-tap
-  btn.disabled = true;
-  await window.SebaQuotes.createMessage({
-    account: _profile.account, clientId: _profile.client_id, expediteurRole: 'client', destinataireRole: 'patron', texte,
-  });
-  inp.value = '';
-  btn.disabled = false;
-  renderMessages();
 }
 
 let _loggingOut = false;
 async function handleLogout() {
-  if (_loggingOut) return; // anti double-tap
+  if (_loggingOut) return;
   _loggingOut = true;
   await SebaDB.clientPortal.logout();
   window.location.href = 'client-connexion.html';
 }
 
-// ── Chat de mission (tripartite) ──────────────────────────────────────
-// Ancré sur une demande précise (request_id), distinct du fil générique
-// "Messages" ci-dessus (patron<->client, hors contexte de mission).
+/* ── Nouvelle demande ── */
+function openNewRequestModal(prefill) {
+  document.getElementById('ce-modal-titre').value = prefill || '';
+  document.getElementById('ce-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ce-modal-titre').focus(), 100);
+}
+function closeNewRequestModal() { document.getElementById('ce-modal-overlay').classList.remove('open'); }
+async function submitNewRequest() {
+  const titre = document.getElementById('ce-modal-titre').value.trim();
+  if (!titre) return;
+  const btn = document.querySelector('.ce-modal-send');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  await SebaDB.clientPortal.requests.create(_profile.account, _profile.client_id, titre);
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  closeNewRequestModal();
+  refreshView();
+}
+
+/* ── Confirmation générique (actions destructives/financières) ── */
+let _confirmCb = null;
+function openConfirmModal(title, desc, cb) {
+  document.getElementById('ce-confirm-title').textContent = title;
+  document.getElementById('ce-confirm-desc').textContent = desc;
+  _confirmCb = cb;
+  const btn = document.getElementById('ce-confirm-btn');
+  btn.onclick = () => { if (_confirmCb) _confirmCb(); };
+  document.getElementById('ce-confirm-overlay').classList.add('open');
+}
+function closeConfirmModal() { document.getElementById('ce-confirm-overlay').classList.remove('open'); _confirmCb = null; }
+
+/* ── Messages (fil patron<->client générique) ── */
+async function renderMessages() {
+  const box = document.getElementById('ce-msg-thread');
+  if (!window.SebaQuotes || !window.SebaQuotes.messagesFor) return;
+  const msgs = await window.SebaQuotes.messagesFor('client', _profile.client_id, _profile.account);
+  box.innerHTML = msgs.length
+    ? msgs.map(m => '<div style="background:var(--bg);border-radius:10px;padding:9px 12px;font-size:.86rem;">' + escapeHtml(m.texte) +
+        '<div style="font-size:.72rem;color:var(--text-2);margin-top:3px;">' + (m.expediteurRole === 'client' ? 'Vous' : 'Votre prestataire') + ' · ' + (m.createdAt || '') + '</div></div>').join('')
+    : '<div style="font-size:.84rem;color:var(--text-2);text-align:center;padding:12px 0;">Aucun message pour l\'instant.</div>';
+  box.scrollTop = box.scrollHeight;
+}
+async function envoyerMessagePrestataire() {
+  const inp = document.getElementById('ce-msg-input');
+  const texte = inp.value.trim();
+  if (!texte) return;
+  inp.disabled = true;
+  await window.SebaQuotes.createMessage({ account: _profile.account, clientId: _profile.client_id, expediteurRole: 'client', destinataireRole: 'patron', texte });
+  inp.value = ''; inp.disabled = false;
+  renderMessages();
+  refreshView();
+}
+
+/* ── Chat de mission (tripartite, ancré sur une demande) ── */
 let _missionChatRequestId = null;
 function missionChatAuthor(m, req) {
-  if (m.expediteurRole === 'client') return null; // self, pas de nom au-dessus
+  if (m.expediteurRole === 'client') return null;
   if (m.expediteurRole === 'employe') return (req && req.intervenantNom) || 'Intervenant';
   return 'Votre prestataire';
 }
@@ -438,26 +876,17 @@ function openMissionChat(requestId) {
   renderMissionChatThread();
   setTimeout(() => document.getElementById('mc-input').focus(), 150);
 }
-function closeMissionChat() {
-  document.getElementById('mc-overlay').classList.remove('open');
-  _missionChatRequestId = null;
-}
+function closeMissionChat() { document.getElementById('mc-overlay').classList.remove('open'); _missionChatRequestId = null; }
 async function renderMissionChatThread() {
   const box = document.getElementById('mc-thread-mission');
   if (!_missionChatRequestId) return;
   const req = _requestsById[_missionChatRequestId];
   const msgs = await window.SebaQuotes.messagesForRequest(_missionChatRequestId, _profile.account);
-  if (!msgs.length) {
-    box.innerHTML = '<div class="mc-empty">Aucun message pour l\'instant. Écrivez le premier.</div>';
-    return;
-  }
+  if (!msgs.length) { box.innerHTML = '<div class="mc-empty">Aucun message pour l\'instant. Écrivez le premier.</div>'; return; }
   box.innerHTML = msgs.map(m => {
     const self = m.expediteurRole === 'client';
     const author = missionChatAuthor(m, req);
-    return '<div class="mc-row ' + (self ? 'self' : 'other') + '">' +
-      (author ? '<div class="mc-author">' + escapeHtml(author) + '</div>' : '') +
-      '<div class="mc-bubble">' + escapeHtml(m.texte) + '</div>' +
-    '</div>';
+    return '<div class="mc-row ' + (self ? 'self' : 'other') + '">' + (author ? '<div class="mc-author">' + escapeHtml(author) + '</div>' : '') + '<div class="mc-bubble">' + escapeHtml(m.texte) + '</div></div>';
   }).join('');
   box.scrollTop = box.scrollHeight;
 }
@@ -466,38 +895,23 @@ async function sendMissionChatMessage() {
   const texte = inp.value.trim();
   if (!texte || !_missionChatRequestId) return;
   const btn = document.getElementById('mc-send');
-  if (btn.disabled) return; // anti double-tap
+  if (btn.disabled) return;
   btn.disabled = true;
-  await window.SebaQuotes.createMessage({
-    account: _profile.account, clientId: _profile.client_id, requestId: _missionChatRequestId,
-    expediteurRole: 'client', destinataireRole: 'patron', texte,
-  });
-  inp.value = '';
-  btn.disabled = false;
+  await window.SebaQuotes.createMessage({ account: _profile.account, clientId: _profile.client_id, requestId: _missionChatRequestId, expediteurRole: 'client', destinataireRole: 'patron', texte });
+  inp.value = ''; btn.disabled = false;
   renderMissionChatThread();
 }
 
-// ── Visionneuse photo de clôture (2026-07-20b) ──────────────────────
-function openPhotoViewer() {
-  document.getElementById('pv-body').textContent = 'Chargement…';
-  document.getElementById('pv-overlay').classList.add('open');
-}
-function closePhotoViewer() {
-  document.getElementById('pv-overlay').classList.remove('open');
-}
+/* ── Visionneuse photo de clôture ── */
+function openPhotoViewer() { document.getElementById('pv-body').textContent = 'Chargement…'; document.getElementById('pv-overlay').classList.add('open'); }
+function closePhotoViewer() { document.getElementById('pv-overlay').classList.remove('open'); }
 async function verPhotoMission(photoPath) {
   if (!photoPath) return;
   openPhotoViewer();
   const body = document.getElementById('pv-body');
-  if (!window.sebaAuth || !sebaAuth.isConfigured) {
-    body.textContent = 'Aperçu non disponible en mode démo (aucun fichier réellement stocké côté serveur).';
-    return;
-  }
+  if (!window.sebaAuth || !sebaAuth.isConfigured) { body.textContent = 'Aperçu non disponible en mode démo (aucun fichier réellement stocké côté serveur).'; return; }
   const res = await sebaAuth.getSignedUrl('mission-photos', photoPath);
-  if (!res.ok) {
-    body.textContent = 'Impossible de charger la photo : ' + (res.error || 'erreur inconnue');
-    return;
-  }
+  if (!res.ok) { body.textContent = 'Impossible de charger la photo : ' + (res.error || 'erreur inconnue'); return; }
   body.innerHTML = '<img src="' + res.url + '" alt="Photo de fin d\'intervention">';
 }
 </script>
