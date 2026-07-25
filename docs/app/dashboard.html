@@ -695,6 +695,48 @@ function buildOwnerDashboardViewModel(state, options) {
   const sansAdresse = todayInterventions.filter(i => !i.adresse).length;
   if (sansAdresse > 0) priorityActions.push({ level: 'low', type: 'adresse', label: 'Intervention(s) sans adresse renseignée', count: sansAdresse, cta: 'Compléter', href: '../planning.html?date=' + todayISO });
 
+  /* ── Intervention 360 (feature/intervention-360) -- actions réelles
+     dérivées de execution.* (checklist/timing/photos/incidents/
+     clientApproval/completionStatus), AJOUT PUR au Centre d'actions
+     existant, jamais une nouvelle carte générique. Chaque alerte cible
+     directement UNE intervention réelle (la première concernée, jamais
+     un lien générique) -- intervention-fiche.html?id=X. */
+  const i360 = interventions.map(i => { window.SebaClientIntelligence.normalizeIntervention(i); return i; });
+  const nowMs = now.getTime();
+  const missionsNonDemarrees = i360.filter(i => {
+    if (i.execution.completionStatus !== 'not_started' || i.done || !i.time) return false;
+    const parts = i.time.split(':').map(Number);
+    const t = new Date(i.date + 'T00:00:00'); t.setHours(parts[0] || 0, parts[1] || 0, 0, 0);
+    return t.getTime() < nowMs;
+  });
+  if (missionsNonDemarrees.length > 0) priorityActions.push({ level: 'high', type: 'i360-not-started', label: 'Mission(s) non démarrée(s) alors que l\'heure prévue est dépassée', count: missionsNonDemarrees.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + missionsNonDemarrees[0].id });
+
+  const checklistIncomplete = i360.filter(i => ['in_progress', 'paused', 'reopened'].includes(i.execution.completionStatus) && i.execution.checklist.some(c => c.required && !c.checked));
+  if (checklistIncomplete.length > 0) priorityActions.push({ level: 'medium', type: 'i360-checklist', label: 'Checklist obligatoire incomplète', count: checklistIncomplete.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + checklistIncomplete[0].id });
+
+  const photosManquantes = i360.filter(i => {
+    if (!['in_progress', 'paused', 'reopened'].includes(i.execution.completionStatus)) return false;
+    const hasBefore = i.execution.photos.some(p => p.type === 'before');
+    const hasAfter = i.execution.photos.some(p => p.type === 'after');
+    return (i.requirePhotoBefore && !hasBefore) || (i.requirePhotoAfter && !hasAfter);
+  });
+  if (photosManquantes.length > 0) priorityActions.push({ level: 'medium', type: 'i360-photos', label: 'Photo(s) obligatoire(s) manquante(s)', count: photosManquantes.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + photosManquantes[0].id });
+
+  const incidentsTerrain = i360.filter(i => i.execution.incidents.length > 0 && i.execution.completionStatus !== 'owner_approved');
+  if (incidentsTerrain.length > 0) priorityActions.push({ level: 'high', type: 'i360-incident', label: 'Incident terrain déclaré', count: incidentsTerrain.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + incidentsTerrain[0].id });
+
+  const enAttenteClient = i360.filter(i => i.execution.completionStatus === 'submitted' && (!i.execution.clientApproval || i.execution.clientApproval.status === 'pending'));
+  if (enAttenteClient.length > 0) priorityActions.push({ level: 'low', type: 'i360-await-client', label: 'Mission(s) terminée(s), en attente de la validation du client', count: enAttenteClient.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + enAttenteClient[0].id });
+
+  const problemeClient = i360.filter(i => i.execution.clientApproval && i.execution.clientApproval.status === 'issue_reported');
+  if (problemeClient.length > 0) priorityActions.push({ level: 'high', type: 'i360-client-issue', label: 'Problème signalé par un client', count: problemeClient.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + problemeClient[0].id });
+
+  const enAttenteValidationPatron = i360.filter(i => i.execution.completionStatus === 'submitted');
+  if (enAttenteValidationPatron.length > 0) priorityActions.push({ level: 'medium', type: 'i360-await-owner', label: 'Dossier de mission en attente de votre validation', count: enAttenteValidationPatron.length, cta: 'Valider', href: '../intervention-fiche.html?id=' + enAttenteValidationPatron[0].id });
+
+  const pretAFacturer = i360.filter(i => i.execution.completionStatus === 'owner_approved' && !i.invoiceId);
+  if (pretAFacturer.length > 0) priorityActions.push({ level: 'low', type: 'i360-invoice', label: 'Intervention validée prête à facturer', count: pretAFacturer.length, cta: 'Facturer', href: '../intervention-fiche.html?id=' + pretAFacturer[0].id });
+
   const recentActivity = journal.filter(j => j.ts).slice(0, 12);
 
   return {

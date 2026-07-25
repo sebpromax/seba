@@ -218,6 +218,76 @@
 
   function fullName(c) { return c ? ((c.prenom || '') + ' ' + (c.nom || '')).trim() : ''; }
 
+  /* ═══════════════════════════════════════════════════════════════
+     INTERVENTION 360 (feature/intervention-360) — modèle canonique
+     partagé patron/employé/client. Une seule structure (intervention.
+     execution + intervention.statusHistory), jamais trois systèmes
+     séparés. Fonctions PURES (aucun accès state/SebaDB/réseau) --
+     réutilisées telles quelles par docs/intervention-fiche.html,
+     docs/espace-terrain.html et docs/client-espace.html via
+     window.SebaClientIntelligence (même namespace que la mémoire client,
+     un seul point d'exposition pour tout le "cerveau" produit).
+  ═══════════════════════════════════════════════════════════════ */
+  const CHECKLIST_ITEM_DEFAULTS = { required: false, checked: false, checkedAt: null, checkedBy: null, note: '' };
+  const PHOTO_TYPES = ['before', 'during', 'after', 'incident'];
+  const CLIENT_APPROVAL_STATUSES = ['pending', 'approved', 'issue_reported'];
+  const COMPLETION_STATUSES = ['not_started', 'in_progress', 'paused', 'submitted', 'owner_approved', 'reopened'];
+  const STATUS_HISTORY_EVENTS = ['prepared', 'assigned', 'started', 'paused', 'resumed', 'checklist_updated', 'photo_added', 'incident_reported', 'completed', 'client_approved', 'client_issue_reported', 'owner_approved', 'reopened', 'invoice_created'];
+
+  /* Rétrocompatible : une intervention créée avant ce chantier n'a ni
+     execution ni statusHistory -- toujours appelée avant toute lecture/
+     écriture de ces structures, jamais supposées présentes. N'écrase
+     JAMAIS une structure déjà là (idempotente à l'appel). */
+  function normalizeIntervention(intervention) {
+    if (!intervention) return intervention;
+    if (!intervention.execution || typeof intervention.execution !== 'object') {
+      intervention.execution = {
+        checklist: [],
+        timing: { scheduledStart: intervention.time || null, scheduledEnd: null, actualStart: null, pausedAt: null, pausedDurationMinutes: 0, actualEnd: null },
+        photos: [], materials: [], incidents: [],
+        clientApproval: null,
+        completionStatus: 'not_started',
+        submittedAt: null, reviewedAt: null, reviewedBy: null,
+      };
+    }
+    const ex = intervention.execution;
+    if (!Array.isArray(ex.checklist)) ex.checklist = [];
+    if (!ex.timing || typeof ex.timing !== 'object') ex.timing = { scheduledStart: intervention.time || null, scheduledEnd: null, actualStart: null, pausedAt: null, pausedDurationMinutes: 0, actualEnd: null };
+    if (typeof ex.timing.pausedDurationMinutes !== 'number') ex.timing.pausedDurationMinutes = 0;
+    if (!Array.isArray(ex.photos)) ex.photos = [];
+    if (!Array.isArray(ex.materials)) ex.materials = [];
+    if (!Array.isArray(ex.incidents)) ex.incidents = [];
+    if (ex.clientApproval === undefined) ex.clientApproval = null;
+    if (!ex.completionStatus) ex.completionStatus = 'not_started';
+    if (!Array.isArray(intervention.statusHistory)) intervention.statusHistory = [];
+    return intervention;
+  }
+
+  /* Ajoute un événement d'historique -- JAMAIS fabriqué rétroactivement
+     (appelé uniquement au moment réel de l'action, jamais reconstruit après
+     coup). id stable (uid()) pour dédupliquer côté UI si nécessaire. */
+  function pushStatusHistory(intervention, event, actorRole, actorId, metadata) {
+    normalizeIntervention(intervention);
+    if (STATUS_HISTORY_EVENTS.indexOf(event) === -1) return;
+    intervention.statusHistory.push({ id: uid(), event, actorRole, actorId: actorId || null, createdAt: new Date().toISOString(), metadata: metadata || null });
+  }
+
+  /* Règles de blocage de finalisation (section 3 du chantier) -- PURE,
+     réutilisée à l'identique côté client (bouton "Terminer" désactivé) et
+     côté serveur (la RPC complete_my_intervention refait exactement ce
+     calcul, jamais une confiance aveugle au navigateur). */
+  function computeInterventionCompletionBlockers(intervention) {
+    normalizeIntervention(intervention);
+    const blockers = [];
+    const uncheckedRequired = intervention.execution.checklist.filter(c => c.required && !c.checked);
+    if (uncheckedRequired.length) blockers.push({ type: 'checklist', message: uncheckedRequired.length + ' tâche(s) obligatoire(s) non cochée(s)', items: uncheckedRequired.map(c => c.label) });
+    const hasBefore = intervention.execution.photos.some(p => p.type === 'before');
+    const hasAfter = intervention.execution.photos.some(p => p.type === 'after');
+    if (intervention.requirePhotoBefore && !hasBefore) blockers.push({ type: 'photo', message: 'Photo "avant" obligatoire manquante' });
+    if (intervention.requirePhotoAfter && !hasAfter) blockers.push({ type: 'photo', message: 'Photo "après" obligatoire manquante' });
+    return blockers;
+  }
+
   /* ── Synthèse client automatique (section 2) ──────────────────────────
      Uniquement des faits directement dérivés des données réelles -- aucun
      score, aucune estimation qualitative inventée. */
@@ -1470,6 +1540,253 @@
         return { ok: true };
       },
 
+      /* ═══ INTERVENTION 360 (feature/intervention-360) — exécution côté
+         employé. Même schéma pour toutes les méthodes : RPC réelle si une
+         session Supabase existe (SECURITY DEFINER, valeurs contrôlées
+         côté serveur -- jamais une confiance aveugle au navigateur),
+         repli local (mode démo/file://) avec le MÊME garde-fou
+         d'assignation que closeIntervention/saveFieldReport ci-dessus.
+         Aucun accès direct large à seba_state : chaque méthode ne touche
+         que les champs qu'elle est censée modifier. ═══ */
+      async getInterventionDetail(interventionId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_employee_intervention_detail', { p_intervention_id: interventionId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        // Même enrichissement que interventions() ci-dessus (adresse
+        // absente de l'intervention elle-même, dérivée de la fiche client
+        // à la lecture) -- même contrat que la RPC get_my_employee_intervention_detail.
+        const client = state.clients.find(c => c.id === intervention.clientId);
+        const enriched = Object.assign({}, intervention, { adresse: (client || {}).adresse || '' });
+        return { ok: true, intervention: enriched };
+      },
+
+      async startIntervention(interventionId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('start_my_intervention', { p_intervention_id: interventionId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        intervention.execution.timing.actualStart = new Date().toISOString();
+        intervention.execution.completionStatus = 'in_progress';
+        intervention.statut = 'en_cours'; // conserve la compat avec le badge legacy (missionStatusKey)
+        pushStatusHistory(intervention, 'started', 'employe', demo ? demo.employeId : intervention.employeId);
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async pauseIntervention(interventionId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('pause_my_intervention', { p_intervention_id: interventionId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        if (!intervention.execution.timing.actualStart) return { ok: false, error: 'La mission n\'a pas encore démarré.' };
+        if (intervention.execution.timing.pausedAt) return { ok: false, error: 'Mission déjà en pause.' };
+        intervention.execution.timing.pausedAt = new Date().toISOString();
+        intervention.execution.completionStatus = 'paused';
+        pushStatusHistory(intervention, 'paused', 'employe', demo ? demo.employeId : intervention.employeId);
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async resumeIntervention(interventionId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('resume_my_intervention', { p_intervention_id: interventionId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        if (!intervention.execution.timing.pausedAt) return { ok: false, error: 'Mission non en pause.' };
+        const pausedMinutes = Math.round((Date.now() - new Date(intervention.execution.timing.pausedAt).getTime()) / 60000);
+        intervention.execution.timing.pausedDurationMinutes = (intervention.execution.timing.pausedDurationMinutes || 0) + Math.max(0, pausedMinutes);
+        intervention.execution.timing.pausedAt = null;
+        intervention.execution.completionStatus = 'in_progress';
+        pushStatusHistory(intervention, 'resumed', 'employe', demo ? demo.employeId : intervention.employeId);
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async updateChecklistItem(interventionId, itemId, patch) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('update_my_intervention_checklist', {
+            p_intervention_id: interventionId, p_item_id: itemId, p_checked: !!patch.checked, p_note: patch.note || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        const item = intervention.execution.checklist.find(c => c.id === itemId);
+        if (!item) return { ok: false, error: 'Tâche introuvable.' };
+        item.checked = !!patch.checked;
+        item.checkedAt = item.checked ? new Date().toISOString() : null;
+        item.checkedBy = item.checked ? (demo ? demo.employeId : intervention.employeId) : null;
+        if (patch.note !== undefined) item.note = patch.note || '';
+        pushStatusHistory(intervention, 'checklist_updated', 'employe', demo ? demo.employeId : intervention.employeId, { itemId, checked: item.checked });
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async addMaterial(interventionId, material) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('add_my_intervention_material', {
+            p_intervention_id: interventionId, p_label: material.label, p_quantity: material.quantity || null, p_unit: material.unit || null, p_note: material.note || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        if (!material.label || !material.label.trim()) return { ok: false, error: 'Nom du matériau requis.' };
+        normalizeIntervention(intervention);
+        intervention.execution.materials.push({ id: uid(), label: material.label.trim(), quantity: material.quantity || null, unit: material.unit || null, note: material.note || '' });
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async submitIncident(interventionId, incident) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('submit_my_intervention_incident', {
+            p_intervention_id: interventionId, p_type: incident.type, p_description: incident.description || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        if (!incident.type) return { ok: false, error: 'Type d\'incident requis.' };
+        normalizeIntervention(intervention);
+        const entry = { id: uid(), type: incident.type, description: (incident.description || '').trim(), reportedAt: new Date().toISOString(), reportedBy: demo ? demo.employeId : intervention.employeId };
+        intervention.execution.incidents.push(entry);
+        pushStatusHistory(intervention, 'incident_reported', 'employe', entry.reportedBy, { type: incident.type });
+        persist();
+        return { ok: true, intervention };
+      },
+
+      /* Upload direct vers intervention360-photos (JWT de l'employe, jamais
+         service_role -- les policies RLS du bucket font le travail
+         d'autorisation, meme principe que uploadClosurePhoto existant sur
+         espace-terrain.html). Mode demo/local : chemin factice de meme
+         forme, aucun vrai fichier stocke.
+         adapter._accountId() resout auth.uid() DE LA SESSION COURANTE --
+         correct pour le patron, FAUX pour un employe (donnerait son
+         propre uid, jamais le compte du patron proprietaire de
+         seba_state) : meme piege documente pour requests.list() plus haut
+         (clientPortal.profile().account, distinct de adapter._accountId()).
+         Le chemin de stockage doit porter le compte du PATRON (segment
+         verifie par les policies RLS du bucket, storage.foldername(name)[2])
+         -- resolu ici via this.profile(), jamais via adapter._accountId(). */
+      async addPhoto(interventionId, type, file) {
+        if (PHOTO_TYPES.indexOf(type) === -1) return { ok: false, error: 'Type de photo non autorisé.' };
+        let storagePath = null, mimeType = file ? file.type : null;
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured && file) {
+          const cfg = window.SEBA_CONFIG;
+          const profileRes = await this.profile();
+          if (!profileRes || !profileRes.ok) return { ok: false, error: 'Profil employé introuvable.' };
+          const account = profileRes.account;
+          const filename = uid();
+          const path = 'accounts/' + account + '/interventions/' + interventionId + '/' + filename;
+          const up = await sebaAuth.uploadFile('intervention360-photos', path, file);
+          if (!up.ok) return { ok: false, error: 'Envoi de la photo échoué : ' + up.error };
+          storagePath = up.path;
+        } else if (file) {
+          storagePath = 'accounts/demo/interventions/' + interventionId + '/' + uid(); // mode demo : aucun vrai stockage
+        } else {
+          return { ok: false, error: 'Aucun fichier sélectionné.' };
+        }
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('add_my_intervention_photo', {
+            p_intervention_id: interventionId, p_type: type, p_storage_path: storagePath, p_mime_type: mimeType,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        const photo = { id: uid(), type, storagePath, mimeType, createdAt: new Date().toISOString(), uploadedBy: demo ? demo.employeId : intervention.employeId, visibleToClient: type === 'after' };
+        intervention.execution.photos.push(photo);
+        pushStatusHistory(intervention, 'photo_added', 'employe', photo.uploadedBy, { type });
+        persist();
+        return { ok: true, intervention, photo };
+      },
+
+      /* Finalise l'EXÉCUTION (checklist/photos/matériaux) -- distinct de
+         saveFieldReport() ci-dessus (retour terrain narratif, déjà câblé
+         par le chantier précédent, jamais modifié ici). Bloque exactement
+         comme computeInterventionCompletionBlockers() (même fonction pure
+         que côté UI, jamais une confiance aveugle au bouton "Terminer"
+         déjà désactivé côté client). */
+      async completeIntervention(interventionId, notes) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('complete_my_intervention', { p_intervention_id: interventionId, p_notes: notes || null });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Mission introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        normalizeIntervention(intervention);
+        const blockers = computeInterventionCompletionBlockers(intervention);
+        if (blockers.length) return { ok: false, error: 'Finalisation impossible.', blockers };
+        intervention.execution.timing.actualEnd = new Date().toISOString();
+        intervention.execution.completionStatus = 'submitted';
+        intervention.execution.submittedAt = new Date().toISOString();
+        intervention.done = true;
+        pushStatusHistory(intervention, 'completed', 'employe', demo ? demo.employeId : intervention.employeId, { notes: notes || null });
+        persist();
+        return { ok: true, intervention };
+      },
+
       /* Auto-service : l'employe change son propre mot de passe depuis
          espace-terrain.html, a tout moment -- miroir de
          clientPortal.setPassword() ci-dessous. */
@@ -1643,6 +1960,94 @@
           persist();
           return { ok: true };
         } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* ═══ INTERVENTION 360 (feature/intervention-360) — suivi et
+         validation côté client. Même schéma que employeePortal.* : RPC
+         réelle si une session existe, repli local (mode démo) avec le même
+         garde-fou de rattachement. Le client ne voit JAMAIS les notes
+         owner_only ni les données financières -- non pas par filtrage ici
+         (l'intervention JSON ne contient aucun montant/marge/solde, ces
+         données vivent dans devis/factures, jamais touchées par ces
+         méthodes), mais par construction du modèle lui-même. ═══ */
+      async getInterventionDetail(interventionId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_intervention_detail', { p_intervention_id: interventionId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.clientId !== demo.clientId) return { ok: false, error: 'Intervention non associée à votre compte.' };
+        normalizeIntervention(intervention);
+        // Ne renvoie jamais les photos internes (visibleToClient=false) --
+        // même filtrage que côté serveur (RPC get_my_client_intervention_detail).
+        const safe = Object.assign({}, intervention, {
+          execution: Object.assign({}, intervention.execution, { photos: intervention.execution.photos.filter(p => p.visibleToClient) }),
+        });
+        return { ok: true, intervention: safe };
+      },
+
+      async requestReschedule(interventionId, preferredDate, comment) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('request_my_intervention_reschedule', {
+            p_intervention_id: interventionId, p_preferred_date: preferredDate || null, p_comment: comment || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.clientId !== demo.clientId) return { ok: false, error: 'Intervention non associée à votre compte.' };
+        intervention.rescheduleRequest = { requestedDate: preferredDate || null, comment: (comment || '').trim(), requestedAt: new Date().toISOString(), status: 'pending' };
+        SebaDB.update('interventions', interventionId, { rescheduleRequest: intervention.rescheduleRequest });
+        return { ok: true, intervention };
+      },
+
+      async approveCompletedIntervention(interventionId, comment) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('approve_my_completed_intervention', { p_intervention_id: interventionId, p_comment: comment || null });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.clientId !== demo.clientId) return { ok: false, error: 'Intervention non associée à votre compte.' };
+        normalizeIntervention(intervention);
+        if (intervention.execution.completionStatus !== 'submitted') return { ok: false, error: 'La mission n\'est pas encore terminée.' };
+        intervention.execution.clientApproval = { status: 'approved', comment: (comment || '').trim(), submittedAt: new Date().toISOString(), submittedBy: demo ? demo.clientId : intervention.clientId };
+        pushStatusHistory(intervention, 'client_approved', 'client', intervention.execution.clientApproval.submittedBy);
+        persist();
+        return { ok: true, intervention };
+      },
+
+      async reportIssue(interventionId, comment) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('report_my_intervention_issue', { p_intervention_id: interventionId, p_comment: comment || null });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.clientId !== demo.clientId) return { ok: false, error: 'Intervention non associée à votre compte.' };
+        if (!comment || !comment.trim()) return { ok: false, error: 'Un commentaire est requis pour signaler un problème.' };
+        normalizeIntervention(intervention);
+        intervention.execution.clientApproval = { status: 'issue_reported', comment: comment.trim(), submittedAt: new Date().toISOString(), submittedBy: demo ? demo.clientId : intervention.clientId };
+        pushStatusHistory(intervention, 'client_issue_reported', 'client', intervention.execution.clientApproval.submittedBy, { comment: comment.trim() });
+        persist();
+        return { ok: true, intervention };
       },
 
       /* Demandes ("Nouvelle demande", client-espace.html). Accessible cote
@@ -2043,6 +2448,112 @@
         SebaDB.update('interventions', interventionId, { fieldReport: Object.assign({}, intervention.fieldReport, { dismissedSuggestionIds: dismissed }) });
         return { ok: true };
       },
+
+      /* ═══ INTERVENTION 360 (feature/intervention-360) — préparation et
+         contrôle côté patron. Accès direct à seba_state (même modèle que
+         les méthodes ci-dessus) -- le patron a déjà tous les droits sur
+         son propre compte, aucune RPC nécessaire ici (contrairement aux
+         écritures employé/client, restreintes par RLS). ═══ */
+      addChecklistItem(interventionId, label, required) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention || !label || !label.trim()) return null;
+        normalizeIntervention(intervention);
+        const item = Object.assign({ id: uid(), label: label.trim() }, CHECKLIST_ITEM_DEFAULTS, { required: !!required });
+        intervention.execution.checklist.push(item);
+        SebaDB.update('interventions', interventionId, { execution: intervention.execution });
+        return item;
+      },
+      removeChecklistItem(interventionId, itemId) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return false;
+        normalizeIntervention(intervention);
+        const before = intervention.execution.checklist.length;
+        intervention.execution.checklist = intervention.execution.checklist.filter(c => c.id !== itemId);
+        SebaDB.update('interventions', interventionId, { execution: intervention.execution });
+        return intervention.execution.checklist.length < before;
+      },
+      /* Prépare/réassigne une mission -- adresse/employé/horaires/durée/
+         consignes/exigences photo. Simple SebaDB.update() : ces champs sont
+         déjà librement modifiables par le patron (aucune RLS ne les
+         restreint), inutile de dupliquer une méthode dédiée pour chacun --
+         les pages appelantes utilisent directement SebaDB.update('interventions',
+         id, {...}) pour la préparation, et pushStatusHistory() ici
+         uniquement pour l'événement "prepared"/"assigned" (historique
+         explicite, jamais fabriqué après coup). */
+      prepareIntervention(interventionId, patch) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return null;
+        normalizeIntervention(intervention);
+        const wasUnassigned = !intervention.employeId;
+        const willBeAssigned = patch.employeId !== undefined ? patch.employeId : intervention.employeId;
+        if (willBeAssigned && wasUnassigned) pushStatusHistory(intervention, 'assigned', 'patron', null, { employeId: willBeAssigned });
+        else pushStatusHistory(intervention, 'prepared', 'patron', null, null);
+        SebaDB.update('interventions', interventionId, Object.assign({}, patch, { statusHistory: intervention.statusHistory }));
+        return SebaDB.get('interventions', interventionId);
+      },
+
+      /* Approuve le dossier terminé (après validation client, ou
+         directement si le patron n'attend pas de validation client) --
+         complète la boucle "submitted -> owner_approved". */
+      ownerApproveIntervention(interventionId, reviewerId) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        normalizeIntervention(intervention);
+        if (intervention.execution.completionStatus !== 'submitted') return { ok: false, error: 'La mission doit être terminée avant validation.' };
+        intervention.execution.completionStatus = 'owner_approved';
+        intervention.execution.reviewedAt = new Date().toISOString();
+        intervention.execution.reviewedBy = reviewerId || null;
+        pushStatusHistory(intervention, 'owner_approved', 'patron', reviewerId || null);
+        SebaDB.update('interventions', interventionId, { execution: intervention.execution, statusHistory: intervention.statusHistory });
+        SebaDB.log('intervention', 'Dossier de mission validé — ' + (intervention.clientName || 'client') + (intervention.service ? ' (' + intervention.service + ')' : ''), 'intervention-fiche.html?id=' + interventionId);
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+      },
+
+      /* Rouvre un dossier incomplet -- remet l'exécution en cours, ne
+         supprime AUCUNE donnée déjà saisie (checklist/photos/matériaux/
+         incidents restent, seul completionStatus change) : l'employé
+         reprend exactement là où il en était. */
+      reopenIntervention(interventionId, reason) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        normalizeIntervention(intervention);
+        intervention.execution.completionStatus = 'reopened';
+        intervention.execution.submittedAt = null;
+        intervention.done = false;
+        pushStatusHistory(intervention, 'reopened', 'patron', null, { reason: reason || null });
+        SebaDB.update('interventions', interventionId, { execution: intervention.execution, statusHistory: intervention.statusHistory, done: false });
+        SebaDB.log('intervention', 'Mission rouverte — ' + (intervention.clientName || 'client') + (reason ? ' : ' + reason : ''), 'intervention-fiche.html?id=' + interventionId);
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+      },
+
+      /* Crée une facture PRÉREMPLIE à partir d'une intervention validée --
+         ne facture jamais automatiquement (le patron reste sur factures-
+         nouvelle.html/factures.html pour finaliser/envoyer), simplement
+         pré-remplit le strict nécessaire (client/service/date) pour éviter
+         une ressaisie. Exige "owner_approved" -- jamais une intervention
+         encore en cours. */
+      createInvoiceFromIntervention(interventionId) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        normalizeIntervention(intervention);
+        if (intervention.execution.completionStatus !== 'owner_approved') return { ok: false, error: 'Le dossier doit être validé avant de facturer.' };
+        if (intervention.invoiceId) return { ok: false, error: 'Une facture existe déjà pour cette intervention.' };
+        const facture = SebaDB.create('factures', {
+          num: SebaDB.nextNum('facture'), clientId: intervention.clientId, clientName: intervention.clientName || '',
+          service: intervention.service || '', amount: 0, status: 'attente', date: todayISO(0), paidAt: null,
+          interventionId: intervention.id,
+        });
+        pushStatusHistory(intervention, 'invoice_created', 'patron', null, { factureId: facture.id });
+        SebaDB.update('interventions', interventionId, { invoiceId: facture.id, statusHistory: intervention.statusHistory });
+        SebaDB.log('facture', 'Facture préremplie créée depuis la mission — ' + (intervention.clientName || 'client') + ' · ' + facture.num, 'factures.html');
+        return { ok: true, facture };
+      },
     },
   };
 
@@ -2055,6 +2566,9 @@
     normalizeClientOperationalMemory, buildClientOperationalSummary, buildClientNextBestActions,
     computeOccurrenceDates, computeServicePlanOccurrences, persistServicePlanOccurrences, generateMissionBrief, generateMemorySuggestions,
     MEMORY_TYPES, MEMORY_VISIBILITY, MEMORY_IMPORTANCE, MEMORY_SOURCE,
+    // Intervention 360 (feature/intervention-360)
+    normalizeIntervention, computeInterventionCompletionBlockers,
+    PHOTO_TYPES, CLIENT_APPROVAL_STATUSES, COMPLETION_STATUSES, STATUS_HISTORY_EVENTS,
   };
 
   SebaDB.ready();

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Mission — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privee : meme verrou que dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="fx-actions.css">
+<script src="fx-actions.js" defer></script>
+<style>
+:root{
+  --danger-text:#DC2626;
+  --shadow-menu:0 4px 16px rgba(0,0,0,.08);
+  --shadow-card:0 1px 3px rgba(0,0,0,.05);
+  --badge-danger-bg:#FEE2E2;
+  --badge-danger-txt:#DC2626;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .layout,.app{position:relative;z-index:2;}
+  h1,h2,h3{letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  button,input,select,textarea{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
+  .main{padding:32px 40px;}
+  .fiche-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-2);margin-bottom:0;}
+  .back-link:hover{color:var(--emerald);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:var(--shadow-menu);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  /* HEADER MISSION */
+  .mission-header{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:24px 28px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;box-shadow:var(--shadow-card);}
+  .mission-header h1{font-size:1.4rem;margin-bottom:6px;}
+  .mission-sub{font-size:0.86rem;color:var(--text-2);}
+  .mission-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn-outline{border:1px solid var(--border);background:var(--white);color:var(--ink);padding:9px 16px;border-radius:var(--rs);font-size:0.85rem;font-weight:500;cursor:pointer;}
+  .btn-outline:hover{border-color:var(--emerald);color:var(--emerald);}
+  .btn-em{background:var(--emerald);color:var(--on-emerald);border:none;padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+  .btn-em[disabled],.btn-outline[disabled]{opacity:.5;cursor:not-allowed;}
+  .btn-danger{border:1px solid var(--danger-text);color:var(--danger-text);background:var(--white);padding:9px 16px;border-radius:var(--rs);font-size:0.85rem;font-weight:500;cursor:pointer;}
+
+  .badge{font-size:0.74rem;padding:3px 9px;border-radius:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;}
+  .badge-status-not_started{background:var(--bg);color:var(--text-2);}
+  .badge-status-in_progress{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .badge-status-paused{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .badge-status-submitted{background:var(--badge-info-bg);color:var(--badge-info-txt);}
+  .badge-status-owner_approved{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+  .badge-status-reopened{background:var(--badge-danger-bg);color:var(--badge-danger-txt);}
+
+  /* CONTENT GRID */
+  .content-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start;}
+  .panel{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+  .panel:last-child{margin-bottom:0;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .panel-head h3{font-size:1rem;}
+  .panel-eyebrow{font-size:0.72rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:14px;}
+  .panel-empty{font-size:0.85rem;color:var(--text-2);}
+
+  /* FORM */
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .field label{font-size:0.76rem;color:var(--text-2);}
+  .field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--emerald);outline:none;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-check{display:flex;align-items:center;gap:8px;font-size:0.85rem;margin-bottom:10px;}
+
+  /* CHECKLIST */
+  .chk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .chk-item:last-of-type{border-bottom:none;}
+  .chk-icon{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:.7rem;}
+  .chk-icon.done{background:var(--emerald);border-color:var(--emerald);color:var(--on-emerald);}
+  .chk-body{flex:1;}
+  .chk-label{font-size:0.88rem;}
+  .chk-meta{font-size:0.74rem;color:var(--text-2);margin-top:2px;}
+  .chk-required{color:var(--danger-text);font-size:.72rem;font-weight:600;margin-left:6px;}
+  .chk-remove{background:none;border:none;color:var(--text-2);cursor:pointer;font-size:1rem;padding:2px 6px;}
+  .chk-remove:hover{color:var(--danger-text);}
+  .chk-add-row{display:flex;gap:8px;margin-top:12px;align-items:center;}
+  .chk-add-row input[type=text]{flex:1;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--ink);}
+
+  /* TIMING */
+  .timing-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .timing-item .tlabel{font-size:0.72rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;display:block;margin-bottom:4px;}
+  .timing-item .tvalue{font-size:0.95rem;font-weight:600;}
+
+  /* PHOTOS */
+  .photo-group{margin-bottom:16px;}
+  .photo-group h4{font-size:0.8rem;color:var(--text-2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.03em;}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
+  .photo-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);}
+  .photo-card img{width:100%;height:90px;object-fit:cover;display:block;background:var(--white);}
+  .photo-card .ph-placeholder{width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--text-2);}
+  .photo-card .ph-foot{padding:6px 8px;font-size:0.72rem;color:var(--text-2);display:flex;align-items:center;justify-content:space-between;gap:4px;}
+  .photo-card .ph-vis{display:flex;align-items:center;gap:4px;cursor:pointer;}
+
+  /* LISTS */
+  .info-list{display:flex;flex-direction:column;gap:14px;}
+  .info-row{display:flex;flex-direction:column;gap:3px;}
+  .info-label{font-size:0.74rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;}
+  .info-value{font-size:0.9rem;white-space:pre-wrap;}
+  .mem-chip{display:inline-block;font-size:0.78rem;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin:0 6px 6px 0;}
+  .mem-chip.critical{border-color:var(--danger-text);color:var(--danger-text);}
+  .mem-chip.important{border-color:var(--badge-warning-txt);color:var(--badge-warning-txt);}
+  .simple-row{padding:9px 0;border-bottom:1px solid var(--border);font-size:0.85rem;}
+  .simple-row:last-child{border-bottom:none;}
+  .simple-row .sr-meta{font-size:0.74rem;color:var(--text-2);margin-top:2px;}
+
+  /* TIMELINE */
+  .timeline{display:flex;flex-direction:column;gap:0;}
+  .tl-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:0.82rem;}
+  .tl-item:last-child{border-bottom:none;}
+  .tl-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-top:6px;flex-shrink:0;}
+  .tl-label{font-weight:500;}
+  .tl-meta{font-size:0.74rem;color:var(--text-2);}
+
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .main{padding:24px 20px;}
+    .content-grid{grid-template-columns:minmax(0,1fr);}
+    .mission-header{flex-direction:column;align-items:flex-start;}
+    .field-row{grid-template-columns:minmax(0,1fr);}
+    .timing-grid{grid-template-columns:minmax(0,1fr);}
+  }
+</style>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050505">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+</head>
+<body>
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
+<div class="layout">
+
+  <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
+
+  <main class="main">
+    <div class="fiche-topbar">
+      <a href="planning.html" class="back-link">← Retour au planning</a>
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar-btn">PA</div>
+        <div class="user-menu" id="user-menu">
+          <a href="reglages.html">Mon compte</a>
+          <div class="menu-sep"></div>
+          <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MISSION INTROUVABLE -->
+    <div class="panel" id="mission-not-found" style="display:none;text-align:center;padding:48px 24px;">
+      <h2 style="margin-bottom:8px;">Mission introuvable</h2>
+      <p style="color:var(--text-2);margin-bottom:20px;">Cette intervention n'existe plus, ou le lien utilisé n'est plus valide.</p>
+      <a href="planning.html" class="btn-em" style="display:inline-flex;">← Retour au planning</a>
+    </div>
+
+    <div id="mission-content" style="display:none;">
+
+      <!-- HEADER -->
+      <div class="mission-header">
+        <div>
+          <h1 id="m-title">Mission</h1>
+          <div class="mission-sub" id="m-sub"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;" id="m-badges"></div>
+        </div>
+        <div class="mission-actions" id="m-actions"></div>
+      </div>
+
+      <div class="content-grid">
+
+        <!-- COLONNE PRINCIPALE -->
+        <div>
+          <!-- PRÉPARER LA MISSION -->
+          <div class="panel">
+            <div class="panel-head"><h3>Préparer la mission</h3></div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-employe">Employé assigné</label>
+                <select id="f-employe"></select>
+              </div>
+              <div class="field">
+                <label for="f-service">Service</label>
+                <input type="text" id="f-service">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-date">Date</label>
+                <input type="date" id="f-date">
+              </div>
+              <div class="field">
+                <label for="f-time">Heure</label>
+                <input type="time" id="f-time">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-duree">Durée (minutes)</label>
+                <input type="number" id="f-duree" min="0" step="15">
+              </div>
+              <div class="field">
+                <label for="f-adresse">Adresse</label>
+                <input type="text" id="f-adresse" placeholder="Reprise automatique depuis la fiche client si vide">
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-instructions">Consignes pour l'employé</label>
+              <textarea id="f-instructions" rows="3"></textarea>
+            </div>
+            <label class="field-check"><input type="checkbox" id="f-photo-before"> Photo "avant" obligatoire pour finaliser la mission</label>
+            <label class="field-check"><input type="checkbox" id="f-photo-after"> Photo "après" obligatoire pour finaliser la mission</label>
+            <button class="btn-em" onclick="savePreparation()">Enregistrer</button>
+            <span class="panel-empty" id="prep-status" style="margin-left:10px;"></span>
+          </div>
+
+          <!-- CHECKLIST -->
+          <div class="panel">
+            <div class="panel-head"><h3>Checklist de mission</h3></div>
+            <div id="checklist-list"></div>
+            <div class="chk-add-row">
+              <input type="text" id="chk-new-label" placeholder="Nouvelle tâche...">
+              <label class="field-check" style="margin:0;white-space:nowrap;"><input type="checkbox" id="chk-new-required"> Obligatoire</label>
+              <button class="btn-outline" onclick="addChecklistItemUI()">Ajouter</button>
+            </div>
+          </div>
+
+          <!-- SUIVI EN DIRECT -->
+          <div class="panel">
+            <div class="panel-head"><h3>Suivi en direct</h3></div>
+            <div class="timing-grid" id="timing-grid"></div>
+          </div>
+
+          <!-- PHOTOS -->
+          <div class="panel">
+            <div class="panel-head"><h3>Photos de mission</h3></div>
+            <div id="photos-container"><p class="panel-empty">Aucune photo pour le moment.</p></div>
+          </div>
+
+          <!-- MATÉRIAUX -->
+          <div class="panel">
+            <div class="panel-head"><h3>Matériaux utilisés</h3></div>
+            <div id="materials-list"><p class="panel-empty">Aucun matériau déclaré.</p></div>
+          </div>
+
+          <!-- INCIDENTS -->
+          <div class="panel">
+            <div class="panel-head"><h3>Incidents déclarés</h3></div>
+            <div id="incidents-list"><p class="panel-empty">Aucun incident déclaré.</p></div>
+          </div>
+
+          <!-- RETOUR TERRAIN (existant, chantier précédent) -->
+          <div class="panel" id="field-report-panel" style="display:none;">
+            <div class="panel-head"><h3>Retour terrain</h3></div>
+            <div class="info-list" id="field-report-content"></div>
+          </div>
+
+          <!-- VALIDATION CLIENT -->
+          <div class="panel">
+            <div class="panel-head"><h3>Validation client</h3></div>
+            <div id="client-approval-content"><p class="panel-empty">En attente de fin de mission.</p></div>
+          </div>
+        </div>
+
+        <!-- COLONNE LATÉRALE -->
+        <div>
+          <!-- BRIEFING -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Briefing de mission</h3>
+              <button class="btn-outline" onclick="regenerateBriefing()">Régénérer</button>
+            </div>
+            <div id="briefing-content"></div>
+          </div>
+
+          <!-- DEMANDE DE REPORT -->
+          <div class="panel" id="reschedule-panel" style="display:none;">
+            <span class="panel-eyebrow">Demande de report client</span>
+            <div id="reschedule-content"></div>
+          </div>
+
+          <!-- HISTORIQUE -->
+          <div class="panel">
+            <span class="panel-eyebrow">Historique</span>
+            <div class="timeline" id="history-timeline"><p class="panel-empty">Aucun événement.</p></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="seba-data.js"></script>
+<script>
+  (function(){
+    const c = localStorage.getItem('user_theme_color');
+    if (c) document.documentElement.style.setProperty('--emerald', c);
+  })();
+</script>
+<script>
+  const STATUS_LABELS = {
+    not_started: 'Pas commencée', in_progress: 'En cours', paused: 'En pause',
+    submitted: 'Terminée — en attente de validation', owner_approved: 'Validée', reopened: 'Rouverte',
+  };
+  const INCIDENT_LABELS = { access: 'Accès', client_absent: 'Client absent', equipment: 'Équipement', damage: 'Dommage', quality: 'Qualité', delay: 'Retard', other: 'Autre' };
+  const PHOTO_TYPE_LABELS = { before: 'Avant', during: 'Pendant', after: 'Après', incident: 'Incident' };
+  const EVENT_LABELS = {
+    prepared: 'Mission préparée', assigned: 'Mission assignée', started: 'Mission démarrée', paused: 'Mission mise en pause',
+    resumed: 'Mission reprise', checklist_updated: 'Checklist mise à jour', photo_added: 'Photo ajoutée', incident_reported: 'Incident déclaré',
+    completed: 'Mission terminée par l\'employé', client_approved: 'Approuvée par le client', client_issue_reported: 'Problème signalé par le client',
+    owner_approved: 'Dossier validé par le patron', reopened: 'Dossier rouvert', invoice_created: 'Facture créée',
+  };
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtDateTime(iso) { if (!iso) return '—'; try { return new Date(iso).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); } catch(e) { return iso; } }
+
+  const _id = new URLSearchParams(location.search).get('id');
+  let interv = null, client = null;
+
+  function showNotFound() {
+    document.title = 'Mission introuvable — Seba';
+    document.getElementById('mission-content').style.display = 'none';
+    document.getElementById('mission-not-found').style.display = 'block';
+  }
+
+  function loadIntervention() {
+    if (!window.SebaDB || !_id) { showNotFound(); return false; }
+    interv = SebaDB.get('interventions', _id);
+    if (!interv) { showNotFound(); return false; }
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    client = SebaDB.get('clients', interv.clientId);
+    return true;
+  }
+
+  function persistExecution(patch) {
+    // Écriture directe (patron = accès complet à son propre compte, aucune
+    // RLS ne le restreint) -- utilisée pour les actions qui n'ont pas de
+    // méthode SebaDB.interventions dédiée (toggle visibilité photo).
+    SebaDB.update('interventions', _id, patch);
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    render();
+  }
+
+  function render() {
+    document.getElementById('mission-content').style.display = 'block';
+    const clientName = client ? ((client.prenom||'')+' '+(client.nom||'')).trim() : (interv.clientName || 'Client');
+    document.title = 'Mission — ' + clientName + ' — Seba';
+    document.getElementById('m-title').textContent = (interv.service || 'Mission') + ' — ' + clientName;
+    document.getElementById('m-sub').textContent =
+      (interv.date || '') + (interv.time ? ' à ' + interv.time : '') + (interv.duree ? ' · ' + interv.duree + ' min' : '') +
+      (interv.adresse ? ' · ' + interv.adresse : (client && client.adresse ? ' · ' + client.adresse : ''));
+
+    const badges = document.getElementById('m-badges');
+    badges.innerHTML =
+      '<span class="badge badge-status-' + interv.execution.completionStatus + '">' + (STATUS_LABELS[interv.execution.completionStatus] || interv.execution.completionStatus) + '</span>' +
+      (interv.invoiceId ? '<span class="badge" style="background:var(--badge-success-bg);color:var(--badge-success-txt);">Facturée</span>' : '');
+
+    renderActions();
+    renderPreparationForm();
+    renderChecklist();
+    renderTiming();
+    renderPhotos();
+    renderMaterials();
+    renderIncidents();
+    renderFieldReport();
+    renderClientApproval();
+    renderReschedule();
+    renderBriefing();
+    renderHistory();
+  }
+
+  function renderActions() {
+    const el = document.getElementById('m-actions');
+    const cs = interv.execution.completionStatus;
+    let html = '';
+    if (cs === 'submitted') {
+      html += '<button class="btn-em" onclick="approveDossier()">Valider le dossier</button>';
+      html += '<button class="btn-outline" onclick="reopenDossier()">Rouvrir</button>';
+    } else if (cs === 'owner_approved') {
+      html += '<button class="btn-outline" onclick="reopenDossier()">Rouvrir</button>';
+      if (!interv.invoiceId) html += '<button class="btn-em" onclick="createInvoice()">Créer une facture</button>';
+      else html += '<a class="btn-outline" href="factures.html">Voir la facture</a>';
+    }
+    el.innerHTML = html;
+  }
+
+  function renderPreparationForm() {
+    const sel = document.getElementById('f-employe');
+    const employes = SebaDB.list('employes');
+    sel.innerHTML = '<option value="">— Non assigné —</option>' + employes.map(e =>
+      '<option value="' + e.id + '"' + (e.id === interv.employeId ? ' selected' : '') + '>' + escapeHtml(((e.prenom||'')+' '+(e.nom||'')).trim()) + '</option>'
+    ).join('');
+    document.getElementById('f-service').value = interv.service || '';
+    document.getElementById('f-date').value = interv.date || '';
+    document.getElementById('f-time').value = interv.time || '';
+    document.getElementById('f-duree').value = interv.duree || '';
+    document.getElementById('f-adresse').value = interv.adresse || '';
+    document.getElementById('f-instructions').value = interv.instructions || '';
+    document.getElementById('f-photo-before').checked = !!interv.requirePhotoBefore;
+    document.getElementById('f-photo-after').checked = !!interv.requirePhotoAfter;
+    document.getElementById('prep-status').textContent = '';
+  }
+
+  function savePreparation() {
+    const employes = SebaDB.list('employes');
+    const employeId = document.getElementById('f-employe').value || null;
+    const emp = employes.find(e => e.id === employeId);
+    const patch = {
+      employeId: employeId,
+      employeName: emp ? ((emp.prenom||'')+' '+(emp.nom||'')).trim() : null,
+      service: document.getElementById('f-service').value.trim(),
+      date: document.getElementById('f-date').value,
+      time: document.getElementById('f-time').value,
+      duree: document.getElementById('f-duree').value ? Number(document.getElementById('f-duree').value) : null,
+      adresse: document.getElementById('f-adresse').value.trim(),
+      instructions: document.getElementById('f-instructions').value.trim(),
+      requirePhotoBefore: document.getElementById('f-photo-before').checked,
+      requirePhotoAfter: document.getElementById('f-photo-after').checked,
+    };
+    SebaDB.interventions.prepareIntervention(_id, patch);
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    document.getElementById('prep-status').textContent = 'Enregistré.';
+    document.getElementById('prep-status').style.color = 'var(--emerald)';
+    render();
+  }
+
+  function renderChecklist() {
+    const box = document.getElementById('checklist-list');
+    if (!interv.execution.checklist.length) { box.innerHTML = '<p class="panel-empty">Aucune tâche pour le moment.</p>'; return; }
+    box.innerHTML = interv.execution.checklist.map(c =>
+      '<div class="chk-item">' +
+        '<div class="chk-icon' + (c.checked ? ' done' : '') + '">' + (c.checked ? '✓' : '') + '</div>' +
+        '<div class="chk-body">' +
+          '<span class="chk-label">' + escapeHtml(c.label) + (c.required ? '<span class="chk-required">Obligatoire</span>' : '') + '</span>' +
+          (c.checked ? '<div class="chk-meta">Coché ' + fmtDateTime(c.checkedAt) + '</div>' : '') +
+          (c.note ? '<div class="chk-meta">Note : ' + escapeHtml(c.note) + '</div>' : '') +
+        '</div>' +
+        '<button class="chk-remove" title="Retirer" onclick="removeChecklistItemUI(\'' + c.id + '\')">✕</button>' +
+      '</div>'
+    ).join('');
+  }
+
+  function addChecklistItemUI() {
+    const inp = document.getElementById('chk-new-label');
+    const label = inp.value.trim();
+    if (!label) return;
+    const required = document.getElementById('chk-new-required').checked;
+    SebaDB.interventions.addChecklistItem(_id, label, required);
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    inp.value = '';
+    document.getElementById('chk-new-required').checked = false;
+    renderChecklist();
+  }
+
+  function removeChecklistItemUI(itemId) {
+    SebaDB.interventions.removeChecklistItem(_id, itemId);
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    renderChecklist();
+  }
+
+  function renderTiming() {
+    const t = interv.execution.timing;
+    const grid = document.getElementById('timing-grid');
+    grid.innerHTML =
+      '<div class="timing-item"><span class="tlabel">Démarrée le</span><span class="tvalue">' + fmtDateTime(t.actualStart) + '</span></div>' +
+      '<div class="timing-item"><span class="tlabel">Terminée le</span><span class="tvalue">' + fmtDateTime(t.actualEnd) + '</span></div>' +
+      '<div class="timing-item"><span class="tlabel">En pause depuis</span><span class="tvalue">' + (t.pausedAt ? fmtDateTime(t.pausedAt) : '—') + '</span></div>' +
+      '<div class="timing-item"><span class="tlabel">Temps en pause cumulé</span><span class="tvalue">' + (t.pausedDurationMinutes || 0) + ' min</span></div>';
+  }
+
+  function renderPhotos() {
+    const box = document.getElementById('photos-container');
+    const photos = interv.execution.photos;
+    if (!photos.length) { box.innerHTML = '<p class="panel-empty">Aucune photo pour le moment.</p>'; return; }
+    const groups = {};
+    photos.forEach(p => { (groups[p.type] = groups[p.type] || []).push(p); });
+    box.innerHTML = Object.keys(groups).map(type =>
+      '<div class="photo-group"><h4>' + (PHOTO_TYPE_LABELS[type] || type) + '</h4><div class="photo-grid">' +
+      groups[type].map(p =>
+        '<div class="photo-card" id="photo-card-' + p.id + '">' +
+          '<div class="ph-placeholder">📷</div>' +
+          '<div class="ph-foot">' +
+            '<label class="ph-vis"><input type="checkbox" ' + (p.visibleToClient ? 'checked' : '') + ' onchange="togglePhotoVisibility(\'' + p.id + '\', this.checked)"> Visible client</label>' +
+          '</div>' +
+        '</div>'
+      ).join('') +
+      '</div></div>'
+    ).join('');
+    // Chargement asynchrone des URLs signées (Supabase réel uniquement --
+    // mode démo/local : aucun fichier réellement stocké, placeholder gardé).
+    if (window.sebaAuth && sebaAuth.isConfigured) {
+      photos.forEach(p => {
+        sebaAuth.getSignedUrl('intervention360-photos', p.storagePath, 600).then(res => {
+          if (!res.ok) return;
+          const card = document.getElementById('photo-card-' + p.id);
+          if (!card) return;
+          const ph = card.querySelector('.ph-placeholder');
+          if (ph) ph.outerHTML = '<img src="' + res.url + '" alt="Photo ' + escapeHtml(p.type) + '">';
+        });
+      });
+    }
+  }
+
+  function togglePhotoVisibility(photoId, visible) {
+    const photos = interv.execution.photos.map(p => p.id === photoId ? Object.assign({}, p, { visibleToClient: visible }) : p);
+    persistExecution({ execution: Object.assign({}, interv.execution, { photos }) });
+  }
+
+  function renderMaterials() {
+    const box = document.getElementById('materials-list');
+    const mats = interv.execution.materials;
+    if (!mats.length) { box.innerHTML = '<p class="panel-empty">Aucun matériau déclaré.</p>'; return; }
+    box.innerHTML = mats.map(m =>
+      '<div class="simple-row">' + escapeHtml(m.label) + (m.quantity ? ' — ' + escapeHtml(String(m.quantity)) + (m.unit ? ' ' + escapeHtml(m.unit) : '') : '') +
+      (m.note ? '<div class="sr-meta">' + escapeHtml(m.note) + '</div>' : '') + '</div>'
+    ).join('');
+  }
+
+  function renderIncidents() {
+    const box = document.getElementById('incidents-list');
+    const incidents = interv.execution.incidents;
+    if (!incidents.length) { box.innerHTML = '<p class="panel-empty">Aucun incident déclaré.</p>'; return; }
+    box.innerHTML = incidents.map(i =>
+      '<div class="simple-row">' + (INCIDENT_LABELS[i.type] || i.type) +
+      (i.description ? '<div class="sr-meta">' + escapeHtml(i.description) + '</div>' : '') +
+      '<div class="sr-meta">' + fmtDateTime(i.reportedAt) + '</div></div>'
+    ).join('');
+  }
+
+  function renderFieldReport() {
+    const panel = document.getElementById('field-report-panel');
+    if (!interv.fieldReport) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    const fr = interv.fieldReport;
+    document.getElementById('field-report-content').innerHTML =
+      '<div class="info-row"><span class="info-label">Résultat</span><span class="info-value">' + escapeHtml(fr.outcome || '—') + '</span></div>' +
+      (fr.summary ? '<div class="info-row"><span class="info-label">Résumé</span><span class="info-value">' + escapeHtml(fr.summary) + '</span></div>' : '') +
+      (fr.issueType && fr.issueType !== 'none' ? '<div class="info-row"><span class="info-label">Problème</span><span class="info-value">' + (INCIDENT_LABELS[fr.issueType] || fr.issueType) + (fr.issueDescription ? ' — ' + escapeHtml(fr.issueDescription) : '') + '</span></div>' : '');
+  }
+
+  function renderClientApproval() {
+    const box = document.getElementById('client-approval-content');
+    const ca = interv.execution.clientApproval;
+    if (!ca || ca.status === 'pending') { box.innerHTML = '<p class="panel-empty">En attente de fin de mission ou de retour du client.</p>'; return; }
+    const label = ca.status === 'approved' ? 'Approuvée par le client' : 'Problème signalé par le client';
+    const color = ca.status === 'approved' ? 'var(--emerald)' : 'var(--danger-text)';
+    box.innerHTML =
+      '<div class="info-row"><span class="info-label">Statut</span><span class="info-value" style="color:' + color + ';font-weight:600;">' + label + '</span></div>' +
+      (ca.comment ? '<div class="info-row"><span class="info-label">Commentaire</span><span class="info-value">' + escapeHtml(ca.comment) + '</span></div>' : '') +
+      '<div class="info-row"><span class="info-label">Le</span><span class="info-value">' + fmtDateTime(ca.submittedAt) + '</span></div>';
+  }
+
+  function renderReschedule() {
+    const panel = document.getElementById('reschedule-panel');
+    const rr = interv.rescheduleRequest;
+    if (!rr) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    document.getElementById('reschedule-content').innerHTML =
+      '<div class="info-row"><span class="info-label">Date souhaitée</span><span class="info-value">' + escapeHtml(rr.requestedDate || '—') + '</span></div>' +
+      (rr.comment ? '<div class="info-row"><span class="info-label">Commentaire</span><span class="info-value">' + escapeHtml(rr.comment) + '</span></div>' : '') +
+      '<div class="info-row"><span class="info-label">Demandé le</span><span class="info-value">' + fmtDateTime(rr.requestedAt) + '</span></div>';
+  }
+
+  function renderBriefing() {
+    const box = document.getElementById('briefing-content');
+    const b = interv.missionBrief;
+    if (!b) { box.innerHTML = '<p class="panel-empty">Aucun briefing généré — cliquez sur "Régénérer".</p>'; return; }
+    const chips = (list, cls) => (list || []).map(e => '<span class="mem-chip' + (cls && (e.importance === 'critical' || e.importance === 'important') ? ' ' + e.importance : '') + '">' + escapeHtml(e.title) + '</span>').join('');
+    let html = '';
+    if (b.accessInstructions && b.accessInstructions.length) html += '<div class="info-row"><span class="info-label">Accès</span><span class="info-value">' + chips(b.accessInstructions) + '</span></div>';
+    if (b.operationalInstructions && b.operationalInstructions.length) html += '<div class="info-row"><span class="info-label">Consignes</span><span class="info-value">' + chips(b.operationalInstructions) + '</span></div>';
+    if (b.importantPreferences && b.importantPreferences.length) html += '<div class="info-row"><span class="info-label">Préférences importantes</span><span class="info-value">' + chips(b.importantPreferences, true) + '</span></div>';
+    if (b.risks && b.risks.length) html += '<div class="info-row"><span class="info-label">Risques</span><span class="info-value">' + chips(b.risks, true) + '</span></div>';
+    if (b.equipment && b.equipment.length) html += '<div class="info-row"><span class="info-label">Équipement</span><span class="info-value">' + chips(b.equipment) + '</span></div>';
+    if (b.recentIncidents && b.recentIncidents.length) html += '<div class="info-row"><span class="info-label">Incidents récents</span><span class="info-value">' + b.recentIncidents.map(i => escapeHtml(i.date + ' — ' + (INCIDENT_LABELS[i.issueType] || i.issueType))).join('<br>') + '</span></div>';
+    if (b.previousInterventionSummary) html += '<div class="info-row"><span class="info-label">Dernière mission</span><span class="info-value">' + escapeHtml(b.previousInterventionSummary.date + ' — ' + b.previousInterventionSummary.summary) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Généré le</span><span class="info-value">' + fmtDateTime(b.generatedAt) + '</span></div>';
+    box.innerHTML = html || '<p class="panel-empty">Aucune information de mémoire client pour le moment.</p>';
+  }
+
+  function regenerateBriefing() {
+    SebaDB.interventions.regenerateMissionBrief(_id);
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    renderBriefing();
+  }
+
+  function renderHistory() {
+    const box = document.getElementById('history-timeline');
+    const hist = (interv.statusHistory || []).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    if (!hist.length) { box.innerHTML = '<p class="panel-empty">Aucun événement.</p>'; return; }
+    box.innerHTML = hist.map(e =>
+      '<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-label">' + (EVENT_LABELS[e.event] || e.event) + '</div><div class="tl-meta">' + fmtDateTime(e.createdAt) + (e.actorRole ? ' · ' + e.actorRole : '') + '</div></div></div>'
+    ).join('');
+  }
+
+  function approveDossier() {
+    const res = SebaDB.interventions.ownerApproveIntervention(_id, null);
+    if (!res.ok) { showToast(res.error || 'Échec de la validation.'); return; }
+    interv = res.intervention;
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    showToast('Dossier validé.');
+    render();
+  }
+
+  function reopenDossier() {
+    const reason = prompt('Motif de réouverture (optionnel) :') || '';
+    const res = SebaDB.interventions.reopenIntervention(_id, reason);
+    if (!res.ok) { showToast(res.error || 'Échec de la réouverture.'); return; }
+    interv = res.intervention;
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    showToast('Dossier rouvert.');
+    render();
+  }
+
+  function createInvoice() {
+    const res = SebaDB.interventions.createInvoiceFromIntervention(_id);
+    if (!res.ok) { showToast(res.error || 'Échec de la création de facture.'); return; }
+    interv = SebaDB.get('interventions', _id);
+    window.SebaClientIntelligence.normalizeIntervention(interv);
+    showToast('Facture préremplie créée.');
+    render();
+  }
+
+  if (loadIntervention()) render();
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  if (avatarBtn) avatarBtn.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => { if (userMenu) userMenu.classList.remove('open'); });
+</script>
+
+<script>
+  function toggleSidebar() {
+    const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  let _toastT;
+  function showToast(msg) {
+    let t = document.getElementById('mf-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'mf-toast';
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#1C1D21;color:#fff;padding:12px 20px;border-radius:12px;font-size:.86rem;font-weight:500;z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:Inter,sans-serif;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(_toastT);
+    _toastT = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(16px)'; }, 3000);
+  }
+</script>
+</body>
+</html>

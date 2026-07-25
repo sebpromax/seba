@@ -227,6 +227,37 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
 .fr-status.err{color:var(--danger-text);}
 .fr-existing{margin-top:8px;padding:12px;background:var(--bg);border-radius:var(--rs);font-size:.84rem;}
 
+/* ── Exécution de mission (Intervention 360, feature/intervention-360) --
+   AJOUT PUR, distinct de la clôture legacy (.cm-*) et du compte rendu
+   structuré (.fr-*) ci-dessus, jamais modifiés. Nouveau bloc dans le
+   détail mission : checklist/timing/photos/matériaux/incidents, avec sa
+   propre finalisation bloquante (completeIntervention côté serveur). ── */
+.ex-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.ex-status-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.ex-timing-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.ex-btn{background:var(--white);border:1.5px solid var(--border);color:var(--ink);padding:10px 16px;border-radius:var(--rs);font-size:.84rem;font-weight:700;cursor:pointer;min-height:48px;}
+.ex-btn.primary{background:var(--emerald);border:none;color:var(--on-emerald);}
+.ex-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ex-chk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.ex-chk-item:last-child{border-bottom:none;}
+.ex-chk-box{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--white);cursor:pointer;font-size:.9rem;min-width:24px;}
+.ex-chk-box.done{background:var(--emerald);border-color:var(--emerald);color:var(--on-emerald);}
+.ex-chk-body{flex:1;min-width:0;}
+.ex-chk-label{font-size:.88rem;}
+.ex-chk-required{color:var(--danger-text);font-size:.72rem;font-weight:700;margin-left:6px;}
+.ex-photo-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.ex-photo-btn{flex:1;min-width:120px;background:var(--white);border:1.5px dashed var(--border);color:var(--ink);padding:12px 8px;border-radius:var(--rs);font-size:.8rem;font-weight:600;cursor:pointer;min-height:48px;text-align:center;}
+.ex-photo-count{font-size:.72rem;color:var(--emerald);display:block;margin-top:2px;}
+.ex-form-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.ex-form-row input,.ex-form-row select{flex:1;min-width:100px;min-height:48px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
+.ex-simple-row{padding:9px 0;border-bottom:1px solid var(--border);font-size:.85rem;}
+.ex-simple-row:last-child{border-bottom:none;}
+.ex-blockers{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger-text);border-radius:var(--rs);padding:10px 14px;font-size:.82rem;margin-top:10px;}
+.ex-blockers li{margin-left:16px;}
+.ex-status-text{font-size:.84rem;margin-top:8px;}
+.ex-status-text.ok{color:var(--emerald);}
+.ex-status-text.err{color:var(--danger-text);}
+
 @media (max-width: 768px) {
   .et-msg-input,.et-modal textarea,.et-modal select,.et-pw-row input,.cm-textarea{font-size:16px;}
   .et-mission-actions{gap:12px;}
@@ -469,6 +500,12 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Capture photo Intervention 360 -- entree unique reutilisee pour les 4
+     types (before/during/after/incident), le type ciblé est porte par
+     _exPhotoContext (voir capturePhotoUI ci-dessous), distincte de
+     #cm-photo (cloture legacy, jamais modifiee). -->
+<input type="file" id="ex-photo-input" accept="image/jpeg,image/png,image/webp" capture="environment" style="display:none;" onchange="handleExPhotoSelected()">
+
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <script>
@@ -483,6 +520,10 @@ const REPORT_TYPE_LABELS = {
 };
 const MISSION_STATUS_LABEL = { 'a-venir': 'À faire', 'en-cours': 'En cours', 'en-retard': 'En retard', 'terminee': 'Terminée' };
 const FIELDREPORT_OUTCOME_LABELS = { completed: 'Terminée', partially_completed: 'Partiellement terminée', blocked: 'Bloquée', cancelled_on_site: 'Annulée sur place' };
+const EXECUTION_STATUS_LABELS = { not_started: 'Suivi non démarré', in_progress: 'Suivi en cours', paused: 'Suivi en pause', submitted: 'Terminée — en attente de validation', owner_approved: 'Validée par le patron', reopened: 'Dossier rouvert — à reprendre' };
+const EXECUTION_STATUS_BADGE_CLASS = { not_started: '', in_progress: 'en-cours', paused: 'en-cours', submitted: 'en-cours', owner_approved: 'done', reopened: 'en-retard' };
+const EX_PHOTO_TYPE_LABELS = { before: 'Avant', during: 'Pendant', after: 'Après', incident: 'Incident' };
+const EX_INCIDENT_TYPE_LABELS = { access: 'Accès', client_absent: 'Client absent', equipment: 'Équipement', damage: 'Dommage', quality: 'Qualité', delay: 'Retard', other: 'Autre' };
 
 /* Date ISO en heure LOCALE, meme convention que seba-data.js (localISO) --
    jamais toISOString() qui peut basculer au jour precedent en UTC. */
@@ -723,7 +764,137 @@ function renderDetail(id) {
       (m.fieldReport
         ? '<div class="et-detail-label">Compte rendu de mission</div><div class="fr-existing">' + escapeHtml(FIELDREPORT_OUTCOME_LABELS[m.fieldReport.outcome] || m.fieldReport.outcome) + (m.fieldReport.summary ? ' — ' + escapeHtml(m.fieldReport.summary) : '') + '</div>'
         : '<button type="button" class="et-btn-terminer" style="width:100%;" onclick="openFieldReportModal(\'' + m.id + '\')">📋 Compte rendu de mission</button>') +
-    '</div>';
+    '</div>' +
+    renderExecutionBlock(m);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EXÉCUTION DE MISSION (Intervention 360, feature/intervention-360) --
+   AJOUT PUR. Checklist/timing/photos/matériaux/incidents, finalisation
+   bloquante propre (completeIntervention, distincte de closeIntervention
+   /saveFieldReport ci-dessus, jamais modifiées ni remplacées). ══════════ */
+function renderExecutionBlock(m) {
+  window.SebaClientIntelligence.normalizeIntervention(m);
+  const ex = m.execution;
+  const cs = ex.completionStatus;
+  let html = '<div class="ex-block"><div class="et-detail-label">Exécution de la mission</div>' +
+    '<div class="ex-status-row"><span class="et-mission-badge ' + (EXECUTION_STATUS_BADGE_CLASS[cs] || '') + '">' + (EXECUTION_STATUS_LABELS[cs] || cs) + '</span></div>';
+
+  if (cs === 'not_started') {
+    html += '<div class="ex-timing-row"><button class="ex-btn primary" onclick="startExecutionUI(\'' + m.id + '\')">▶ Démarrer le suivi</button></div>';
+  } else if (cs === 'in_progress') {
+    html += '<div class="ex-timing-row"><button class="ex-btn" onclick="pauseExecutionUI(\'' + m.id + '\')">⏸ Mettre en pause</button></div>';
+  } else if (cs === 'paused') {
+    html += '<div class="ex-timing-row"><button class="ex-btn primary" onclick="resumeExecutionUI(\'' + m.id + '\')">▶ Reprendre</button></div>';
+  }
+
+  if (cs === 'in_progress' || cs === 'paused' || cs === 'reopened') {
+    html += '<div class="et-detail-label" style="margin-top:14px;">Checklist</div>';
+    html += ex.checklist.length
+      ? ex.checklist.map(c =>
+          '<div class="ex-chk-item">' +
+            '<div class="ex-chk-box' + (c.checked ? ' done' : '') + '" onclick="toggleChecklistUI(\'' + m.id + '\',\'' + c.id + '\',' + (!c.checked) + ')">' + (c.checked ? '✓' : '') + '</div>' +
+            '<div class="ex-chk-body"><div class="ex-chk-label">' + escapeHtml(c.label) + (c.required ? '<span class="ex-chk-required">Obligatoire</span>' : '') + '</div></div>' +
+          '</div>'
+        ).join('')
+      : '<p style="font-size:.84rem;color:var(--text-2);">Aucune tâche définie par votre patron pour cette mission.</p>';
+
+    html += '<div class="et-detail-label" style="margin-top:14px;">Photos</div><div class="ex-photo-row">' +
+      ['before', 'during', 'after', 'incident'].map(t => {
+        const count = ex.photos.filter(p => p.type === t).length;
+        return '<button type="button" class="ex-photo-btn" onclick="capturePhotoUI(\'' + m.id + '\',\'' + t + '\')">📷 ' + EX_PHOTO_TYPE_LABELS[t] + (count ? '<span class="ex-photo-count">' + count + ' envoyée(s)</span>' : '') + '</button>';
+      }).join('') + '</div>';
+
+    html += '<div class="et-detail-label" style="margin-top:14px;">Matériaux utilisés</div>';
+    html += ex.materials.map(mt => '<div class="ex-simple-row">' + escapeHtml(mt.label) + (mt.quantity ? ' — ' + escapeHtml(String(mt.quantity)) + (mt.unit ? ' ' + escapeHtml(mt.unit) : '') : '') + '</div>').join('');
+    html += '<div class="ex-form-row"><input type="text" id="ex-mat-label-' + m.id + '" placeholder="Matériau"><input type="text" id="ex-mat-qty-' + m.id + '" placeholder="Qté" style="max-width:80px;flex:0 0 80px;"></div>' +
+      '<button type="button" class="ex-btn" style="width:100%;margin-bottom:14px;" onclick="addMaterialUI(\'' + m.id + '\')">Ajouter un matériau</button>';
+
+    html += '<div class="et-detail-label">Déclarer un incident</div>';
+    html += ex.incidents.map(inc => '<div class="ex-simple-row">' + (EX_INCIDENT_TYPE_LABELS[inc.type] || inc.type) + (inc.description ? ' — ' + escapeHtml(inc.description) : '') + '</div>').join('');
+    html += '<div class="ex-form-row"><select id="ex-inc-type-' + m.id + '">' + Object.keys(EX_INCIDENT_TYPE_LABELS).map(k => '<option value="' + k + '">' + EX_INCIDENT_TYPE_LABELS[k] + '</option>').join('') + '</select></div>' +
+      '<div class="ex-form-row"><input type="text" id="ex-inc-desc-' + m.id + '" placeholder="Description (optionnel)"></div>' +
+      '<button type="button" class="ex-btn" style="width:100%;margin-bottom:14px;" onclick="submitIncidentUI(\'' + m.id + '\')">Déclarer l\'incident</button>';
+
+    const blockers = window.SebaClientIntelligence.computeInterventionCompletionBlockers(m);
+    html += '<div class="et-detail-label">Finaliser</div>';
+    if (blockers.length) html += '<ul class="ex-blockers">' + blockers.map(b => '<li>' + escapeHtml(b.message) + '</li>').join('') + '</ul>';
+    html += '<button type="button" class="ex-btn primary" style="width:100%;margin-top:10px;" ' + (blockers.length ? 'disabled' : '') + ' onclick="finalizeExecutionUI(\'' + m.id + '\')">✓ Terminer la mission (checklist)</button>' +
+      '<p class="ex-status-text" id="ex-finalize-status-' + m.id + '"></p>';
+  } else if (cs === 'submitted') {
+    html += '<p style="font-size:.84rem;color:var(--text-2);margin-top:10px;">Exécution envoyée, en attente de validation par votre patron.</p>';
+  } else if (cs === 'owner_approved') {
+    html += '<p style="font-size:.84rem;color:var(--emerald);margin-top:10px;">Dossier validé par votre patron.</p>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+async function startExecutionUI(id) {
+  const res = await SebaDB.employeePortal.startIntervention(id);
+  if (!res.ok) { alert(res.error || 'Échec du démarrage.'); return; }
+  await refreshAllViews();
+}
+async function pauseExecutionUI(id) {
+  const res = await SebaDB.employeePortal.pauseIntervention(id);
+  if (!res.ok) { alert(res.error || 'Échec de la mise en pause.'); return; }
+  await refreshAllViews();
+}
+async function resumeExecutionUI(id) {
+  const res = await SebaDB.employeePortal.resumeIntervention(id);
+  if (!res.ok) { alert(res.error || 'Échec de la reprise.'); return; }
+  await refreshAllViews();
+}
+async function toggleChecklistUI(id, itemId, checked) {
+  const res = await SebaDB.employeePortal.updateChecklistItem(id, itemId, { checked });
+  if (!res.ok) { alert(res.error || 'Échec de la mise à jour.'); return; }
+  await refreshAllViews();
+}
+async function addMaterialUI(id) {
+  const labelEl = document.getElementById('ex-mat-label-' + id);
+  const qtyEl = document.getElementById('ex-mat-qty-' + id);
+  const label = labelEl.value.trim();
+  if (!label) return;
+  const res = await SebaDB.employeePortal.addMaterial(id, { label, quantity: qtyEl.value.trim() || null });
+  if (!res.ok) { alert(res.error || 'Échec de l\'ajout.'); return; }
+  labelEl.value = ''; qtyEl.value = '';
+  await refreshAllViews();
+}
+async function submitIncidentUI(id) {
+  const typeEl = document.getElementById('ex-inc-type-' + id);
+  const descEl = document.getElementById('ex-inc-desc-' + id);
+  const res = await SebaDB.employeePortal.submitIncident(id, { type: typeEl.value, description: descEl.value.trim() });
+  if (!res.ok) { alert(res.error || 'Échec de la déclaration.'); return; }
+  descEl.value = '';
+  await refreshAllViews();
+}
+let _exPhotoContext = null;
+function capturePhotoUI(id, type) {
+  _exPhotoContext = { id, type };
+  const inp = document.getElementById('ex-photo-input');
+  inp.value = '';
+  inp.click();
+}
+async function handleExPhotoSelected() {
+  const inp = document.getElementById('ex-photo-input');
+  const file = inp.files && inp.files[0];
+  if (!file || !_exPhotoContext) return;
+  const { id, type } = _exPhotoContext;
+  const res = await SebaDB.employeePortal.addPhoto(id, type, file);
+  if (!res.ok) { alert(res.error || 'Échec de l\'envoi de la photo.'); return; }
+  await refreshAllViews();
+}
+async function finalizeExecutionUI(id) {
+  const statusEl = document.getElementById('ex-finalize-status-' + id);
+  const res = await SebaDB.employeePortal.completeIntervention(id, '');
+  if (!res.ok) {
+    if (statusEl) { statusEl.textContent = (res.blockers && res.blockers.map(b => b.message).join(' · ')) || res.error || 'Échec de la finalisation.'; statusEl.className = 'ex-status-text err'; }
+    await refreshAllViews();
+    return;
+  }
+  if (statusEl) { statusEl.textContent = 'Exécution envoyée.'; statusEl.className = 'ex-status-text ok'; }
+  await refreshAllViews();
 }
 
 /* ═══════════════════════════════════════════════════════════════

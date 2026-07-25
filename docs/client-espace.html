@@ -189,6 +189,15 @@ button,input,textarea{font-family:'Inter',sans-serif;}
 .pv-body{text-align:center;padding:24px 10px 4px;color:var(--text-2);font-size:.9rem;}
 .pv-body img{max-width:100%;border-radius:var(--rs);display:block;margin:0 auto;}
 
+/* ── Suivi d'exécution (Intervention 360, feature/intervention-360) --
+   AJOUT PUR dans la carte "Prochaine intervention" existante. ── */
+.cp-exec-status{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.cp-exec-row{font-size:.84rem;color:var(--text-2);margin-top:6px;}
+.cp-exec-approval{margin-top:12px;padding:12px;border-radius:var(--rs);background:var(--bg);}
+.cp-exec-approval.pending-review{border:1.5px solid var(--emerald);}
+.cp-exec-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:10px;}
+.cp-exec-photo{border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;cursor:pointer;background:var(--bg);height:70px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+
 @media (max-width:768px){ .ce-modal input,.mc-input{font-size:16px;} }
 </style>
 </head>
@@ -366,6 +375,34 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Demande de report (Intervention 360) -->
+<div class="ce-modal-overlay" id="ce-reschedule-overlay">
+  <div class="ce-modal">
+    <h3>Demander un report</h3>
+    <p>Indiquez la date qui vous conviendrait mieux.</p>
+    <input type="date" id="ce-reschedule-date">
+    <input type="text" id="ce-reschedule-comment" placeholder="Commentaire (optionnel)" maxlength="300">
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeRescheduleModal()">Annuler</button>
+      <button class="ce-modal-send" id="ce-reschedule-send" onclick="submitReschedule()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Signaler un problème / refuser l'approbation (Intervention 360) --
+     commentaire obligatoire cote serveur (report_my_intervention_issue). -->
+<div class="ce-modal-overlay" id="ce-report-issue-overlay">
+  <div class="ce-modal">
+    <h3>Signaler un problème</h3>
+    <p>Décrivez ce qui ne va pas — votre prestataire sera prévenu.</p>
+    <input type="text" id="ce-report-issue-comment" placeholder="Ex : une pièce n'a pas été nettoyée" maxlength="300">
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeReportIssueModal()">Annuler</button>
+      <button class="ce-modal-send" id="ce-report-issue-send" onclick="submitReportIssue()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Chat de mission (tripartite) -->
 <div class="mc-overlay" id="mc-overlay">
   <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Chat de la demande">
@@ -463,6 +500,18 @@ async function buildClientPortalViewModel(currentUser) {
         .filter(i => i.clientId === clientId && !i.done && i.date >= todayStr)
         .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
       nextIntervention = upcoming[0] || null;
+      // Même filtrage qu'en session réelle (get_my_client_interventions()/
+      // get_my_client_intervention_detail()) : jamais une photo interne
+      // (visibleToClient=false) affichée côté client, même en mode démo --
+      // copie superficielle, ne modifie jamais l'objet stocké dans SebaDB.
+      if (nextIntervention) {
+        window.SebaClientIntelligence.normalizeIntervention(nextIntervention);
+        nextIntervention = Object.assign({}, nextIntervention, {
+          execution: Object.assign({}, nextIntervention.execution, {
+            photos: nextIntervention.execution.photos.filter(p => p.visibleToClient),
+          }),
+        });
+      }
     } catch (e) { /* mode démo non initialisé -- reste vide, honnête */ }
   }
 
@@ -523,6 +572,51 @@ function renderPriority(pa) {
 }
 
 const INTERV_STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard' };
+const EXEC_STATUS_LABEL = { not_started: 'Pas encore démarrée', in_progress: 'En cours', paused: 'En pause', submitted: 'Terminée par l\'intervenant', owner_approved: 'Terminée', reopened: 'Reprise en cours' };
+
+/* ── Suivi d'exécution (Intervention 360) -- AJOUT PUR, lit
+   execution.{timing,completionStatus,clientApproval,photos} déjà curatés
+   côté serveur (get_my_client_interventions()/get_my_client_intervention_detail(),
+   migrations/2026-07-25-intervention-360.sql) : jamais de checklist/
+   matériaux/incidents ici, jamais une photo non visibleToClient. ── */
+function fmtTime(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function renderExecutionStatus(i) {
+  const ex = i.execution;
+  if (!ex || !ex.completionStatus) return '';
+  const cs = ex.completionStatus;
+  let html = '<div class="cp-exec-status">';
+  html += '<div class="cp-exec-row">Suivi de la mission : <strong>' + (EXEC_STATUS_LABEL[cs] || cs) + '</strong></div>';
+  if (ex.timing && ex.timing.actualStart) html += '<div class="cp-exec-row">Démarrée à ' + fmtTime(ex.timing.actualStart) + '</div>';
+  if (ex.timing && ex.timing.actualEnd) html += '<div class="cp-exec-row">Terminée à ' + fmtTime(ex.timing.actualEnd) + '</div>';
+
+  if (ex.photos && ex.photos.length) {
+    html += '<div class="cp-exec-photos">' + ex.photos.map(p =>
+      '<div class="cp-exec-photo" onclick="verPhotoIntervention(\'' + escapeHtml(p.storagePath) + '\')">📷</div>'
+    ).join('') + '</div>';
+  }
+
+  if (cs === 'submitted') {
+    const approval = ex.clientApproval;
+    if (!approval || approval.status === 'pending') {
+      html += '<div class="cp-exec-approval pending-review">' +
+        '<div style="font-weight:700;margin-bottom:8px;">La mission est terminée — tout est en ordre ?</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+          '<button type="button" class="cp-btn cp-btn-primary" onclick="approveInterventionUI(\'' + i.id + '\')">✓ Approuver</button>' +
+          '<button type="button" class="cp-btn cp-btn-secondary" onclick="openReportIssueModal(\'' + i.id + '\')">Signaler un problème</button>' +
+        '</div>' +
+      '</div>';
+    } else if (approval.status === 'approved') {
+      html += '<div class="cp-exec-approval">✓ Vous avez approuvé cette prestation.</div>';
+    } else if (approval.status === 'issue_reported') {
+      html += '<div class="cp-exec-approval">⚠ Problème signalé, en attente de votre prestataire.</div>';
+    }
+  } else if (cs === 'owner_approved') {
+    html += '<div class="cp-exec-approval">✓ Prestation validée par votre prestataire.</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
 
 function renderNextIntervention(vm) {
   const target = document.getElementById('cp-next-intervention');
@@ -532,6 +626,7 @@ function renderNextIntervention(vm) {
   const actions = [];
   if (!i.done) {
     if (!i.confirmed) actions.push('<button type="button" class="cp-btn cp-btn-primary" onclick="confirmerIntervention(\'' + i.id + '\')">Confirmer</button>');
+    actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="openRescheduleModal(\'' + i.id + '\')">Demander un report</button>');
     actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="openNewRequestModal(\'Demande de changement — \' + ' + JSON.stringify(i.service || '') + ')">Demander un changement</button>');
     actions.push('<button type="button" class="cp-btn cp-btn-secondary" onclick="openNewRequestModal(\'Problème signalé — \' + ' + JSON.stringify(i.service || '') + ')">Signaler un problème</button>');
   }
@@ -545,7 +640,8 @@ function renderNextIntervention(vm) {
       '<span class="cp-badge ' + statut + '">' + (INTERV_STATUS_LABEL[statut] || statut) + '</span>' +
     '</div>' +
     '<div class="cp-interv-addr">' + escapeHtml(i.adresse || 'Adresse non renseignée') + '</div>' +
-    (i.employeNom ? '<div class="cp-interv-employe">Intervenant : ' + escapeHtml(i.employeNom) + '</div>' : '') +
+    renderExecutionStatus(i) +
+    (i.employeName ? '<div class="cp-interv-employe">Intervenant : ' + escapeHtml(i.employeName) + '</div>' : '') +
     (i.consignes ? '<div class="cp-interv-consignes">' + escapeHtml(i.consignes) + '</div>' : '') +
     '<div class="cp-interv-actions">' + actions.join('') + '</div>' +
     '<div style="margin-top:12px;"><button type="button" class="cp-link-btn" onclick="switchView(\'interventions\')">Voir les détails →</button></div>' +
@@ -913,6 +1009,73 @@ async function verPhotoMission(photoPath) {
   const res = await sebaAuth.getSignedUrl('mission-photos', photoPath);
   if (!res.ok) { body.textContent = 'Impossible de charger la photo : ' + (res.error || 'erreur inconnue'); return; }
   body.innerHTML = '<img src="' + res.url + '" alt="Photo de fin d\'intervention">';
+}
+
+/* ── Photos Intervention 360 (bucket dédié intervention360-photos, distinct
+   de mission-photos ci-dessus, jamais modifié) -- même viewer réutilisé. ── */
+async function verPhotoIntervention(photoPath) {
+  if (!photoPath) return;
+  openPhotoViewer();
+  const body = document.getElementById('pv-body');
+  if (!window.sebaAuth || !sebaAuth.isConfigured) { body.textContent = 'Aperçu non disponible en mode démo (aucun fichier réellement stocké côté serveur).'; return; }
+  const res = await sebaAuth.getSignedUrl('intervention360-photos', photoPath);
+  if (!res.ok) { body.textContent = 'Impossible de charger la photo : ' + (res.error || 'erreur inconnue'); return; }
+  body.innerHTML = '<img src="' + res.url + '" alt="Photo de mission">';
+}
+
+/* ── Demande de report (Intervention 360) ── */
+let _rescheduleInterventionId = null;
+function openRescheduleModal(interventionId) {
+  _rescheduleInterventionId = interventionId;
+  document.getElementById('ce-reschedule-date').value = '';
+  document.getElementById('ce-reschedule-comment').value = '';
+  document.getElementById('ce-reschedule-overlay').classList.add('open');
+}
+function closeRescheduleModal() { document.getElementById('ce-reschedule-overlay').classList.remove('open'); _rescheduleInterventionId = null; }
+async function submitReschedule() {
+  if (!_rescheduleInterventionId) return;
+  const date = document.getElementById('ce-reschedule-date').value || null;
+  const comment = document.getElementById('ce-reschedule-comment').value.trim();
+  const btn = document.getElementById('ce-reschedule-send');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const res = await SebaDB.clientPortal.requestReschedule(_rescheduleInterventionId, date, comment);
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  if (!res || !res.ok) { alert((res && res.error) || 'Échec de la demande.'); return; }
+  closeRescheduleModal();
+  refreshView();
+}
+
+/* ── Signaler un problème / refuser une approbation (Intervention 360) --
+   même RPC des deux côtés (report_my_intervention_issue), voir seba-data.js. ── */
+let _reportIssueInterventionId = null;
+function openReportIssueModal(interventionId) {
+  _reportIssueInterventionId = interventionId;
+  document.getElementById('ce-report-issue-comment').value = '';
+  document.getElementById('ce-report-issue-overlay').classList.add('open');
+}
+function closeReportIssueModal() { document.getElementById('ce-report-issue-overlay').classList.remove('open'); _reportIssueInterventionId = null; }
+async function submitReportIssue() {
+  if (!_reportIssueInterventionId) return;
+  const comment = document.getElementById('ce-report-issue-comment').value.trim();
+  if (!comment) { alert('Merci de décrire le problème.'); return; }
+  const btn = document.getElementById('ce-report-issue-send');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const res = await SebaDB.clientPortal.reportIssue(_reportIssueInterventionId, comment);
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  if (!res || !res.ok) { alert((res && res.error) || 'Échec de l\'envoi.'); return; }
+  closeReportIssueModal();
+  refreshView();
+}
+
+/* ── Approbation directe (pas de commentaire obligatoire, contrairement au
+   signalement) ── */
+async function approveInterventionUI(interventionId) {
+  if (!confirm('Confirmez-vous que la prestation a été réalisée correctement ?')) return;
+  const res = await SebaDB.clientPortal.approveCompletedIntervention(interventionId, '');
+  if (!res || !res.ok) { alert((res && res.error) || 'Échec de l\'approbation.'); return; }
+  refreshView();
 }
 </script>
 </body>
