@@ -1015,7 +1015,11 @@ grant execute on function report_my_intervention_issue(text, text) to authentica
 -- ───────────────────────────────────────────────────────────────
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('intervention360-photos', 'intervention360-photos', false, 10485760, array['image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do nothing;
+on conflict (id) do update set
+  name = excluded.name,
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 -- Helper SECURITY DEFINER -- INDISPENSABLE ICI, pas une simple préférence
 -- de style : une policy RLS sur storage.objects s'évalue avec les
@@ -1040,11 +1044,28 @@ set search_path = pg_catalog, pg_temp
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_account text := (storage.foldername(p_path))[2];
-  v_intervention_id text := (storage.foldername(p_path))[4];
+  v_segments text[] := storage.foldername(p_path);
+  v_account text := v_segments[2];
+  v_intervention_id text := v_segments[4];
   v_photo_id text := split_part(p_path, '/', 5);
 begin
-  if v_uid is null or v_account is null or v_intervention_id is null then
+  -- Validation STRICTE du chemin -- pas seulement les positions [2]/[4]
+  -- (compte/intervention), aussi les segments littéraux et la profondeur
+  -- exacte. Sans ça, un chemin de forme différente (ex. un sous-dossier
+  -- supplémentaire, ou 'x/ACC/y/INTID/photoid' au lieu de
+  -- 'accounts/ACC/interventions/INTID/photoid') passerait quand même
+  -- l'autorisation par simple coïncidence de position -- jamais une
+  -- fuite cross-compte en soi (l'autorisation reste vérifiée par
+  -- correspondance réelle avec auth.uid() plus bas), mais un chemin qui
+  -- ne respecte pas le format attendu par le reste du système.
+  if v_uid is null
+     or array_length(v_segments, 1) is distinct from 4
+     or v_segments[1] is distinct from 'accounts'
+     or v_segments[3] is distinct from 'interventions'
+     or v_account is null or btrim(v_account) = ''
+     or v_intervention_id is null or btrim(v_intervention_id) = ''
+     or v_photo_id is null or btrim(v_photo_id) = ''
+  then
     return false;
   end if;
 
