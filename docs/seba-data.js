@@ -183,6 +183,356 @@
   }
   function uid() { return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  /* ═══════════════════════════════════════════════════════════════
+     SEBA CLIENT MEMORY & MISSION INTELLIGENCE
+     (feature/client-crm-advanced, 2026-07-24)
+
+     Fonctions PURES (client, state, now) -> résultat, réutilisées telles
+     quelles par client-fiche.html (patron), app/dashboard.html (Command
+     Center) et espace-terrain.html (employé, briefing uniquement -- jamais
+     la mémoire brute). Exposées via window.SebaClientIntelligence plus bas.
+     Aucun état caché, aucun appel réseau ici : les données déjà chargées
+     (state.messages/state.interventions/etc., pré-récupérées par
+     l'appelant comme pour buildOwnerDashboardViewModel) sont la seule
+     entrée. Écritures réelles : voir SebaDB.clients (et SebaDB.interventions)
+     plus bas dans ce fichier, qui persistent via SebaDB.update() (même
+     mécanisme que le reste de seba_state -- pushOp/sync, aucune
+     architecture parallèle).
+  ═══════════════════════════════════════════════════════════════ */
+  const MEMORY_TYPES = ['preference', 'access', 'equipment', 'risk', 'quality', 'billing', 'relationship', 'instruction'];
+  const MEMORY_VISIBILITY = ['owner_only', 'internal_team', 'assigned_employee'];
+  const MEMORY_IMPORTANCE = ['normal', 'important', 'critical'];
+  const MEMORY_SOURCE = ['manual', 'intervention_report', 'client_message', 'incident', 'system'];
+
+  /* Rétrocompatible : un client créé avant ce chantier n'a ni
+     operationalMemory ni servicePlans -- toujours appelée avant toute
+     lecture/écriture de ces structures, jamais supposées présentes. */
+  function normalizeClientOperationalMemory(client) {
+    if (!client) return client;
+    if (!client.operationalMemory || !Array.isArray(client.operationalMemory.entries)) {
+      client.operationalMemory = { entries: [] };
+    }
+    if (!Array.isArray(client.servicePlans)) client.servicePlans = [];
+    return client;
+  }
+
+  function fullName(c) { return c ? ((c.prenom || '') + ' ' + (c.nom || '')).trim() : ''; }
+
+  /* ── Synthèse client automatique (section 2) ──────────────────────────
+     Uniquement des faits directement dérivés des données réelles -- aucun
+     score, aucune estimation qualitative inventée. */
+  function buildClientOperationalSummary(client, state, now) {
+    now = now || new Date();
+    normalizeClientOperationalMemory(client);
+    const clientId = client.id;
+    const nowISO = localISO(now);
+    const interventions = (state.interventions || []).filter(i => i.clientId === clientId);
+    const devisList = (state.devis || []).filter(d => d.clientId === clientId);
+    const facturesList = (state.factures || []).filter(f => f.clientId === clientId);
+    const messages = (state.messages || []).filter(m => m.clientId === clientId);
+    const mem = client.operationalMemory.entries.filter(e => !e.archivedAt);
+
+    const futureInterventions = interventions.filter(i => i.date >= nowISO && !i.done)
+      .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    const pastInterventions = interventions.filter(i => i.done || i.date < nowISO)
+      .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+    const prochaineIntervention = futureInterventions[0] || null;
+    const derniereIntervention = pastInterventions[0] || null;
+
+    // Fréquence réelle : intervalle moyen (jours) entre interventions
+    // TERMINÉES réelles -- jamais une fréquence supposée/déclarative.
+    const terminees = interventions.filter(i => i.done).sort((a, b) => a.date.localeCompare(b.date));
+    let frequenceReelle = null;
+    if (terminees.length >= 2) {
+      const gaps = [];
+      for (let k = 1; k < terminees.length; k++) {
+        const d1 = new Date(terminees[k - 1].date + 'T12:00:00'), d2 = new Date(terminees[k].date + 'T12:00:00');
+        gaps.push(Math.round((d2 - d1) / 864e5));
+      }
+      const avgDays = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
+      const label = avgDays <= 9 ? 'hebdomadaire' : avgDays <= 16 ? 'toutes les deux semaines' : avgDays <= 35 ? 'mensuelle' : 'tous les ' + avgDays + ' jours en moyenne';
+      frequenceReelle = { avgDays, label };
+    }
+
+    const facturesRetard = facturesList.filter(f => f.status === 'retard');
+    const devisAttente = devisList.filter(d => d.status === 'attente');
+
+    const incidentsRecents = interventions
+      .filter(i => i.fieldReport && i.fieldReport.issueType && i.fieldReport.issueType !== 'none')
+      .sort((a, b) => (b.fieldReport.completedAt || '').localeCompare(a.fieldReport.completedAt || ''))
+      .slice(0, 3);
+
+    const preferencesImportantes = mem.filter(e => e.type === 'preference' && (e.importance === 'important' || e.importance === 'critical'));
+    const accesCritiques = mem.filter(e => e.type === 'access' && e.importance === 'critical');
+
+    const derniereCommunication = messages.length
+      ? messages.slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
+      : null;
+
+    // Période d'inactivité : le plus récent entre dernière intervention
+    // terminée et dernière communication -- "0 jour" si contact aujourd'hui.
+    let dernierContactDate = derniereIntervention ? derniereIntervention.date : null;
+    if (derniereCommunication && derniereCommunication.createdAt) {
+      const commDate = String(derniereCommunication.createdAt).slice(0, 10);
+      if (!dernierContactDate || commDate > dernierContactDate) dernierContactDate = commDate;
+    }
+    const periodeInactiviteJours = dernierContactDate
+      ? Math.max(0, Math.floor((now - new Date(dernierContactDate + 'T12:00:00')) / 864e5))
+      : null;
+
+    // Prestation récurrente manquante : plan actif sans AUCUNE intervention
+    // future qui en soit issue (recurrenceKey préfixé par l'id du plan).
+    const prestationRecurrenteManquante = (client.servicePlans || []).filter(p => p.active).filter(p =>
+      !futureInterventions.some(i => i.recurrenceKey && i.recurrenceKey.indexOf(p.id + ':') === 0)
+    );
+
+    const informationsObligatoiresManquantes = [];
+    if (!client.contact) informationsObligatoiresManquantes.push('contact');
+    if (!client.adresse) informationsObligatoiresManquantes.push('adresse');
+
+    return {
+      prochaineIntervention, derniereIntervention, frequenceReelle, facturesRetard, devisAttente,
+      incidentsRecents, preferencesImportantes, accesCritiques, derniereCommunication,
+      periodeInactiviteJours, prestationRecurrenteManquante, informationsObligatoiresManquantes,
+    };
+  }
+
+  /* ── Next Best Actions (section 3) -- moteur déterministe, priorités
+     fixes, aucune phrase générique (chaque raison cite un fait précis). ── */
+  function buildClientNextBestActions(client, state, now) {
+    now = now || new Date();
+    normalizeClientOperationalMemory(client);
+    const nowISO = localISO(now);
+    const clientId = client.id;
+    const interventions = (state.interventions || []).filter(i => i.clientId === clientId);
+    const devisList = (state.devis || []).filter(d => d.clientId === clientId);
+    const facturesList = (state.factures || []).filter(f => f.clientId === clientId);
+    const actions = [];
+
+    // 1. Facture échue -> relancer/ouvrir.
+    facturesList.filter(f => f.status === 'retard').forEach(f => {
+      actions.push({ id: 'facture_retard_' + f.id, priority: 'critical', reason: 'Facture ' + f.num + ' en retard de paiement', impact: 'Impact direct sur la trésorerie', actionLabel: 'Ouvrir la facture', actionUrl: 'factures.html?highlight=' + f.id, relatedResourceId: f.id });
+    });
+
+    // 2. Devis sans réponse depuis plusieurs jours -> relancer.
+    devisList.filter(d => d.status === 'attente').forEach(d => {
+      const days = Math.floor((now - new Date(d.date + 'T12:00:00')) / 864e5);
+      if (days >= 7) actions.push({ id: 'devis_relance_' + d.id, priority: 'high', reason: 'Devis ' + d.num + ' sans réponse depuis ' + days + ' jours', impact: 'Risque de perte de l\'opportunité', actionLabel: 'Relancer le devis', actionUrl: 'devis.html?open=' + encodeURIComponent(d.num), relatedResourceId: d.id });
+    });
+
+    // 3. Prestation habituelle (plan actif) sans intervention future -> planifier.
+    (client.servicePlans || []).filter(p => p.active).forEach(p => {
+      const hasFuture = interventions.some(i => i.date >= nowISO && !i.done && i.recurrenceKey && i.recurrenceKey.indexOf(p.id + ':') === 0);
+      if (!hasFuture) actions.push({ id: 'plan_a_generer_' + p.id, priority: 'medium', reason: 'Le plan "' + p.name + '" n\'a aucune intervention future générée', impact: 'Le client risque de ne pas être servi à temps', actionLabel: 'Générer les prochaines interventions', actionUrl: 'client-fiche.html?id=' + clientId, relatedResourceId: p.id });
+    });
+
+    // 4. Intervention future sans employé -> assigner.
+    interventions.filter(i => i.date >= nowISO && !i.done && !i.employeId).forEach(i => {
+      actions.push({ id: 'assign_' + i.id, priority: 'high', reason: 'Intervention du ' + i.date + ' sans employé assigné', impact: 'Mission à risque de ne pas être réalisée', actionLabel: 'Assigner un employé', actionUrl: 'assignation.html', relatedResourceId: i.id });
+    });
+
+    // 5. Incident non résolu -> ouvrir le signalement.
+    interventions.filter(i => i.fieldReport && i.fieldReport.issueType && i.fieldReport.issueType !== 'none' && i.fieldReport.followUpRequired).forEach(i => {
+      actions.push({ id: 'incident_' + i.id, priority: 'high', reason: 'Signalement "' + i.fieldReport.issueType + '" non résolu (intervention du ' + i.date + ')', impact: 'Suivi client requis', actionLabel: 'Voir le retour terrain', actionUrl: 'client-fiche.html?id=' + clientId, relatedResourceId: i.id });
+    });
+
+    // 6. Données d'accès manquantes avant une mission -> compléter.
+    const prochaine = interventions.filter(i => i.date >= nowISO && !i.done).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))[0];
+    if (prochaine) {
+      const hasAccess = client.operationalMemory.entries.some(e => e.type === 'access' && !e.archivedAt);
+      if (!hasAccess && !client.adresse) {
+        actions.push({ id: 'acces_manquant_' + prochaine.id, priority: 'critical', reason: 'Aucune information d\'accès avant la mission du ' + prochaine.date, impact: 'L\'employé risque de ne pas pouvoir intervenir', actionLabel: 'Compléter les accès', actionUrl: 'client-fiche.html?id=' + clientId, relatedResourceId: prochaine.id });
+      }
+    }
+
+    // 7. Client inactif depuis une période configurable -> reprendre contact.
+    const INACTIVITY_THRESHOLD_DAYS = 60;
+    const summary = buildClientOperationalSummary(client, state, now);
+    if (summary.periodeInactiviteJours != null && summary.periodeInactiviteJours >= INACTIVITY_THRESHOLD_DAYS) {
+      actions.push({ id: 'inactif_' + clientId, priority: 'medium', reason: 'Aucun contact depuis ' + summary.periodeInactiviteJours + ' jours', impact: 'Risque de perte du client', actionLabel: 'Reprendre contact', actionUrl: 'client-fiche.html?id=' + clientId, relatedResourceId: clientId });
+    }
+
+    // 8. Intervention terminée sans compte rendu -> demander le retour terrain.
+    interventions.filter(i => i.done && i.employeId && !i.fieldReport).forEach(i => {
+      actions.push({ id: 'fieldreport_manquant_' + i.id, priority: 'low', reason: 'Intervention du ' + i.date + ' terminée sans compte rendu', impact: 'Aucune trace du déroulement de la mission', actionLabel: 'Demander le retour terrain', actionUrl: 'client-fiche.html?id=' + clientId, relatedResourceId: i.id });
+    });
+
+    const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+    actions.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+    return actions;
+  }
+
+  /* ── Plans de service récurrents (section 4) ──────────────────────────
+     Ajoute `months` à une date en "clampant" au dernier jour du mois
+     cible quand le jour d'origine n'existe pas dedans (31 janvier + 1 mois
+     -> 28/29 février, jamais un débordement silencieux sur mars). Calculée
+     via new Date(y, m+1, 0) (dernier jour du mois m, 0-indexé) -- gère
+     nativement février/années bissextiles sans cas particulier. Construite
+     à midi local (jamais minuit) pour ne jamais changer de jour lors d'un
+     changement d'heure (DST) : setDate/setMonth restent des opérations en
+     heure LOCALE dans le moteur JS Date, un midi ne bascule jamais de date
+     même avec un décalage DST de ±1h. */
+  function addMonthsClamped(date, months, dayOfMonth) {
+    const targetMonthIndex = date.getMonth() + months;
+    const y = date.getFullYear() + Math.floor(targetMonthIndex / 12);
+    const m = ((targetMonthIndex % 12) + 12) % 12;
+    const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
+    return new Date(y, m, Math.min(dayOfMonth, lastDayOfMonth), 12, 0, 0);
+  }
+
+  /* PURE : aucun accès à `state`/SebaDB/réseau, uniquement (plan, fromDate,
+     horizonDays) -> dates ISO locales (jamais UTC -- localISO()) couvertes
+     par le plan sur l'horizon demandé, à PARTIR de fromDate (jamais dans
+     le passé -- "occurrence passée non générée"). testable isolément sans
+     seeder de state. */
+  function computeOccurrenceDates(plan, fromDate, horizonDays) {
+    const dates = [];
+    if (!plan.startDate) return dates;
+    const from = new Date(fromDate); from.setHours(12, 0, 0, 0);
+    const horizonEnd = new Date(from); horizonEnd.setDate(horizonEnd.getDate() + (horizonDays || 30));
+    const planStart = new Date(plan.startDate + 'T12:00:00');
+    const planEnd = plan.endDate ? new Date(plan.endDate + 'T12:00:00') : null;
+    const startFloor = planStart > from ? planStart : from;
+
+    if (plan.frequency === 'weekly' || plan.frequency === 'biweekly') {
+      const stepDays = plan.frequency === 'weekly' ? 7 : 14;
+      let d = new Date(planStart);
+      while (d < startFloor) d.setDate(d.getDate() + stepDays);
+      while (d <= horizonEnd) {
+        if (!planEnd || d <= planEnd) dates.push(localISO(d));
+        d.setDate(d.getDate() + stepDays);
+      }
+    } else if (plan.frequency === 'monthly') {
+      const dayOfMonth = planStart.getDate();
+      let d = new Date(planStart);
+      let k = 0;
+      while (d < startFloor) { k++; d = addMonthsClamped(planStart, k, dayOfMonth); }
+      while (d <= horizonEnd) {
+        if (!planEnd || d <= planEnd) dates.push(localISO(d));
+        k++;
+        d = addMonthsClamped(planStart, k, dayOfMonth);
+      }
+    } else if (plan.frequency === 'custom_weekdays') {
+      const weekdays = plan.weekdays || [];
+      let d = new Date(startFloor);
+      let guard = 0;
+      while (d <= horizonEnd && guard < 400) {
+        if (weekdays.includes(d.getDay()) && d >= planStart && (!planEnd || d <= planEnd)) dates.push(localISO(d));
+        d.setDate(d.getDate() + 1);
+        guard++;
+      }
+    }
+    return dates;
+  }
+
+  /* PURE : (plan, existingInterventions, fromDate, horizonDays) -> occurrences
+     à créer / à ignorer -- AUCUN accès à `state`, SebaDB ou au réseau ici,
+     contrairement à l'ancienne materializeServicePlanOccurrences() qui
+     mélangeait calcul et écriture (corrigé -- voir persistServicePlanOccurrences
+     ci-dessous pour la partie écriture). Idempotence garantie par construction :
+     recurrenceKey = `${plan.id}:${date}:${heure}`, toCreate ne contient
+     jamais une clé déjà présente dans existingInterventions. */
+  function computeServicePlanOccurrences(plan, existingInterventions, fromDate, horizonDays) {
+    const dates = computeOccurrenceDates(plan, fromDate, horizonDays || plan.horizonDays || 30);
+    const existingKeys = new Set((existingInterventions || []).filter(i => i.recurrenceKey).map(i => i.recurrenceKey));
+    const time = plan.preferredStartTime || '09:00';
+    const toCreate = [], toSkip = [];
+    dates.forEach(dateISO => {
+      const key = plan.id + ':' + dateISO + ':' + time;
+      if (existingKeys.has(key)) toSkip.push(key);
+      else toCreate.push({ date: dateISO, time, recurrenceKey: key });
+    });
+    return { toCreate, toSkip };
+  }
+
+  /* IMPURE : seule fonction qui écrit réellement -- consomme le résultat de
+     computeServicePlanOccurrences() (pure) et crée les interventions via
+     SebaDB.create() (persistance + pushOp/sync, comme toute autre écriture
+     du moteur). Reste idempotente à l'usage : relancer plusieurs fois de
+     suite ne recrée jamais les occurrences déjà matérialisées, puisque
+     toCreate exclut déjà toute recurrenceKey existante au moment du calcul. */
+  function persistServicePlanOccurrences(client, plan, stateArg, horizonDays) {
+    const st = stateArg || state;
+    if (!st) return { created: 0, skipped: 0, occurrences: [] };
+    const { toCreate, toSkip } = computeServicePlanOccurrences(plan, st.interventions || [], new Date(), horizonDays);
+    const emp = plan.assignedEmployeeId ? (st.employes || []).find(e => e.id === plan.assignedEmployeeId) : null;
+    const occurrences = toCreate.map(occ => SebaDB.create('interventions', {
+      date: occ.date, time: occ.time, clientId: client.id, clientName: fullName(client),
+      service: plan.service, employeId: plan.assignedEmployeeId || null,
+      employeName: emp ? fullName(emp) : null, duree: plan.duration || null,
+      done: false, recurrenceKey: occ.recurrenceKey, instructions: plan.instructions || null,
+      servicePlanId: plan.id, adresse: client.adresse || null,
+    }));
+    return { created: occurrences.length, skipped: toSkip.length, occurrences };
+  }
+
+  /* ── Briefing automatique de mission (section 5) ──────────────────────
+     Snapshot au moment de la génération -- exclut STRICTEMENT toute entrée
+     owner_only et toute donnée financière (aucun montant/marge/solde n'est
+     lu ici, par construction : client.ca/factures/devis ne sont jamais
+     référencés dans cette fonction). */
+  function generateMissionBrief(client, intervention, stateArg) {
+    const st = stateArg || state;
+    normalizeClientOperationalMemory(client);
+    const mem = client.operationalMemory.entries.filter(e => !e.archivedAt && e.visibility !== 'owner_only');
+    const pick = t => mem.filter(e => e.type === t).map(e => ({ id: e.id, title: e.title, content: e.content, importance: e.importance }));
+
+    const accessInstructions = pick('access');
+    const operationalInstructions = pick('instruction');
+    if (intervention.instructions) operationalInstructions.push({ id: 'mission-instructions', title: 'Consignes de la mission', content: intervention.instructions, importance: 'normal' });
+    const importantPreferences = pick('preference').filter(e => e.importance === 'important' || e.importance === 'critical');
+    const risks = pick('risk');
+    const equipment = pick('equipment');
+
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    const recentIncidents = (st.interventions || [])
+      .filter(i => i.clientId === client.id && i.id !== intervention.id && i.fieldReport && i.fieldReport.issueType && i.fieldReport.issueType !== 'none')
+      .filter(i => !i.fieldReport.completedAt || new Date(i.fieldReport.completedAt) >= cutoff)
+      .sort((a, b) => (b.fieldReport.completedAt || '').localeCompare(a.fieldReport.completedAt || ''))
+      .slice(0, 3)
+      .map(i => ({ date: i.date, issueType: i.fieldReport.issueType, description: i.fieldReport.issueDescription || '' }));
+
+    const pastInterventions = (st.interventions || []).filter(i => i.clientId === client.id && i.id !== intervention.id && i.done && i.fieldReport && i.fieldReport.summary)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const previousInterventionSummary = pastInterventions[0] ? { date: pastInterventions[0].date, summary: pastInterventions[0].fieldReport.summary } : null;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      clientName: fullName(client),
+      contact: client.contact || null,
+      address: client.adresse || intervention.adresse || null,
+      accessInstructions, operationalInstructions, importantPreferences, risks, equipment,
+      recentIncidents, previousInterventionSummary,
+      billingWarning: false, // jamais de montant/marge/solde exposé à l'employé
+    };
+  }
+
+  /* ── Enrichissement contrôlé de la mémoire (section 7) -- heuristique
+     déterministe simple, JAMAIS une écriture automatique de la mémoire
+     permanente : produit des SUGGESTIONS que le patron accepte/modifie/
+     ignore explicitement (voir SebaDB.interventions.acceptMemorySuggestion).
+     id stable (dérivé de l'id d'intervention + type) : une suggestion
+     ignorée ne réapparaît jamais pour le même rapport. ── */
+  function generateMemorySuggestions(fieldReport, intervention) {
+    const suggestions = [];
+    const base = 'sugg_' + intervention.id + '_';
+    const ISSUE_TYPE_TO_MEMORY = { access: 'access', client_absent: 'relationship', equipment: 'equipment', damage: 'risk', quality: 'quality', delay: 'relationship', other: 'risk' };
+    if (fieldReport.issueType && fieldReport.issueType !== 'none') {
+      const memType = ISSUE_TYPE_TO_MEMORY[fieldReport.issueType] || 'risk';
+      suggestions.push({
+        id: base + 'issue', label: 'Incident récurrent : ' + fieldReport.issueType,
+        entry: { type: memType, title: 'Incident signalé (' + fieldReport.issueType + ')', content: fieldReport.issueDescription || fieldReport.summary || '', visibility: 'internal_team', importance: 'important' },
+      });
+    }
+    if (fieldReport.summary && fieldReport.summary.trim().length > 12 && fieldReport.outcome === 'completed') {
+      suggestions.push({
+        id: base + 'note', label: 'Observation terrain',
+        entry: { type: 'quality', title: 'Retour de mission', content: fieldReport.summary.trim(), visibility: 'internal_team', importance: 'normal' },
+      });
+    }
+    return suggestions;
+  }
+
   /* ═══════════ File de patchs delta + worker de synchro (Palier 1) ═══════
      N'existe que si Supabase est configure (hasSupabase) : en mode local
      pur, pushOp() est un no-op immediat, aucune cle localStorage
@@ -732,9 +1082,24 @@
     list(coll) { if (!state) loadState(); return (state[coll] || []).slice(); },
     get(coll, id) { if (!state) loadState(); return (state[coll] || []).find(x => x.id === id) || null; },
 
+    /* Briefing automatique de mission (SEBA CLIENT MEMORY & MISSION
+       INTELLIGENCE, section 5) : hooké ICI au niveau du moteur plutôt que
+       dans chaque page appelante (planning.html/assignation.html/
+       dashboard.html) -- toute intervention créée avec un clientId, ou
+       assignée pour la première fois (employeId qui passe de vide à
+       renseigné), reçoit automatiquement son snapshot missionBrief. Snapshot
+       FIGÉ au moment de la génération (jamais recalculé après coup par une
+       simple lecture) : une modification ultérieure de la mémoire client ne
+       change jamais silencieusement une mission déjà préparée -- seule une
+       régénération EXPLICITE (SebaDB.interventions.regenerateMissionBrief())
+       le fait. */
     create(coll, obj) {
       if (!state) loadState();
       const item = Object.assign({ id: uid(), createdAt: todayISO(0) }, obj);
+      if (coll === 'interventions' && item.clientId) {
+        const client = state.clients.find(c => c.id === item.clientId);
+        if (client) { normalizeClientOperationalMemory(client); item.missionBrief = generateMissionBrief(client, item, state); }
+      }
       state[coll].unshift(item);
       persist();
       pushOp(coll, item.id, 'create', item); // patch = objet complet, rien a fusionner cote serveur pour une creation
@@ -744,7 +1109,17 @@
       if (!state) loadState();
       const item = (state[coll] || []).find(x => x.id === id);
       if (item) {
+        const wasUnassigned = coll === 'interventions' && !item.employeId;
         Object.assign(item, patch);
+        if (coll === 'interventions' && wasUnassigned && item.employeId && item.clientId) {
+          const client = state.clients.find(c => c.id === item.clientId);
+          if (client) {
+            normalizeClientOperationalMemory(client);
+            const brief = generateMissionBrief(client, item, state);
+            item.missionBrief = brief;
+            patch = Object.assign({}, patch, { missionBrief: brief }); // le delta pousse aussi le brief, jamais désynchronisé de la version locale
+          }
+        }
         persist();
         pushOp(coll, id, 'update', patch); // patch = uniquement les champs modifies, jamais l'objet entier (Pilier 1)
       }
@@ -1438,8 +1813,249 @@
     // metier a synchroniser. Ce qui est saisi APRES ce reset repasse par
     // create()/update() normalement et se synchronise comme d'habitude.
     _reset() { state = EMPTY(); persist(); },
+
+    /* ═══ Mémoire client + plans récurrents (feature/client-crm-advanced) ═══
+       Écriture patron UNIQUEMENT (même droits que le reste de seba_state --
+       aucune policy dédiée nécessaire, l'employé n'a de toute façon aucun
+       accès direct à cette table, voir sécurité section 11 du chantier).
+       Toute écriture passe par SebaDB.update('clients', ...), donc par le
+       même pushOp()/sync que le reste -- aucune architecture parallèle. */
+    clients: {
+      normalizeOperationalMemory(client) { return normalizeClientOperationalMemory(client); },
+
+      /* Primitive de persistance -- toutes les méthodes ci-dessous
+         convergent ici pour ne jamais désynchroniser l'écriture locale et
+         le patch poussé au serveur. */
+      updateOperationalMemory(clientId, entries) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return null;
+        client.operationalMemory = { entries: entries || [] };
+        SebaDB.update('clients', clientId, { operationalMemory: client.operationalMemory });
+        return client.operationalMemory;
+      },
+
+      addMemoryEntry(clientId, entryData) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return null;
+        normalizeClientOperationalMemory(client);
+        if (MEMORY_TYPES.indexOf(entryData.type) === -1) return null;
+        const now = new Date().toISOString();
+        const entry = {
+          id: uid(), type: entryData.type, title: (entryData.title || '').trim(), content: (entryData.content || '').trim(),
+          visibility: MEMORY_VISIBILITY.indexOf(entryData.visibility) !== -1 ? entryData.visibility : 'internal_team',
+          importance: MEMORY_IMPORTANCE.indexOf(entryData.importance) !== -1 ? entryData.importance : 'normal',
+          source: MEMORY_SOURCE.indexOf(entryData.source) !== -1 ? entryData.source : 'manual',
+          pinned: !!entryData.pinned, createdAt: now, updatedAt: now, archivedAt: null,
+        };
+        const entries = client.operationalMemory.entries.concat([entry]);
+        this.updateOperationalMemory(clientId, entries);
+        SebaDB.log('client', 'Information ajoutée à la mémoire — ' + fullName(client) + ' (' + entry.type + ')', 'client-fiche.html?id=' + clientId);
+        return entry;
+      },
+
+      updateMemoryEntry(clientId, entryId, patch) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return null;
+        normalizeClientOperationalMemory(client);
+        let updated = null;
+        const entries = client.operationalMemory.entries.map(e => {
+          if (e.id !== entryId) return e;
+          updated = Object.assign({}, e, patch, { updatedAt: new Date().toISOString() });
+          return updated;
+        });
+        if (!updated) return null;
+        this.updateOperationalMemory(clientId, entries);
+        return updated;
+      },
+
+      archiveMemoryEntry(clientId, entryId) { return this.updateMemoryEntry(clientId, entryId, { archivedAt: new Date().toISOString() }); },
+      restoreMemoryEntry(clientId, entryId) { return this.updateMemoryEntry(clientId, entryId, { archivedAt: null }); },
+      pinMemoryEntry(clientId, entryId, pinned) { return this.updateMemoryEntry(clientId, entryId, { pinned: !!pinned }); },
+
+      saveServicePlan(clientId, planData) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return null;
+        normalizeClientOperationalMemory(client);
+        const now = new Date().toISOString();
+        let plan;
+        if (planData.id) {
+          plan = client.servicePlans.find(p => p.id === planData.id);
+          if (!plan) return null;
+          Object.assign(plan, planData, { updatedAt: now });
+        } else {
+          plan = Object.assign(
+            { id: uid(), active: true, autoCreate: false, horizonDays: 30, weekdays: [], instructions: '', assignedEmployeeId: null, endDate: null, createdAt: now, updatedAt: now },
+            planData,
+          );
+          client.servicePlans.push(plan);
+        }
+        SebaDB.update('clients', clientId, { servicePlans: client.servicePlans });
+        SebaDB.log('client', (planData.id ? 'Plan récurrent modifié — ' : 'Plan récurrent créé — ') + fullName(client) + ' (' + plan.name + ')', 'client-fiche.html?id=' + clientId);
+        return plan;
+      },
+
+      deleteServicePlan(clientId, planId) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return false;
+        normalizeClientOperationalMemory(client);
+        const before = client.servicePlans.length;
+        const plan = client.servicePlans.find(p => p.id === planId);
+        client.servicePlans = client.servicePlans.filter(p => p.id !== planId);
+        SebaDB.update('clients', clientId, { servicePlans: client.servicePlans });
+        if (plan) SebaDB.log('client', 'Plan récurrent supprimé — ' + fullName(client) + ' (' + plan.name + ')', 'client-fiche.html?id=' + clientId);
+        return client.servicePlans.length < before;
+      },
+
+      suspendServicePlan(clientId, planId) {
+        const p = this.saveServicePlan(clientId, { id: planId, active: false });
+        return p;
+      },
+      reactivateServicePlan(clientId, planId) {
+        const p = this.saveServicePlan(clientId, { id: planId, active: true });
+        return p;
+      },
+
+      /* Prévisualisation SANS écriture -- consomme uniquement la partie pure
+         (computeServicePlanOccurrences), pour un bouton "Prévisualiser les
+         prochaines occurrences" qui ne doit jamais créer de données. */
+      previewServicePlanOccurrences(clientId, planId, horizonDaysOverride) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return { toCreate: [], toSkip: [] };
+        normalizeClientOperationalMemory(client);
+        const plan = client.servicePlans.find(p => p.id === planId);
+        if (!plan) return { toCreate: [], toSkip: [] };
+        return computeServicePlanOccurrences(plan, state.interventions || [], new Date(), horizonDaysOverride || plan.horizonDays || 30);
+      },
+
+      /* Génère les occurrences réelles (planning) pour un plan -- idempotent,
+         voir persistServicePlanOccurrences(). Journalise le résultat
+         même si 0 créée (relance sans effet, comportement attendu). */
+      generateServicePlanOccurrences(clientId, planId, horizonDaysOverride) {
+        if (!state) loadState();
+        const client = state.clients.find(c => c.id === clientId);
+        if (!client) return { created: 0, skipped: 0, occurrences: [], error: 'Client introuvable.' };
+        normalizeClientOperationalMemory(client);
+        const plan = client.servicePlans.find(p => p.id === planId);
+        if (!plan) return { created: 0, skipped: 0, occurrences: [], error: 'Plan introuvable.' };
+        // Garde-fou explicite : un plan suspendu ne génère JAMAIS de mission
+        // -- computeOccurrenceDates() (pure) n'a pas connaissance de
+        // "active", c'est cette couche (écriture) qui refuse l'appel.
+        if (!plan.active) return { created: 0, skipped: 0, occurrences: [], error: 'Ce plan est suspendu -- réactivez-le avant de générer des interventions.' };
+        const result = persistServicePlanOccurrences(client, plan, state, horizonDaysOverride || plan.horizonDays || 30);
+        if (result.created > 0) {
+          SebaDB.log('intervention', result.created + ' intervention(s) générée(s) — ' + fullName(client) + ' (' + plan.name + ')', 'planning.html');
+        }
+        return result;
+      },
+    },
+
+    /* ═══ Briefing de mission + retour terrain (feature/client-crm-advanced) ═══ */
+    interventions: {
+      /* Patron uniquement (accès direct à seba_state) -- régénère le
+         snapshot missionBrief à partir de l'état ACTUEL de la mémoire
+         client (jamais automatique après coup : bouton explicite, voir
+         client-fiche.html/dashboard.html). */
+      regenerateMissionBrief(interventionId) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return null;
+        const client = state.clients.find(c => c.id === intervention.clientId);
+        if (!client) return null;
+        normalizeClientOperationalMemory(client);
+        const brief = generateMissionBrief(client, intervention, state);
+        SebaDB.update('interventions', interventionId, { missionBrief: brief });
+        SebaDB.log('intervention', 'Briefing de mission régénéré — ' + fullName(client) + ' (' + (intervention.service || '') + ')', 'client-fiche.html?id=' + client.id);
+        return brief;
+      },
+
+      /* Employé (session réelle) : passe par la RPC dédiée
+         submit_my_intervention_field_report (RLS bloque toute écriture
+         directe sur seba_state pour ce rôle -- même pattern que
+         closeIntervention/updateStatus déjà en place, voir
+         migrations/2026-07-24-mission-field-report.sql). Mode démo/local :
+         écriture directe avec le même garde-fou d'assignation. */
+      async saveFieldReport(interventionId, fieldReportData) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('submit_my_intervention_field_report', {
+            p_intervention_id: interventionId,
+            p_outcome: fieldReportData.outcome,
+            p_summary: fieldReportData.summary || null,
+            p_issue_type: fieldReportData.issueType || 'none',
+            p_issue_description: fieldReportData.issueDescription || null,
+            p_follow_up_required: !!fieldReportData.followUpRequired,
+            p_follow_up_date: fieldReportData.followUpDate || null,
+          });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_employee_session_demo') || 'null'); } catch (e) {}
+        if (demo && intervention.employeId !== demo.employeId) return { ok: false, error: 'Mission non assignée à vous.' };
+        const fieldReport = {
+          completedAt: new Date().toISOString(), outcome: fieldReportData.outcome,
+          summary: (fieldReportData.summary || '').trim(), issueType: fieldReportData.issueType || 'none',
+          issueDescription: (fieldReportData.issueDescription || '').trim(), followUpRequired: !!fieldReportData.followUpRequired,
+          followUpDate: fieldReportData.followUpDate || null,
+          submittedBy: demo ? demo.employeId : (intervention.employeId || null), submittedAt: new Date().toISOString(),
+          dismissedSuggestionIds: [], acceptedSuggestionIds: [],
+        };
+        fieldReport.memorySuggestions = generateMemorySuggestions(fieldReport, intervention);
+        SebaDB.update('interventions', interventionId, { fieldReport, done: true });
+        const client = state.clients.find(c => c.id === intervention.clientId);
+        SebaDB.log('intervention', 'Retour terrain reçu — ' + (client ? fullName(client) : 'client') + (intervention.service ? ' (' + intervention.service + ')' : ''), 'client-fiche.html?id=' + intervention.clientId);
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+      },
+
+      /* Patron uniquement : transforme une suggestion (issue d'un
+         fieldReport) en vraie entrée operationalMemory. Jamais automatique. */
+      acceptMemorySuggestion(interventionId, suggestionId, overridePatch) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention || !intervention.fieldReport) return { ok: false, error: 'Retour terrain introuvable.' };
+        const suggestion = (intervention.fieldReport.memorySuggestions || []).find(s => s.id === suggestionId);
+        if (!suggestion) return { ok: false, error: 'Suggestion introuvable.' };
+        const client = state.clients.find(c => c.id === intervention.clientId);
+        if (!client) return { ok: false, error: 'Client introuvable.' };
+        const entryData = Object.assign({}, suggestion.entry, overridePatch || {}, { source: 'intervention_report' });
+        const entry = SebaDB.clients.addMemoryEntry(client.id, entryData);
+        const accepted = (intervention.fieldReport.acceptedSuggestionIds || []).concat([suggestionId]);
+        SebaDB.update('interventions', interventionId, { fieldReport: Object.assign({}, intervention.fieldReport, { acceptedSuggestionIds: accepted }) });
+        return { ok: true, entry };
+      },
+
+      /* Une suggestion ignorée ne doit plus jamais réapparaître POUR CE
+         RAPPORT -- persisté sur fieldReport.dismissedSuggestionIds, jamais
+         seulement en mémoire d'affichage. */
+      dismissMemorySuggestion(interventionId, suggestionId) {
+        if (!state) loadState();
+        const intervention = state.interventions.find(i => i.id === interventionId);
+        if (!intervention || !intervention.fieldReport) return { ok: false };
+        const dismissed = (intervention.fieldReport.dismissedSuggestionIds || []).concat([suggestionId]);
+        SebaDB.update('interventions', interventionId, { fieldReport: Object.assign({}, intervention.fieldReport, { dismissedSuggestionIds: dismissed }) });
+        return { ok: true };
+      },
+    },
   };
 
   window.SebaDB = SebaDB;
+
+  /* Fonctions pures de la mémoire/intelligence client -- réutilisées telles
+     quelles par client-fiche.html, app/dashboard.html et espace-terrain.html
+     (briefing uniquement côté employé). Voir l'en-tête de section plus haut. */
+  window.SebaClientIntelligence = {
+    normalizeClientOperationalMemory, buildClientOperationalSummary, buildClientNextBestActions,
+    computeOccurrenceDates, computeServicePlanOccurrences, persistServicePlanOccurrences, generateMissionBrief, generateMemorySuggestions,
+    MEMORY_TYPES, MEMORY_VISIBILITY, MEMORY_IMPORTANCE, MEMORY_SOURCE,
+  };
+
   SebaDB.ready();
 })();

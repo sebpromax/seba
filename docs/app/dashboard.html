@@ -92,6 +92,7 @@ body { font-family: 'Inter', sans-serif; }
 .db-alert-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .db-alert-row:last-child { border-bottom: none; }
 .db-alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.db-alert-dot.critical { background: var(--critical); }
 .db-alert-dot.high { background: var(--critical); }
 .db-alert-dot.medium { background: var(--amber); }
 .db-alert-dot.low { background: var(--text-2); }
@@ -416,6 +417,17 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
           </div>
         </div>
       </div>
+
+      <!-- Actions clients intelligentes (SEBA CLIENT MEMORY & MISSION
+           INTELLIGENCE, section 8) -- brancement sans refonte : reutilise
+           la structure .db-alerts/.db-alert-row deja stylee pour "À
+           traiter maintenant", panneau distinct (source differente :
+           agregation cross-clients via SebaClientIntelligence, pas
+           priorityActions). Masque entierement si aucune action. -->
+      <section class="db-alerts" id="db-client-intel" style="display:none;" aria-label="Actions clients intelligentes">
+        <div class="db-panel-title" style="padding:14px 18px 0;"><span>Actions clients intelligentes</span></div>
+        <div id="db-client-intel-list"></div>
+      </section>
 
       <!-- Activité récente -->
       <div class="db-grid" id="db-grid-activity">
@@ -992,6 +1004,80 @@ function collectState(biz) {
   };
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Actions clients intelligentes (SEBA CLIENT MEMORY & MISSION
+   INTELLIGENCE, section 8) -- agrégation CROSS-CLIENTS, source distincte
+   de buildOwnerDashboardViewModel().priorityActions (qui reste inchangé).
+   Réutilise les fonctions pures exposées par window.SebaClientIntelligence
+   (docs/seba-data.js) -- aucune duplication de logique métier. Maximum 3
+   actions, catégories imposées : plans sans occurrence future, suivis
+   terrain nécessaires, informations critiques manquantes, mémoire
+   proposée en attente, clients habituels sans prochaine intervention.
+═══════════════════════════════════════════════════════════════ */
+function buildClientIntelligenceDashboardActions(state, now) {
+  if (!window.SebaClientIntelligence || !state.hasRealData) return [];
+  const CI = window.SebaClientIntelligence;
+  const nowISO = todayISOLocal();
+  const actions = [];
+
+  (state.clients || []).forEach(client => {
+    CI.normalizeClientOperationalMemory(client);
+    const clientInterventions = (state.interventions || []).filter(i => i.clientId === client.id);
+    const futureCount = clientInterventions.filter(i => i.date >= nowISO && !i.done).length;
+
+    // 1. Plans récurrents à générer.
+    (client.servicePlans || []).filter(p => p.active).forEach(p => {
+      const hasFuture = clientInterventions.some(i => i.date >= nowISO && !i.done && i.recurrenceKey && i.recurrenceKey.indexOf(p.id + ':') === 0);
+      if (!hasFuture) actions.push({ priority: 'medium', label: 'Plan "' + p.name + '" sans occurrence future — ' + (client.prenom + ' ' + client.nom), cta: 'Générer', href: '../client-fiche.html?id=' + client.id });
+    });
+
+    // 2. Suivis terrain nécessaires (fieldReport.followUpRequired, pas encore traité).
+    clientInterventions.filter(i => i.fieldReport && i.fieldReport.followUpRequired).forEach(i => {
+      actions.push({ priority: 'high', label: 'Suivi requis — ' + (client.prenom + ' ' + client.nom) + ' (' + (i.service || '') + ')', cta: 'Voir', href: '../client-fiche.html?id=' + client.id });
+    });
+
+    // 3. Informations critiques manquantes avant une mission à venir.
+    const prochaine = clientInterventions.filter(i => i.date >= nowISO && !i.done).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))[0];
+    if (prochaine) {
+      const hasAccess = client.operationalMemory.entries.some(e => e.type === 'access' && !e.archivedAt);
+      if (!hasAccess && !client.adresse) actions.push({ priority: 'critical', label: 'Accès manquant avant mission — ' + (client.prenom + ' ' + client.nom), cta: 'Compléter', href: '../client-fiche.html?id=' + client.id });
+    }
+
+    // 4. Mémoire proposée en attente (suggestions ni acceptées ni ignorées).
+    clientInterventions.forEach(i => {
+      if (!i.fieldReport || !i.fieldReport.memorySuggestions) return;
+      const dismissed = i.fieldReport.dismissedSuggestionIds || [], accepted = i.fieldReport.acceptedSuggestionIds || [];
+      const pending = i.fieldReport.memorySuggestions.filter(s => dismissed.indexOf(s.id) === -1 && accepted.indexOf(s.id) === -1);
+      if (pending.length) actions.push({ priority: 'low', label: pending.length + ' suggestion(s) de mémoire en attente — ' + (client.prenom + ' ' + client.nom), cta: 'Examiner', href: '../client-fiche.html?id=' + client.id });
+    });
+
+    // 5. Client habituel (fréquence réelle établie) sans aucune prochaine intervention.
+    const terminees = clientInterventions.filter(i => i.done);
+    if (terminees.length >= 2 && futureCount === 0) {
+      actions.push({ priority: 'medium', label: 'Client habituel sans prochaine intervention — ' + (client.prenom + ' ' + client.nom), cta: 'Planifier', href: '../planning.html' });
+    }
+  });
+
+  const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+  actions.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+  return actions.slice(0, 3);
+}
+
+function renderClientIntelligenceActions(actions) {
+  const section = document.getElementById('db-client-intel');
+  const list = document.getElementById('db-client-intel-list');
+  if (!actions.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = actions.map((a, i) => (
+    '<div class="db-alert-row">' +
+      '<span class="db-alert-dot ' + a.priority + '" aria-hidden="true"></span>' +
+      '<span class="db-alert-label">' + a.label.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) + '</span>' +
+      '<button type="button" class="db-alert-action" data-ci-idx="' + i + '">' + a.cta + '</button>' +
+    '</div>'
+  )).join('');
+  list.querySelectorAll('.db-alert-action').forEach((btn, i) => btn.addEventListener('click', () => { window.location.href = actions[i].href; }));
+}
+
 async function refreshAll() {
   try {
     renderErrorBanner(null);
@@ -1007,6 +1093,7 @@ async function refreshAll() {
     renderTeam(vm.teamCapacity);
     renderClientAlerts(vm.clientAlerts);
     renderRecos(vm.recommendations);
+    renderClientIntelligenceActions(buildClientIntelligenceDashboardActions(state, new Date()));
     renderActivity(vm.recentActivity);
     renderMobileCurrentMission(vm);
     renderConnState();
