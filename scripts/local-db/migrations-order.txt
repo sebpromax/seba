@@ -52,6 +52,12 @@ migrations/2026-07-23-employee-portal-missions.sql
 # close_my_intervention(...) (baseline, sections 35/36) -- ajouts purs.
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-24-mission-field-report.sql
+# Retour terrain structuré (submit_my_intervention_field_report) : ajoute
+# intervention.fieldReport (outcome/issueType/followUp... valeurs
+# controlées côté serveur), ajout pur, ne modifie pas close_my_intervention
+# (baseline). Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════

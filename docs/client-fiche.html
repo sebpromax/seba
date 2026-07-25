@@ -121,6 +121,103 @@
   .metier-field-input:focus{border-color:var(--emerald);outline:none;background:var(--bg);}
   .metier-field-input::placeholder{color:var(--text-2);font-style:italic;}
 
+  /* ══════════════════════════════════════════════════════════════════
+     SEBA CLIENT MEMORY & MISSION INTELLIGENCE (feature/client-crm-advanced)
+     ══════════════════════════════════════════════════════════════════ */
+  .quick-actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+
+  /* Synthèse opérationnelle */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){.summary-grid{grid-template-columns:1fr;}}
+  .summary-card{background:var(--bg);border-radius:var(--rs);padding:14px 16px;}
+  .summary-card-label{font-size:.7rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .summary-card-body{font-size:.85rem;color:var(--ink);line-height:1.6;}
+  .summary-card-body a{color:var(--emerald);font-weight:600;cursor:pointer;}
+  .summary-card-body ul{padding-left:16px;margin:0;}
+  .summary-empty{color:var(--text-2);}
+
+  /* Next Best Actions */
+  .nba-list{display:flex;flex-direction:column;}
+  .nba-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .nba-row:last-child{border-bottom:none;}
+  .nba-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+  .nba-dot.critical{background:var(--critical);}
+  .nba-dot.high{background:var(--badge-error-txt);}
+  .nba-dot.medium{background:var(--badge-warning-txt);}
+  .nba-dot.low{background:var(--text-2);}
+  .nba-body{flex:1;min-width:0;}
+  .nba-reason{font-size:.86rem;font-weight:500;color:var(--ink);}
+  .nba-impact{font-size:.76rem;color:var(--text-2);margin-top:2px;}
+  .nba-action{font-size:.78rem;font-weight:600;color:var(--emerald);white-space:nowrap;flex-shrink:0;background:none;border:none;cursor:pointer;padding:4px 0;}
+
+  /* Mémoire client */
+  .memory-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .memory-toolbar select,.memory-toolbar input{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;background:var(--white);color:var(--ink);font-family:'Inter',sans-serif;}
+  .memory-toolbar input{flex:1;min-width:110px;}
+  .memory-list{display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;}
+  .memory-entry-card{border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .memory-entry-card.pinned{border-color:var(--emerald);}
+  .memory-entry-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
+  .memory-entry-title{font-weight:600;font-size:.88rem;}
+  .memory-entry-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+  .memory-badge{font-size:.64rem;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+  .memory-badge.type{background:var(--badge-info-bg);color:var(--text-2);}
+  .memory-badge.critical{background:var(--badge-error-bg);color:var(--badge-error-txt);}
+  .memory-badge.important{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .memory-badge.visibility{background:var(--bg);color:var(--text-2);border:1px solid var(--border);}
+  .memory-entry-content{font-size:.84rem;color:var(--ink);line-height:1.5;margin:6px 0 8px;white-space:pre-wrap;}
+  .memory-entry-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .memory-empty{font-size:.85rem;color:var(--text-2);}
+  .pin-btn{background:none;border:none;cursor:pointer;font-size:.9rem;padding:2px;flex-shrink:0;}
+
+  /* Plans récurrents */
+  .plan-row{border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+  .plan-row:last-child{margin-bottom:0;}
+  .plan-row.inactive{opacity:.6;}
+  .plan-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;}
+  .plan-name{font-weight:600;font-size:.9rem;}
+  .plan-meta{font-size:.78rem;color:var(--text-2);margin-bottom:8px;}
+  .plan-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .plan-preview-list{margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:.8rem;color:var(--ink);}
+  .plan-preview-list div{padding:2px 0;}
+  .plan-empty{font-size:.85rem;color:var(--text-2);}
+
+  /* Modales génériques (mémoire / plan / détail intervention) --
+     réutilisent .mc-overlay/.mc-panel/.mc-header/.mc-close déjà stylés
+     (chat de mission) : mêmes garanties visuelles (feuille ancrée en bas
+     sur mobile), un seul système de modale sur toute la page. */
+  .mc-body{padding:18px 20px;overflow-y:auto;flex:1;}
+  .mc-footer{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0;}
+  .mc-footer button{flex:1;padding:11px;border-radius:6px;font-size:.86rem;font-weight:600;cursor:pointer;min-height:44px;}
+  .btn-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
+  .btn-modal-save{background:var(--emerald);border:none;color:var(--on-emerald);}
+  .btn-modal-save:disabled{opacity:.5;cursor:not-allowed;}
+  .form-field{margin-bottom:14px;}
+  .form-field label{display:block;font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px;}
+  .form-field input[type=text],.form-field input[type=email],.form-field input[type=date],.form-field input[type=time],.form-field input[type=number],.form-field select,.form-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;color:var(--ink);background:var(--white);font-family:'Inter',sans-serif;}
+  .form-field textarea{min-height:70px;resize:vertical;}
+  .form-row{display:flex;gap:10px;}
+  .form-row .form-field{flex:1;min-width:0;}
+  .form-check-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .form-check-row label{display:flex;align-items:center;gap:6px;font-size:.84rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;}
+  .weekday-check-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .weekday-check-row label{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.72rem;cursor:pointer;width:38px;}
+
+  /* Détail mission (briefing + retour terrain + suggestions) */
+  .brief-section{margin-bottom:16px;}
+  .brief-section-label{font-size:.72rem;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .brief-item{font-size:.85rem;color:var(--ink);margin-bottom:4px;line-height:1.5;}
+  .brief-empty{font-size:.82rem;color:var(--text-2);}
+  .brief-meta{font-size:.74rem;color:var(--text-2);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .fieldreport-block{background:var(--bg);border-radius:8px;padding:12px 14px;margin-top:6px;}
+  .fieldreport-outcome{font-weight:700;font-size:.86rem;margin-bottom:4px;}
+  .suggestion-row{border:1px dashed var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;}
+  .suggestion-row-title{font-weight:600;font-size:.84rem;margin-bottom:4px;}
+  .suggestion-row-content{font-size:.8rem;color:var(--text-2);margin-bottom:8px;}
+  .suggestion-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .suggestion-actions button{font-size:.76rem;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--ink);cursor:pointer;font-weight:500;}
+  .suggestion-actions button.accept{border-color:var(--emerald);color:var(--emerald);}
+
   /* MESSAGERIE (journal patron + reponses du client depuis son Espace Client) */
   .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
   .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
@@ -307,10 +404,31 @@
     </div>
     <div id="incomplete-data-banner" style="display:none;"></div>
 
+    <!-- ACTIONS RAPIDES (SEBA CLIENT MEMORY & MISSION INTELLIGENCE, section 9) -->
+    <div class="quick-actions-row">
+      <button class="btn-outline" onclick="openPlanModal(null)">Créer un plan récurrent</button>
+      <button class="btn-outline" onclick="quickGenerateNext()">Générer les prochaines interventions</button>
+      <button class="btn-outline" onclick="quickPrepareMission()">Préparer une mission</button>
+      <button class="btn-outline" onclick="openMemoryModal(null)">Ajouter à la mémoire</button>
+      <button class="btn-outline" onclick="document.getElementById('nba-panel').scrollIntoView({behavior:'smooth'})">Voir les actions recommandées</button>
+    </div>
+
+    <!-- SYNTHÈSE OPÉRATIONNELLE -->
+    <div class="panel" id="summary-panel">
+      <span class="panel-eyebrow">Synthèse opérationnelle</span>
+      <div class="summary-grid" id="summary-grid"></div>
+    </div>
+
     <div class="content-grid">
 
       <!-- COLONNE PRINCIPALE -->
       <div>
+
+        <!-- ACTIONS RECOMMANDÉES (Next Best Actions) -->
+        <div class="panel" id="nba-panel">
+          <div class="panel-head"><h3>Actions recommandées</h3></div>
+          <div class="nba-list" id="nba-list"></div>
+        </div>
 
         <!-- HISTORIQUE DES INTERVENTIONS -->
         <div class="panel">
@@ -319,7 +437,7 @@
           </div>
           <table>
             <thead>
-              <tr><th>Date</th><th>Service</th><th>Durée</th><th>Montant</th><th>Statut</th></tr>
+              <tr><th>Date</th><th>Service</th><th>Durée</th><th>Montant</th><th>Statut</th><th></th></tr>
             </thead>
             <tbody>
               <tr>
@@ -328,41 +446,7 @@
                 <td>2h</td>
                 <td class="amount">95 €</td>
                 <td><span class="badge signe">Payée</span></td>
-              </tr>
-              <tr>
-                <td><span class="num">14 mai 2026</span></td>
-                <td>Ménage standard</td>
-                <td>2h</td>
-                <td class="amount">95 €</td>
-                <td><span class="badge signe">Payée</span></td>
-              </tr>
-              <tr>
-                <td><span class="num">18 avr. 2026</span></td>
-                <td>Ménage standard</td>
-                <td>2h</td>
-                <td class="amount">95 €</td>
-                <td><span class="badge signe">Payée</span></td>
-              </tr>
-              <tr>
-                <td><span class="num">3 avr. 2026</span></td>
-                <td>Nettoyage de vitres</td>
-                <td>1h30</td>
-                <td class="amount">60 €</td>
-                <td><span class="badge signe">Payée</span></td>
-              </tr>
-              <tr>
-                <td><span class="num">20 mars 2026</span></td>
-                <td>Ménage standard</td>
-                <td>2h</td>
-                <td class="amount">95 €</td>
-                <td><span class="badge signe">Payée</span></td>
-              </tr>
-              <tr>
-                <td><span class="num">14 mars 2026</span></td>
-                <td>Repassage</td>
-                <td>1h30</td>
-                <td class="amount">130 €</td>
-                <td><span class="badge signe">Payée</span></td>
+                <td></td>
               </tr>
             </tbody>
           </table>
@@ -444,6 +528,32 @@
 
         <div id="sector-info-container"></div>
 
+        <!-- MÉMOIRE CLIENT (SEBA CLIENT MEMORY & MISSION INTELLIGENCE) -->
+        <div class="panel" id="memory-panel">
+          <div class="panel-head"><h3>Mémoire client</h3><button type="button" class="row-action" style="background:none;border:none;font-weight:600;" onclick="openMemoryModal(null)">+ Ajouter</button></div>
+          <div class="memory-toolbar">
+            <select id="memory-filter-type" onchange="renderMemoryPanel(_lastClient)">
+              <option value="">Tous les types</option>
+              <option value="preference">Préférence</option>
+              <option value="access">Accès</option>
+              <option value="equipment">Équipement</option>
+              <option value="risk">Risque</option>
+              <option value="quality">Qualité</option>
+              <option value="billing">Facturation</option>
+              <option value="relationship">Relation</option>
+              <option value="instruction">Consigne</option>
+            </select>
+            <input type="text" id="memory-search" placeholder="Rechercher…" oninput="renderMemoryPanel(_lastClient)">
+          </div>
+          <div class="memory-list" id="memory-list"></div>
+        </div>
+
+        <!-- PLANS DE SERVICE RÉCURRENTS -->
+        <div class="panel" id="plans-panel">
+          <div class="panel-head"><h3>Plans récurrents</h3><button type="button" class="row-action" style="background:none;border:none;font-weight:600;" onclick="openPlanModal(null)">+ Créer</button></div>
+          <div id="plans-list"></div>
+        </div>
+
         <!-- EMAIL DE CONNEXION (Espace Client) -->
         <div class="panel" id="email-panel">
           <div class="panel-head"><h3>Email de connexion</h3></div>
@@ -507,6 +617,153 @@
   <div class="pv-panel">
     <button class="pv-close" onclick="closePhotoViewer()" aria-label="Fermer">&times;</button>
     <div class="pv-body" id="pv-body">Chargement…</div>
+  </div>
+</div>
+
+<!-- Mémoire client : ajout/édition d'une entrée -->
+<div class="mc-overlay" id="memory-modal-overlay" onclick="if(event.target===this)closeMemoryModal()">
+  <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Entrée de mémoire client">
+    <div class="mc-header">
+      <div><div class="mc-title" id="memory-modal-title">Ajouter à la mémoire</div></div>
+      <button class="mc-close" onclick="closeMemoryModal()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="mc-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="memory-type">Type</label>
+          <select id="memory-type">
+            <option value="preference">Préférence</option>
+            <option value="access">Accès</option>
+            <option value="equipment">Équipement</option>
+            <option value="risk">Risque</option>
+            <option value="quality">Qualité</option>
+            <option value="billing">Facturation</option>
+            <option value="relationship">Relation</option>
+            <option value="instruction">Consigne</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="memory-importance">Importance</label>
+          <select id="memory-importance">
+            <option value="normal">Normale</option>
+            <option value="important">Importante</option>
+            <option value="critical">Critique</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="memory-title">Titre</label>
+        <input type="text" id="memory-title" placeholder="Ex : Chat en liberté dans l'appartement">
+      </div>
+      <div class="form-field">
+        <label for="memory-content">Détail</label>
+        <textarea id="memory-content" placeholder="Description complète de l'information…"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="memory-visibility">Visible par</label>
+        <select id="memory-visibility">
+          <option value="owner_only">Vous uniquement</option>
+          <option value="internal_team" selected>Toute l'équipe</option>
+          <option value="assigned_employee">L'employé assigné à la mission</option>
+        </select>
+      </div>
+      <p class="msg-note" id="memory-modal-status"></p>
+    </div>
+    <div class="mc-footer">
+      <button class="btn-modal-cancel" onclick="closeMemoryModal()">Annuler</button>
+      <button class="btn-modal-save" id="memory-modal-save" onclick="saveMemoryModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan récurrent : création/édition -->
+<div class="mc-overlay" id="plan-modal-overlay" onclick="if(event.target===this)closePlanModal()">
+  <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Plan de service récurrent">
+    <div class="mc-header">
+      <div><div class="mc-title" id="plan-modal-title">Créer un plan récurrent</div></div>
+      <button class="mc-close" onclick="closePlanModal()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="mc-body">
+      <div class="form-field">
+        <label for="plan-name">Nom du plan</label>
+        <input type="text" id="plan-name" placeholder="Ex : Ménage hebdomadaire">
+      </div>
+      <div class="form-field">
+        <label for="plan-service">Prestation</label>
+        <input type="text" id="plan-service" placeholder="Ex : Ménage standard">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="plan-frequency">Fréquence</label>
+          <select id="plan-frequency" onchange="onPlanFrequencyChange()">
+            <option value="weekly">Hebdomadaire</option>
+            <option value="biweekly">Toutes les 2 semaines</option>
+            <option value="monthly">Mensuelle</option>
+            <option value="custom_weekdays">Jours personnalisés</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="plan-time">Heure de début</label>
+          <input type="time" id="plan-time" value="09:00">
+        </div>
+      </div>
+      <div class="weekday-check-row" id="plan-weekdays-row" style="display:none;">
+        <label><input type="checkbox" value="1" class="plan-weekday-cb"><span>Lun</span></label>
+        <label><input type="checkbox" value="2" class="plan-weekday-cb"><span>Mar</span></label>
+        <label><input type="checkbox" value="3" class="plan-weekday-cb"><span>Mer</span></label>
+        <label><input type="checkbox" value="4" class="plan-weekday-cb"><span>Jeu</span></label>
+        <label><input type="checkbox" value="5" class="plan-weekday-cb"><span>Ven</span></label>
+        <label><input type="checkbox" value="6" class="plan-weekday-cb"><span>Sam</span></label>
+        <label><input type="checkbox" value="0" class="plan-weekday-cb"><span>Dim</span></label>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="plan-duration">Durée</label>
+          <select id="plan-duration">
+            <option value="">—</option>
+            <option>1h</option><option>1h30</option><option>2h</option><option>2h30</option><option>3h</option><option>3h30</option><option>4h</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="plan-employee">Employé préféré</label>
+          <select id="plan-employee"><option value="">— Non assigné —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="plan-start-date">Date de début</label>
+          <input type="date" id="plan-start-date">
+        </div>
+        <div class="form-field">
+          <label for="plan-end-date">Date de fin (optionnelle)</label>
+          <input type="date" id="plan-end-date">
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="plan-horizon">Horizon de génération (jours)</label>
+        <input type="number" id="plan-horizon" value="30" min="7" max="365">
+      </div>
+      <div class="form-field">
+        <label for="plan-instructions">Consignes</label>
+        <textarea id="plan-instructions" placeholder="Consignes transmises à l'employé pour chaque occurrence…"></textarea>
+      </div>
+      <p class="msg-note" id="plan-modal-status"></p>
+    </div>
+    <div class="mc-footer">
+      <button class="btn-modal-cancel" onclick="closePlanModal()">Annuler</button>
+      <button class="btn-modal-save" id="plan-modal-save" onclick="savePlanModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Détail mission : briefing + retour terrain + suggestions mémoire -->
+<div class="mc-overlay" id="intervention-modal-overlay" onclick="if(event.target===this)closeInterventionModal()">
+  <div class="mc-panel" role="dialog" aria-modal="true" aria-label="Détail de la mission">
+    <div class="mc-header">
+      <div><div class="mc-title" id="intervention-modal-title">Mission</div><div class="mc-sub" id="intervention-modal-sub"></div></div>
+      <button class="mc-close" onclick="closeInterventionModal()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="mc-body" id="intervention-modal-body"></div>
   </div>
 </div>
 
@@ -606,6 +863,17 @@
   const STATUT_BADGE = { actif: ['actif', 'Actif'], attente: ['attente', 'Devis envoyé'], relance: ['relance', 'Facture en retard'] };
   const FACT_BADGE = { payee: ['signe', 'Payée'], attente: ['attente', 'En attente'], retard: ['relance', 'En retard'] };
   const DEVIS_BADGE = { signe: ['signe', 'Signé'], attente: ['attente', 'En attente'], expire: ['expire', 'Expiré'] };
+  // Constantes utilisées par renderMemoryPanel()/renderServicePlansPanel()
+  // (SEBA CLIENT MEMORY & MISSION INTELLIGENCE) -- déclarées ICI, avant le
+  // premier appel à renderClientFiche() plus bas, qui invoque ces deux
+  // fonctions de façon synchrone dès que le client a au moins une entrée
+  // mémoire/un plan : une `const` plus bas dans le script serait dans sa
+  // zone morte temporelle (TDZ) au moment de cet appel -- ReferenceError
+  // réel, reproduit uniquement après reload d'une fiche ayant déjà de la
+  // mémoire (trouvé via scripts/qa-client-memory-loop.js, 2026-07-25).
+  const MEMORY_TYPE_LABELS = { preference: 'Préférence', access: 'Accès', equipment: 'Équipement', risk: 'Risque', quality: 'Qualité', billing: 'Facturation', relationship: 'Relation', instruction: 'Consigne' };
+  const MEMORY_VISIBILITY_LABELS = { owner_only: 'Vous uniquement', internal_team: 'Toute l\'équipe', assigned_employee: 'Employé assigné' };
+  const FREQ_LABELS = { weekly: 'Hebdomadaire', biweekly: 'Toutes les 2 semaines', monthly: 'Mensuelle', custom_weekdays: 'Jours personnalisés' };
   // Réutilise les classes de badge existantes (aucune couleur "suspendu"/"terminé"
   // dédiée) : attente (orange) pour suspendu, expire (gris) pour terminé.
   const CONTRAT_BADGE = { actif: ['actif', 'Actif'], suspendu: ['attente', 'Suspendu'], termine: ['expire', 'Terminé'] };
@@ -744,9 +1012,10 @@
           '<td>' + esc(i.duree || '—') + '</td>' +
           '<td class="amount">—</td>' +
           '<td><span class="badge ' + statutBadge[0] + '">' + statutBadge[1] + '</span></td>' +
+          '<td class="row-action" onclick="openInterventionModal(\'' + i.id + '\')">Voir</td>' +
         '</tr>';
         }).join('')
-      : '<tr><td colspan="5" style="color:var(--text-2);">Aucune intervention enregistrée pour ce client.</td></tr>';
+      : '<tr><td colspan="6" style="color:var(--text-2);">Aucune intervention enregistrée pour ce client.</td></tr>';
 
     // Devis & factures liés, fusionnés et triés par date décroissante.
     // "Voir" : ni devis.html ni factures.html ne savent pointer vers un
@@ -798,8 +1067,472 @@
     // Notes internes réelles (vide si le client n'en a pas).
     const notesEl = document.querySelector('.notes-area');
     if (notesEl) notesEl.value = client.notes || '';
+
+    // SEBA CLIENT MEMORY & MISSION INTELLIGENCE -- panneaux dérivés de la
+    // mémoire opérationnelle + du calcul déterministe (synthèse, actions
+    // recommandées, mémoire, plans récurrents). _lastClient : référence au
+    // client réellement chargé, réutilisée par les modales/quick actions
+    // qui n'ont pas accès direct au client à l'ouverture (bouton générique).
+    window.SebaClientIntelligence.normalizeClientOperationalMemory(client);
+    _lastClient = client;
+    renderMemoryPanel(client);
+    renderServicePlansPanel(client);
+    renderIntelligenceAsync(client);
   }
+  let _lastClient = null;
+
+  /* Partie asynchrone (nécessite les messages du client, chargés via
+     SebaQuotes.messagesFor comme renderMessagesThread ci-dessus) --
+     séparée de renderClientFiche() (synchrone) pour ne jamais bloquer le
+     reste du rendu sur cet aller-retour. */
+  async function renderIntelligenceAsync(client) {
+    if (!window.SebaClientIntelligence) return;
+    let messages = [];
+    try { messages = (window.SebaQuotes && window.SebaQuotes.messagesFor) ? await window.SebaQuotes.messagesFor('client', client.id) : []; } catch (e) {}
+    if (_lastClient !== client) return; // un autre rendu a eu lieu entre-temps (SebaDB.onChange) -- resultat perime, on l'ignore
+    const st = {
+      interventions: SebaDB.list('interventions'), devis: SebaDB.list('devis'), factures: SebaDB.list('factures'),
+      messages, employes: SebaDB.list('employes'), clients: SebaDB.list('clients'),
+    };
+    const now = new Date();
+    const summary = window.SebaClientIntelligence.buildClientOperationalSummary(client, st, now);
+    const actions = window.SebaClientIntelligence.buildClientNextBestActions(client, st, now);
+    renderOperationalSummary(summary);
+    renderNextBestActions(actions);
+  }
+
   renderClientFiche();
+
+  /* ═══════════════════════════════════════════════════════════════
+     SEBA CLIENT MEMORY & MISSION INTELLIGENCE — rendu + actions
+     (feature/client-crm-advanced). Toute écriture passe par
+     SebaDB.clients (et SebaDB.interventions) dans docs/seba-data.js --
+     jamais un état local parallèle, jamais un succès affiché avant
+     confirmation de la persistance (chaque fonction ci-dessous relit
+     SebaDB.get(...) après écriture avant de mettre à jour l'affichage).
+  ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Synthèse opérationnelle ── */
+  function renderOperationalSummary(summary) {
+    const el = document.getElementById('summary-grid');
+    if (!el) return;
+    const asavoir = [];
+    if (summary.frequenceReelle) asavoir.push('Fréquence réelle : ' + summary.frequenceReelle.label);
+    summary.preferencesImportantes.forEach(e => asavoir.push(esc(e.title)));
+    summary.accesCritiques.forEach(e => asavoir.push('Accès critique : ' + esc(e.title)));
+    if (summary.derniereCommunication) asavoir.push('Dernier message : ' + fmtDateFr(summary.derniereCommunication.createdAt));
+
+    const asurveiller = [];
+    if (summary.facturesRetard.length) asurveiller.push('<a onclick="location.href=\'factures.html?status=retard\'">' + summary.facturesRetard.length + ' facture(s) en retard</a>');
+    if (summary.devisAttente.length) asurveiller.push('<a onclick="location.href=\'devis.html?status=attente\'">' + summary.devisAttente.length + ' devis en attente</a>');
+    summary.incidentsRecents.forEach(i => asurveiller.push('<a onclick="openInterventionModal(\'' + i.id + '\')">Incident (' + esc(i.fieldReport.issueType) + ') — ' + fmtDateFr(i.date) + '</a>'));
+    if (summary.periodeInactiviteJours != null && summary.periodeInactiviteJours >= 60) asurveiller.push('Aucun contact depuis ' + summary.periodeInactiviteJours + ' jours');
+    summary.informationsObligatoiresManquantes.forEach(f => asurveiller.push('Information manquante : ' + f));
+    summary.prestationRecurrenteManquante.forEach(p => asurveiller.push('<a onclick="document.getElementById(\'plans-panel\').scrollIntoView({behavior:\'smooth\'})">Plan "' + esc(p.name) + '" sans occurrence future</a>'));
+
+    const prochaineActionHtml = summary.facturesRetard.length
+      ? '<a onclick="location.href=\'factures.html?status=retard\'">Relancer ' + summary.facturesRetard.length + ' facture(s) en retard</a>'
+      : (summary.devisAttente.length ? '<a onclick="location.href=\'devis.html?status=attente\'">Relancer ' + summary.devisAttente.length + ' devis en attente</a>' : null);
+
+    const prochainePrestationHtml = summary.prochaineIntervention
+      ? esc(fmtDateFr(summary.prochaineIntervention.date)) + (summary.prochaineIntervention.time ? ' à ' + esc(summary.prochaineIntervention.time) : '') + ' — <a onclick="openInterventionModal(\'' + summary.prochaineIntervention.id + '\')">' + esc(summary.prochaineIntervention.service || 'Voir') + '</a>'
+      : null;
+
+    const cards = [
+      { label: 'À savoir', body: asavoir.length ? '<ul>' + asavoir.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '<span class="summary-empty">Rien de particulier.</span>' },
+      { label: 'À surveiller', body: asurveiller.length ? '<ul>' + asurveiller.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '<span class="summary-empty">Rien à signaler.</span>' },
+      { label: 'Prochaine action', body: prochaineActionHtml || '<span class="summary-empty">Aucune action urgente.</span>' },
+      { label: 'Prochaine prestation', body: prochainePrestationHtml || '<span class="summary-empty">Aucune prestation planifiée.</span>' },
+    ];
+    el.innerHTML = cards.map(c => '<div class="summary-card"><div class="summary-card-label">' + c.label + '</div><div class="summary-card-body">' + c.body + '</div></div>').join('');
+  }
+
+  /* ── Next Best Actions ── */
+  function renderNextBestActions(actions) {
+    const el = document.getElementById('nba-list');
+    if (!el) return;
+    const visible = actions.slice(0, 5);
+    if (!visible.length) { el.innerHTML = '<div class="nba-empty" style="color:var(--text-2);font-size:.85rem;">Aucune action recommandée pour le moment.</div>'; return; }
+    el.innerHTML = visible.map(a => (
+      '<div class="nba-row">' +
+        '<span class="nba-dot ' + a.priority + '"></span>' +
+        '<div class="nba-body"><div class="nba-reason">' + esc(a.reason) + '</div><div class="nba-impact">' + esc(a.impact) + '</div></div>' +
+        '<button type="button" class="nba-action" onclick="location.href=' + JSON.stringify(a.actionUrl) + '">' + esc(a.actionLabel) + '</button>' +
+      '</div>'
+    )).join('');
+  }
+
+  /* ── Mémoire client ── */
+  function renderMemoryPanel(client) {
+    const el = document.getElementById('memory-list');
+    if (!el || !client) return;
+    window.SebaClientIntelligence.normalizeClientOperationalMemory(client);
+    const typeFilter = document.getElementById('memory-filter-type').value;
+    const q = document.getElementById('memory-search').value.trim().toLowerCase();
+    let entries = client.operationalMemory.entries.filter(e => !e.archivedAt);
+    if (typeFilter) entries = entries.filter(e => e.type === typeFilter);
+    if (q) entries = entries.filter(e => (e.title + ' ' + e.content).toLowerCase().includes(q));
+    entries = entries.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+
+    if (!entries.length) { el.innerHTML = '<div class="memory-empty">Aucune information en mémoire pour ce client.</div>'; return; }
+    el.innerHTML = entries.map(e => (
+      '<div class="memory-entry-card' + (e.pinned ? ' pinned' : '') + '">' +
+        '<div class="memory-entry-head">' +
+          '<div><div class="memory-entry-title">' + esc(e.title || '(sans titre)') + '</div>' +
+          '<div class="memory-entry-badges">' +
+            '<span class="memory-badge type">' + (MEMORY_TYPE_LABELS[e.type] || e.type) + '</span>' +
+            (e.importance !== 'normal' ? '<span class="memory-badge ' + e.importance + '">' + (e.importance === 'critical' ? 'Critique' : 'Importante') + '</span>' : '') +
+            '<span class="memory-badge visibility">' + (MEMORY_VISIBILITY_LABELS[e.visibility] || e.visibility) + '</span>' +
+          '</div></div>' +
+          '<button type="button" class="pin-btn" title="' + (e.pinned ? 'Désépingler' : 'Épingler') + '" onclick="toggleMemoryPin(\'' + e.id + '\', ' + (!e.pinned) + ')">' + (e.pinned ? '📌' : '📍') + '</button>' +
+        '</div>' +
+        (e.content ? '<div class="memory-entry-content">' + esc(e.content) + '</div>' : '') +
+        '<div class="memory-entry-actions">' +
+          '<button type="button" class="btn-mini" onclick="openMemoryModal(\'' + e.id + '\')">Modifier</button>' +
+          '<button type="button" class="btn-mini btn-mini-danger" onclick="archiveMemoryEntryUI(\'' + e.id + '\')">Archiver</button>' +
+        '</div>' +
+      '</div>'
+    )).join('');
+  }
+
+  function toggleMemoryPin(entryId, pinned) {
+    if (!_lastClient) return;
+    SebaDB.clients.pinMemoryEntry(_lastClient.id, entryId, pinned);
+    renderMemoryPanel(SebaDB.get('clients', _lastClient.id));
+  }
+  function archiveMemoryEntryUI(entryId) {
+    if (!_lastClient) return;
+    if (!confirm('Archiver cette information ? Elle restera restaurable.')) return;
+    SebaDB.clients.archiveMemoryEntry(_lastClient.id, entryId);
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderMemoryPanel(_lastClient);
+    showFicheToast('Information archivée.');
+  }
+
+  let _memoryEditingId = null;
+  function openMemoryModal(entryId) {
+    _memoryEditingId = entryId;
+    const status = document.getElementById('memory-modal-status');
+    status.textContent = '';
+    document.getElementById('memory-modal-title').textContent = entryId ? 'Modifier l\'information' : 'Ajouter à la mémoire';
+    if (entryId && _lastClient) {
+      const entry = _lastClient.operationalMemory.entries.find(e => e.id === entryId);
+      if (entry) {
+        document.getElementById('memory-type').value = entry.type;
+        document.getElementById('memory-importance').value = entry.importance;
+        document.getElementById('memory-title').value = entry.title || '';
+        document.getElementById('memory-content').value = entry.content || '';
+        document.getElementById('memory-visibility').value = entry.visibility;
+      }
+    } else {
+      document.getElementById('memory-type').value = 'preference';
+      document.getElementById('memory-importance').value = 'normal';
+      document.getElementById('memory-title').value = '';
+      document.getElementById('memory-content').value = '';
+      document.getElementById('memory-visibility').value = 'internal_team';
+    }
+    document.getElementById('memory-modal-overlay').classList.add('open');
+  }
+  function closeMemoryModal() { document.getElementById('memory-modal-overlay').classList.remove('open'); _memoryEditingId = null; }
+  function saveMemoryModal() {
+    if (!_lastClient) return;
+    const btn = document.getElementById('memory-modal-save');
+    const status = document.getElementById('memory-modal-status');
+    const title = document.getElementById('memory-title').value.trim();
+    if (!title) { status.textContent = 'Le titre est obligatoire.'; status.style.color = 'var(--danger-text)'; return; }
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    const data = {
+      type: document.getElementById('memory-type').value, importance: document.getElementById('memory-importance').value,
+      title, content: document.getElementById('memory-content').value.trim(), visibility: document.getElementById('memory-visibility').value,
+    };
+    let result;
+    if (_memoryEditingId) result = SebaDB.clients.updateMemoryEntry(_lastClient.id, _memoryEditingId, data);
+    else result = SebaDB.clients.addMemoryEntry(_lastClient.id, Object.assign({ source: 'manual' }, data));
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+    if (!result) { status.textContent = 'Échec de l\'enregistrement.'; status.style.color = 'var(--danger-text)'; return; }
+    // Persistance confirmée : relit depuis SebaDB avant de fermer/afficher succès.
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderMemoryPanel(_lastClient);
+    closeMemoryModal();
+    showFicheToast(_memoryEditingId ? 'Information mise à jour.' : 'Information ajoutée à la mémoire.');
+  }
+
+  /* ── Plans de service récurrents ── */
+  function renderServicePlansPanel(client) {
+    const el = document.getElementById('plans-list');
+    if (!el || !client) return;
+    const plans = client.servicePlans || [];
+    if (!plans.length) { el.innerHTML = '<div class="plan-empty">Aucun plan récurrent pour ce client.</div>'; return; }
+    el.innerHTML = plans.map(p => (
+      '<div class="plan-row' + (p.active ? '' : ' inactive') + '">' +
+        '<div class="plan-head"><span class="plan-name">' + esc(p.name) + '</span>' +
+        '<span class="badge ' + (p.active ? 'actif' : 'attente') + '">' + (p.active ? 'Actif' : 'Suspendu') + '</span></div>' +
+        '<div class="plan-meta">' + esc(p.service || '') + ' · ' + (FREQ_LABELS[p.frequency] || p.frequency) + (p.preferredStartTime ? ' · ' + esc(p.preferredStartTime) : '') + '</div>' +
+        '<div class="plan-actions">' +
+          '<button type="button" class="btn-mini" onclick="openPlanModal(\'' + p.id + '\')">Modifier</button>' +
+          '<button type="button" class="btn-mini" onclick="previewPlanUI(\'' + p.id + '\')">Prévisualiser</button>' +
+          '<button type="button" class="btn-mini" onclick="generatePlanUI(\'' + p.id + '\')"' + (p.active ? '' : ' disabled title="Réactivez le plan pour générer"') + '>Générer</button>' +
+          (p.active
+            ? '<button type="button" class="btn-mini" onclick="suspendPlanUI(\'' + p.id + '\')">Suspendre</button>'
+            : '<button type="button" class="btn-mini" onclick="reactivatePlanUI(\'' + p.id + '\')">Réactiver</button>') +
+          '<button type="button" class="btn-mini btn-mini-danger" onclick="deletePlanUI(\'' + p.id + '\')">Supprimer</button>' +
+        '</div>' +
+        '<div class="plan-preview-list" id="plan-preview-' + p.id + '" style="display:none;"></div>' +
+      '</div>'
+    )).join('');
+  }
+
+  function previewPlanUI(planId) {
+    if (!_lastClient) return;
+    const box = document.getElementById('plan-preview-' + planId);
+    if (!box) return;
+    const isOpen = box.style.display !== 'none';
+    document.querySelectorAll('.plan-preview-list').forEach(b => { b.style.display = 'none'; });
+    if (isOpen) return;
+    const result = SebaDB.clients.previewServicePlanOccurrences(_lastClient.id, planId);
+    const dates = result.toCreate.map(o => fmtDateFr(o.date) + ' à ' + o.time);
+    box.innerHTML = dates.length
+      ? dates.map(d => '<div>' + esc(d) + '</div>').join('') + '<div style="margin-top:6px;color:var(--text-2);">' + result.toSkip.length + ' occurrence(s) déjà générée(s) ignorée(s).</div>'
+      : '<div>Aucune nouvelle occurrence à venir sur l\'horizon configuré.</div>';
+    box.style.display = 'block';
+  }
+
+  function generatePlanUI(planId) {
+    if (!_lastClient) return;
+    const result = SebaDB.clients.generateServicePlanOccurrences(_lastClient.id, planId);
+    if (result.error) { showFicheToast(result.error); return; }
+    // Persistance confirmée : relit le client ET les interventions avant d'afficher un succès.
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    renderClientFiche();
+    showFicheToast(result.created > 0 ? result.created + ' intervention(s) générée(s).' : 'Déjà à jour — aucune nouvelle occurrence à générer.');
+  }
+
+  function suspendPlanUI(planId) {
+    if (!_lastClient) return;
+    SebaDB.clients.suspendServicePlan(_lastClient.id, planId);
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    showFicheToast('Plan suspendu.');
+  }
+  function reactivatePlanUI(planId) {
+    if (!_lastClient) return;
+    SebaDB.clients.reactivateServicePlan(_lastClient.id, planId);
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    showFicheToast('Plan réactivé.');
+  }
+  function deletePlanUI(planId) {
+    if (!_lastClient) return;
+    if (!confirm('Supprimer définitivement ce plan récurrent ? Les interventions déjà générées ne seront pas supprimées.')) return;
+    SebaDB.clients.deleteServicePlan(_lastClient.id, planId);
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    showFicheToast('Plan supprimé.');
+  }
+
+  let _planEditingId = null;
+  function onPlanFrequencyChange() {
+    document.getElementById('plan-weekdays-row').style.display = document.getElementById('plan-frequency').value === 'custom_weekdays' ? 'flex' : 'none';
+  }
+  function openPlanModal(planId) {
+    _planEditingId = planId;
+    document.getElementById('plan-modal-status').textContent = '';
+    document.getElementById('plan-modal-title').textContent = planId ? 'Modifier le plan' : 'Créer un plan récurrent';
+    const empSel = document.getElementById('plan-employee');
+    empSel.innerHTML = '<option value="">— Non assigné —</option>' + (SebaDB.list('employes') || []).map(e => '<option value="' + e.id + '">' + esc(e.prenom + ' ' + e.nom) + '</option>').join('');
+    document.querySelectorAll('.plan-weekday-cb').forEach(cb => cb.checked = false);
+    if (planId && _lastClient) {
+      const p = _lastClient.servicePlans.find(x => x.id === planId);
+      if (p) {
+        document.getElementById('plan-name').value = p.name || '';
+        document.getElementById('plan-service').value = p.service || '';
+        document.getElementById('plan-frequency').value = p.frequency;
+        document.getElementById('plan-time').value = p.preferredStartTime || '09:00';
+        document.getElementById('plan-duration').value = p.duration || '';
+        empSel.value = p.assignedEmployeeId || '';
+        document.getElementById('plan-start-date').value = p.startDate || '';
+        document.getElementById('plan-end-date').value = p.endDate || '';
+        document.getElementById('plan-horizon').value = p.horizonDays || 30;
+        document.getElementById('plan-instructions').value = p.instructions || '';
+        (p.weekdays || []).forEach(wd => { const cb = document.querySelector('.plan-weekday-cb[value="' + wd + '"]'); if (cb) cb.checked = true; });
+      }
+    } else {
+      document.getElementById('plan-name').value = '';
+      document.getElementById('plan-service').value = '';
+      document.getElementById('plan-frequency').value = 'weekly';
+      document.getElementById('plan-time').value = '09:00';
+      document.getElementById('plan-duration').value = '';
+      document.getElementById('plan-start-date').value = todayISOLocal();
+      document.getElementById('plan-end-date').value = '';
+      document.getElementById('plan-horizon').value = 30;
+      document.getElementById('plan-instructions').value = '';
+    }
+    onPlanFrequencyChange();
+    document.getElementById('plan-modal-overlay').classList.add('open');
+  }
+  function closePlanModal() { document.getElementById('plan-modal-overlay').classList.remove('open'); _planEditingId = null; }
+  function todayISOLocal() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+  function savePlanModal() {
+    if (!_lastClient) return;
+    const status = document.getElementById('plan-modal-status');
+    const btn = document.getElementById('plan-modal-save');
+    const name = document.getElementById('plan-name').value.trim();
+    const service = document.getElementById('plan-service').value.trim();
+    const startDate = document.getElementById('plan-start-date').value;
+    if (!name || !service || !startDate) { status.textContent = 'Nom, prestation et date de début sont obligatoires.'; status.style.color = 'var(--danger-text)'; return; }
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    const weekdays = Array.from(document.querySelectorAll('.plan-weekday-cb:checked')).map(cb => parseInt(cb.value, 10));
+    const data = {
+      name, service, frequency: document.getElementById('plan-frequency').value,
+      weekdays, preferredStartTime: document.getElementById('plan-time').value || '09:00',
+      duration: document.getElementById('plan-duration').value || null,
+      assignedEmployeeId: document.getElementById('plan-employee').value || null,
+      startDate, endDate: document.getElementById('plan-end-date').value || null,
+      horizonDays: parseInt(document.getElementById('plan-horizon').value, 10) || 30,
+      instructions: document.getElementById('plan-instructions').value.trim(),
+    };
+    if (_planEditingId) data.id = _planEditingId;
+    const result = SebaDB.clients.saveServicePlan(_lastClient.id, data);
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+    if (!result) { status.textContent = 'Échec de l\'enregistrement.'; status.style.color = 'var(--danger-text)'; return; }
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    closePlanModal();
+    showFicheToast(_planEditingId ? 'Plan mis à jour.' : 'Plan récurrent créé.');
+  }
+
+  /* ── Actions rapides (section 9) ── */
+  function quickGenerateNext() {
+    if (!_lastClient) return;
+    const activePlans = (_lastClient.servicePlans || []).filter(p => p.active);
+    if (!activePlans.length) { showFicheToast('Créez d\'abord un plan récurrent actif.'); return; }
+    let totalCreated = 0;
+    activePlans.forEach(p => { const r = SebaDB.clients.generateServicePlanOccurrences(_lastClient.id, p.id); totalCreated += r.created || 0; });
+    _lastClient = SebaDB.get('clients', _lastClient.id);
+    renderServicePlansPanel(_lastClient);
+    renderClientFiche();
+    showFicheToast(totalCreated > 0 ? totalCreated + ' intervention(s) générée(s) sur ' + activePlans.length + ' plan(s).' : 'Déjà à jour — aucune nouvelle occurrence à générer.');
+  }
+  function quickPrepareMission() {
+    if (!_lastClient) return;
+    const upcoming = (SebaDB.list('interventions') || []).filter(i => i.clientId === _lastClient.id && !i.done).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))[0];
+    if (!upcoming) { showFicheToast('Aucune mission à venir pour ce client. Planifiez d\'abord une intervention.'); return; }
+    openInterventionModal(upcoming.id);
+  }
+
+  /* ── Détail mission : briefing + retour terrain + suggestions ── */
+  let _interventionModalId = null;
+  function openInterventionModal(interventionId) {
+    _interventionModalId = interventionId;
+    document.getElementById('intervention-modal-overlay').classList.add('open');
+    renderInterventionModal();
+  }
+  function closeInterventionModal() { document.getElementById('intervention-modal-overlay').classList.remove('open'); _interventionModalId = null; }
+
+  function renderInterventionModal() {
+    const intervention = SebaDB.get('interventions', _interventionModalId);
+    const body = document.getElementById('intervention-modal-body');
+    if (!intervention) { body.innerHTML = '<p class="brief-empty">Mission introuvable.</p>'; return; }
+    document.getElementById('intervention-modal-title').textContent = (intervention.service || 'Mission') + ' — ' + esc(intervention.clientName || '');
+    document.getElementById('intervention-modal-sub').textContent = fmtDateFr(intervention.date) + (intervention.time ? ' à ' + intervention.time : '');
+
+    const brief = intervention.missionBrief;
+    let html = '';
+    if (brief) {
+      html += '<div class="brief-meta"><span>Briefing généré le ' + new Date(brief.generatedAt).toLocaleString('fr-FR') + '</span>' +
+        '<button type="button" class="btn-mini" onclick="regenerateBriefUI(\'' + intervention.id + '\')">Régénérer le briefing</button></div>';
+      const sections = [
+        ['Accès', brief.accessInstructions], ['Consignes', brief.operationalInstructions],
+        ['Préférences importantes', brief.importantPreferences], ['Points de vigilance', brief.risks], ['Équipement', brief.equipment],
+      ];
+      sections.forEach(([label, items]) => {
+        html += '<div class="brief-section"><div class="brief-section-label">' + label + '</div>';
+        html += (items && items.length) ? items.map(it => '<div class="brief-item">' + esc(it.title) + (it.content ? ' — ' + esc(it.content) : '') + '</div>').join('') : '<div class="brief-empty">Rien de renseigné.</div>';
+        html += '</div>';
+      });
+      html += '<div class="brief-section"><div class="brief-section-label">Incidents récents</div>';
+      html += (brief.recentIncidents && brief.recentIncidents.length)
+        ? brief.recentIncidents.map(i => '<div class="brief-item">' + fmtDateFr(i.date) + ' — ' + esc(i.issueType) + (i.description ? ' : ' + esc(i.description) : '') + '</div>').join('')
+        : '<div class="brief-empty">Aucun incident récent.</div>';
+      html += '</div>';
+      if (brief.previousInterventionSummary) {
+        html += '<div class="brief-section"><div class="brief-section-label">Dernière intervention</div><div class="brief-item">' + fmtDateFr(brief.previousInterventionSummary.date) + ' — ' + esc(brief.previousInterventionSummary.summary) + '</div></div>';
+      }
+    } else {
+      html += '<p class="brief-empty">Aucun briefing généré pour cette mission.</p>' +
+        '<button type="button" class="btn-mini" style="margin-top:10px;" onclick="regenerateBriefUI(\'' + intervention.id + '\')">Générer le briefing</button>';
+    }
+
+    // Retour terrain
+    html += '<div class="brief-section"><div class="brief-section-label">Retour terrain</div>';
+    if (intervention.fieldReport) {
+      const fr = intervention.fieldReport;
+      const OUTCOME_LABELS = { completed: 'Terminée', partially_completed: 'Partiellement terminée', blocked: 'Bloquée', cancelled_on_site: 'Annulée sur place' };
+      html += '<div class="fieldreport-block">' +
+        '<div class="fieldreport-outcome">' + (OUTCOME_LABELS[fr.outcome] || fr.outcome) + '</div>' +
+        (fr.summary ? '<div class="brief-item">' + esc(fr.summary) + '</div>' : '') +
+        (fr.issueType && fr.issueType !== 'none' ? '<div class="brief-item">Problème signalé : ' + esc(fr.issueType) + (fr.issueDescription ? ' — ' + esc(fr.issueDescription) : '') + '</div>' : '') +
+        (fr.followUpRequired ? '<div class="brief-item" style="color:var(--danger-text);font-weight:600;">Suivi requis' + (fr.followUpDate ? ' avant le ' + fmtDateFr(fr.followUpDate) : '') + '</div>' : '') +
+        '<div class="brief-meta" style="margin-top:8px;margin-bottom:0;">Soumis le ' + new Date(fr.submittedAt).toLocaleString('fr-FR') + '</div>' +
+      '</div>';
+
+      // Suggestions mémoire (section 7) -- une par une, jamais réappariat après ignorée.
+      const dismissed = fr.dismissedSuggestionIds || [];
+      const accepted = fr.acceptedSuggestionIds || [];
+      const pending = (fr.memorySuggestions || []).filter(s => dismissed.indexOf(s.id) === -1 && accepted.indexOf(s.id) === -1);
+      if (pending.length) {
+        html += '<div class="brief-section-label" style="margin-top:14px;">Seba propose d\'ajouter ceci à la mémoire client</div>';
+        pending.forEach(s => {
+          html += '<div class="suggestion-row" data-suggestion="' + s.id + '">' +
+            '<div class="suggestion-row-title">' + esc(s.entry.title) + '</div>' +
+            '<div class="suggestion-row-content">' + esc(s.entry.content || '') + '</div>' +
+            '<div class="suggestion-actions">' +
+              '<button type="button" class="accept" onclick="acceptSuggestionUI(\'' + intervention.id + '\', \'' + s.id + '\', false)">Accepter</button>' +
+              '<button type="button" onclick="acceptSuggestionUI(\'' + intervention.id + '\', \'' + s.id + '\', true)">Modifier puis accepter</button>' +
+              '<button type="button" onclick="dismissSuggestionUI(\'' + intervention.id + '\', \'' + s.id + '\')">Ignorer</button>' +
+            '</div>' +
+          '</div>';
+        });
+      }
+    } else {
+      html += '<p class="brief-empty">Aucun retour terrain pour cette mission.</p>';
+    }
+    html += '</div>';
+
+    body.innerHTML = html;
+  }
+
+  function regenerateBriefUI(interventionId) {
+    const brief = SebaDB.interventions.regenerateMissionBrief(interventionId);
+    if (!brief) { showFicheToast('Impossible de régénérer le briefing.'); return; }
+    renderInterventionModal();
+    showFicheToast('Briefing régénéré.');
+  }
+  function acceptSuggestionUI(interventionId, suggestionId, wantsEdit) {
+    if (wantsEdit) {
+      const intervention = SebaDB.get('interventions', interventionId);
+      const suggestion = intervention && intervention.fieldReport && (intervention.fieldReport.memorySuggestions || []).find(s => s.id === suggestionId);
+      if (!suggestion) return;
+      const newContent = prompt('Modifier le contenu avant acceptation :', suggestion.entry.content || '');
+      if (newContent === null) return; // annulé
+      const result = SebaDB.interventions.acceptMemorySuggestion(interventionId, suggestionId, { content: newContent });
+      if (!result.ok) { showFicheToast(result.error || 'Échec.'); return; }
+    } else {
+      const result = SebaDB.interventions.acceptMemorySuggestion(interventionId, suggestionId, {});
+      if (!result.ok) { showFicheToast(result.error || 'Échec.'); return; }
+    }
+    if (_lastClient) { _lastClient = SebaDB.get('clients', _lastClient.id); renderMemoryPanel(_lastClient); }
+    renderInterventionModal();
+    showFicheToast('Ajouté à la mémoire client.');
+  }
+  function dismissSuggestionUI(interventionId, suggestionId) {
+    SebaDB.interventions.dismissMemorySuggestion(interventionId, suggestionId);
+    renderInterventionModal();
+  }
 
   /* ── Demandes (Espace Client -- client-espace.html "+ Nouvelle demande").
      Lecture + modification statut/intervenant cote patron. RLS

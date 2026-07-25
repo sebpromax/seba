@@ -200,6 +200,33 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
 .cm-validate{background:var(--emerald);border:none;color:var(--on-emerald);}
 .cm-validate:disabled{opacity:.5;cursor:not-allowed;}
 
+/* ── Briefing de mission (SEBA CLIENT MEMORY & MISSION INTELLIGENCE) --
+   snapshot déjà filtré côté serveur (jamais owner_only/financier ici),
+   affiché dans le détail mission. ── */
+.brief-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.brief-block-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text-2);font-weight:700;margin-bottom:6px;}
+.brief-item{font-size:.86rem;color:var(--ink);margin-top:4px;padding:9px 12px;background:var(--bg);border-radius:var(--rs);line-height:1.4;}
+.brief-item + .brief-item{margin-top:6px;}
+.brief-item.risk{border-left:3px solid var(--danger-text);}
+.brief-empty{font-size:.82rem;color:var(--text-2);}
+.brief-meta{font-size:.76rem;color:var(--text-2);margin-top:10px;}
+
+/* ── Retour terrain structuré (fieldReport) -- meme feuille ancree que
+   .cm-panel, reutilise les classes cm-* pour la coherence visuelle. ── */
+.fr-form-row{margin-bottom:16px;}
+.fr-form-row label{display:block;font-size:.76rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;}
+.fr-outcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fr-outcome-btn{padding:12px 8px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--white);color:var(--ink);font-size:.84rem;font-weight:600;cursor:pointer;min-height:48px;text-align:center;}
+.fr-outcome-btn.selected{border-color:var(--emerald);background:var(--badge-success-bg);color:var(--emerald);}
+.fr-select{width:100%;min-height:48px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
+.fr-checkbox-row{display:flex;align-items:center;gap:10px;min-height:44px;}
+.fr-checkbox-row input{width:20px;height:20px;flex-shrink:0;}
+.fr-status{font-size:.84rem;margin-top:10px;}
+.fr-status.pending{color:var(--text-2);}
+.fr-status.ok{color:var(--emerald);}
+.fr-status.err{color:var(--danger-text);}
+.fr-existing{margin-top:8px;padding:12px;background:var(--bg);border-radius:var(--rs);font-size:.84rem;}
+
 @media (max-width: 768px) {
   .et-msg-input,.et-modal textarea,.et-modal select,.et-pw-row input,.cm-textarea{font-size:16px;}
   .et-mission-actions{gap:12px;}
@@ -379,6 +406,69 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Compte rendu de mission structuré (SEBA CLIENT MEMORY & MISSION
+     INTELLIGENCE) -- distinct de la clôture legacy ci-dessus (rapport
+     libre + photo, deja cablee) : outcome/issueType/followUp avec valeurs
+     controlees cote serveur (RPC submit_my_intervention_field_report). -->
+<div class="cm-overlay" id="fr-overlay">
+  <div class="cm-panel" role="dialog" aria-modal="true" aria-label="Compte rendu de mission">
+    <div class="cm-header">
+      <div>
+        <div class="cm-title">Compte rendu de mission</div>
+        <div class="cm-sub" id="fr-sub"></div>
+      </div>
+      <button class="cm-close" onclick="closeFieldReportModal()" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="cm-body">
+      <div class="fr-form-row">
+        <label>Résultat de la mission</label>
+        <div class="fr-outcome-grid" id="fr-outcome-grid">
+          <button type="button" class="fr-outcome-btn" data-outcome="completed" onclick="selectFieldReportOutcome('completed')">✓ Terminée</button>
+          <button type="button" class="fr-outcome-btn" data-outcome="partially_completed" onclick="selectFieldReportOutcome('partially_completed')">◐ Partielle</button>
+          <button type="button" class="fr-outcome-btn" data-outcome="blocked" onclick="selectFieldReportOutcome('blocked')">⛔ Bloquée</button>
+          <button type="button" class="fr-outcome-btn" data-outcome="cancelled_on_site" onclick="selectFieldReportOutcome('cancelled_on_site')">✕ Annulée</button>
+        </div>
+      </div>
+      <div class="fr-form-row">
+        <label for="fr-summary">Résumé</label>
+        <textarea id="fr-summary" class="cm-textarea" style="margin-bottom:0;" placeholder="Ce qui a été fait, en quelques mots..."></textarea>
+      </div>
+      <div class="fr-form-row">
+        <label for="fr-issue-type">Problème rencontré</label>
+        <select id="fr-issue-type" class="fr-select">
+          <option value="none">Aucun</option>
+          <option value="access">Accès impossible</option>
+          <option value="client_absent">Client absent</option>
+          <option value="equipment">Matériel manquant</option>
+          <option value="damage">Dommage</option>
+          <option value="quality">Problème de qualité</option>
+          <option value="delay">Retard</option>
+          <option value="other">Autre</option>
+        </select>
+      </div>
+      <div class="fr-form-row" id="fr-issue-desc-row" style="display:none;">
+        <label for="fr-issue-description">Détail du problème</label>
+        <textarea id="fr-issue-description" class="cm-textarea" style="margin-bottom:0;" placeholder="Décrivez le problème rencontré..."></textarea>
+      </div>
+      <div class="fr-form-row">
+        <div class="fr-checkbox-row">
+          <input type="checkbox" id="fr-followup-required" onchange="document.getElementById('fr-followup-date-row').style.display=this.checked?'block':'none';">
+          <label for="fr-followup-required" style="margin-bottom:0;text-transform:none;font-weight:500;font-size:.88rem;">Un suivi est nécessaire</label>
+        </div>
+      </div>
+      <div class="fr-form-row" id="fr-followup-date-row" style="display:none;">
+        <label for="fr-followup-date">Date de suivi souhaitée</label>
+        <input type="date" id="fr-followup-date" class="fr-select">
+      </div>
+      <p class="fr-status" id="fr-status"></p>
+    </div>
+    <div class="cm-actions">
+      <button class="cm-cancel" onclick="closeFieldReportModal()">Annuler</button>
+      <button class="cm-validate" id="fr-validate" onclick="submitFieldReport()">Envoyer le compte rendu</button>
+    </div>
+  </div>
+</div>
+
 <script src="seba-data.js"></script>
 <script src="services/message-log.js"></script>
 <script>
@@ -392,6 +482,7 @@ const REPORT_TYPE_LABELS = {
   materiel_manquant: 'Matériel manquant', retard: 'Retard', dommage: 'Dommage', autre: 'Autre',
 };
 const MISSION_STATUS_LABEL = { 'a-venir': 'À faire', 'en-cours': 'En cours', 'en-retard': 'En retard', 'terminee': 'Terminée' };
+const FIELDREPORT_OUTCOME_LABELS = { completed: 'Terminée', partially_completed: 'Partiellement terminée', blocked: 'Bloquée', cancelled_on_site: 'Annulée sur place' };
 
 /* Date ISO en heure LOCALE, meme convention que seba-data.js (localISO) --
    jamais toISOString() qui peut basculer au jour precedent en UTC. */
@@ -586,6 +677,35 @@ function renderAllMissions() {
   }).join('') + '</div>';
 }
 
+/* ── Briefing de mission (SEBA CLIENT MEMORY & MISSION INTELLIGENCE) --
+   m.missionBrief est un snapshot DEJA filtre cote serveur au moment de sa
+   generation (generateMissionBrief(), docs/seba-data.js) : exclut par
+   construction toute entree owner_only et toute donnee financiere -- rien
+   a filtrer ici cote client, l'objet recu est deja celui que l'employe a
+   le droit de voir. */
+function renderBriefBlock(brief) {
+  if (!brief) return '';
+  const section = (label, items, cls) => {
+    if (!items || !items.length) return '';
+    return '<div class="brief-block"><div class="brief-block-label">' + label + '</div>' +
+      items.map(it => '<div class="brief-item' + (cls ? ' ' + cls : '') + '">' + escapeHtml(it.title) + (it.content ? ' — ' + escapeHtml(it.content) : '') + '</div>').join('') +
+    '</div>';
+  };
+  let html = '<div class="brief-block"><div class="brief-block-label">Briefing de mission</div>' +
+    '<div class="brief-meta">Généré le ' + new Date(brief.generatedAt).toLocaleString('fr-FR') + '</div></div>';
+  html += section('Accès', brief.accessInstructions);
+  html += section('Consignes', brief.operationalInstructions);
+  html += section('Préférences importantes', brief.importantPreferences);
+  html += section('Points de vigilance', brief.risks, 'risk');
+  html += section('Équipement', brief.equipment);
+  if (brief.recentIncidents && brief.recentIncidents.length) {
+    html += '<div class="brief-block"><div class="brief-block-label">Incidents récents</div>' +
+      brief.recentIncidents.map(i => '<div class="brief-item risk">' + escapeHtml(i.date) + ' — ' + escapeHtml(i.issueType) + (i.description ? ' : ' + escapeHtml(i.description) : '') + '</div>').join('') +
+    '</div>';
+  }
+  return html;
+}
+
 function renderDetail(id) {
   const m = _missionsById[id];
   const box = document.getElementById('et-detail-content');
@@ -597,7 +717,13 @@ function renderDetail(id) {
       '<div class="et-detail-value">' + escapeHtml(m.date || '') + (m.time ? ' à ' + escapeHtml(m.time) : '') + '</div>' +
     '</div>' +
     (mapsUrl ? '<div class="et-detail-block"><a href="' + mapsUrl + '" target="_blank" rel="noopener" class="et-maps-link">🧭 Itinéraire</a></div>' : '') +
-    (m.consignes ? '<div class="et-detail-block"><div class="et-detail-label">Consignes</div><div class="et-consignes">' + escapeHtml(m.consignes) + '</div></div>' : '');
+    (m.consignes ? '<div class="et-detail-block"><div class="et-detail-label">Consignes</div><div class="et-consignes">' + escapeHtml(m.consignes) + '</div></div>' : '') +
+    renderBriefBlock(m.missionBrief) +
+    '<div class="et-detail-block">' +
+      (m.fieldReport
+        ? '<div class="et-detail-label">Compte rendu de mission</div><div class="fr-existing">' + escapeHtml(FIELDREPORT_OUTCOME_LABELS[m.fieldReport.outcome] || m.fieldReport.outcome) + (m.fieldReport.summary ? ' — ' + escapeHtml(m.fieldReport.summary) : '') + '</div>'
+        : '<button type="button" class="et-btn-terminer" style="width:100%;" onclick="openFieldReportModal(\'' + m.id + '\')">📋 Compte rendu de mission</button>') +
+    '</div>';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -931,6 +1057,84 @@ async function validerCloture() {
     return;
   }
   closeCloseMissionModal();
+}
+
+// ── Compte rendu de mission structuré (SEBA CLIENT MEMORY & MISSION
+// INTELLIGENCE) -- distinct de la clôture legacy ci-dessus. Écrit via
+// SebaDB.interventions.saveFieldReport(), qui passe par la RPC
+// submit_my_intervention_field_report (SECURITY DEFINER, valeurs
+// controlees cote serveur) des qu'une vraie session existe -- jamais un
+// succes affiche avant confirmation de la persistance (etat
+// pending/success/error explicite ci-dessous). ──────────────────────────
+let _fieldReportInterventionId = null;
+let _fieldReportOutcome = null;
+function openFieldReportModal(interventionId) {
+  const mission = _missionsById[interventionId];
+  if (!mission) return;
+  _fieldReportInterventionId = interventionId;
+  _fieldReportOutcome = null;
+  document.getElementById('fr-sub').textContent = (mission.clientName || 'Client') + ' — ' + (mission.service || '');
+  document.querySelectorAll('.fr-outcome-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('fr-summary').value = '';
+  document.getElementById('fr-issue-type').value = 'none';
+  document.getElementById('fr-issue-description').value = '';
+  document.getElementById('fr-issue-desc-row').style.display = 'none';
+  document.getElementById('fr-followup-required').checked = false;
+  document.getElementById('fr-followup-date-row').style.display = 'none';
+  document.getElementById('fr-followup-date').value = '';
+  document.getElementById('fr-status').textContent = '';
+  document.getElementById('fr-status').className = 'fr-status';
+  document.getElementById('fr-overlay').classList.add('open');
+}
+function closeFieldReportModal() {
+  document.getElementById('fr-overlay').classList.remove('open');
+  _fieldReportInterventionId = null;
+}
+function selectFieldReportOutcome(outcome) {
+  _fieldReportOutcome = outcome;
+  document.querySelectorAll('.fr-outcome-btn').forEach(b => b.classList.toggle('selected', b.dataset.outcome === outcome));
+}
+document.getElementById('fr-issue-type').addEventListener('change', function () {
+  document.getElementById('fr-issue-desc-row').style.display = this.value !== 'none' ? 'block' : 'none';
+});
+async function submitFieldReport() {
+  if (!_fieldReportInterventionId) return;
+  const status = document.getElementById('fr-status');
+  const btn = document.getElementById('fr-validate');
+  if (btn.disabled) return; // anti double-tap : requête déjà en vol
+  if (!_fieldReportOutcome) {
+    status.textContent = 'Choisissez le résultat de la mission.';
+    status.className = 'fr-status err';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  status.textContent = 'Envoi en cours…';
+  status.className = 'fr-status pending';
+
+  const followUpRequired = document.getElementById('fr-followup-required').checked;
+  const res = await SebaDB.interventions.saveFieldReport(_fieldReportInterventionId, {
+    outcome: _fieldReportOutcome,
+    summary: document.getElementById('fr-summary').value.trim(),
+    issueType: document.getElementById('fr-issue-type').value,
+    issueDescription: document.getElementById('fr-issue-description').value.trim(),
+    followUpRequired,
+    followUpDate: followUpRequired ? (document.getElementById('fr-followup-date').value || null) : null,
+  });
+
+  btn.disabled = false; btn.textContent = 'Envoyer le compte rendu';
+
+  if (!res || !res.ok) {
+    status.textContent = (res && res.error) || 'Échec de l\'envoi. Réessayez.';
+    status.className = 'fr-status err';
+    return;
+  }
+
+  // Succès affiché UNIQUEMENT après confirmation de la persistance
+  // (res.ok === true, renvoyé par la RPC/le moteur local après écriture reelle).
+  status.textContent = 'Compte rendu enregistré.';
+  status.className = 'fr-status ok';
+  await refreshAllViews();
+  setTimeout(closeFieldReportModal, 700);
 }
 </script>
 </body>
