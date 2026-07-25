@@ -58,6 +58,18 @@ migrations/2026-07-24-mission-field-report.sql
 # controlées côté serveur), ajout pur, ne modifie pas close_my_intervention
 # (baseline). Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-25-intervention-360.sql
+# Intervention 360 (feature/intervention-360) : 9 RPC employé
+# (get_my_employee_intervention_detail, start/pause/resume_my_intervention,
+# update_my_intervention_checklist, add_my_intervention_material,
+# submit_my_intervention_incident, add_my_intervention_photo,
+# complete_my_intervention) + 4 RPC client
+# (get_my_client_intervention_detail, request_my_intervention_reschedule,
+# approve_my_completed_intervention, report_my_intervention_issue) +
+# bucket privé intervention360-photos (RLS patron/employé
+# assigné/client si visibleToClient). Ajouts purs, ne modifie aucune RPC
+# existante. Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
