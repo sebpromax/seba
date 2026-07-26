@@ -992,6 +992,9 @@
     const d = new Date(); d.setDate(d.getDate() + (offsetDays || 0));
     return localISO(d);
   }
+  // Arrondi monétaire — évite les résidus flottants (0.1+0.2) sur des
+  // totaux affichés/persistés (quote-to-cash, feature/quote-to-cash).
+  function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
   /* ═══════════ SEED — jeu de données de départ par secteur ═══════════
      Généré à la première visite après l'onboarding : dates relatives à
@@ -1934,6 +1937,109 @@
         }
         return null;
       },
+
+      /* Vue "safe" locale d'UN devis/facture — même allowlist que les RPC
+         get_my_client_devis_detail/get_my_client_facture_detail
+         (migrations/2026-07-26-quote-to-cash.sql) : jamais notes/
+         statusHistory/duplicatedFrom/sourceInterventionId (interne patron)
+         envoyés au client, même en mode démo local. */
+      _safeDevis(d) {
+        return {
+          id: d.id, num: d.num, date: d.date, status: d.status, lines: d.lines,
+          tvaRate: d.tvaRate, remise: d.remise, acompte: d.acompte, validityDate: d.validityDate,
+          conditions: d.conditions, totalHT: d.totalHT, totalTVA: d.totalTVA, totalTTC: d.totalTTC,
+          sentAt: d.sentAt, acceptedAt: d.acceptedAt, refusedAt: d.refusedAt, refusalComment: d.refusalComment,
+          invoiceId: d.invoiceId,
+        };
+      },
+      _safeFacture(f) {
+        return {
+          id: f.id, num: f.num, date: f.date, dueDate: f.dueDate, status: f.status, lines: f.lines,
+          tvaRate: f.tvaRate, remise: f.remise, totalHT: f.totalHT, totalTVA: f.totalTVA, totalTTC: f.totalTTC,
+          montantPaye: SebaDB.factures.paidAmount(f), solde: SebaDB.factures.balance(f),
+          payments: (f.payments || []).map(p => ({ amount: p.amount, mode: p.mode, date: p.date, reference: p.reference })),
+          devisId: f.devisId, interventionId: f.interventionId,
+        };
+      },
+
+      async devisDetail(devisId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_devis_detail', { p_devis_id: devisId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        const d = state.devis.find(x => x.id === devisId);
+        if (!d) return { ok: false, error: 'Devis introuvable.' };
+        if (demo && d.clientId !== demo.clientId) return { ok: false, error: 'Devis non associé à votre compte.' };
+        if (d.status === 'brouillon') return { ok: false, error: 'Devis introuvable.' };
+        return { ok: true, devis: SebaDB.clientPortal._safeDevis(d) };
+      },
+
+      async factureDetail(factureId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('get_my_client_facture_detail', { p_facture_id: factureId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        const f = state.factures.find(x => x.id === factureId);
+        if (!f) return { ok: false, error: 'Facture introuvable.' };
+        if (demo && f.clientId !== demo.clientId) return { ok: false, error: 'Facture non associée à votre compte.' };
+        return { ok: true, facture: SebaDB.clientPortal._safeFacture(f) };
+      },
+
+      /* Acceptation — persistante, horodatée, liée au client authentifié,
+         idempotente (un second appel sur un devis déjà accepté PAR CE
+         CLIENT ne crée aucun doublon d'événement, retourne l'état actuel).
+         Impossible sur le devis d'un autre client : verrou côté serveur
+         (RPC, clientId retrouvé via client_accounts) ; en local, même garde
+         via la session démo. */
+      async acceptDevis(devisId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('client_accept_devis', { p_devis_id: devisId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (!demo) return { ok: false, error: 'Non connecté.' };
+        const d = state.devis.find(x => x.id === devisId && x.clientId === demo.clientId);
+        if (!d) return { ok: false, error: 'Devis introuvable ou non associé à votre compte.' };
+        if (d.status === 'signe') return { ok: true, devis: SebaDB.clientPortal._safeDevis(d) }; // idempotent
+        if (d.status !== 'attente') return { ok: false, error: 'Ce devis ne peut plus être accepté.' };
+        const now = new Date().toISOString();
+        const statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'client_accepted', actorRole: 'client', actorId: demo.clientId, createdAt: now, metadata: null }]);
+        SebaDB.update('devis', devisId, { status: 'signe', acceptedAt: now, acceptedBy: demo.clientId, statusHistory });
+        return { ok: true, devis: SebaDB.clientPortal._safeDevis(SebaDB.get('devis', devisId)) };
+      },
+
+      async refuseDevis(devisId, comment) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('client_refuse_devis', { p_devis_id: devisId, p_comment: comment || null });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        let demo = null;
+        try { demo = JSON.parse(localStorage.getItem('seba_client_session_demo') || 'null'); } catch (e) {}
+        if (!demo) return { ok: false, error: 'Non connecté.' };
+        if (!comment || !comment.trim()) return { ok: false, error: 'Un commentaire est requis pour refuser un devis.' };
+        const d = state.devis.find(x => x.id === devisId && x.clientId === demo.clientId);
+        if (!d) return { ok: false, error: 'Devis introuvable ou non associé à votre compte.' };
+        if (d.status === 'refuse') return { ok: true, devis: SebaDB.clientPortal._safeDevis(d) }; // idempotent
+        if (d.status === 'signe') return { ok: false, error: 'Devis déjà accepté, refus impossible.' };
+        const now = new Date().toISOString();
+        const statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'client_refused', actorRole: 'client', actorId: demo.clientId, createdAt: now, metadata: { comment: comment.trim() } }]);
+        SebaDB.update('devis', devisId, { status: 'refuse', refusedAt: now, refusedBy: demo.clientId, refusalComment: comment.trim(), statusHistory });
+        return { ok: true, devis: SebaDB.clientPortal._safeDevis(SebaDB.get('devis', devisId)) };
+      },
+
       async interventions() {
         if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
           const res = await sebaAuth.rpc('get_my_client_interventions', {});
@@ -2360,6 +2466,227 @@
       },
     },
 
+    /* ═══ DEVIS — cycle de vie réel (feature/quote-to-cash) ═══════════════
+       amount reste l'alias TTC historique (déjà affiché "Total TTC" dans
+       devis.html avant ce chantier) -- maintenu en synchro à chaque écriture
+       pour que tout le code existant qui le lit (dashboard.html, devis.html,
+       client-fiche.html) continue de fonctionner sans modification.
+       Statuts : brouillon (nouveau) -> attente (envoyé) -> signe/refuse
+       (réponse client) ; expire/annule à tout moment côté patron. */
+    devis: {
+      /* Totaux calculés, jamais ressaisis : HT = somme des lignes - remise,
+         TVA = HT × taux, TTC = HT + TVA. remise/acompte : {type:'percent'|
+         'amount', value} ou null. Calcul PUR, volontairement indépendant de
+         window.SebaQuotes.calculateQuoteTotals() (services/quote-engine.js,
+         chargé uniquement par devis-nouveau.html) -- SebaDB.devis.* est
+         appelé depuis des pages qui ne chargent pas ce moteur (dashboard,
+         factures.html, ce script QA), un résultat qui dépendrait du contexte
+         d'appel serait un bug silencieux (confirmé empiriquement : la remise
+         disparaissait quand computeTotals() tournait sur app/dashboard.html,
+         qui ne charge pas quote-engine.js). */
+      computeTotals(input) {
+        const lines = Array.isArray(input.lines) ? input.lines : [];
+        const rawHT = lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.u) || 0), 0);
+        const remise = input.remise && Number(input.remise.value) > 0
+          ? (input.remise.type === 'percent' ? rawHT * (Number(input.remise.value) / 100) : Number(input.remise.value))
+          : 0;
+        const totalHT = round2(Math.max(0, rawHT - remise));
+        const totalTVA = round2(totalHT * ((Number(input.tvaRate) || 0) / 100));
+        const totalTTC = round2(totalHT + totalTVA);
+        let acompteMontant = 0;
+        if (input.acompte && Number(input.acompte.value) > 0) {
+          acompteMontant = round2(input.acompte.type === 'percent' ? totalTTC * (Number(input.acompte.value) / 100) : Number(input.acompte.value));
+        }
+        return { totalHT, totalTVA, totalTTC, acompteMontant };
+      },
+
+      /* Construit l'objet devis complet (jamais persisté ici -- l'appelant
+         choisit create() pour un nouveau devis ou update() pour corriger un
+         brouillon). status forcé par l'appelant (createDraft/send). */
+      _buildPayload(input, status) {
+        const lines = (Array.isArray(input.lines) ? input.lines : []).map(l => ({
+          id: l.id || uid(), desc: (l.desc || '').trim(), qty: Number(l.qty) || 0, u: Number(l.u) || 0,
+        })).filter(l => l.desc);
+        const totals = SebaDB.devis.computeTotals(Object.assign({}, input, { lines }));
+        return {
+          clientId: input.clientId, clientName: input.clientName || '',
+          service: input.service || (lines[0] ? lines[0].desc : ''),
+          lines,
+          tvaRate: Number(input.tvaRate) || 0,
+          remise: input.remise && Number(input.remise.value) > 0 ? { type: input.remise.type === 'percent' ? 'percent' : 'amount', value: Number(input.remise.value) } : null,
+          acompte: input.acompte && Number(input.acompte.value) > 0 ? { type: input.acompte.type === 'percent' ? 'percent' : 'amount', value: Number(input.acompte.value) } : null,
+          validityDate: input.validityDate || null,
+          conditions: (input.conditions || '').trim(),
+          notes: (input.notes || '').trim(), // interne patron -- jamais envoyé au client (voir migration RPC, allowlist)
+          sourceInterventionId: input.sourceInterventionId || null,
+          totalHT: totals.totalHT, totalTVA: totals.totalTVA, totalTTC: totals.totalTTC,
+          amount: totals.totalTTC, // alias legacy, voir en-tête de section
+          status,
+          date: todayISO(0),
+          sentAt: status === 'attente' ? new Date().toISOString() : null,
+          acceptedAt: null, acceptedBy: null,
+          refusedAt: null, refusedBy: null, refusalComment: null,
+          cancelledAt: null,
+          invoiceId: null,
+          statusHistory: [{ id: uid(), event: status === 'attente' ? 'sent' : 'draft_created', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }],
+          history: [{ label: status === 'attente' ? 'Devis envoyé' : 'Brouillon créé', date: todayISO(0), cls: 'o' }], // legacy, lu par la side-sheet devis.html
+        };
+      },
+
+      createDraft(input) {
+        if (!state) loadState();
+        const payload = SebaDB.devis._buildPayload(input, 'brouillon');
+        const d = SebaDB.create('devis', Object.assign({ num: SebaDB.nextNum('devis') }, payload));
+        SebaDB.log('devis', 'Brouillon de devis créé — ' + (d.clientName || 'client'), 'devis.html');
+        return { ok: true, devis: d };
+      },
+
+      send(input) {
+        if (!state) loadState();
+        const payload = SebaDB.devis._buildPayload(input, 'attente');
+        const d = SebaDB.create('devis', Object.assign({ num: SebaDB.nextNum('devis') }, payload));
+        SebaDB.log('devis', 'Devis envoyé ' + d.num + ' — ' + (d.clientName || 'client') + ' · ' + d.amount + ' €', 'devis.html');
+        return { ok: true, devis: d };
+      },
+
+      /* Corrige un brouillon existant (jamais un devis déjà envoyé/décidé --
+         un devis "attente"/"signe"/"refuse" reste immuable dans son contenu,
+         seul le statut évolue via les actions dédiées). */
+      updateDraft(id, input) {
+        if (!state) loadState();
+        const existing = state.devis.find(d => d.id === id);
+        if (!existing) return { ok: false, error: 'Devis introuvable.' };
+        if (existing.status !== 'brouillon') return { ok: false, error: 'Seul un brouillon peut être corrigé.' };
+        const sendNow = !!input._send;
+        const payload = SebaDB.devis._buildPayload(input, sendNow ? 'attente' : 'brouillon');
+        delete payload.statusHistory; delete payload.history;
+        SebaDB.update('devis', id, payload);
+        if (sendNow) {
+          const d = state.devis.find(x => x.id === id);
+          d.statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'sent', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }]);
+          d.history = [{ label: 'Devis envoyé', date: todayISO(0), cls: 'o' }].concat(d.history || []);
+          SebaDB.update('devis', id, { statusHistory: d.statusHistory, history: d.history });
+        }
+        SebaDB.log('devis', (sendNow ? 'Devis envoyé ' : 'Brouillon mis à jour ') + existing.num, 'devis.html');
+        return { ok: true, devis: SebaDB.get('devis', id) };
+      },
+
+      /* Duplication = toujours un nouveau BROUILLON (jamais un ré-envoi
+         immédiat -- distinct de la fonction existante renouveler() dans
+         devis.html, conservée telle quelle, qui renvoie tout de suite). */
+      duplicate(id) {
+        if (!state) loadState();
+        const src = state.devis.find(d => d.id === id);
+        if (!src) return { ok: false, error: 'Devis introuvable.' };
+        const payload = SebaDB.devis._buildPayload(src, 'brouillon');
+        payload.duplicatedFrom = id;
+        const d = SebaDB.create('devis', Object.assign({ num: SebaDB.nextNum('devis') }, payload));
+        SebaDB.log('devis', 'Devis dupliqué (brouillon) depuis ' + src.num + ' — ' + (d.clientName || 'client'), 'devis.html');
+        return { ok: true, devis: d };
+      },
+
+      cancel(id) {
+        if (!state) loadState();
+        const d = state.devis.find(x => x.id === id);
+        if (!d) return { ok: false, error: 'Devis introuvable.' };
+        if (d.status === 'annule') return { ok: true, devis: d };
+        if (d.invoiceId) return { ok: false, error: 'Ce devis a déjà été converti en facture, impossible de l\'annuler.' };
+        const statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'cancelled', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }]);
+        SebaDB.update('devis', id, { status: 'annule', cancelledAt: new Date().toISOString(), statusHistory });
+        SebaDB.log('devis', 'Devis annulé ' + d.num, 'devis.html');
+        return { ok: true, devis: SebaDB.get('devis', id) };
+      },
+    },
+
+    /* ═══ FACTURES — statuts + paiements réels (feature/quote-to-cash) ════
+       Statuts (nouveau vocabulaire, cf. plan) : draft/issued/partially_paid/
+       paid/overdue/cancelled. Les anciens statuts (payee/attente/retard,
+       données de démo seed()) restent lisibles partout via les helpers
+       isPaid/isOverdue/isPending ci-dessous plutôt qu'une migration de
+       données de démo -- jamais une comparaison littérale dupliquée
+       ailleurs dans le code (dashboard.html, factures.html). */
+    factures: {
+      isPaid(f) { return f.status === 'paid' || f.status === 'payee'; },
+      isOverdue(f) { return f.status === 'overdue' || f.status === 'retard'; },
+      isCancelled(f) { return f.status === 'cancelled' || f.status === 'annulee'; },
+      isPartial(f) { return f.status === 'partially_paid'; },
+      isDraft(f) { return f.status === 'draft'; },
+      // "en attente de paiement, pas encore en retard" -- englobe issued/
+      // partially_paid/attente (legacy), exclut explicitement l'échu.
+      isAwaiting(f) { return !SebaDB.factures.isPaid(f) && !SebaDB.factures.isOverdue(f) && !SebaDB.factures.isCancelled(f) && !SebaDB.factures.isDraft(f); },
+      total(f) { return f.totalTTC != null ? f.totalTTC : (f.amount || 0); },
+      paidAmount(f) {
+        if (Array.isArray(f.payments)) return round2(f.payments.reduce((s, p) => s + (Number(p.amount) || 0), 0));
+        return SebaDB.factures.isPaid(f) ? SebaDB.factures.total(f) : 0;
+      },
+      balance(f) { return round2(Math.max(0, SebaDB.factures.total(f) - SebaDB.factures.paidAmount(f))); },
+
+      /* Reprend les lignes/totaux d'un devis ACCEPTÉ sans ressaisie (section
+         7 du chantier) -- jamais une nouvelle saisie manuelle des montants.
+         status 'issued' immédiatement (même convention que
+         createInvoiceFromIntervention ci-dessous : le patron reste sur
+         factures.html pour envoyer/finaliser, mais le document existe déjà
+         tel quel, pas un brouillon vide à reremplir). */
+      createFromDevis(devisId) {
+        if (!state) loadState();
+        const d = state.devis.find(x => x.id === devisId);
+        if (!d) return { ok: false, error: 'Devis introuvable.' };
+        if (d.status !== 'signe') return { ok: false, error: 'Seul un devis accepté peut être converti en facture.' };
+        if (d.invoiceId) return { ok: false, error: 'Une facture existe déjà pour ce devis.' };
+        const facture = SebaDB.create('factures', {
+          num: SebaDB.nextNum('facture'), clientId: d.clientId, clientName: d.clientName,
+          service: d.service, lines: d.lines, tvaRate: d.tvaRate, remise: d.remise,
+          totalHT: d.totalHT, totalTVA: d.totalTVA, totalTTC: d.totalTTC, amount: d.totalTTC,
+          status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
+          devisId: d.id, interventionId: d.sourceInterventionId || null,
+          payments: [], notes: '', cancelledAt: null,
+          statusHistory: [{ id: uid(), event: 'created_from_devis', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { devisId: d.id } }],
+        });
+        SebaDB.update('devis', d.id, { invoiceId: facture.id });
+        SebaDB.log('facture', 'Facture générée depuis le devis ' + d.num + ' — ' + (facture.clientName || 'client') + ' · ' + facture.amount + ' €', 'factures.html');
+        return { ok: true, facture };
+      },
+
+      /* Enregistre un paiement (partiel ou total) -- le solde et le statut
+         sont TOUJOURS recalculés à partir de payments[], jamais saisis
+         (section 11 du chantier). mode/date/reference/note : note reste
+         strictement patron (jamais exposée au client, voir migration RPC). */
+      recordPayment(factureId, payment) {
+        if (!state) loadState();
+        const f = state.factures.find(x => x.id === factureId);
+        if (!f) return { ok: false, error: 'Facture introuvable.' };
+        const amount = Number(payment && payment.amount);
+        if (!amount || amount <= 0) return { ok: false, error: 'Montant de paiement invalide.' };
+        if (SebaDB.factures.isCancelled(f)) return { ok: false, error: 'Facture annulée, impossible d\'enregistrer un paiement.' };
+        const entry = {
+          id: uid(), amount: round2(amount), mode: (payment.mode || 'autre'),
+          date: payment.date || todayISO(0), reference: (payment.reference || '').trim(),
+          note: (payment.note || '').trim(), createdAt: new Date().toISOString(),
+        };
+        const payments = (Array.isArray(f.payments) ? f.payments : []).concat([entry]);
+        const total = SebaDB.factures.total(Object.assign({}, f, { payments }));
+        const paid = round2(payments.reduce((s, p) => s + p.amount, 0));
+        const newStatus = paid >= total ? 'paid' : (paid > 0 ? 'partially_paid' : f.status);
+        const statusHistory = (f.statusHistory || []).concat([{ id: uid(), event: 'payment_recorded', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { amount: entry.amount, mode: entry.mode } }]);
+        const patch = { payments, status: newStatus, statusHistory };
+        if (newStatus === 'paid') patch.paidAt = new Date().toISOString();
+        SebaDB.update('factures', factureId, patch);
+        SebaDB.log('facture', 'Paiement enregistré ' + f.num + ' — ' + entry.amount + ' € (' + entry.mode + ')', 'factures.html');
+        return { ok: true, facture: SebaDB.get('factures', factureId) };
+      },
+
+      cancel(id) {
+        if (!state) loadState();
+        const f = state.factures.find(x => x.id === id);
+        if (!f) return { ok: false, error: 'Facture introuvable.' };
+        if (SebaDB.factures.isPaid(f)) return { ok: false, error: 'Facture déjà payée, impossible de l\'annuler.' };
+        const statusHistory = (f.statusHistory || []).concat([{ id: uid(), event: 'cancelled', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }]);
+        SebaDB.update('factures', id, { status: 'cancelled', cancelledAt: new Date().toISOString(), statusHistory });
+        SebaDB.log('facture', 'Facture annulée ' + f.num, 'factures.html');
+        return { ok: true, facture: SebaDB.get('factures', id) };
+      },
+    },
+
     /* ═══ Briefing de mission + retour terrain (feature/client-crm-advanced) ═══ */
     interventions: {
       /* Patron uniquement (accès direct à seba_state) -- régénère le
@@ -2546,8 +2873,10 @@
         if (intervention.invoiceId) return { ok: false, error: 'Une facture existe déjà pour cette intervention.' };
         const facture = SebaDB.create('factures', {
           num: SebaDB.nextNum('facture'), clientId: intervention.clientId, clientName: intervention.clientName || '',
-          service: intervention.service || '', amount: 0, status: 'attente', date: todayISO(0), paidAt: null,
-          interventionId: intervention.id,
+          service: intervention.service || '', lines: [], tvaRate: 0, remise: null,
+          totalHT: 0, totalTVA: 0, totalTTC: 0, amount: 0, status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
+          interventionId: intervention.id, devisId: null, payments: [], notes: '', cancelledAt: null,
+          statusHistory: [{ id: uid(), event: 'created_from_intervention', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { interventionId: intervention.id } }],
         });
         pushStatusHistory(intervention, 'invoice_created', 'patron', null, { factureId: facture.id });
         SebaDB.update('interventions', interventionId, { invoiceId: facture.id, statusHistory: intervention.statusHistory });

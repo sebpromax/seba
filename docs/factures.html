@@ -16,7 +16,7 @@
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
 <style>
-:root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);}
+:root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);--modal-overlay-bg:rgba(20,22,26,.45);--modal-shadow:rgba(0,0,0,.2);--em-ink:#031A12;}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -84,6 +84,21 @@
   @media (max-width:640px){
     .panel:has(table){box-shadow:0 1px 3px var(--panel-shadow), inset -24px 0 16px -16px var(--edge-shadow);}
   }
+  .badge.brouillon{background:var(--badge-info-bg);color:var(--text-2);}
+  .badge.annule{background:var(--badge-info-bg);color:var(--text-2);}
+  .solde-restant{font-size:.76rem;color:var(--text-2);display:block;margin-top:2px;}
+  /* ── Modal paiement (minimal, tokens existants uniquement) ── */
+  .pay-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:499;display:none;align-items:center;justify-content:center;padding:20px;}
+  .pay-overlay.open{display:flex;}
+  .pay-modal{background:var(--white);border-radius:var(--r);padding:26px 28px;max-width:400px;width:100%;box-shadow:0 20px 60px var(--modal-shadow);}
+  .pay-modal h3{font-size:1.1rem;margin-bottom:4px;}
+  .pay-modal .pay-sub{color:var(--text-2);font-size:.84rem;margin-bottom:18px;}
+  .pay-field{margin-bottom:14px;}
+  .pay-field label{display:block;font-size:.8rem;font-weight:500;margin-bottom:6px;color:var(--ink);}
+  .pay-field input,.pay-field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:.88rem;background:var(--bg);color:var(--ink);font-family:inherit;}
+  .pay-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .pay-cancel{padding:10px 16px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);color:var(--text-2);font-size:.86rem;cursor:pointer;}
+  .pay-confirm{padding:10px 18px;border:none;border-radius:var(--rs);background:var(--emerald);color:var(--em-ink);font-weight:700;font-size:.86rem;cursor:pointer;}
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
@@ -154,6 +169,45 @@
   </main>
 </div>
 
+
+<!-- ── Modal Enregistrer un paiement (feature/quote-to-cash) ── -->
+<div class="pay-overlay" id="pay-overlay">
+  <div class="pay-modal">
+    <h3>Enregistrer un paiement</h3>
+    <p class="pay-sub" id="pay-sub"></p>
+    <div class="pay-field">
+      <label for="pay-amount">Montant (€) <span id="pay-solde-hint" style="font-weight:400;color:var(--text-2);"></span></label>
+      <input type="number" id="pay-amount" min="0.01" step="0.01">
+    </div>
+    <div class="pay-field">
+      <label for="pay-mode">Mode de paiement</label>
+      <select id="pay-mode">
+        <option value="virement">Virement</option>
+        <option value="cb">Carte bancaire</option>
+        <option value="especes">Espèces</option>
+        <option value="cheque">Chèque</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="pay-field">
+      <label for="pay-date">Date</label>
+      <input type="date" id="pay-date">
+    </div>
+    <div class="pay-field">
+      <label for="pay-reference">Référence <span style="font-weight:400;color:var(--text-2);">(optionnel)</span></label>
+      <input type="text" id="pay-reference" maxlength="80">
+    </div>
+    <div class="pay-field">
+      <label for="pay-note">Note interne <span style="font-weight:400;color:var(--text-2);">(optionnel, jamais visible du client)</span></label>
+      <input type="text" id="pay-note" maxlength="200">
+    </div>
+    <div class="pay-actions">
+      <button class="pay-cancel" onclick="closePaymentModal()">Annuler</button>
+      <button class="pay-confirm" onclick="submitPayment()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <script src="seba-data.js"></script>
 <script src="services/contract-billing.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
@@ -199,25 +253,43 @@
   }
 </script>
 <script>
-  /* ── Rendu des factures depuis le moteur de données partagé ── */
-  (function renderFactures() {
+  /* ── Rendu des factures depuis le moteur de données partagé ──
+     Statut affiché via les helpers SebaDB.factures.is* (compatibles
+     nouveau vocabulaire draft/issued/partially_paid/paid/overdue/cancelled
+     ET ancien vocabulaire de démo payee/attente/retard -- jamais une
+     comparaison littérale dupliquée ici, feature/quote-to-cash). */
+  function statusOf(f) {
+    if (SebaDB.factures.isCancelled(f)) return { cls: 'annule', lbl: 'Annulée', act: null };
+    if (SebaDB.factures.isPaid(f)) return { cls: 'signe', lbl: 'Payée', act: 'Voir' };
+    if (SebaDB.factures.isOverdue(f)) {
+      const days = Math.max(1, Math.floor((Date.now() - new Date(f.date)) / 864e5));
+      return { cls: 'expire', lbl: 'En retard — ' + days + ' jours', act: 'Relancer' }; // classe 'expire' conservée pour compat avec les onglets existants
+    }
+    if (SebaDB.factures.isPartial(f)) return { cls: 'attente', lbl: 'Partiellement payée', act: 'Relancer' };
+    if (SebaDB.factures.isDraft(f)) return { cls: 'brouillon', lbl: 'Brouillon', act: null };
+    return { cls: 'attente', lbl: 'En attente', act: 'Relancer' };
+  }
+
+  function renderFactures() {
     const sym = (function(){ try { return JSON.parse(localStorage.getItem('sebaEntreprise')||'{}').deviseSymbole || '€'; } catch(e){ return '€'; } })();
-    const STATUS = {
-      payee:   { cls: 'signe',   lbl: () => 'Payée',          act: 'Voir' },
-      attente: { cls: 'attente', lbl: () => 'En attente',     act: 'Relancer' },
-      retard:  { cls: 'expire',  lbl: f => { const days = Math.max(1, Math.floor((Date.now() - new Date(f.date)) / 864e5)); return 'En retard — ' + days + ' jours'; }, act: 'Relancer' },
-    };
     const list = SebaDB.list('factures');
     const tbody = document.getElementById('factures-tbody');
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucune facture.</td></tr>'; return; }
     tbody.innerHTML = list.map(f => {
-      const s = STATUS[f.status] || STATUS.attente;
+      const s = statusOf(f);
+      const solde = SebaDB.factures.balance(f);
+      const total = SebaDB.factures.total(f);
+      const soldeLine = (!SebaDB.factures.isCancelled(f) && solde > 0 && solde < total)
+        ? '<span class="solde-restant">Solde restant : ' + solde + ' ' + sym + '</span>' : '';
+      const canPay = !SebaDB.factures.isCancelled(f) && !SebaDB.factures.isPaid(f) && !SebaDB.factures.isDraft(f);
       return '<tr data-fid="' + f.id + '"><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
-        '<td class="amount">' + f.amount + ' ' + sym + '</td>' +
-        '<td><span class="badge ' + s.cls + '">' + s.lbl(f) + '</span></td>' +
-        '<td class="row-action"><span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span>' +
-        ' · <span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
-        (f.status !== 'payee' ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
+        '<td class="amount">' + total + ' ' + sym + soldeLine + '</td>' +
+        '<td><span class="badge ' + s.cls + '">' + s.lbl + '</span></td>' +
+        '<td class="row-action">' +
+        (s.act ? '<span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span> · ' : '') +
+        (canPay ? '<span style="cursor:pointer;font-weight:600;color:var(--emerald);" onclick="openPaymentModal(\'' + f.id + '\')">Enregistrer un paiement</span> · ' : '') +
+        '<span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
+        (canPay ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
         ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>' +
         '</td></tr>';
     }).join('');
@@ -233,12 +305,51 @@
         }
       });
     });
-  })();
+  }
+  renderFactures();
 
   function sendFactureEmail(id) {
     const f = SebaDB.get('factures', id);
     if (f && window.sebaEmail) sebaEmail.sendDocument(f, 'facture');
   }
+
+  /* ── Enregistrement de paiement (partiel/total) — solde/statut TOUJOURS
+     recalculés par SebaDB.factures.recordPayment(), jamais saisis. ── */
+  let _payFactureId = null;
+  function openPaymentModal(factureId) {
+    const f = SebaDB.get('factures', factureId);
+    if (!f) return;
+    _payFactureId = factureId;
+    const sym = (function(){ try { return JSON.parse(localStorage.getItem('sebaEntreprise')||'{}').deviseSymbole || '€'; } catch(e){ return '€'; } })();
+    const solde = SebaDB.factures.balance(f);
+    document.getElementById('pay-sub').textContent = f.num + ' — ' + (f.clientName || '');
+    document.getElementById('pay-solde-hint').textContent = '(solde restant : ' + solde + ' ' + sym + ')';
+    document.getElementById('pay-amount').value = solde || '';
+    document.getElementById('pay-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('pay-reference').value = '';
+    document.getElementById('pay-note').value = '';
+    document.getElementById('pay-overlay').classList.add('open');
+  }
+  function closePaymentModal() {
+    document.getElementById('pay-overlay').classList.remove('open');
+    _payFactureId = null;
+  }
+  function submitPayment() {
+    if (!_payFactureId) return;
+    const payment = {
+      amount: parseFloat(document.getElementById('pay-amount').value),
+      mode: document.getElementById('pay-mode').value,
+      date: document.getElementById('pay-date').value,
+      reference: document.getElementById('pay-reference').value,
+      note: document.getElementById('pay-note').value,
+    };
+    const res = SebaDB.factures.recordPayment(_payFactureId, payment);
+    if (!res.ok) { if (window.showFactToast) showFactToast(res.error || 'Échec de l\'enregistrement.'); return; }
+    closePaymentModal();
+    if (window.showFactToast) showFactToast('Paiement enregistré — ' + res.facture.status);
+    renderFactures();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePaymentModal(); });
 </script>
 <script>
   const tabs = document.querySelectorAll('.tab[data-filter]');

@@ -592,18 +592,22 @@ function buildOwnerDashboardViewModel(state, options) {
   const pipelineValue = devis.filter(d => d.status === 'attente' || d.status === 'signe').reduce((s, d) => s + (d.amount || 0), 0);
   const salesPipeline = { prospects, devisEnvoyes, devisAcceptes, devisRefuses, devisExpires, decided, tauxConversion, pipelineValue };
 
-  /* ── Finances ── */
-  const facturesPayeesPeriod = factures.filter(f => f.status === 'payee' && inRange(f.paidAt || f.date, range));
+  /* ── Finances ──
+     isPaid/isOverdue (SebaDB.factures.*, feature/quote-to-cash) reconnaissent
+     À LA FOIS l'ancien vocabulaire de démo (payee/attente/retard) ET le
+     nouveau (paid/issued/partially_paid/overdue/cancelled/draft) -- jamais
+     une comparaison littérale dupliquée ici, voir seba-data.js. */
+  const facturesPayeesPeriod = factures.filter(f => SebaDB.factures.isPaid(f) && inRange(f.paidAt || f.date, range));
   const caFacturePeriod = factures.filter(f => inRange(f.date, range)).reduce((s, f) => s + (f.amount || 0), 0);
   const encaissePeriod = facturesPayeesPeriod.reduce((s, f) => s + (f.amount || 0), 0);
-  const facturesEnAttente = factures.filter(f => f.status === 'attente');
-  const facturesRetard = factures.filter(f => f.status === 'retard');
+  const facturesEnAttente = factures.filter(f => SebaDB.factures.isAwaiting(f));
+  const facturesRetard = factures.filter(f => SebaDB.factures.isOverdue(f));
   const enAttenteTotal = facturesEnAttente.reduce((s, f) => s + (f.amount || 0), 0);
   const retardTotal = facturesRetard.reduce((s, f) => s + (f.amount || 0), 0);
   const panierMoyen = facturesPayeesPeriod.length ? Math.round(encaissePeriod / facturesPayeesPeriod.length) : null;
   const rangeLenMs = range.end.getTime() - range.start.getTime();
   const prevRange = { start: new Date(range.start.getTime() - rangeLenMs - 864e5), end: new Date(range.start.getTime() - 864e5) };
-  const encaissePrev = factures.filter(f => f.status === 'payee' && inRange(f.paidAt || f.date, prevRange)).reduce((s, f) => s + (f.amount || 0), 0);
+  const encaissePrev = factures.filter(f => SebaDB.factures.isPaid(f) && inRange(f.paidAt || f.date, prevRange)).reduce((s, f) => s + (f.amount || 0), 0);
   const deltaPct = encaissePrev > 0 ? Math.round(((encaissePeriod - encaissePrev) / encaissePrev) * 100) : null;
   const financeSummary = { caFacture: caFacturePeriod, encaisse: encaissePeriod, enAttente: enAttenteTotal, retard: retardTotal, panierMoyen, deltaPct };
   const cashForecast = { montant: enAttenteTotal, factureCount: facturesEnAttente.length, horizonJours: 30 };
@@ -643,7 +647,7 @@ function buildOwnerDashboardViewModel(state, options) {
   const clientAlerts = [];
   clients.forEach(c => {
     const reasons = [];
-    const fRetard = factures.filter(f => f.clientId === c.id && f.status === 'retard');
+    const fRetard = factures.filter(f => f.clientId === c.id && SebaDB.factures.isOverdue(f));
     if (fRetard.length) reasons.push(fRetard.length + ' facture(s) en retard');
     const demandes = clientRequests.filter(r => r.clientId === c.id && r.statut === 'nouvelle');
     if (demandes.length) reasons.push(demandes.length + ' demande(s) non traitée(s)');
@@ -689,6 +693,20 @@ function buildOwnerDashboardViewModel(state, options) {
   if (nonAssigneesToday > 0) priorityActions.push({ level: 'medium', type: 'non-assignee', label: 'Intervention(s) sans employé', count: nonAssigneesToday, cta: 'Assigner', href: '../assignation.html' });
   if (facturesRetard.length > 0) priorityActions.push({ level: 'high', type: 'facture', label: 'Facture(s) échues et impayées', count: facturesRetard.length, cta: 'Ouvrir les factures', href: '../factures.html?status=retard' });
   if (devisEnvoyes > 0) priorityActions.push({ level: 'low', type: 'devis', label: 'Devis sans réponse', count: devisEnvoyes, cta: 'Relancer', href: '../devis.html?status=attente' });
+
+  /* ── Quote-to-cash (feature/quote-to-cash) -- AJOUT PUR au Centre
+     d'actions existant, même modèle que les alertes ci-dessus (jamais une
+     nouvelle carte générique). Chaque alerte cible l'objet réel concerné :
+     un devis précis pour l'acompte/la conversion, une facture précise pour
+     le paiement partiel. ── */
+  const devisAAcompte = devis.filter(d => d.status === 'signe' && !d.invoiceId && d.acompte);
+  if (devisAAcompte.length > 0) priorityActions.push({ level: 'high', type: 'devis-acompte', label: 'Acompte à demander', count: devisAAcompte.length, cta: 'Voir le devis', href: '../devis.html?open=' + encodeURIComponent(devisAAcompte[0].num) });
+
+  const devisAConvertir = devis.filter(d => d.status === 'signe' && !d.invoiceId && !d.acompte);
+  if (devisAConvertir.length > 0) priorityActions.push({ level: 'medium', type: 'devis-convertir', label: 'Devis accepté(s), à convertir en facture', count: devisAConvertir.length, cta: 'Convertir', href: '../devis.html?open=' + encodeURIComponent(devisAConvertir[0].num) });
+
+  const facturesPartielles = factures.filter(f => SebaDB.factures.isPartial(f));
+  if (facturesPartielles.length > 0) priorityActions.push({ level: 'medium', type: 'facture-partielle', label: 'Facture(s) partiellement payée(s), solde restant', count: facturesPartielles.length, cta: 'Ouvrir les factures', href: '../factures.html?highlight=' + facturesPartielles[0].id });
   const messagesNonLus = messages.filter(m => m.destinataireRole === 'patron' && !m.lu).length;
   const demandesNonTraitees = clientRequests.filter(r => r.statut === 'nouvelle').length;
   if ((messagesNonLus + demandesNonTraitees) > 0) priorityActions.push({ level: 'low', type: 'message', label: 'Demande(s) ou message(s) non lu(s)', count: messagesNonLus + demandesNonTraitees, cta: 'Lire', href: '../assignation.html' });

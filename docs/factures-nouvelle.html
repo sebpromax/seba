@@ -301,6 +301,29 @@
 <script src="seba-data.js"></script>
 <script src="email-service.js"></script>
 <script>
+  /* ── Conversion devis -> facture (feature/quote-to-cash, section 7 du
+     chantier) : ?devisId=X reprend les lignes/totaux du devis ACCEPTÉ sans
+     ressaisie. Recouvre le formulaire manuel d'un panneau plein écran
+     (jamais retiré du DOM -- le reste du script ci-dessous continue de
+     référencer #client/#new-name sans erreur) le temps de la redirection
+     vers factures.html une fois la facture créée. ── */
+  (function convertFromDevisIfRequested() {
+    const devisId = new URLSearchParams(location.search).get('devisId');
+    if (!devisId) return;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = '<div class="card" style="max-width:480px;"><h2>Conversion du devis…</h2><p class="sub" id="convert-status">Reprise des lignes et montants, sans ressaisie.</p></div>';
+    document.body.appendChild(overlay);
+    const res = SebaDB.factures.createFromDevis(devisId);
+    const statusEl = overlay.querySelector('#convert-status');
+    if (!res.ok) {
+      if (statusEl) statusEl.textContent = res.error || 'Échec de la conversion.';
+      return;
+    }
+    if (statusEl) statusEl.textContent = 'Facture ' + res.facture.num + ' créée — redirection…';
+    setTimeout(() => { location.href = 'factures.html?highlight=' + res.facture.id; }, 500);
+  })();
+
   // Lecture des données d'entreprise depuis localStorage (onboarding)
   let _ent = null;
   try { _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null'); } catch(e) {}

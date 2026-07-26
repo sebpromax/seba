@@ -279,6 +279,75 @@
 
           <hr class="divider">
 
+          <!-- LIGNES ADDITIONNELLES (prestations/quantités/prix unitaires
+               génériques, en plus de la prestation principale ci-dessus --
+               feature/quote-to-cash, section 2 du chantier) -->
+          <div class="field-group">
+            <label>Autres prestations <span class="opt">(optionnel)</span></label>
+            <div id="extra-lines"></div>
+            <button type="button" class="btn-cancel" style="margin-top:8px;padding:8px 16px;font-size:0.84rem;" onclick="addExtraLine()">+ Ajouter une ligne</button>
+          </div>
+
+          <hr class="divider">
+
+          <!-- TVA / REMISE / ACOMPTE -->
+          <div class="field-row">
+            <div class="field-group">
+              <label for="tva-rate">TVA</label>
+              <select id="tva-rate" class="field-input">
+                <option value="20" selected>20 %</option>
+                <option value="10">10 %</option>
+                <option value="5.5">5,5 %</option>
+                <option value="0">0 % (exonéré)</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="validity-date">Validité du devis</label>
+              <input type="date" id="validity-date" class="field-input">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="remise-value">Remise <span class="opt">(optionnel)</span></label>
+              <input type="number" id="remise-value" class="field-input" min="0" step="0.5" placeholder="0">
+            </div>
+            <div class="field-group">
+              <label for="remise-type">Type de remise</label>
+              <select id="remise-type" class="field-input">
+                <option value="amount">€</option>
+                <option value="percent">%</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label for="acompte-value">Acompte demandé <span class="opt">(optionnel)</span></label>
+              <input type="number" id="acompte-value" class="field-input" min="0" step="0.5" placeholder="0">
+            </div>
+            <div class="field-group">
+              <label for="acompte-type">Type d'acompte</label>
+              <select id="acompte-type" class="field-input">
+                <option value="percent">%</option>
+                <option value="amount">€</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- TOTAUX -->
+          <div class="field-group" id="totals-box" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.86rem;color:var(--text-2);margin-bottom:4px;"><span>Total HT</span><b id="total-ht" style="color:var(--ink);">0 €</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.86rem;color:var(--text-2);margin-bottom:4px;"><span>TVA</span><b id="total-tva" style="color:var(--ink);">0 €</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;margin-top:6px;padding-top:8px;border-top:1px dashed var(--border);"><span>Total TTC</span><span id="total-ttc" style="color:var(--emerald);">0 €</span></div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- CONDITIONS -->
+          <div class="field-group">
+            <label for="conditions">Conditions <span class="opt">(optionnel)</span></label>
+            <textarea id="conditions" class="field-input" placeholder="Ex. Paiement à réception, TVA non applicable art. 293B…">Devis valable 30 jours. Paiement à réception de facture, sauf acompte demandé ci-dessus.</textarea>
+          </div>
+
           <!-- DATE -->
           <div class="field-group">
             <label for="date">Date d'intervention souhaitée</label>
@@ -287,14 +356,17 @@
 
           <!-- NOTES -->
           <div class="field-group">
-            <label for="notes">Notes <span class="opt">(optionnel)</span></label>
+            <label for="notes">Notes internes <span class="opt">(optionnel, jamais visibles du client)</span></label>
             <textarea id="notes" class="field-input" placeholder="Précisions sur l'intervention, accès, matériel…"></textarea>
           </div>
 
           <!-- ACTIONS -->
           <div class="form-actions">
             <a href="devis.html" class="btn-cancel">Annuler</a>
-            <button class="btn-send" onclick="sendDevis()">Envoyer le devis →</button>
+            <span style="display:flex;gap:10px;">
+              <button class="btn-cancel" onclick="saveDevis(false)">Enregistrer en brouillon</button>
+              <button class="btn-send" onclick="saveDevis(true)">Envoyer le devis →</button>
+            </span>
           </div>
         </div>
       </div>
@@ -552,7 +624,78 @@
     totalEl.textContent = model === 'quote_only' ? 'Sur devis'
       : model === 'included' ? 'Inclus'
       : (total ? total + ' €' : '— €');
+    updateGlobalTotals();
   }
+
+  /* ── Lignes additionnelles (prestations/quantités/prix unitaires
+     génériques) -- feature/quote-to-cash. La prestation principale
+     ci-dessus (modèle tarifaire) reste la ligne 1 ; ces lignes s'ajoutent
+     telles quelles (desc/qty/u), même format que devis.lines en base. ── */
+  let extraLines = [];
+  function addExtraLine(prefill) {
+    extraLines.push(Object.assign({ desc: '', qty: 1, u: 0 }, prefill || {}));
+    renderExtraLines();
+  }
+  function removeExtraLine(idx) {
+    extraLines.splice(idx, 1);
+    renderExtraLines();
+  }
+  function renderExtraLines() {
+    const box = document.getElementById('extra-lines');
+    box.innerHTML = extraLines.map((l, i) => `
+      <div style="display:grid;grid-template-columns:1fr 70px 90px 28px;gap:8px;margin-bottom:8px;align-items:center;">
+        <input type="text" class="field-input" data-i="${i}" data-f="desc" placeholder="Description" value="${(l.desc || '').replace(/"/g, '&quot;')}">
+        <input type="number" class="field-input" data-i="${i}" data-f="qty" min="0" step="0.5" placeholder="Qté" value="${l.qty}">
+        <input type="number" class="field-input" data-i="${i}" data-f="u" min="0" step="0.5" placeholder="PU €" value="${l.u}">
+        <button type="button" onclick="removeExtraLine(${i})" title="Retirer" style="background:none;border:none;color:var(--text-2);cursor:pointer;font-size:1.1rem;">✕</button>
+      </div>`).join('');
+    box.querySelectorAll('input[data-i]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = Number(inp.dataset.i), f = inp.dataset.f;
+        extraLines[i][f] = f === 'desc' ? inp.value : (parseFloat(inp.value) || 0);
+        updateGlobalTotals();
+      });
+    });
+    updateGlobalTotals();
+  }
+
+  /* Combine la ligne 1 (modèle tarifaire) + les lignes additionnelles au
+     format uniforme desc/qty/u attendu par SebaDB.devis.computeTotals(). */
+  function collectAllLines(serviceName) {
+    const model = pricingModelSel.value;
+    const rawLine = buildRawLine(model, serviceName || activeServiceName() || '');
+    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
+    const lines = [];
+    if (calc.valid && calc.total) {
+      lines.push({ desc: lineDesc(model, serviceName || activeServiceName() || '', rawLine), qty: 1, u: calc.total });
+    }
+    extraLines.forEach(l => { if ((l.desc || '').trim() && l.u) lines.push({ desc: l.desc.trim(), qty: l.qty || 1, u: l.u }); });
+    return lines;
+  }
+
+  function currentTvaRate() { return parseFloat(document.getElementById('tva-rate').value) || 0; }
+  function currentRemise() {
+    const v = parseFloat(document.getElementById('remise-value').value) || 0;
+    return v > 0 ? { type: document.getElementById('remise-type').value, value: v } : null;
+  }
+  function currentAcompte() {
+    const v = parseFloat(document.getElementById('acompte-value').value) || 0;
+    return v > 0 ? { type: document.getElementById('acompte-type').value, value: v } : null;
+  }
+
+  function updateGlobalTotals() {
+    if (!window.SebaDB || !window.SebaDB.devis) return;
+    const lines = collectAllLines();
+    const totals = SebaDB.devis.computeTotals({ lines, tvaRate: currentTvaRate(), remise: currentRemise(), acompte: currentAcompte() });
+    document.getElementById('total-ht').textContent = totals.totalHT + ' €';
+    document.getElementById('total-tva').textContent = totals.totalTVA + ' €';
+    document.getElementById('total-ttc').textContent = totals.totalTTC + ' €';
+  }
+  document.getElementById('tva-rate').addEventListener('change', updateGlobalTotals);
+  document.getElementById('remise-value').addEventListener('input', updateGlobalTotals);
+  document.getElementById('remise-type').addEventListener('change', updateGlobalTotals);
+  document.getElementById('acompte-value').addEventListener('input', updateGlobalTotals);
+  document.getElementById('acompte-type').addEventListener('change', updateGlobalTotals);
 
   renderTemplateGrid();
 
@@ -586,7 +729,11 @@
     setTimeout(() => t.remove(), 3500);
   }
 
-  async function sendDevis() {
+  /* sendNow=false -> brouillon (aucun email, statut 'brouillon', peut être
+     recorrigé) ; sendNow=true -> statut 'attente', email tenté. Édition
+     d'un brouillon existant (?id=) : SebaDB.devis.updateDraft() au lieu de
+     createDraft()/send() -- même formulaire, chemin d'écriture différent. */
+  async function saveDevis(sendNow) {
     if (!clientSel.value) {
       clientSel.focus();
       clientSel.style.borderColor = 'var(--critical)';
@@ -601,21 +748,12 @@
       showToast(serviceFreeGroup.style.display !== 'none' ? 'Veuillez indiquer le nom de la prestation.' : 'Veuillez sélectionner un service.');
       return;
     }
-
     const model = pricingModelSel.value;
     const rawLine = buildRawLine(model, serviceName);
     const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
-    if (!calc.valid) {
-      showToast(calc.errors[0]);
-      return;
-    }
-    const line = Object.assign({}, rawLine, { desc: lineDesc(model, serviceName, rawLine), total: calc.total });
+    if (!calc.valid) { showToast(calc.errors[0]); return; }
 
-    const total  = line.total;
-    const amount = model === 'quote_only' ? 'Sur devis' : model === 'included' ? 'Inclus' : (total ? total + ' €' : '—');
-    const name   = clientName();
-
-    /* ── Enregistrement réel dans le moteur de données ── */
+    const name = clientName();
     let clientId = clientSel.value;
     if (clientSel.value === 'new') {
       const created = SebaDB.create('clients', {
@@ -626,22 +764,37 @@
       clientId = created.id;
       SebaDB.log('client', 'Nouveau client — ' + name, 'clients.html');
     }
-    const localDate = (function(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
-    const devis = SebaDB.create('devis', {
-      num: SebaDB.nextNum('devis'), clientId, clientName: name,
-      service: serviceName,
-      templateId: selectedTemplateId,
-      pricingModel: model,
-      lines: [line],
-      amount: total || 0, status: 'attente', date: localDate,
-      history: [{ label: 'Devis envoyé', date: localDate, cls: 'o' }],
-    });
-    SebaDB.log('devis', 'Devis envoyé ' + devis.num + ' — ' + name + (total ? ' · ' + total + ' €' : ''), 'devis.html');
 
+    const input = {
+      clientId, clientName: name, service: serviceName,
+      lines: collectAllLines(serviceName),
+      tvaRate: currentTvaRate(), remise: currentRemise(), acompte: currentAcompte(),
+      validityDate: document.getElementById('validity-date').value || null,
+      conditions: document.getElementById('conditions').value,
+      notes: document.getElementById('notes').value,
+      sourceInterventionId: _editingSourceInterventionId,
+    };
+
+    let res;
+    if (_editingDevisId) {
+      res = SebaDB.devis.updateDraft(_editingDevisId, Object.assign({}, input, { _send: sendNow }));
+    } else {
+      res = sendNow ? SebaDB.devis.send(input) : SebaDB.devis.createDraft(input);
+    }
+    if (!res.ok) { showToast(res.error || 'Échec de l\'enregistrement.'); return; }
+    const devis = res.devis;
+
+    if (!sendNow) {
+      showToast('Brouillon enregistré ✓');
+      setTimeout(() => location.href = 'devis.html', 700);
+      return;
+    }
+
+    const total = devis.totalTTC;
     document.querySelector('#confirm-state .tnum').textContent = devis.num;
     document.getElementById('conf-client').textContent  = name;
     document.getElementById('conf-service').textContent = serviceName;
-    document.getElementById('conf-amount').textContent  = amount;
+    document.getElementById('conf-amount').textContent  = total ? total + ' €' : '—';
     document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);
 
     document.getElementById('form-state').style.display    = 'none';
@@ -665,6 +818,75 @@
       statusEl.textContent = 'Devis enregistré.';
     }
   }
+
+  /* ── Préremplissage depuis client-fiche.html (?clientId=) ou
+     intervention-fiche.html (?interventionId=), et correction d'un
+     brouillon existant (?id=) -- feature/quote-to-cash. ── */
+  let _editingDevisId = null;
+  let _editingSourceInterventionId = null;
+  // Gabarit synthétique "sur mesure" (aucune saisie tarifaire imposée --
+  // toutes les lignes réelles viennent des lignes additionnelles) : évite
+  // de dépendre d'un template du secteur, qui peut ne pas exposer
+  // quote_only dans ses allowedPricingModels.
+  const CUSTOM_TEMPLATE = { id: 'custom', name: 'Devis personnalisé', description: 'Lignes libres.', allowedPricingModels: ['quote_only'], defaultPricingModel: 'quote_only' };
+  function jumpToCustomForm(serviceNameDefault) {
+    document.getElementById('picker-state').style.display = 'none';
+    fillPricingModels(CUSTOM_TEMPLATE);
+    selectedTemplateId = null;
+    document.getElementById('active-template-name').textContent = CUSTOM_TEMPLATE.name;
+    // Passe le champ "service" en texte libre (toutes les lignes réelles
+    // viennent des lignes additionnelles ici) -- évite de dépendre d'un
+    // catalogue de services qui peut être vide pour le secteur courant.
+    serviceSel.closest('.field-group').style.display = 'none';
+    serviceFreeGroup.style.display = 'block';
+    serviceFreeInp.value = serviceNameDefault || 'Devis personnalisé';
+    showState('form-state');
+  }
+  (function prefillFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const editId = params.get('id');
+    const clientIdParam = params.get('clientId');
+    const interventionIdParam = params.get('interventionId');
+
+    if (editId) {
+      const existing = SebaDB.get('devis', editId);
+      if (existing && existing.status === 'brouillon') {
+        _editingDevisId = editId;
+        _editingSourceInterventionId = existing.sourceInterventionId || null;
+        // Pas de format tarifaire pour un brouillon générique -- saute
+        // directement au formulaire avec un modèle neutre (les lignes
+        // existantes sont réinjectées comme lignes additionnelles).
+        jumpToCustomForm(existing.service);
+        if (clientSel.querySelector('option[value="' + existing.clientId + '"]')) clientSel.value = existing.clientId;
+        (existing.lines || []).forEach(l => addExtraLine({ desc: l.desc, qty: l.qty, u: l.u }));
+        document.getElementById('tva-rate').value = String(existing.tvaRate || 20);
+        if (existing.remise) { document.getElementById('remise-value').value = existing.remise.value; document.getElementById('remise-type').value = existing.remise.type; }
+        if (existing.acompte) { document.getElementById('acompte-value').value = existing.acompte.value; document.getElementById('acompte-type').value = existing.acompte.type; }
+        if (existing.validityDate) document.getElementById('validity-date').value = existing.validityDate;
+        if (existing.conditions) document.getElementById('conditions').value = existing.conditions;
+        if (existing.notes) document.getElementById('notes').value = existing.notes;
+        document.querySelector('.card-ref').textContent = 'Modifier le brouillon — ' + existing.num;
+        updateGlobalTotals();
+      }
+      return;
+    }
+
+    if (interventionIdParam) {
+      const interv = SebaDB.get('interventions', interventionIdParam);
+      if (interv) {
+        _editingSourceInterventionId = interventionIdParam;
+        jumpToCustomForm(interv.service);
+        if (clientSel.querySelector('option[value="' + interv.clientId + '"]')) clientSel.value = interv.clientId;
+        if (interv.service) addExtraLine({ desc: interv.service, qty: 1, u: 0 });
+      }
+      return;
+    }
+
+    if (clientIdParam && clientSel.querySelector('option[value="' + clientIdParam + '"]')) {
+      clientSel.value = clientIdParam;
+      newBlock.style.display = 'none';
+    }
+  })();
 
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');

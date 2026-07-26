@@ -70,6 +70,15 @@ migrations/2026-07-25-intervention-360.sql
 # assigné/client si visibleToClient). Ajouts purs, ne modifie aucune RPC
 # existante. Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-26-quote-to-cash.sql
+# Quote-to-cash (feature/quote-to-cash) : 4 RPC client nouvelles
+# (get_my_client_devis_detail, get_my_client_facture_detail,
+# client_accept_devis, client_refuse_devis) + resserrement en allowlist de
+# get_my_client_devis()/get_my_client_factures() (renvoyaient la ligne
+# brute depuis 2026-07-23, devenu une fuite depuis que devis/factures
+# portent notes patron + historique + paiements notés). Voir l'en-tête du
+# fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
