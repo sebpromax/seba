@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi de ma demande — Seba</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --em:#0D9488;--ink:#0a0a0c;--btn-ink:#050508;--err:#ff8080;
+  --white:#FFFFFF;--nav-bg:rgba(10,10,12,.88);--line:rgba(255,255,255,.05);
+  --em-glow:rgba(13,148,136,.7);--em-halo:rgba(13,148,136,.08);--em-focus:rgba(13,148,136,.5);
+  --em-tint:rgba(13,148,136,.04);--em-shadow:rgba(13,148,136,.45);
+  --em-msg-bg:rgba(13,148,136,.07);--em-msg-bd:rgba(13,148,136,.18);
+  --err-bg:rgba(255,100,100,.07);--err-bd:rgba(255,100,100,.18);
+  --t1:rgba(255,255,255,.6);--t2:rgba(255,255,255,.5);--t2b:rgba(255,255,255,.55);
+  --t3:rgba(255,255,255,.35);--t4:rgba(255,255,255,.2);
+  --card-bg:rgba(255,255,255,.03);--card-bd:rgba(255,255,255,.08);--card-shadow:rgba(0,0,0,.4);
+  --input-bg:rgba(255,255,255,.05);--input-bd:rgba(255,255,255,.1);
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--white);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;margin:0;}
+a{color:inherit;text-decoration:none;}
+input,button{font-family:'Inter',sans-serif;}
+:focus-visible{outline:2px solid var(--em);outline-offset:3px;}
+.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em-glow);}
+.logo-se{font-weight:800;color:var(--white);}.logo-ba{font-weight:300;color:var(--t2);}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
+.card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:20px;padding:40px;width:100%;max-width:420px;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);position:relative;overflow:hidden;box-shadow:0 32px 80px var(--card-shadow);}
+.card::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:280px;height:180px;background:radial-gradient(ellipse,var(--em-halo) 0%,transparent 70%);pointer-events:none;}
+.card-head{margin-bottom:24px;}
+.card-head h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;color:var(--white);margin:0 0 6px;}
+.card-head p{font-size:.88rem;color:var(--t2b);margin:0;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field label{font-size:.78rem;font-weight:600;color:var(--t1);letter-spacing:.02em;text-transform:uppercase;}
+.field input{padding:12px 14px;background:var(--input-bg);border:1px solid var(--input-bd);border-radius:10px;font-size:.9rem;color:var(--white);width:100%;}
+.field input::placeholder{color:var(--t4);}
+.field input:focus{border-color:var(--em-focus);background:var(--em-tint);outline:none;}
+.btn-connect{width:100%;padding:13px;border:none;border-radius:12px;background:var(--em);color:var(--btn-ink);font-weight:700;font-size:.95rem;cursor:pointer;transition:box-shadow .25s,transform .2s;}
+.btn-connect:hover{box-shadow:0 0 28px var(--em-shadow);transform:translateY(-2px);}
+.btn-connect:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.error-msg{font-size:.82rem;color:var(--err);background:var(--err-bg);border:1px solid var(--err-bd);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg.visible{display:block;}
+.hidden{display:none!important;}
+.status-box{background:var(--input-bg);border:1px solid var(--input-bd);border-radius:12px;padding:18px;margin-bottom:14px;}
+.status-row{display:flex;justify-content:space-between;font-size:.86rem;padding:6px 0;border-bottom:1px solid var(--line);}
+.status-row:last-child{border-bottom:none;}
+.status-row .k{color:var(--t2);}
+.status-row .v{color:var(--white);font-weight:600;text-align:right;}
+.status-pill{display:inline-block;padding:4px 12px;border-radius:999px;background:var(--em-msg-bg);color:var(--em);font-weight:700;font-size:.8rem;}
+</style>
+<meta name="theme-color" content="#0a0a0c">
+</head>
+<body>
+
+<nav class="nav-wrap">
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
+</nav>
+
+<div class="page">
+  <div class="card">
+
+    <div id="pane-lookup">
+      <div class="card-head">
+        <h1>Suivre ma demande</h1>
+        <p>Retrouvez le lien reçu après l'envoi de votre demande, ou saisissez votre référence.</p>
+      </div>
+      <div class="error-msg" id="lookup-error"></div>
+      <div class="field"><label for="in-ref">Référence</label><input type="text" id="in-ref" placeholder="Ex : SEBA-A1B2C3D4"></div>
+      <div class="field"><label for="in-token">Code de suivi</label><input type="text" id="in-token" placeholder="Depuis votre lien de confirmation"></div>
+      <button class="btn-connect" id="btn-lookup" onclick="lookup()">Voir le statut →</button>
+    </div>
+
+    <div id="pane-status" class="hidden">
+      <div class="card-head">
+        <h1 id="status-service"></h1>
+        <p>Référence <strong id="status-ref"></strong></p>
+      </div>
+      <div class="status-box">
+        <div class="status-row"><span class="k">Statut</span><span class="v"><span class="status-pill" id="status-pill"></span></span></div>
+        <div class="status-row" id="row-date"><span class="k">Date souhaitée</span><span class="v" id="status-date"></span></div>
+        <div class="status-row"><span class="k">Envoyée le</span><span class="v" id="status-created"></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+function showError(msg) {
+  var el = document.getElementById('lookup-error');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+async function lookup() {
+  document.getElementById('lookup-error').classList.remove('visible');
+  var ref = document.getElementById('in-ref').value.trim();
+  var token = document.getElementById('in-token').value.trim();
+  if (!ref || !token) { showError('Référence et code de suivi requis.'); return; }
+  if (!window.SEBA_CONFIG || !window.SEBA_CONFIG.supabaseUrl) { showError('Suivi indisponible.'); return; }
+
+  var btn = document.getElementById('btn-lookup');
+  btn.disabled = true; btn.textContent = 'Recherche…';
+  try {
+    var res = await fetch(window.SEBA_CONFIG.supabaseUrl + '/functions/v1/public-intake?ref=' + encodeURIComponent(ref) + '&token=' + encodeURIComponent(token), {
+      headers: { apikey: window.SEBA_CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + window.SEBA_CONFIG.supabaseAnonKey },
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      showError(data.error || 'Demande introuvable.');
+      btn.disabled = false; btn.textContent = 'Voir le statut →';
+      return;
+    }
+    document.getElementById('status-service').textContent = data.service || 'Votre demande';
+    document.getElementById('status-ref').textContent = data.reference;
+    document.getElementById('status-pill').textContent = data.status;
+    document.getElementById('row-date').classList.toggle('hidden', !data.preferredDate);
+    document.getElementById('status-date').textContent = data.preferredDate || '';
+    document.getElementById('status-created').textContent = data.createdAt ? new Date(data.createdAt).toLocaleDateString('fr-FR') : '';
+    document.getElementById('pane-lookup').classList.add('hidden');
+    document.getElementById('pane-status').classList.remove('hidden');
+  } catch (e) {
+    showError('Connexion impossible, réessayez.');
+    btn.disabled = false; btn.textContent = 'Voir le statut →';
+  }
+}
+
+(function prefillFromUrl() {
+  var params = new URLSearchParams(location.search);
+  var ref = params.get('ref');
+  var token = params.get('token');
+  if (ref) document.getElementById('in-ref').value = ref;
+  if (token) document.getElementById('in-token').value = token;
+  if (ref && token) lookup();
+})();
+</script>
+</body>
+</html>

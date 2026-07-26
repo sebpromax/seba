@@ -87,6 +87,17 @@ migrations/2026-07-26-team-availability-suggestions.sql
 # unavailabilityRequests y est donc déjà exposé. Ajouts purs, ne modifie
 # aucune RPC existante. Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-26-public-intake.sql
+# Fondation acquisition (feature/public-intake-conversion) : table dédiée
+# public_service_requests (RLS select/update patron uniquement, aucun accès
+# anon/authenticated en écriture directe -- l'insertion publique passe par
+# l'Edge Function public-intake, service_role) + 2 RPC patron
+# (convert_public_service_request résout/crée le client uniquement,
+# link_public_service_request_conversion pose ensuite converted_quote_id/
+# converted_intervention_id une fois le devis/l'intervention créés côté
+# navigateur par les moteurs JS existants). Ajouts purs, ne modifie aucune
+# RPC/table existante. Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
