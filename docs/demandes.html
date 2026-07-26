@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Demandes — Seba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privee : meme verrou que dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="fx-actions.css">
+<script src="fx-actions.js" defer></script>
+<style>
+:root{
+  /* Sidebar déjà stylée globalement par pro-global.css (.sidebar) --
+     tokens ci-dessous uniquement pour les éléments propres à cette page
+     (btn-em/avatar/user-menu/side-sheet), copiés à l'identique des autres
+     pages patron (clients.html etc.) mais jamais tokenisés là-bas --
+     voir tools/check-design-system.js, qui ne scanne que les fichiers
+     modifiés/nouveaux (leçon "check-design-system blind spot", CLAUDE.md). */
+  --on-emerald:#031A12;
+  --shadow-panel:rgba(0,0,0,.3);
+  --shadow-menu:rgba(0,0,0,0.08);
+  --shadow-backdrop:rgba(0,0,0,.35);
+  --shadow-sheet:rgba(0,0,0,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .layout,.app{position:relative;z-index:2;}
+  a{color:inherit;text-decoration:none;}
+  button,input,textarea,select{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  .layout{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh;}
+
+  .main{padding:32px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:14px;}
+  .topbar h1{font-size:1.5rem;}
+  .btn-em{background:var(--emerald);color:var(--on-emerald);border:none;padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+  .btn-em:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--ink);padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+  .search-input{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.88rem;background:var(--white);}
+  .search-input:focus{border-color:var(--emerald);outline:none;}
+  .filter-pill{padding:9px 15px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.85rem;background:var(--white);cursor:pointer;color:var(--text-2);transition:background .15s,color .15s,border-color .15s;white-space:nowrap;}
+  .filter-pill:hover{border-color:var(--ink);}
+  .filter-pill.active{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .mini-select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.85rem;background:var(--white);color:var(--ink);}
+
+  .panel{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px var(--shadow-panel);}
+  table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+  th{text-align:left;color:var(--text-2);font-weight:500;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.02em;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+  td{padding:13px 16px;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  tr.req-row{cursor:pointer;transition:background .1s;}
+  tr.req-row:hover{background:var(--bg);}
+  .badge{font-size:0.74rem;padding:3px 9px;border-radius:12px;font-weight:500;}
+  .badge.new{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .badge.contacted,.badge.qualified{background:var(--badge-info-bg,var(--badge-warning-bg));color:var(--badge-info-txt,var(--badge-warning-txt));}
+  .badge.converted{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+  .badge.rejected,.badge.archived{background:var(--badge-error-bg);color:var(--badge-error-txt);}
+  .empty-row td{text-align:center;padding:48px 16px;color:var(--text-2);font-size:0.9rem;}
+
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px var(--shadow-menu);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  .ss-backdrop{position:fixed;inset:0;background:var(--shadow-backdrop);backdrop-filter:blur(4px);z-index:499;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .ss-backdrop.open{opacity:1;pointer-events:all;}
+  .ss-panel{position:fixed;right:0;top:0;bottom:0;width:460px;max-width:100vw;background:var(--white);z-index:500;display:flex;flex-direction:column;box-shadow:-4px 0 32px var(--shadow-sheet);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;}
+  @media (min-width:841px){ .ss-panel{ top: var(--identity-bar-height); } }
+  .ss-panel.open{transform:translateX(0);}
+  .ss-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);}
+  .ss-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-2);line-height:1;}
+  .ss-body{padding:20px 24px;flex:1;}
+  .ss-section{margin-bottom:22px;}
+  .ss-section h4{font-size:0.78rem;text-transform:uppercase;letter-spacing:.02em;color:var(--text-2);margin-bottom:10px;}
+  .ss-field{margin-bottom:12px;}
+  .ss-field label{display:block;font-size:0.82rem;color:var(--text-2);margin-bottom:5px;}
+  .ss-field input,.ss-field select,.ss-field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.88rem;background:var(--white);color:var(--ink);}
+  .ss-field textarea{min-height:70px;resize:vertical;font-family:inherit;}
+  .kv-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:6px 0;border-bottom:1px solid var(--border);}
+  .kv-row:last-child{border-bottom:none;}
+  .kv-row .k{color:var(--text-2);}
+  .kv-row .v{font-weight:500;text-align:right;}
+  .convert-btn{width:100%;text-align:left;padding:12px 14px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);cursor:pointer;font-size:0.86rem;margin-bottom:8px;color:var(--ink);}
+  .convert-btn:hover{border-color:var(--emerald);}
+  .convert-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .converted-link{display:block;padding:10px 14px;border-radius:var(--rs);background:var(--badge-success-bg);color:var(--badge-success-txt);font-size:0.86rem;margin-bottom:8px;font-weight:600;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--white);padding:12px 20px;border-radius:var(--rs);font-size:0.86rem;z-index:1000;opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
+<div class="layout">
+  <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
+    })();
+  </script>
+
+  <main class="main">
+    <div class="topbar">
+      <h1>Demandes</h1>
+      <div class="topbar-right">
+        <button class="btn-ghost" onclick="reloadRequests()">Actualiser</button>
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="user-menu" id="user-menu">
+            <a href="reglages.html">Mon compte</a>
+            <div class="menu-sep"></div>
+            <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="search-input" class="search-input" placeholder="Rechercher (nom, email, téléphone)...">
+      <select id="service-filter" class="mini-select"><option value="">Tous les services</option></select>
+      <input type="date" id="date-filter" class="mini-select">
+      <button class="filter-pill active" data-filter="tous" onclick="setFilter('tous',this)">Toutes</button>
+      <button class="filter-pill" data-filter="new" onclick="setFilter('new',this)">Nouvelles</button>
+      <button class="filter-pill" data-filter="contacted" onclick="setFilter('contacted',this)">Contactées</button>
+      <button class="filter-pill" data-filter="qualified" onclick="setFilter('qualified',this)">Qualifiées</button>
+      <button class="filter-pill" data-filter="converted" onclick="setFilter('converted',this)">Converties</button>
+      <button class="filter-pill" data-filter="rejected" onclick="setFilter('rejected',this)">Rejetées</button>
+      <button class="filter-pill" data-filter="archived" onclick="setFilter('archived',this)">Archivées</button>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead>
+          <tr><th>Contact</th><th>Service</th><th>Date souhaitée</th><th>Statut</th><th>Reçue le</th></tr>
+        </thead>
+        <tbody id="req-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
+<div class="ss-panel" id="ss-panel" role="dialog" aria-modal="true" aria-label="Détail de la demande">
+  <div class="ss-hdr">
+    <h2 id="ss-title">Demande</h2>
+    <button class="ss-close" onclick="closeSheet()" aria-label="Fermer">&times;</button>
+  </div>
+  <div class="ss-body">
+    <div class="ss-section">
+      <h4>Contact</h4>
+      <div class="kv-row"><span class="k">Nom</span><span class="v" id="d-name"></span></div>
+      <div class="kv-row"><span class="k">Email</span><span class="v" id="d-email"></span></div>
+      <div class="kv-row"><span class="k">Téléphone</span><span class="v" id="d-phone"></span></div>
+      <div class="kv-row"><span class="k">Adresse</span><span class="v" id="d-address"></span></div>
+    </div>
+    <div class="ss-section">
+      <h4>Besoin</h4>
+      <div class="kv-row"><span class="k">Service</span><span class="v" id="d-service"></span></div>
+      <div class="kv-row"><span class="k">Date souhaitée</span><span class="v" id="d-date"></span></div>
+      <div class="ss-field"><label>Description</label><div class="v" id="d-description" style="text-align:left;"></div></div>
+    </div>
+    <div class="ss-section">
+      <h4>Historique</h4>
+      <div class="kv-row"><span class="k">Reçue le</span><span class="v" id="d-created"></span></div>
+      <div class="kv-row"><span class="k">Dernière mise à jour</span><span class="v" id="d-updated"></span></div>
+      <div class="kv-row" id="row-converted"><span class="k">Convertie le</span><span class="v" id="d-converted"></span></div>
+    </div>
+    <div class="ss-section">
+      <h4>Traitement</h4>
+      <div class="ss-field"><label for="d-status">Statut</label>
+        <select id="d-status" onchange="changeStatus(this.value)">
+          <option value="new">Nouvelle</option>
+          <option value="contacted">Contactée</option>
+          <option value="qualified">Qualifiée</option>
+          <option value="converted">Convertie</option>
+          <option value="rejected">Rejetée</option>
+          <option value="archived">Archivée</option>
+        </select>
+      </div>
+      <div class="ss-field"><label for="d-note">Note interne</label><textarea id="d-note"></textarea></div>
+      <button class="btn-em" onclick="saveNote()">Enregistrer la note</button>
+    </div>
+    <div class="ss-section" id="convert-section">
+      <h4>Conversion</h4>
+      <div id="convert-actions"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="seba-data.js"></script>
+<script>
+  let REQUESTS = [];
+  let CUSTOM_SERVICES = [];
+  let _filter = 'tous';
+  let _query = '';
+  let _currentId = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'; }
+  function fmtDateTime(iso) { return iso ? new Date(iso).toLocaleString('fr-FR') : '—'; }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const STATUS_LABEL = { new: 'Nouvelle', contacted: 'Contactée', qualified: 'Qualifiée', converted: 'Convertie', rejected: 'Rejetée', archived: 'Archivée' };
+
+  /* Détecte les demandes 'new' pas encore vues du moteur d'automatisations
+     (dédoublonnage réel via automationRuns, voir SebaDB.automations.
+     processExternalEvent) -- source hors seba_state, jamais scannée par le
+     scan automatique de state.*, donc déclenchée ICI à chaque chargement de
+     cette page (mécanisme volontairement différent de detectBusinessEvents,
+     documenté dans seba-data.js). */
+  function detectNewRequestEvents() {
+    if (!window.SebaDB || !SebaDB.automations) return;
+    REQUESTS.forEach(r => {
+      SebaDB.automations.processExternalEvent('service_request_created', 'service_request', r.id, {
+        contactName: r.contactName, serviceLabel: r.serviceLabel, preferredDate: r.preferredDate, description: r.description,
+      });
+    });
+  }
+
+  async function loadRequests() {
+    REQUESTS = await SebaDB.publicIntake.list();
+    detectNewRequestEvents();
+    populateServiceFilter();
+    render();
+  }
+  function reloadRequests() { loadRequests(); }
+
+  function populateServiceFilter() {
+    const sel = document.getElementById('service-filter');
+    const current = sel.value;
+    const labels = Array.from(new Set(REQUESTS.map(r => r.serviceLabel).filter(Boolean)));
+    sel.innerHTML = '<option value="">Tous les services</option>' + labels.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+    sel.value = current;
+  }
+
+  function filtered() {
+    const q = _query.toLowerCase();
+    const svc = document.getElementById('service-filter').value;
+    const date = document.getElementById('date-filter').value;
+    return REQUESTS.filter(r => {
+      if (_filter !== 'tous' && r.status !== _filter) return false;
+      if (svc && r.serviceLabel !== svc) return false;
+      if (date && r.preferredDate !== date) return false;
+      if (q) {
+        const hay = ((r.contactName || '') + ' ' + (r.email || '') + ' ' + (r.phone || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function render() {
+    const rows = filtered();
+    const tbody = document.getElementById('req-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Aucune demande pour ce filtre.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr class="req-row" onclick="openSheet('${esc(r.id)}')">
+        <td>${esc(r.contactName)}</td>
+        <td>${esc(r.serviceLabel || '—')}</td>
+        <td>${fmtDate(r.preferredDate)}</td>
+        <td><span class="badge ${esc(r.status)}">${esc(STATUS_LABEL[r.status] || r.status)}</span></td>
+        <td>${fmtDate(r.createdAt)}</td>
+      </tr>`).join('');
+  }
+
+  function setFilter(f, el) {
+    _filter = f;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+  document.getElementById('search-input').addEventListener('input', e => { _query = e.target.value; render(); });
+  document.getElementById('service-filter').addEventListener('change', render);
+  document.getElementById('date-filter').addEventListener('change', render);
+
+  function findRequest(id) { return REQUESTS.find(r => r.id === id); }
+
+  function renderConvertSection(r) {
+    const box = document.getElementById('convert-actions');
+    if (r.status === 'converted') {
+      let html = '';
+      html += `<a class="converted-link" href="client-fiche.html?id=${encodeURIComponent(r.convertedClientId)}">Ouvrir le client →</a>`;
+      if (r.convertedQuoteId) html += `<a class="converted-link" href="devis.html?open=${encodeURIComponent(r.convertedQuoteId)}">Ouvrir le devis →</a>`;
+      if (r.convertedInterventionId) html += `<a class="converted-link" href="intervention-fiche.html?id=${encodeURIComponent(r.convertedInterventionId)}">Ouvrir l'intervention →</a>`;
+      box.innerHTML = html;
+      return;
+    }
+    const disabled = (r.status === 'rejected' || r.status === 'archived') ? 'disabled' : '';
+    box.innerHTML = `
+      <button class="convert-btn" ${disabled} onclick="convert('client')">Créer le client</button>
+      <button class="convert-btn" ${disabled} onclick="convert('client_quote')">Créer le client + devis brouillon</button>
+      <button class="convert-btn" ${disabled} onclick="convert('client_intervention')">Créer le client + intervention non assignée</button>
+    `;
+  }
+
+  function openSheet(id) {
+    const r = findRequest(id);
+    if (!r) return;
+    _currentId = id;
+    document.getElementById('ss-title').textContent = r.contactName;
+    document.getElementById('d-name').textContent = r.contactName;
+    document.getElementById('d-email').innerHTML = r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '—';
+    document.getElementById('d-phone').innerHTML = r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : '—';
+    document.getElementById('d-address').textContent = r.address || '—';
+    document.getElementById('d-service').textContent = r.serviceLabel || '—';
+    document.getElementById('d-date').textContent = r.preferredDate ? (fmtDate(r.preferredDate) + (r.preferredTimeStart ? ' · ' + r.preferredTimeStart : '')) : '—';
+    document.getElementById('d-description').textContent = r.description || '—';
+    document.getElementById('d-created').textContent = fmtDateTime(r.createdAt);
+    document.getElementById('d-updated').textContent = fmtDateTime(r.updatedAt);
+    document.getElementById('row-converted').style.display = r.convertedAt ? 'flex' : 'none';
+    document.getElementById('d-converted').textContent = fmtDateTime(r.convertedAt);
+    document.getElementById('d-status').value = r.status;
+    document.getElementById('d-note').value = r.ownerNote || '';
+    renderConvertSection(r);
+    document.getElementById('ss-backdrop').classList.add('open');
+    document.getElementById('ss-panel').classList.add('open');
+  }
+  function closeSheet() {
+    document.getElementById('ss-backdrop').classList.remove('open');
+    document.getElementById('ss-panel').classList.remove('open');
+    _currentId = null;
+  }
+
+  async function changeStatus(status) {
+    if (!_currentId) return;
+    const res = await SebaDB.publicIntake.setStatus(_currentId, status);
+    if (!res.ok) { showToast(res.error || 'Échec de la mise à jour.'); return; }
+    showToast('Statut mis à jour');
+    await loadRequests();
+    const r = findRequest(_currentId);
+    if (r) openSheet(_currentId); // rafraîchit le tiroir sans le refermer
+  }
+
+  async function saveNote() {
+    if (!_currentId) return;
+    const note = document.getElementById('d-note').value;
+    const res = await SebaDB.publicIntake.setOwnerNote(_currentId, note);
+    if (!res.ok) { showToast(res.error || 'Échec de l\'enregistrement.'); return; }
+    showToast('Note enregistrée');
+    await loadRequests();
+  }
+
+  /* Conversion — voir SebaDB.publicIntake.claim() (docs/seba-data.js) pour
+     l'architecture complète : la RPC ne crée QUE le client (idempotente),
+     le devis/l'intervention sont créés ICI via les moteurs JS réels déjà
+     écrits/testés (SebaDB.devis.createDraft / SebaDB.create('interventions')),
+     jamais recréés en SQL. */
+  async function convert(action) {
+    if (!_currentId) return;
+    const r = findRequest(_currentId);
+    if (!r) return;
+    const btns = document.querySelectorAll('#convert-actions .convert-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const claimRes = await SebaDB.publicIntake.claim(_currentId, action);
+    if (!claimRes.ok) { showToast(claimRes.error || 'Échec de la conversion.'); btns.forEach(b => b.disabled = false); return; }
+
+    // state.clients local est périmé : le client vient d'être créé côté
+    // serveur en SQL (jamais via SebaDB.create() local) -- rapatriement
+    // indispensable avant d'ouvrir sa fiche.
+    await SebaDB.pullFromServer();
+
+    let quoteId = claimRes.convertedQuoteId || null;
+    let interventionId = claimRes.convertedInterventionId || null;
+
+    if (action === 'client_quote' && !quoteId) {
+      const svc = CUSTOM_SERVICES.find(s => s.id === r.serviceId);
+      const devisRes = SebaDB.devis.createDraft({
+        clientId: claimRes.clientId, clientName: r.contactName,
+        lines: [{ desc: r.serviceLabel || 'Prestation', qty: 1, u: (svc && svc.suggestedPrice) || 0 }],
+        tvaRate: 20, service: r.serviceLabel || '',
+      });
+      if (devisRes.ok) quoteId = devisRes.devis.num;
+    }
+    if (action === 'client_intervention' && !interventionId) {
+      const interv = SebaDB.create('interventions', {
+        clientId: claimRes.clientId, clientName: r.contactName,
+        service: r.serviceLabel || 'Prestation', adresse: r.address || '',
+        date: r.preferredDate || null, time: r.preferredTimeStart || null,
+        duree: null, employeId: null, employeName: null, done: false,
+        publicRequestId: r.id,
+      });
+      interventionId = interv.id;
+    }
+
+    if (quoteId || interventionId) {
+      await SebaDB.publicIntake.linkConversion(_currentId, quoteId, interventionId);
+    }
+
+    SebaDB.automations.processExternalEvent('service_request_converted', 'service_request', _currentId, {
+      clientId: claimRes.clientId, serviceLabel: r.serviceLabel, action,
+    });
+
+    showToast('Demande convertie');
+    await loadRequests();
+    openSheet(_currentId);
+  }
+
+  // ── Avatar menu ──
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+  // ── Sidebar mobile ──
+  function toggleSidebar() {
+    const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  // ── Init ──
+  CUSTOM_SERVICES = SebaDB.list('custom_services');
+  loadRequests();
+</script>
+</body>
+</html>

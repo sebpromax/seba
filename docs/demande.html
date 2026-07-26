@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demande de prestation — Seba</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --em:#0D9488;--ink:#0a0a0c;--btn-ink:#050508;--err:#ff8080;
+  --autofill-bg:#18181B;--autofill-ink:#EDEDED;--white:#FFFFFF;
+  --nav-bg:rgba(10,10,12,.88);--line:rgba(255,255,255,.05);
+  --em-glow:rgba(13,148,136,.7);--em-halo:rgba(13,148,136,.08);--em-focus:rgba(13,148,136,.5);
+  --em-tint:rgba(13,148,136,.04);--em-shadow:rgba(13,148,136,.45);
+  --em-msg-bg:rgba(13,148,136,.07);--em-msg-bd:rgba(13,148,136,.18);
+  --err-bg:rgba(255,100,100,.07);--err-bd:rgba(255,100,100,.18);
+  --t1:rgba(255,255,255,.6);--t2:rgba(255,255,255,.5);--t2b:rgba(255,255,255,.55);
+  --t3:rgba(255,255,255,.35);--t4:rgba(255,255,255,.2);
+  --card-bg:rgba(255,255,255,.03);--card-bd:rgba(255,255,255,.08);--card-shadow:rgba(0,0,0,.4);
+  --input-bg:rgba(255,255,255,.05);--input-bd:rgba(255,255,255,.1);
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--white);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;margin:0;}
+a{color:inherit;text-decoration:none;}
+input,button,textarea,select{font-family:'Inter',sans-serif;}
+:focus-visible{outline:2px solid var(--em);outline-offset:3px;}
+.nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em-glow);}
+.logo-se{font-weight:800;color:var(--white);}.logo-ba{font-weight:300;color:var(--t2);}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
+.card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:20px;padding:40px;width:100%;max-width:480px;backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);position:relative;overflow:hidden;box-shadow:0 32px 80px var(--card-shadow);}
+.card::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:280px;height:180px;background:radial-gradient(ellipse,var(--em-halo) 0%,transparent 70%);pointer-events:none;}
+.card-head{margin-bottom:24px;}
+.card-head h1{font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;color:var(--white);margin:0 0 6px;}
+.card-head p{font-size:.88rem;color:var(--t2b);margin:0;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field-row{display:flex;gap:12px;}
+.field-row .field{flex:1;}
+.field label{font-size:.78rem;font-weight:600;color:var(--t1);letter-spacing:.02em;text-transform:uppercase;}
+.field input,.field select,.field textarea{padding:12px 14px;background:var(--input-bg);border:1px solid var(--input-bd);border-radius:10px;font-size:.9rem;color:var(--white);transition:border-color .2s,background .2s;width:100%;}
+.field textarea{resize:vertical;min-height:80px;font-family:inherit;}
+.field input::placeholder,.field textarea::placeholder{color:var(--t4);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--em-focus);background:var(--em-tint);outline:none;}
+.btn-connect{width:100%;padding:13px;border:none;border-radius:12px;background:var(--em);color:var(--btn-ink);font-weight:700;font-size:.95rem;cursor:pointer;transition:box-shadow .25s,transform .2s;}
+.btn-connect:hover{box-shadow:0 0 28px var(--em-shadow);transform:translateY(-2px);}
+.btn-connect:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.error-msg{font-size:.82rem;color:var(--err);background:var(--err-bg);border:1px solid var(--err-bd);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg.visible{display:block;}
+.success-msg{font-size:.82rem;color:var(--em);background:var(--em-msg-bg);border:1px solid var(--em-msg-bd);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.success-msg.visible{display:block;}
+.foot{text-align:center;font-size:.84rem;color:var(--t3);margin-top:22px;}
+.foot a{color:var(--em);font-weight:600;}
+.hidden{display:none!important;}
+.ref-box{background:var(--input-bg);border:1px solid var(--input-bd);border-radius:12px;padding:16px;margin-bottom:14px;}
+.ref-box .ref-label{font-size:.76rem;color:var(--t2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.ref-box .ref-value{font-size:1.1rem;font-weight:700;color:var(--em);font-family:monospace;}
+/* Honeypot -- invisible pour un humain, jamais display:none (certains bots
+   ignorent display:none) : hors écran + hauteur nulle + aria-hidden. */
+.hp-field{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+</style>
+<meta name="theme-color" content="#0a0a0c">
+<script src="auth.js"></script>
+</head>
+<body>
+
+<nav class="nav-wrap">
+  <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
+</nav>
+
+<div class="page">
+  <div class="card">
+
+    <div id="pane-loading">
+      <div class="card-head"><h1>Chargement…</h1></div>
+    </div>
+
+    <div id="pane-unavailable" class="hidden">
+      <div class="card-head">
+        <h1>Formulaire indisponible</h1>
+        <p>Ce lien de demande n'est plus actif. Contactez directement l'entreprise pour votre demande.</p>
+      </div>
+    </div>
+
+    <div id="pane-form" class="hidden">
+      <div class="card-head">
+        <h1 id="form-title">Demander une intervention</h1>
+        <p id="form-intro"></p>
+      </div>
+      <div class="error-msg" id="form-error"></div>
+      <form id="intake-form" onsubmit="return false;">
+        <div class="field"><label for="in-name">Nom complet</label><input type="text" id="in-name" placeholder="Votre nom" required maxlength="200"></div>
+        <div class="field-row">
+          <div class="field"><label for="in-email">Email</label><input type="email" id="in-email" placeholder="vous@exemple.fr"></div>
+          <div class="field"><label for="in-phone">Téléphone</label><input type="tel" id="in-phone" placeholder="06 00 00 00 00"></div>
+        </div>
+        <div class="field" id="row-service"><label for="in-service">Service souhaité</label><select id="in-service"><option value="">Sélectionnez…</option></select></div>
+        <div class="field" id="row-address"><label for="in-address">Adresse</label><input type="text" id="in-address" placeholder="Adresse de l'intervention" maxlength="2000"></div>
+        <div class="field-row" id="row-date">
+          <div class="field"><label for="in-date">Date souhaitée</label><input type="date" id="in-date"></div>
+          <div class="field"><label for="in-time-start">Créneau (optionnel)</label><input type="time" id="in-time-start"></div>
+        </div>
+        <div class="field"><label for="in-desc">Décrivez votre besoin</label><textarea id="in-desc" maxlength="2000" placeholder="Quelques détails utiles pour préparer votre demande."></textarea></div>
+        <div class="hp-field" aria-hidden="true"><label for="in-website">Site web</label><input type="text" id="in-website" name="website" tabindex="-1" autocomplete="off"></div>
+        <button class="btn-connect" id="btn-submit" onclick="submitRequest()">Envoyer ma demande →</button>
+      </form>
+      <p class="foot">Vous avez déjà une demande en cours ? <a href="suivi-demande.html">Suivre ma demande</a></p>
+    </div>
+
+    <div id="pane-success" class="hidden">
+      <div class="card-head">
+        <h1>Demande envoyée</h1>
+        <p id="success-message"></p>
+      </div>
+      <div class="ref-box">
+        <div class="ref-label">Votre référence</div>
+        <div class="ref-value" id="success-ref"></div>
+      </div>
+      <a class="btn-connect" id="success-tracking-link" style="display:flex;align-items:center;justify-content:center;">Suivre ma demande →</a>
+      <p class="foot">Conservez ce lien, il n'est affiché qu'une seule fois.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function show(id) {
+  ['pane-loading', 'pane-unavailable', 'pane-form', 'pane-success'].forEach(function (p) {
+    document.getElementById(p).classList.toggle('hidden', p !== id);
+  });
+}
+function showError(msg) {
+  var el = document.getElementById('form-error');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+var params = new URLSearchParams(location.search);
+var account = params.get('pro') || '';
+var cfg = null;
+
+async function loadConfig() {
+  if (!account || !window.SEBA_CONFIG || !window.SEBA_CONFIG.supabaseUrl) { show('pane-unavailable'); return; }
+  try {
+    var res = await fetch(window.SEBA_CONFIG.supabaseUrl + '/functions/v1/public-intake?account=' + encodeURIComponent(account), {
+      headers: { apikey: window.SEBA_CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + window.SEBA_CONFIG.supabaseAnonKey },
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) { show('pane-unavailable'); return; }
+    cfg = data.config;
+    document.title = cfg.title + ' — ' + data.entreprise.nom;
+    document.getElementById('form-title').textContent = cfg.title;
+    document.getElementById('form-intro').textContent = cfg.introduction || ('Envoyez votre demande à ' + data.entreprise.nom + '.');
+    var sel = document.getElementById('in-service');
+    (cfg.services || []).forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.name;
+      sel.appendChild(opt);
+    });
+    document.getElementById('row-service').classList.toggle('hidden', !(cfg.services || []).length);
+    document.getElementById('in-address').required = !!cfg.requireAddress;
+    document.getElementById('row-date').classList.toggle('hidden', !cfg.allowPreferredDate);
+    show('pane-form');
+  } catch (e) {
+    show('pane-unavailable');
+  }
+}
+
+async function submitRequest() {
+  document.getElementById('form-error').classList.remove('visible');
+  var name = document.getElementById('in-name').value.trim();
+  var email = document.getElementById('in-email').value.trim();
+  var phone = document.getElementById('in-phone').value.trim();
+  if (!name) { showError('Votre nom est requis.'); return; }
+  if (!email && !phone) { showError('Indiquez un email ou un téléphone.'); return; }
+  if (cfg.requireAddress && !document.getElementById('in-address').value.trim()) { showError('L\'adresse est requise.'); return; }
+
+  var btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+
+  var body = {
+    account: account,
+    contactName: name, email: email, phone: phone,
+    serviceId: document.getElementById('in-service').value || null,
+    address: document.getElementById('in-address').value.trim(),
+    preferredDate: cfg.allowPreferredDate ? (document.getElementById('in-date').value || null) : null,
+    preferredTimeStart: cfg.allowPreferredDate ? (document.getElementById('in-time-start').value || null) : null,
+    description: document.getElementById('in-desc').value.trim(),
+    website: document.getElementById('in-website').value, // honeypot
+  };
+
+  try {
+    var res = await fetch(window.SEBA_CONFIG.supabaseUrl + '/functions/v1/public-intake', {
+      method: 'POST',
+      headers: { apikey: window.SEBA_CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + window.SEBA_CONFIG.supabaseAnonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      showError(data.error || 'Une erreur est survenue, réessayez.');
+      btn.disabled = false; btn.textContent = 'Envoyer ma demande →';
+      return;
+    }
+    document.getElementById('success-message').textContent = cfg.confirmationMessage;
+    document.getElementById('success-ref').textContent = data.reference;
+    var link = new URL('suivi-demande.html?ref=' + encodeURIComponent(data.reference) + '&token=' + encodeURIComponent(data.trackingToken), location.href).href;
+    document.getElementById('success-tracking-link').href = link;
+    show('pane-success');
+  } catch (e) {
+    showError('Connexion impossible, réessayez.');
+    btn.disabled = false; btn.textContent = 'Envoyer ma demande →';
+  }
+}
+
+loadConfig();
+</script>
+</body>
+</html>

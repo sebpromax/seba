@@ -58,6 +58,13 @@
     // feature/automation-engine-foundation : moteur de règles patron,
     // aucun accès employé/client, écritures directes RLS seba_state.
     automationRules: [], automationRuns: [], automationAlerts: [],
+    // feature/public-intake-conversion : entreprise = infos publiques (nom
+    // etc.) désormais synchronisées côté serveur (avant ce chantier,
+    // sebaEntreprise ne vivait QUE dans localStorage -- inutilisable par
+    // l'Edge Function public-intake, qui tourne côté serveur sans accès au
+    // navigateur du patron). publicIntakeConfig : réglages du formulaire
+    // public (désactivé par défaut). Voir SebaDB.entreprise/publicIntake.
+    entreprise: null, publicIntakeConfig: null,
     seq: { devis: 118, facture: 93, contrat: 0 },
   });
 
@@ -178,6 +185,8 @@
     if (!state.contrats) state.contrats = [];
     if (!state.messages) state.messages = [];
     if (!state.clientRequests) state.clientRequests = [];
+    if (state.entreprise === undefined) state.entreprise = null;
+    if (state.publicIntakeConfig === undefined) state.publicIntakeConfig = null;
     return state;
   }
   function persist() {
@@ -327,6 +336,12 @@
     'invoice_issued', 'invoice_partially_paid', 'invoice_paid', 'invoice_overdue',
     'intervention_created', 'intervention_assigned', 'intervention_completed', 'intervention_owner_approved',
     'client_reschedule_requested', 'client_issue_reported', 'employee_unavailability_requested',
+    // feature/public-intake-conversion : source réelle = table dédiée
+    // public_service_requests, PAS une collection seba_state -- absente de
+    // AUTOMATION_SOURCE_COLLECTION (voir plus bas), donc source.<champ> ne
+    // se résout jamais pour ces 2 triggers, seul event.<champ> fonctionne
+    // (émis explicitement avec toutes les données utiles, voir demandes.html).
+    'service_request_created', 'service_request_converted',
   ];
   const AUTOMATION_ACTION_TYPES = ['create_follow_up_intervention', 'create_invoice_draft', 'add_client_memory_entry', 'create_owner_alert', 'update_intervention_status'];
   const AUTOMATION_CONDITION_OPERATORS = ['equals', 'not_equals', 'contains', 'greater_than', 'less_than', 'is_set', 'is_not_set'];
@@ -370,6 +385,16 @@
       trigger: { type: 'intervention_completed', filters: {} },
       conditions: [{ field: 'event.service', operator: 'equals', value: '' }],
       actions: [{ type: 'create_follow_up_intervention', config: { delayDays: 30, service: '', duration: null, assignEmployeeId: null, copyClient: true, copyAddress: true } }],
+    },
+    {
+      id: 'service_request_received_alert', name: 'Nouvelle demande reçue',
+      trigger: { type: 'service_request_created', filters: {} }, conditions: [],
+      actions: [{ type: 'create_owner_alert', config: { title: 'Nouvelle demande publique', message: '{{contactName}} — {{serviceLabel}}', priority: 'medium', href: 'demandes.html' } }],
+    },
+    {
+      id: 'service_request_converted_memory', name: 'Demande convertie',
+      trigger: { type: 'service_request_converted', filters: {} }, conditions: [],
+      actions: [{ type: 'add_client_memory_entry', config: { category: 'relationship', contentTemplate: 'Client converti depuis une demande publique ({{serviceLabel}}).', visibility: 'internal_team' } }],
     },
   ];
 
@@ -429,6 +454,14 @@
 
   function resolveClientIdForEvent(event, state) {
     if (event.sourceType === 'client') return event.sourceId;
+    // event.data.clientId : déjà porté par tous les événements existants
+    // (quote_sent/invoice_issued/... émettent {clientId,...} dans data),
+    // vérifié EN PREMIER donc rétrocompatible. Indispensable pour
+    // service_request_created/service_request_converted (source = table
+    // dédiée, absente de AUTOMATION_SOURCE_COLLECTION ci-dessous -- sans ce
+    // repli, add_client_memory_entry ne résoudrait jamais de client pour
+    // ces 2 triggers, même une fois la demande convertie).
+    if (event.data && event.data.clientId) return event.data.clientId;
     const coll = AUTOMATION_SOURCE_COLLECTION[event.sourceType];
     if (!coll || !state[coll]) return null;
     const obj = state[coll].find(x => x.id === event.sourceId);
@@ -1465,6 +1498,24 @@
     journal.forEach(j => pushOp('journal', j.id, 'create', j));
   }
 
+  /* Demandes publiques (feature/public-intake-conversion) -- statuts
+     autorisés côté table dédiée (public_service_requests, voir migration)
+     et mapping snake_case (colonnes Postgres) -> camelCase (convention JS
+     du reste de SebaDB), même besoin que mapPublicRequestRow pour
+     SebaDB.messages plus haut. */
+  const PUBLIC_REQUEST_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'rejected', 'archived'];
+  function mapPublicRequestRow(r) {
+    return {
+      id: r.id, publicReference: r.public_reference, status: r.status,
+      contactName: r.contact_name, email: r.email, phone: r.phone, address: r.address,
+      serviceId: r.service_id, serviceLabel: r.service_label,
+      preferredDate: r.preferred_date, preferredTimeStart: r.preferred_time_start, preferredTimeEnd: r.preferred_time_end,
+      description: r.description, source: r.source, ownerNote: r.owner_note,
+      convertedClientId: r.converted_client_id, convertedQuoteId: r.converted_quote_id, convertedInterventionId: r.converted_intervention_id,
+      createdAt: r.created_at, updatedAt: r.updated_at, convertedAt: r.converted_at,
+    };
+  }
+
   /* ═══════════ API publique ═══════════ */
   const SebaDB = {
     adapterName: adapter.name,
@@ -1497,10 +1548,38 @@
     /* Reessai manuel (bouton "Réessayer" de l'indicateur, ou appel direct
        depuis une page qui voudrait son propre bouton). */
     retrySyncNow() { retrySyncNow(); },
+
+    /* Rapatriement manuel de l'état cloud (feature/public-intake-conversion :
+       convert_public_service_request crée le client DIRECTEMENT côté
+       serveur, en SQL, jamais via SebaDB.create() local -- sans ce rappel,
+       state.clients resterait périmé après une conversion tant qu'aucun
+       autre événement ne redéclenche ready(). Même logique que le
+       rapatriement silencieux de ready() ci-dessous, exposée ici à la
+       demande. Ne fait rien en mode démo/hors Supabase. */
+    async pullFromServer() {
+      if (!hasSupabase) return false;
+      const cloud = await SupabaseAdapter.pull();
+      if (cloud) {
+        state = cloud; LocalAdapter.save(state);
+        listeners.forEach(fn => { try { fn(); } catch (e) {} });
+        return true;
+      }
+      return false;
+    },
     syncStatus() { return { pending: loadQueue().length, failed: loadFailed().length, syncing: _syncing }; },
 
     hasData() { if (!state) loadState(); return state.clients.length > 0; },
 
+    /* Identifiant public du compte (feature/public-intake-conversion) --
+       même valeur que l'identifiant interne (auth.uid(), voir _accountId()
+       plus haut) : aucun "slug" lisible n'existe dans Seba aujourd'hui
+       (vérifié -- ni onboarding.html ni reglages.html n'en génèrent un),
+       et en créer un impliquerait un second panneau d'administration
+       (génération/unicité/édition) hors périmètre de cette fondation.
+       L'UUID sert donc directement d'identifiant dans l'URL publique
+       (demande.html?pro=<accountId>) -- déjà non-devinable, déjà la
+       frontière RLS réelle de tout le reste de l'app. */
+    accountId() { return adapter._accountId(); },
     list(coll) { if (!state) loadState(); return (state[coll] || []).slice(); },
     get(coll, id) { if (!state) loadState(); return (state[coll] || []).find(x => x.id === id) || null; },
 
@@ -2731,6 +2810,119 @@
     // create()/update() normalement et se synchronise comme d'habitude.
     _reset() { state = EMPTY(); persist(); },
 
+    /* ═══ Entreprise (feature/public-intake-conversion) ═══════════════════
+       Avant ce chantier, le nom/coordonnées d'entreprise (reglages.html)
+       ne vivaient QUE dans localStorage.sebaEntreprise -- jamais poussés
+       vers seba_state. L'Edge Function public-intake tourne côté serveur
+       (aucun accès au navigateur du patron) : sans une copie synchronisée
+       ici, "le vrai nom de l'entreprise" du formulaire public n'aurait
+       aucune source possible. state.entreprise devient la source server-
+       side ; localStorage.sebaEntreprise reste écrit en parallèle par
+       reglages.html (cache instantané/hors-ligne, inchangé), les deux
+       restent alignés à chaque saveGeneralInfo(). */
+    entreprise: {
+      get() { if (!state) loadState(); return state.entreprise || null; },
+      set(patch) {
+        if (!state) loadState();
+        state.entreprise = Object.assign({}, state.entreprise || {}, patch || {});
+        persist();
+        return state.entreprise;
+      },
+    },
+
+    /* ═══ Demandes publiques (feature/public-intake-conversion) ═══════════
+       Source de vérité : table Postgres DÉDIÉE public_service_requests,
+       jamais seba_state -- un visiteur sans compte Seba ne peut pas écrire
+       dans state (aucune session, aucun auth.uid()), l'insertion réelle
+       passe exclusivement par l'Edge Function public-intake (service_role,
+       voir supabase-functions/public-intake.ts). Ce namespace ne fait que
+       LIRE/écrire ce que le PATRON authentifié a le droit de voir (RLS :
+       user_id = auth.uid(), voir migrations/2026-07-26-public-intake.sql)
+       -- même convention REST directe que SebaDB.messages plus haut (seule
+       autre collection qui parle à une vraie table plutôt qu'au blob
+       JSONB générique). Pas de repli "mode démo" : une table dédiée
+       n'existe pas en local, comme sebaAuth.rpc() lui-même. */
+    publicIntake: {
+      config() { if (!state) loadState(); return state.publicIntakeConfig || null; },
+      setConfig(patch) {
+        if (!state) loadState();
+        state.publicIntakeConfig = Object.assign({
+          enabled: false, title: '', introduction: '', allowedServiceIds: [],
+          requireAddress: false, allowPreferredDate: true, confirmationMessage: '',
+        }, state.publicIntakeConfig || {}, patch || {});
+        persist();
+        return state.publicIntakeConfig;
+      },
+
+      async list(filter) {
+        if (!hasSupabase || !adapter._hasSession(window.SEBA_CONFIG)) return [];
+        try {
+          const cfg = window.SEBA_CONFIG;
+          let url = cfg.supabaseUrl + '/rest/v1/public_service_requests?account=eq.' + encodeURIComponent(adapter._accountId()) + '&order=created_at.desc';
+          if (filter && filter.status) url += '&status=eq.' + encodeURIComponent(filter.status);
+          const res = await fetch(url, { headers: adapter._headers() });
+          if (!res.ok) { console.warn('[seba-data] lecture demandes publiques en echec (HTTP ' + res.status + ').'); return []; }
+          const rows = await res.json();
+          return rows.map(mapPublicRequestRow);
+        } catch (e) { console.warn('[seba-data] lecture demandes publiques impossible (reseau).', e.message); return []; }
+      },
+
+      async setStatus(id, status) {
+        if (PUBLIC_REQUEST_STATUSES.indexOf(status) === -1) return { ok: false, error: 'Statut invalide.' };
+        if (!hasSupabase || !adapter._hasSession(window.SEBA_CONFIG)) return { ok: false, error: 'Supabase non configuré.' };
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const res = await fetch(cfg.supabaseUrl + '/rest/v1/public_service_requests?id=eq.' + encodeURIComponent(id), {
+            method: 'PATCH',
+            headers: adapter._headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+            body: JSON.stringify({ status, updated_at: new Date().toISOString() }),
+          });
+          if (!res.ok) return { ok: false, error: 'Échec de la mise à jour (HTTP ' + res.status + ').' };
+          const rows = await res.json();
+          return { ok: true, request: rows[0] ? mapPublicRequestRow(rows[0]) : null };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      async setOwnerNote(id, note) {
+        if (!hasSupabase || !adapter._hasSession(window.SEBA_CONFIG)) return { ok: false, error: 'Supabase non configuré.' };
+        try {
+          const cfg = window.SEBA_CONFIG;
+          const res = await fetch(cfg.supabaseUrl + '/rest/v1/public_service_requests?id=eq.' + encodeURIComponent(id), {
+            method: 'PATCH',
+            headers: adapter._headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+            body: JSON.stringify({ owner_note: note || '', updated_at: new Date().toISOString() }),
+          });
+          if (!res.ok) return { ok: false, error: 'Échec de la mise à jour (HTTP ' + res.status + ').' };
+          const rows = await res.json();
+          return { ok: true, request: rows[0] ? mapPublicRequestRow(rows[0]) : null };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      /* Conversion — 2 appels RPC atomiques/idempotents, jamais un calcul
+         de devis/planning recréé côté SQL (voir migration : la RPC ne fait
+         que résoudre/créer le CLIENT, simple mapping de champs sans aucune
+         logique métier). Le devis (SebaDB.devis.createDraft, moteur
+         quote-to-cash réel) et l'intervention non assignée sont créés ICI
+         côté navigateur patron, en réutilisant tel quel les moteurs déjà
+         écrits/testés -- écriture ensuite normale sur seba_state (RLS
+         auth.uid()=user_id, comme toute autre page patron), puis reliés à
+         la demande via linkConversion (idempotente, n'écrase jamais un id
+         déjà posé -- un retry ne peut donc jamais lier un 2e devis/2e
+         intervention à la même demande). */
+      async claim(id, action) {
+        if (!hasSupabase || !window.sebaAuth || !sebaAuth.isConfigured) return { ok: false, error: 'Supabase non configuré.' };
+        const res = await sebaAuth.rpc('convert_public_service_request', { p_account: adapter._accountId(), p_request_id: id, p_action: action });
+        if (res.error) return { ok: false, error: res.error.message };
+        return res.data;
+      },
+      async linkConversion(id, quoteId, interventionId) {
+        if (!hasSupabase || !window.sebaAuth || !sebaAuth.isConfigured) return { ok: false, error: 'Supabase non configuré.' };
+        const res = await sebaAuth.rpc('link_public_service_request_conversion', { p_account: adapter._accountId(), p_request_id: id, p_quote_id: quoteId || null, p_intervention_id: interventionId || null });
+        if (res.error) return { ok: false, error: res.error.message };
+        return res.data;
+      },
+    },
+
     /* ═══ Mémoire client + plans récurrents (feature/client-crm-advanced) ═══
        Écriture patron UNIQUEMENT (même droits que le reste de seba_state --
        aucune policy dédiée nécessaire, l'employé n'a de toute façon aucun
@@ -3110,6 +3302,23 @@
       run() {
         if (!state) loadState();
         return runAutomationsPass(state);
+      },
+
+      /* Événement dont la SOURCE n'est pas une collection seba_state (ex.
+         service_request_created/service_request_converted -- feature/
+         public-intake-conversion, table dédiée public_service_requests,
+         jamais scannée par detectBusinessEvents ci-dessus). Même
+         dédoublonnage que le scan (automationRuns, sourceId+triggerType) :
+         un rappel avec le même sourceId+type ne retraite jamais. Compose
+         emitBusinessEvent/processBusinessEvent tels quels, aucune logique
+         de moteur dupliquée ici. */
+      processExternalEvent(type, sourceType, sourceId, data) {
+        if (!state) loadState();
+        const already = (state.automationRuns || []).some(r => r.sourceId === sourceId && r.triggerType === type);
+        if (already) return { skipped: true };
+        const event = emitBusinessEvent(type, { sourceType, sourceId, data });
+        processBusinessEvent(event, state, 0);
+        return { skipped: false };
       },
 
       list() { if (!state) loadState(); return (state.automationRules || []).slice(); },

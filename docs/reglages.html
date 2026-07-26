@@ -163,6 +163,7 @@
         <div class="settings-nav-item active" onclick="showTab('general')">Général</div>
         <div class="settings-nav-item" onclick="showTab('identite')">Identité visuelle</div>
         <div class="settings-nav-item" onclick="showTab('services')">Services & tarifs</div>
+        <div class="settings-nav-item" onclick="showTab('demandes')">Demande en ligne</div>
         <div class="settings-nav-item" onclick="showTab('compte')">Compte</div>
       </div>
 
@@ -211,6 +212,31 @@
           <span class="add-service" onclick="addCustomServiceRow()">+ Ajouter un service personnalisé</span>
           <br><br>
           <button class="btn-em" onclick="saveCompanyServices()">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-demandes" style="display:none;">
+          <h3>Demande en ligne</h3>
+          <p class="desc">Un formulaire public permet à un prospect de vous envoyer une demande de prestation sans compte Seba. Vous la retrouvez dans "Demandes" pour la traiter et, si besoin, la convertir en client.</p>
+          <div class="field-group">
+            <label><input type="checkbox" id="pic-enabled" style="width:auto;margin-right:8px;">Activer le formulaire public</label>
+          </div>
+          <div class="field-group"><label>Lien public</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="pic-link" readonly style="flex:1;">
+              <button type="button" class="btn-em" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);padding:8px 14px;" onclick="copyPublicIntakeLink()">Copier</button>
+            </div>
+          </div>
+          <div class="field-group"><label>Titre affiché</label><input type="text" id="pic-title" placeholder="Ex : Demander une intervention"></div>
+          <div class="field-group"><label>Introduction</label><textarea id="pic-intro" rows="3" placeholder="Quelques mots pour rassurer le visiteur avant qu'il envoie sa demande." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;"></textarea></div>
+          <div class="field-group"><label>Services proposés dans le formulaire</label><div id="pic-services-list" class="desc"></div></div>
+          <div class="field-group">
+            <label><input type="checkbox" id="pic-require-address" style="width:auto;margin-right:8px;">Adresse obligatoire</label>
+          </div>
+          <div class="field-group">
+            <label><input type="checkbox" id="pic-allow-date" style="width:auto;margin-right:8px;">Autoriser une date souhaitée</label>
+          </div>
+          <div class="field-group"><label>Message de confirmation</label><textarea id="pic-confirmation" rows="2" placeholder="Ex : Merci, nous revenons vers vous sous 24h." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;"></textarea></div>
+          <button class="btn-em" onclick="savePublicIntakeConfig()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-compte" style="display:none;">
@@ -282,10 +308,15 @@
       sw.classList.add('active');
     });
   });
-  // Lecture des données d'entreprise depuis localStorage (onboarding)
+  // Lecture des données d'entreprise -- préfère state.entreprise (serveur,
+  // feature/public-intake-conversion : seule source lisible par l'Edge
+  // Function public-intake, qui n'a aucun accès à ce navigateur), repli sur
+  // localStorage.sebaEntreprise (comptes créés avant ce chantier, ou hors
+  // ligne). Les deux sont réalignés à chaque saveGeneralInfo() ci-dessous.
   let _ent = null;
   try {
-    _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
+    const fromServer = window.SebaDB ? SebaDB.entreprise.get() : null;
+    _ent = fromServer || JSON.parse(localStorage.getItem('sebaEntreprise') || 'null');
     if (_ent) {
       const _f = document.getElementById('sidebar-company');
       if (_f && _ent.nom) _f.textContent = _ent.nom;
@@ -310,6 +341,7 @@
       zone: document.getElementById('regl-zone').value.trim(),
     });
     localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
+    if (window.SebaDB) SebaDB.entreprise.set(_ent);
     const _f = document.getElementById('sidebar-company');
     if (_f) _f.textContent = nom;
     showReglToast('Réglages enregistrés');
@@ -436,6 +468,61 @@
 
   _servicesState = getCompanyServices();
   renderServicesList();
+
+  /* ── Demande en ligne (feature/public-intake-conversion) ──
+     Réglages du formulaire public -- state.publicIntakeConfig, jamais
+     localStorage (lu côté serveur par l'Edge Function public-intake). */
+  let _picServices = [];
+  function renderPicServicesList() {
+    const box = document.getElementById('pic-services-list');
+    _picServices = SebaDB.list('custom_services');
+    if (!_picServices.length) {
+      box.innerHTML = 'Ajoutez d\'abord vos services dans l\'onglet "Services & tarifs".';
+      return;
+    }
+    const cfg = SebaDB.publicIntake.config() || {};
+    const allowed = Array.isArray(cfg.allowedServiceIds) ? cfg.allowedServiceIds : [];
+    box.innerHTML = _picServices.filter(s => s.active !== false).map(s => `
+      <label style="display:flex;align-items:center;gap:8px;margin:6px 0;">
+        <input type="checkbox" class="pic-svc-chk" value="${escAttr(s.id)}" style="width:auto;" ${allowed.length === 0 || allowed.indexOf(s.id) !== -1 ? 'checked' : ''}>
+        ${escAttr(s.name)}
+      </label>`).join('');
+  }
+
+  function loadPublicIntakeConfig() {
+    const cfg = SebaDB.publicIntake.config() || {};
+    document.getElementById('pic-enabled').checked = !!cfg.enabled;
+    document.getElementById('pic-title').value = cfg.title || 'Demander une intervention';
+    document.getElementById('pic-intro').value = cfg.introduction || '';
+    document.getElementById('pic-require-address').checked = !!cfg.requireAddress;
+    document.getElementById('pic-allow-date').checked = cfg.allowPreferredDate !== false;
+    document.getElementById('pic-confirmation').value = cfg.confirmationMessage || 'Merci, votre demande a bien été envoyée. Nous revenons vers vous rapidement.';
+    document.getElementById('pic-link').value = new URL('demande.html?pro=' + encodeURIComponent(SebaDB.accountId()), location.href).href;
+    renderPicServicesList();
+  }
+
+  function savePublicIntakeConfig() {
+    const allowedServiceIds = Array.from(document.querySelectorAll('.pic-svc-chk:checked')).map(el => el.value);
+    SebaDB.publicIntake.setConfig({
+      enabled: document.getElementById('pic-enabled').checked,
+      title: document.getElementById('pic-title').value.trim(),
+      introduction: document.getElementById('pic-intro').value.trim(),
+      allowedServiceIds,
+      requireAddress: document.getElementById('pic-require-address').checked,
+      allowPreferredDate: document.getElementById('pic-allow-date').checked,
+      confirmationMessage: document.getElementById('pic-confirmation').value.trim(),
+    });
+    showReglToast('Formulaire public enregistré');
+  }
+
+  function copyPublicIntakeLink() {
+    const input = document.getElementById('pic-link');
+    input.select();
+    try { navigator.clipboard.writeText(input.value); showReglToast('Lien copié'); }
+    catch (e) { document.execCommand('copy'); showReglToast('Lien copié'); }
+  }
+
+  loadPublicIntakeConfig();
 
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');
