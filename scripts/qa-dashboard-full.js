@@ -223,6 +223,68 @@ try {
     await page.screenshot({ path: path.join(outDir, '05-mobile-header.png') });
   }
 
+  // Régression fix/dashboard-login-redirect : ouverture ANONYME du
+  // dashboard imbriqué (docs/app/dashboard.html), sans ?demo ni session --
+  // contexte incognito dédié (aucune session/sessionStorage/localStorage
+  // héritée des phases précédentes). guard.js doit rediriger vers la VRAIE
+  // connexion.html (racine de docs/), jamais app/connexion.html (404 avant
+  // ce fix, cf. docs/guard.js). Assertions de redirection uniquement en
+  // target=live : sous file:// le bootstrap XHR sync de isConfigured est
+  // désactivé par conception (docs/auth.js, "location.protocol !== 'file:'"),
+  // donc guard.js ne s'arme jamais en local (mode démo assumé) -- même
+  // avant ce fix. En local on vérifie seulement l'absence d'erreur/404.
+  mark('6-anonymous-login-redirect');
+  {
+    const anonUrl = target === 'live'
+      ? 'https://sebpromax.github.io/seba/app/dashboard.html'
+      : 'file://' + path.resolve('docs', 'app', 'dashboard.html').replace(/\\/g, '/');
+    const anonContext = await browser.createIncognitoBrowserContext();
+    const anonPage = await anonContext.newPage();
+    const anonErrs = [];
+    anonPage.on('pageerror', (e) => anonErrs.push(`pageerror: ${e}`));
+    anonPage.on('console', (msg) => { if (msg.type() === 'error') anonErrs.push(`console: ${msg.text()}`); });
+    anonPage.on('requestfailed', (req) => {
+      const f = req.failure();
+      anonErrs.push(`requestfailed: ${req.url()} :: ${f ? f.errorText : ''}`);
+    });
+    anonPage.on('response', (res) => {
+      if (res.status() >= 400) anonErrs.push(`http ${res.status()}: ${res.url()}`);
+    });
+
+    let anonResp = null;
+    try {
+      anonResp = await anonPage.goto(anonUrl, {
+        waitUntil: target === 'live' ? 'networkidle2' : 'domcontentloaded',
+        timeout: target === 'live' ? 45000 : 30000,
+      });
+      await new Promise(r => setTimeout(r, 1200));
+    } catch (e) {
+      finding(`Régression anonyme dashboard : navigation en échec (${e.message})`);
+    }
+
+    const finalUrl = anonPage.url().split('?')[0];
+    const finalStatus = anonResp ? anonResp.status() : null;
+    log('anon-redirect', JSON.stringify({ finalUrl, finalStatus }));
+
+    if (target === 'live') {
+      if (!/(^|\/)connexion\.html$/.test(finalUrl)) {
+        finding(`Régression anonyme dashboard : redirection attendue vers connexion.html, obtenu ${finalUrl}`);
+      }
+      if (finalStatus !== 200) {
+        finding(`Régression anonyme dashboard : statut HTTP ${finalStatus} au lieu de 200`);
+      }
+    }
+    if (/\/app\/connexion\.html$/.test(finalUrl)) {
+      finding(`Régression anonyme dashboard : URL app/connexion.html détectée (404) -- ${finalUrl}`);
+    }
+    if (anonErrs.length > 0) {
+      finding(`Régression anonyme dashboard : erreurs capturées : ${JSON.stringify(anonErrs)}`);
+    }
+
+    await anonPage.close();
+    await anonContext.close();
+  }
+
   // Chargement sans erreur console (verification explicite, en plus de la
   // capture continue taggedErrs ci-dessous).
   if (taggedErrs.length > 0) {

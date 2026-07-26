@@ -23,9 +23,23 @@
     if (sessionStorage.getItem('seba_demo_bypass') === '1') return;
   } catch (e) {}
 
+  /* Résout connexion.html depuis l'emplacement réel de guard.js (via son
+     propre <script src>), jamais depuis la page courante -- une page
+     imbriquée (docs/app/*.html) chargerait sinon 'connexion.html' relatif
+     à son propre dossier (app/connexion.html, inexistant) au lieu de la
+     vraie page à la racine de docs/. Fonctionne sans chemin codé en dur
+     (local, GitHub Pages sous /seba/, etc.) car script.src est déjà une
+     URL absolue résolue par le navigateur. */
+  var guardScript = Array.from(document.scripts)
+    .find(function (script) { return /(?:^|\/)guard\.js(?:\?.*)?$/.test(script.src); });
+  var appRoot = guardScript
+    ? new URL('./', guardScript.src)
+    : new URL('../', window.location.href);
+  var loginUrl = new URL('connexion.html', appRoot);
+
   window.sebaAuth.getSession().then(function (session) {
     if (!session) {
-      window.location.replace('connexion.html');
+      window.location.replace(loginUrl.href);
     }
   }).catch(function () { /* réseau HS : on laisse le cache PWA servir la page */ });
 })();
