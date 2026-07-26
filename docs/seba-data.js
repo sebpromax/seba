@@ -1427,6 +1427,63 @@
         } catch (e) { return { ok: false, error: e.message }; }
       },
 
+      /* ═══ Indisponibilités (feature/team-availability-suggestions) ═══
+         Lecture : profile() ci-dessus suffit déjà -- get_my_employee_profile()
+         renvoie l'objet employé COMPLET (jamais un allowlist, l'employé est
+         du personnel de confiance comme le reste de son portail), donc
+         emp.unavailabilityRequests est déjà exposé sans RPC supplémentaire.
+         Écriture : 2 RPC dédiées SECURITY DEFINER (create/cancel), même
+         modèle que client_accept_devis (migrations/2026-07-26-quote-to-cash.sql) --
+         auth.uid(), rattachement via employe_accounts, FOR UPDATE, ne
+         modifie QUE unavailabilityRequests, jamais le reste de la fiche. */
+      async createUnavailabilityRequest(startDate, endDate, reason) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('create_my_unavailability_request', { p_start_date: startDate, p_end_date: endDate, p_reason: reason || null });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          if (!startDate || !endDate || startDate > endDate) return { ok: false, error: 'Dates invalides.' };
+          if (!reason || !reason.trim()) return { ok: false, error: 'Motif requis.' };
+          const emp = state.employes.find(e => e.id === demo.employeId);
+          if (!emp) return { ok: false, error: 'Fiche introuvable.' };
+          SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+          const req = { id: uid(), startDate, endDate, reason: reason.trim(), status: 'pending', createdAt: new Date().toISOString(), reviewedAt: null, reviewedBy: null, reviewComment: null };
+          const unavailabilityRequests = emp.unavailabilityRequests.concat([req]);
+          SebaDB.update('employes', emp.id, { unavailabilityRequests });
+          return { ok: true, request: req };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
+      async cancelUnavailabilityRequest(requestId) {
+        if (hasSupabase && window.sebaAuth && sebaAuth.isConfigured) {
+          const res = await sebaAuth.rpc('cancel_my_unavailability_request', { p_request_id: requestId });
+          if (res.error) return { ok: false, error: res.error.message };
+          return res.data;
+        }
+        if (!state) loadState();
+        try {
+          const raw = localStorage.getItem('seba_employee_session_demo');
+          const demo = raw ? JSON.parse(raw) : null;
+          if (!demo) return { ok: false, error: 'Non connecté.' };
+          const emp = state.employes.find(e => e.id === demo.employeId);
+          if (!emp) return { ok: false, error: 'Fiche introuvable.' };
+          SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+          const req = emp.unavailabilityRequests.find(r => r.id === requestId);
+          if (!req) return { ok: false, error: 'Demande introuvable.' };
+          if (req.status === 'cancelled') return { ok: true, request: req }; // idempotent
+          if (req.status !== 'pending') return { ok: false, error: 'Impossible d\'annuler une demande déjà traitée.' };
+          req.status = 'cancelled';
+          req.reviewedAt = new Date().toISOString();
+          SebaDB.update('employes', emp.id, { unavailabilityRequests: emp.unavailabilityRequests });
+          return { ok: true, request: req };
+        } catch (e) { return { ok: false, error: e.message }; }
+      },
+
       /* Planning du jour (espace-terrain.html) -- interventions vivent
          dans le blob JSONB du PATRON, RLS de seba_state interdit une
          lecture directe pour l'auth.uid() de l'employe -- RPC dediee,
@@ -2697,9 +2754,19 @@
        règle de calcul divergente. */
     scheduling: {
       parseDureeToMinutes(str) {
-        const m = /^(\d+)h(\d{2})?$/.exec(String(str || '').trim());
-        if (!m) return 0;
-        return parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0);
+        // Deux formats réels coexistent selon la page d'origine de
+        // l'intervention : "2h"/"2h30" (planning.html, format historique
+        // lu par app/dashboard.html) OU un nombre brut de minutes
+        // (intervention-fiche.html, champ "Durée (minutes)" -- trouvé en
+        // câblant le moteur de disponibilité sur prepareIntervention()).
+        // Les deux sont acceptés ici pour que "toutes les comparaisons
+        // utilisent les vraies durées" quelle que soit la page d'origine,
+        // sans jamais migrer les données existantes.
+        if (str === null || str === undefined || str === '') return 0;
+        const m = /^(\d+)h(\d{2})?$/.exec(String(str).trim());
+        if (m) return parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0);
+        const n = Number(str);
+        return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
       },
       addMinutesToTime(time, minutes) {
         const parts = String(time || '00:00').split(':').map(Number);
@@ -2749,6 +2816,241 @@
         });
         return conflicts;
       },
+
+      /* ═══ Moteur de disponibilité (feature/team-availability-suggestions) ═══
+         Fonctions PURES, jamais d'écriture ici -- voir SebaDB.employes.* et
+         SebaDB.interventions.reschedule/assign pour les écritures qui les
+         utilisent. Extension rétrocompatible de l'employé existant :
+         "active" du chantier == le champ RÉEL déjà utilisé partout ailleurs
+         (dashboard.html teamCapacity, equipe.html, employe-fiche.html) est
+         `actif`, jamais un second champ `active` qui désynchroniserait tout
+         le reste de l'app (filtre dashboard, badge équipe...) -- décision
+         explicite, pas un oubli. */
+      DAYS_OF_WEEK: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      dayKeyForDate(dateISO) {
+        // getDay() : 0=dimanche..6=samedi -> réindexé sur DAYS_OF_WEEK (lundi en tête, convention déjà utilisée par planning.html/DAY_NAMES).
+        const jsDay = new Date(dateISO + 'T00:00:00').getDay();
+        return SebaDB.scheduling.DAYS_OF_WEEK[(jsDay + 6) % 7];
+      },
+
+      normalizeEmployeeAvailability(employee) {
+        if (typeof employee.actif !== 'boolean') employee.actif = true;
+        if (!Array.isArray(employee.skills)) employee.skills = [];
+        const wa = employee.weeklyAvailability;
+        if (!wa || typeof wa !== 'object') {
+          employee.weeklyAvailability = {};
+          SebaDB.scheduling.DAYS_OF_WEEK.forEach(d => { employee.weeklyAvailability[d] = []; });
+        } else {
+          SebaDB.scheduling.DAYS_OF_WEEK.forEach(d => { if (!Array.isArray(wa[d])) wa[d] = []; });
+        }
+        if (employee.maxWeeklyMinutes === undefined) employee.maxWeeklyMinutes = null;
+        if (!Array.isArray(employee.unavailabilityRequests)) employee.unavailabilityRequests = [];
+        return employee;
+      },
+
+      /* {date, start, end} -- start/end en "HH:MM", jamais recalculés
+         ailleurs (une seule source pour la plage horaire d'une intervention). */
+      getInterventionTimeRange(intervention) {
+        if (!intervention || !intervention.date || !intervention.time) return null;
+        const end = SebaDB.scheduling.heureFin(intervention) || intervention.time;
+        return { date: intervention.date, start: intervention.time, end };
+      },
+
+      /* Minutes déjà planifiées pour un employé sur LA SEMAINE (7 jours
+         depuis weekStart inclus) -- jamais une intervention comptée deux
+         fois, jamais un calcul dupliqué ailleurs (utilisé par les warnings
+         de plafond ET par le classement de suggestion, critère 5). */
+      getEmployeeWeeklyPlannedMinutes(employeeId, interventions, weekStart) {
+        const start = new Date(weekStart + 'T00:00:00');
+        const end = new Date(start); end.setDate(end.getDate() + 7);
+        return interventions
+          .filter(i => i.employeId === employeeId && i.date && new Date(i.date + 'T00:00:00') >= start && new Date(i.date + 'T00:00:00') < end)
+          .reduce((sum, i) => sum + SebaDB.scheduling.parseDureeToMinutes(i.duree), 0);
+      },
+
+      _requestOverlapsDate(req, dateISO) {
+        if (!req.startDate || !req.endDate || !dateISO) return false;
+        return req.startDate <= dateISO && dateISO <= req.endDate;
+      },
+
+      /* Distingue BLOCKERS (assignation impossible, jamais contournable
+         sans force explicite) et WARNINGS (avertissement, confirmation
+         patron suffisante). Chaque entrée : {code, message[, detail]}.
+         `interventions` : liste COMPLETE (l'appelant ne doit PAS avoir déjà
+         retiré l'intervention en cours -- exclusion gérée ici via excludeId,
+         même convention que findConflict ci-dessus). */
+      getEmployeeAssignmentBlockers(employee, intervention, interventions, excludeId) {
+        SebaDB.scheduling.normalizeEmployeeAvailability(employee);
+        const blockers = [];
+        const warnings = [];
+
+        if (!employee.actif) {
+          blockers.push({ code: 'employee_inactive', message: (employee.prenom || 'Cet employé') + ' n\'est plus actif.' });
+        }
+
+        const range = SebaDB.scheduling.getInterventionTimeRange(intervention);
+        if (range) {
+          const accepted = (employee.unavailabilityRequests || []).find(r => r.status === 'accepted' && SebaDB.scheduling._requestOverlapsDate(r, range.date));
+          if (accepted) blockers.push({ code: 'accepted_unavailability', message: (employee.prenom || 'Cet employé') + ' est indisponible du ' + accepted.startDate + ' au ' + accepted.endDate + '.', detail: accepted });
+
+          const pending = (employee.unavailabilityRequests || []).find(r => r.status === 'pending' && SebaDB.scheduling._requestOverlapsDate(r, range.date));
+          if (pending) warnings.push({ code: 'pending_unavailability', message: 'Une demande d\'indisponibilité est en attente pour cette période.', detail: pending });
+
+          const conflict = SebaDB.scheduling.findConflict(interventions, Object.assign({}, intervention, { employeId: employee.id }), excludeId);
+          if (conflict) blockers.push({ code: 'schedule_conflict', message: 'Conflit horaire : ' + (employee.prenom || 'cet employé') + ' a déjà une mission sur ce créneau.', detail: { id: conflict.id, time: conflict.time, clientName: conflict.clientName } });
+
+          // Hors disponibilité habituelle -- uniquement si CE JOUR précis a
+          // des créneaux configurés (règle explicite du chantier : un jour
+          // vide reste neutre, jamais bloquant en soi -- seul l'objet
+          // weeklyAvailability entièrement vide vaut "aucune restriction").
+          const dayKey = SebaDB.scheduling.dayKeyForDate(range.date);
+          const daySlots = employee.weeklyAvailability[dayKey] || [];
+          if (daySlots.length > 0) {
+            const fits = daySlots.some(s => s.start <= range.start && range.end <= s.end);
+            if (!fits) blockers.push({ code: 'outside_regular_availability', message: (employee.prenom || 'Cet employé') + ' n\'est habituellement pas disponible à cet horaire.' });
+          }
+        }
+
+        if (employee.skills.length > 0 && intervention.service && employee.skills.indexOf(intervention.service) === -1) {
+          warnings.push({ code: 'missing_skill', message: (employee.prenom || 'Cet employé') + ' n\'a pas la compétence "' + intervention.service + '" déclarée.' });
+        }
+
+        if (employee.maxWeeklyMinutes != null && range) {
+          const weekStart = (function () { const d = new Date(range.date + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); })();
+          const already = SebaDB.scheduling.getEmployeeWeeklyPlannedMinutes(employee.id, (interventions || []).filter(i => i.id !== excludeId), weekStart);
+          const thisDuration = SebaDB.scheduling.parseDureeToMinutes(intervention.duree);
+          if (already + thisDuration > employee.maxWeeklyMinutes) {
+            warnings.push({ code: 'weekly_capacity_exceeded', message: 'Dépasse le plafond hebdomadaire de ' + (employee.prenom || 'cet employé') + ' (' + Math.round(employee.maxWeeklyMinutes / 60) + 'h/semaine).' });
+          }
+        }
+
+        return { blockers, warnings };
+      },
+
+      /* Classement déterministe (section 5 du chantier) -- exclut d'abord
+         tout employé avec un blocker dur, classe le reste selon les 7
+         critères imposés, dans l'ordre exact. Retourne aussi `excluded`
+         (raisons réelles, jamais un faux résultat quand personne ne
+         convient). */
+      rankEmployeesForIntervention(intervention, employees, interventions) {
+        const range = SebaDB.scheduling.getInterventionTimeRange(intervention);
+        const weekStart = range ? (function () { const d = new Date(range.date + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); })() : null;
+        const ranked = [];
+        const excluded = [];
+
+        employees.forEach(employee => {
+          const check = SebaDB.scheduling.getEmployeeAssignmentBlockers(employee, intervention, interventions, intervention.id);
+          const fullName = (employee.prenom + ' ' + employee.nom).trim();
+          if (check.blockers.length > 0) {
+            excluded.push({ employeeId: employee.id, name: fullName, blockers: check.blockers });
+            return;
+          }
+          const weeklyMinutes = weekStart ? SebaDB.scheduling.getEmployeeWeeklyPlannedMinutes(employee.id, interventions.filter(i => i.id !== intervention.id), weekStart) : 0;
+          const weeklyCount = weekStart
+            ? interventions.filter(i => i.id !== intervention.id && i.employeId === employee.id && i.date >= weekStart && new Date(i.date + 'T00:00:00') < new Date(new Date(weekStart + 'T00:00:00').getTime() + 7 * 864e5)).length
+            : 0;
+          const hasSkillWarning = check.warnings.some(w => w.code === 'missing_skill');
+          const hasPendingWarning = check.warnings.some(w => w.code === 'pending_unavailability');
+          const hasCapacityWarning = check.warnings.some(w => w.code === 'weekly_capacity_exceeded');
+          ranked.push({
+            employeeId: employee.id, name: fullName, warnings: check.warnings,
+            weeklyMinutes, weeklyCount,
+            sortKey: [hasSkillWarning ? 1 : 0, 0, hasPendingWarning ? 1 : 0, hasCapacityWarning ? 1 : 0, weeklyMinutes, weeklyCount, fullName.toLowerCase()],
+          });
+        });
+
+        ranked.sort((a, b) => {
+          for (let i = 0; i < a.sortKey.length; i++) {
+            if (a.sortKey[i] < b.sortKey[i]) return -1;
+            if (a.sortKey[i] > b.sortKey[i]) return 1;
+          }
+          return 0;
+        });
+
+        return { ranked, excluded };
+      },
+    },
+
+    /* ═══ Compétences/disponibilités employé (feature/team-availability-
+       suggestions) -- écritures patron directes (RLS seba_state normale,
+       même droits que le reste), jamais un second objet employé. ═══ */
+    employes: {
+      normalizeAvailability(employee) { return SebaDB.scheduling.normalizeEmployeeAvailability(employee); },
+
+      setActive(employeeId, active) {
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        SebaDB.update('employes', employeeId, { actif: !!active });
+        SebaDB.log('employe', (active ? 'Employé réactivé — ' : 'Employé désactivé — ') + (emp.prenom + ' ' + emp.nom).trim(), 'employe-fiche.html?id=' + employeeId);
+        return { ok: true, employe: SebaDB.get('employes', employeeId) };
+      },
+
+      setSkills(employeeId, skills) {
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        const clean = Array.isArray(skills) ? [...new Set(skills.filter(s => typeof s === 'string' && s.trim()))] : [];
+        SebaDB.update('employes', employeeId, { skills: clean });
+        return { ok: true, employe: SebaDB.get('employes', employeeId) };
+      },
+
+      setMaxWeeklyMinutes(employeeId, minutes) {
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        const v = (minutes === null || minutes === '' || minutes === undefined) ? null : Math.max(0, Math.round(Number(minutes) || 0));
+        SebaDB.update('employes', employeeId, { maxWeeklyMinutes: v });
+        return { ok: true, employe: SebaDB.get('employes', employeeId) };
+      },
+
+      /* Remplace la liste des créneaux d'UN jour (le patron enregistre
+         toute la journée à chaque modification -- plus simple/robuste
+         qu'un patch créneau par créneau, et le seul point d'entrée pour
+         cette écriture, jamais dupliqué ailleurs). Validation stricte :
+         start<end, aucun chevauchement entre créneaux du même jour --
+         refusée ici, jamais persistée à moitié. */
+      setDayAvailability(employeeId, dayKey, slots) {
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        if (SebaDB.scheduling.DAYS_OF_WEEK.indexOf(dayKey) === -1) return { ok: false, error: 'Jour invalide.' };
+        const clean = (Array.isArray(slots) ? slots : []).map(s => ({ start: String(s.start || ''), end: String(s.end || '') }));
+        for (const s of clean) {
+          if (!/^\d{2}:\d{2}$/.test(s.start) || !/^\d{2}:\d{2}$/.test(s.end) || s.start >= s.end) {
+            return { ok: false, error: 'Créneau invalide : l\'heure de fin doit être après l\'heure de début.' };
+          }
+        }
+        const sorted = clean.slice().sort((a, b) => a.start.localeCompare(b.start));
+        for (let i = 0; i < sorted.length - 1; i++) {
+          if (sorted[i].end > sorted[i + 1].start) return { ok: false, error: 'Ces créneaux se chevauchent.' };
+        }
+        SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+        const weeklyAvailability = Object.assign({}, emp.weeklyAvailability, { [dayKey]: sorted });
+        SebaDB.update('employes', employeeId, { weeklyAvailability });
+        return { ok: true, employe: SebaDB.get('employes', employeeId) };
+      },
+
+      /* Réponse patron à une demande d'indisponibilité (pending -> accepted/
+         rejected). Jamais sur une demande déjà cancelled/résolue -- l'état
+         final d'une demande est immuable une fois quittée 'pending' (règle
+         explicite du chantier : "ne plus modifier une demande cancelled"). */
+      resolveUnavailabilityRequest(employeeId, requestId, accept, comment) {
+        if (!state) loadState();
+        const emp = state.employes.find(e => e.id === employeeId);
+        if (!emp) return { ok: false, error: 'Employé introuvable.' };
+        SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+        const req = emp.unavailabilityRequests.find(r => r.id === requestId);
+        if (!req) return { ok: false, error: 'Demande introuvable.' };
+        if (req.status !== 'pending') return { ok: false, error: 'Cette demande n\'est plus en attente.' };
+        req.status = accept ? 'accepted' : 'rejected';
+        req.reviewedAt = new Date().toISOString();
+        req.reviewedBy = 'patron';
+        req.reviewComment = (comment || '').trim();
+        SebaDB.update('employes', employeeId, { unavailabilityRequests: emp.unavailabilityRequests });
+        SebaDB.log('employe', 'Demande d\'indisponibilité ' + (accept ? 'acceptée' : 'refusée') + ' — ' + (emp.prenom + ' ' + emp.nom).trim(), 'employe-fiche.html?id=' + employeeId);
+        return { ok: true, employe: SebaDB.get('employes', employeeId) };
+      },
     },
 
     /* ═══ Briefing de mission + retour terrain (feature/client-crm-advanced) ═══ */
@@ -2774,10 +3076,22 @@
           return { ok: false, error: 'Mission terminée et validée -- réouvrez le dossier avant de la déplacer.', locked: true };
         }
         const candidate = Object.assign({}, interv, patch);
+        // Moteur de disponibilité (feature/team-availability-suggestions) --
+        // SEULE fonction de blocage/avertissement, jamais une deuxième
+        // logique locale : planning.html/intervention-fiche.html passent par
+        // ce même reschedule()/assign(), jamais un contournement direct.
         if (candidate.employeId) {
-          const conflict = SebaDB.scheduling.findConflict(state.interventions, candidate, interventionId);
-          if (conflict && !(opts && opts.force)) {
-            return { ok: false, error: 'Conflit horaire : ' + (candidate.employeName || 'cet employé') + ' a déjà une mission sur ce créneau.', conflict: { id: conflict.id, time: conflict.time, clientName: conflict.clientName } };
+          const employee = state.employes.find(e => e.id === candidate.employeId);
+          if (employee) {
+            const check = SebaDB.scheduling.getEmployeeAssignmentBlockers(employee, candidate, state.interventions, interventionId);
+            if (check.blockers.length > 0 && !(opts && opts.force)) {
+              const b = check.blockers[0];
+              const scheduleConflict = check.blockers.find(x => x.code === 'schedule_conflict');
+              return { ok: false, error: b.message, blockers: check.blockers, warnings: check.warnings, conflict: scheduleConflict ? scheduleConflict.detail : undefined };
+            }
+            if (check.warnings.length > 0 && !(opts && opts.force)) {
+              return { ok: false, error: check.warnings[0].message, warnings: check.warnings, needsConfirm: true };
+            }
           }
         }
         const statusHistory = (interv.statusHistory || []).concat([{ id: uid(), event: 'rescheduled', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: patch }]);
@@ -2936,24 +3250,47 @@
         return intervention.execution.checklist.length < before;
       },
       /* Prépare/réassigne une mission -- adresse/employé/horaires/durée/
-         consignes/exigences photo. Simple SebaDB.update() : ces champs sont
-         déjà librement modifiables par le patron (aucune RLS ne les
-         restreint), inutile de dupliquer une méthode dédiée pour chacun --
-         les pages appelantes utilisent directement SebaDB.update('interventions',
-         id, {...}) pour la préparation, et pushStatusHistory() ici
+         consignes/exigences photo. Champs déjà librement modifiables par le
+         patron (aucune RLS ne les restreint) ; pushStatusHistory() ici
          uniquement pour l'événement "prepared"/"assigned" (historique
-         explicite, jamais fabriqué après coup). */
-      prepareIntervention(interventionId, patch) {
+         explicite, jamais fabriqué après coup).
+         feature/team-availability-suggestions : branche le MÊME moteur de
+         disponibilité que SebaDB.interventions.reschedule() (jamais une
+         deuxième logique) dès que patch touche employeId -- retour enrichi
+         {ok, blockers, warnings, conflict, needsConfirm}, opts.force=true
+         pour écrire malgré un avertissement/conflit déjà vu et confirmé par
+         le patron. Rétrocompatible : un appelant qui ignore le retour (code
+         existant avant ce chantier) continue de fonctionner tant qu'aucun
+         blocker ne s'applique -- seul un NOUVEL appelant qui vérifie res.ok
+         profite du refus explicite. */
+      prepareIntervention(interventionId, patch, opts) {
         if (!state) loadState();
         const intervention = state.interventions.find(i => i.id === interventionId);
-        if (!intervention) return null;
+        if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
         normalizeIntervention(intervention);
+
+        if (patch.employeId !== undefined && patch.employeId) {
+          const employee = state.employes.find(e => e.id === patch.employeId);
+          if (employee) {
+            const candidate = Object.assign({}, intervention, patch);
+            const check = SebaDB.scheduling.getEmployeeAssignmentBlockers(employee, candidate, state.interventions, interventionId);
+            if (check.blockers.length > 0 && !(opts && opts.force)) {
+              const b = check.blockers[0];
+              const scheduleConflict = check.blockers.find(x => x.code === 'schedule_conflict');
+              return { ok: false, error: b.message, blockers: check.blockers, warnings: check.warnings, conflict: scheduleConflict ? scheduleConflict.detail : undefined };
+            }
+            if (check.warnings.length > 0 && !(opts && opts.force)) {
+              return { ok: false, error: check.warnings[0].message, warnings: check.warnings, needsConfirm: true };
+            }
+          }
+        }
+
         const wasUnassigned = !intervention.employeId;
         const willBeAssigned = patch.employeId !== undefined ? patch.employeId : intervention.employeId;
         if (willBeAssigned && wasUnassigned) pushStatusHistory(intervention, 'assigned', 'patron', null, { employeId: willBeAssigned });
         else pushStatusHistory(intervention, 'prepared', 'patron', null, null);
         SebaDB.update('interventions', interventionId, Object.assign({}, patch, { statusHistory: intervention.statusHistory }));
-        return SebaDB.get('interventions', interventionId);
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
       },
 
       /* Approuve le dossier terminé (après validation client, ou

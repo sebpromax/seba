@@ -130,13 +130,26 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
 .et-modal{background:var(--white);border-radius:var(--r);padding:24px;width:100%;max-width:380px;max-height:85vh;max-height:85dvh;overflow-y:auto;}
 .et-modal h3{font-size:1rem;margin-bottom:4px;}
 .et-modal p{font-size:.82rem;color:var(--text-2);margin-bottom:14px;}
-.et-modal textarea,.et-modal select{width:100%;min-height:90px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;resize:vertical;margin-bottom:14px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
-.et-modal select{min-height:48px;}
-.et-modal textarea:focus,.et-modal select:focus{border-color:var(--emerald);outline:none;}
+.et-modal textarea,.et-modal select,.et-modal input{width:100%;min-height:90px;padding:12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;resize:vertical;margin-bottom:14px;font-family:'Inter',sans-serif;-webkit-appearance:none;appearance:none;}
+.et-modal select,.et-modal input{min-height:48px;}
+.et-modal textarea:focus,.et-modal select:focus,.et-modal input:focus{border-color:var(--emerald);outline:none;}
 .et-modal-actions{display:flex;gap:10px;}
 .et-modal-actions button{flex:1;padding:11px;border-radius:var(--rs);font-size:.86rem;font-weight:600;cursor:pointer;min-height:48px;}
 .et-modal-cancel{background:var(--bg);border:1px solid var(--border);color:var(--ink);}
 .et-modal-send{background:var(--emerald);border:none;color:var(--on-emerald);}
+
+/* ── Mes indisponibilités (feature/team-availability-suggestions) ── */
+.et-unavail-item{padding:10px 0;border-bottom:1px solid var(--border);}
+.et-unavail-item:last-child{border-bottom:none;}
+.et-unavail-dates{font-weight:600;font-size:.88rem;}
+.et-unavail-reason{font-size:.82rem;color:var(--text-2);margin:2px 0 6px;}
+.et-unavail-badge{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:600;}
+.et-unavail-badge.pending{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+.et-unavail-badge.accepted{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+.et-unavail-badge.rejected{background:var(--danger-bg);color:var(--danger-text);}
+.et-unavail-badge.cancelled{background:var(--bg);color:var(--text-2);}
+.et-unavail-comment{font-size:.78rem;color:var(--text-2);font-style:italic;margin-bottom:6px;}
+.et-unavail-cancel{font-size:.78rem;color:var(--danger-text);background:none;border:none;cursor:pointer;font-weight:600;padding:0;}
 .et-modal-send:disabled{opacity:.5;cursor:not-allowed;}
 
 /* ── Chat de mission (tripartite Patron/Employé/Client, 2026-07-20) --
@@ -332,6 +345,12 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
         </div>
       </div>
 
+      <div class="et-section-title">Mes indisponibilités</div>
+      <div class="et-messaging" style="margin-bottom:20px;">
+        <div id="et-unavail-list"><p style="font-size:.84rem;color:var(--text-2);">Aucune demande.</p></div>
+        <button class="et-msg-send" style="width:100%;padding:11px;margin-top:10px;" onclick="openUnavailModal()">+ Nouvelle demande</button>
+      </div>
+
       <div class="et-section-title">Mon mot de passe</div>
       <div class="et-messaging" style="margin-bottom:20px;">
         <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
@@ -389,6 +408,21 @@ button,input,textarea,select{font-family:'Inter',sans-serif;}
     <div class="et-modal-actions">
       <button class="et-modal-cancel" onclick="closeReportModal()">Annuler</button>
       <button class="et-modal-send" id="et-report-send" onclick="submitReport()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nouvelle demande d'indisponibilité (feature/team-availability-suggestions) -->
+<div class="et-modal-overlay" id="et-unavail-overlay">
+  <div class="et-modal">
+    <h3>Nouvelle demande d'indisponibilité</h3>
+    <p>Le patron devra l'accepter ou la refuser.</p>
+    <input type="date" id="et-unavail-start" placeholder="Date de début">
+    <input type="date" id="et-unavail-end" placeholder="Date de fin">
+    <textarea id="et-unavail-reason" placeholder="Motif (obligatoire)" maxlength="300" style="min-height:70px;"></textarea>
+    <div class="et-modal-actions">
+      <button class="et-modal-cancel" onclick="closeUnavailModal()">Annuler</button>
+      <button class="et-modal-send" id="et-unavail-send" onclick="submitUnavailRequest()">Envoyer</button>
     </div>
   </div>
 </div>
@@ -609,11 +643,66 @@ function missionStatusKey(i) {
   document.getElementById('et-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById('et-profil-nom').textContent = (emp.prenom || '') + ' ' + (emp.nom || '');
   document.getElementById('et-profil-role').textContent = emp.role || 'Non renseigné';
+  renderUnavailList(emp.unavailabilityRequests || []);
 
   await refreshAllViews();
   renderMessages();
   if (window.SebaDB.onChange) SebaDB.onChange(() => refreshAllViews());
 })();
+
+/* ── Mes indisponibilités (feature/team-availability-suggestions) --
+   lecture via _profile.employe.unavailabilityRequests (déjà exposé par
+   get_my_employee_profile(), aucune RPC de lecture supplémentaire),
+   écriture via les 2 RPC dédiées create/cancel_my_unavailability_request. ── */
+const UNAVAIL_STATUS_LABEL = { pending: 'En attente', accepted: 'Acceptée', rejected: 'Refusée', cancelled: 'Annulée' };
+function renderUnavailList(requests) {
+  const box = document.getElementById('et-unavail-list');
+  const list = (requests || []).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  if (!list.length) { box.innerHTML = '<p style="font-size:.84rem;color:var(--text-2);">Aucune demande.</p>'; return; }
+  box.innerHTML = list.map(r => {
+    const canCancel = r.status === 'pending';
+    return '<div class="et-unavail-item">' +
+      '<div class="et-unavail-dates">' + escapeHtml(r.startDate) + ' → ' + escapeHtml(r.endDate) + ' <span class="et-unavail-badge ' + r.status + '">' + (UNAVAIL_STATUS_LABEL[r.status] || r.status) + '</span></div>' +
+      '<div class="et-unavail-reason">' + escapeHtml(r.reason || '') + '</div>' +
+      (r.reviewComment ? '<div class="et-unavail-comment">Réponse du patron : ' + escapeHtml(r.reviewComment) + '</div>' : '') +
+      (canCancel ? '<button class="et-unavail-cancel" onclick="cancelUnavailRequest(' + JSON.stringify(r.id) + ')">Annuler cette demande</button>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function openUnavailModal() {
+  document.getElementById('et-unavail-start').value = '';
+  document.getElementById('et-unavail-end').value = '';
+  document.getElementById('et-unavail-reason').value = '';
+  document.getElementById('et-unavail-overlay').classList.add('open');
+}
+function closeUnavailModal() { document.getElementById('et-unavail-overlay').classList.remove('open'); }
+
+async function submitUnavailRequest() {
+  const start = document.getElementById('et-unavail-start').value;
+  const end = document.getElementById('et-unavail-end').value;
+  const reason = document.getElementById('et-unavail-reason').value.trim();
+  if (!start || !end) { alert('Merci d\'indiquer une date de début et une date de fin.'); return; }
+  if (start > end) { alert('La date de début doit précéder ou égaler la date de fin.'); return; }
+  if (!reason) { alert('Merci d\'indiquer un motif.'); return; }
+  const btn = document.getElementById('et-unavail-send');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const res = await SebaDB.employeePortal.createUnavailabilityRequest(start, end, reason);
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  if (!res.ok) { alert(res.error || 'Échec de l\'envoi.'); return; }
+  closeUnavailModal();
+  const profileRes = await SebaDB.employeePortal.profile();
+  if (profileRes.ok) { _profile = profileRes; renderUnavailList(profileRes.employe.unavailabilityRequests || []); }
+}
+
+async function cancelUnavailRequest(requestId) {
+  if (!confirm('Annuler cette demande d\'indisponibilité ?')) return;
+  const res = await SebaDB.employeePortal.cancelUnavailabilityRequest(requestId);
+  if (!res.ok) { alert(res.error || 'Échec de l\'annulation.'); return; }
+  const profileRes = await SebaDB.employeePortal.profile();
+  if (profileRes.ok) { _profile = profileRes; renderUnavailList(profileRes.employe.unavailabilityRequests || []); }
+}
 
 function showError(msg) {
   document.getElementById('et-loading').style.display = 'none';
