@@ -16,7 +16,7 @@
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
 <style>
-:root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);}
+:root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -57,8 +57,12 @@
   .badge.attente{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
   .badge.signe{background:var(--badge-success-bg);color:var(--badge-success-txt);}
   .badge.expire{background:var(--badge-info-bg);color:var(--text-2);}
+  .badge.brouillon{background:var(--badge-info-bg);color:var(--text-2);}
+  .badge.refuse{background:var(--danger-bg);color:var(--danger-text);}
+  .badge.annule{background:var(--badge-info-bg);color:var(--text-2);}
   .amount{font-weight:600;}
   .row-action{font-size:0.78rem;color:var(--emerald);cursor:pointer;}
+  .row-action-sep{color:var(--border);margin:0 2px;}
 
   .topbar-right{display:flex;align-items:center;gap:14px;}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:#031A12;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
@@ -193,8 +197,10 @@
     </div>
     <div class="tabs" id="devis-tabs">
       <div class="tab active" data-filter="all">Tous</div>
+      <div class="tab" data-filter="brouillon">Brouillons</div>
       <div class="tab" data-filter="attente">En attente</div>
       <div class="tab" data-filter="signe">Signés</div>
+      <div class="tab" data-filter="refuse">Refusés</div>
       <div class="tab" data-filter="expire">Expirés</div>
     </div>
     <div class="panel">
@@ -295,7 +301,7 @@
   /* ── Devis — lus depuis le moteur de données partagé ── */
   let DEVIS_DATA = SebaDB.list('devis').map(window.SebaQuotes.adaptLegacyQuote).map(d => Object.assign({}, d, { client: d.clientName }));
 
-  const STATUS_LABEL = {signe:'Signé',attente:'En attente',expire:'Expiré'};
+  const STATUS_LABEL = {signe:'Signé',attente:'En attente',expire:'Expiré',brouillon:'Brouillon',refuse:'Refusé',annule:'Annulé'};
   let _biz = {};
   try { _biz = JSON.parse(localStorage.getItem('sebaEntreprise')||'{}'); } catch(e){}
   const _bizName = _biz.nom || 'Seba Services';
@@ -465,16 +471,29 @@
     renderTabs();
   }
 
+  /* Actions dédiées quote-to-cash (dupliquer/annuler/convertir/modifier),
+     additives à côté de l'action historique (voir/relancer/renouveler).
+     Une seule ligne de "petites actions" par statut, jamais toutes en même
+     temps (bruit visuel). */
+  function rowExtraActions(d) {
+    const acts = [];
+    if (d.status === 'brouillon') acts.push({ act: 'modifier', label: 'Modifier' });
+    if (d.status === 'signe' && !d.invoiceId) acts.push({ act: 'convertir', label: 'Convertir en facture' });
+    acts.push({ act: 'dupliquer', label: 'Dupliquer' });
+    if (d.status !== 'annule' && !d.invoiceId) acts.push({ act: 'annuler', label: 'Annuler' });
+    return acts.map(a => '<span class="row-action-sep">·</span><span class="row-action" data-id="' + d.id + '" data-xact="' + a.act + '">' + a.label + '</span>').join('');
+  }
+
   function renderTable(filter) {
     const tbody = document.getElementById('devis-tbody');
     const list = (filter && filter !== 'all') ? DEVIS_DATA.filter(d => d.status === filter) : DEVIS_DATA;
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:28px;">Aucun devis.</td></tr>'; return; }
     tbody.innerHTML = list.map(d => {
-      const action = d.status === 'signe' ? 'Voir' : (d.status === 'attente' ? 'Relancer' : 'Renouveler');
+      const action = d.status === 'signe' ? 'Voir' : (d.status === 'attente' ? 'Relancer' : (d.status === 'brouillon' ? 'Voir' : 'Renouveler'));
       return '<tr><td class="num">' + d.num + '</td><td>' + esc(d.client) + '</td><td>' + esc(d.service) + '</td>' +
         '<td class="amount">' + d.amount + ' ' + _sym + '</td>' +
         '<td><span class="badge ' + d.status + '">' + STATUS_LABEL[d.status] + '</span></td>' +
-        '<td class="row-action"><span data-num="' + d.num + '" data-act="' + action.toLowerCase() + '">' + action + '</span></td></tr>';
+        '<td class="row-action"><span data-num="' + d.num + '" data-act="' + action.toLowerCase() + '">' + action + '</span>' + rowExtraActions(d) + '</td></tr>';
     }).join('');
     tbody.querySelectorAll('[data-num]').forEach(el => {
       el.style.cursor = 'pointer';
@@ -485,18 +504,44 @@
         else renouveler(num);
       });
     });
+    tbody.querySelectorAll('[data-xact]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = el.dataset.id, xact = el.dataset.xact;
+        if (xact === 'modifier') { location.href = 'devis-nouveau.html?id=' + encodeURIComponent(id); return; }
+        if (xact === 'dupliquer') {
+          const res = SebaDB.devis.duplicate(id);
+          if (res.ok) { showToast('Devis dupliqué (brouillon) — ' + res.devis.num); refreshFromDB(); }
+          else showToast(res.error || 'Échec de la duplication.');
+          return;
+        }
+        if (xact === 'annuler') {
+          if (!confirm('Annuler ce devis ?')) return;
+          const res = SebaDB.devis.cancel(id);
+          if (res.ok) { showToast('Devis annulé.'); refreshFromDB(); }
+          else showToast(res.error || 'Échec de l\'annulation.');
+          return;
+        }
+        if (xact === 'convertir') {
+          const res = SebaDB.factures.createFromDevis(id);
+          if (res.ok) { showToast('Facture générée — ' + res.facture.num); setTimeout(() => location.href = 'factures.html?highlight=' + res.facture.id, 600); }
+          else showToast(res.error || 'Échec de la conversion.');
+          return;
+        }
+      });
+    });
     // clic sur la ligne = ouvrir le détail
     tbody.querySelectorAll('tr').forEach(tr => {
       const numEl = tr.querySelector('.num');
-      if (numEl) tr.addEventListener('click', e => { if (!e.target.dataset.num) openSheet(numEl.textContent.trim()); });
+      if (numEl) tr.addEventListener('click', e => { if (!e.target.dataset.num && !e.target.dataset.xact) openSheet(numEl.textContent.trim()); });
     });
   }
 
   let _activeFilter = 'all';
   function renderTabs() {
-    const counts = { all: DEVIS_DATA.length, attente: 0, signe: 0, expire: 0 };
+    const counts = { all: DEVIS_DATA.length, brouillon: 0, attente: 0, signe: 0, refuse: 0, expire: 0 };
     DEVIS_DATA.forEach(d => { if (counts[d.status] !== undefined) counts[d.status]++; });
-    const LBL = { all: 'Tous', attente: 'En attente', signe: 'Signés', expire: 'Expirés' };
+    const LBL = { all: 'Tous', brouillon: 'Brouillons', attente: 'En attente', signe: 'Signés', refuse: 'Refusés', expire: 'Expirés' };
     document.querySelectorAll('#devis-tabs .tab').forEach(tab => {
       const f = tab.dataset.filter;
       tab.textContent = LBL[f] + ' (' + counts[f] + ')';

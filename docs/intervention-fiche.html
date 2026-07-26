@@ -411,6 +411,12 @@
       if (!interv.invoiceId) html += '<button class="btn-em" onclick="createInvoice()">Créer une facture</button>';
       else html += '<a class="btn-outline" href="factures.html">Voir la facture</a>';
     }
+    // Devis depuis cette intervention (feature/quote-to-cash, section 1) --
+    // toujours proposé, indépendamment du statut d'exécution : un devis
+    // peut précéder ou accompagner la mission, jamais bloqué par
+    // completionStatus (contrairement à "Créer une facture" ci-dessus, qui
+    // exige owner_approved -- règle Intervention 360 inchangée).
+    html += '<a class="btn-outline" href="devis-nouveau.html?interventionId=' + encodeURIComponent(_id) + '">+ Nouveau devis</a>';
     el.innerHTML = html;
   }
 

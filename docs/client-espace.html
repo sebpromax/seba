@@ -375,6 +375,30 @@ button,input,textarea{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- Refus de devis (commentaire obligatoire) -->
+<div class="ce-modal-overlay" id="ce-refuse-overlay">
+  <div class="ce-modal">
+    <h3>Refuser ce devis</h3>
+    <p>Merci d'indiquer la raison — votre prestataire en sera informé.</p>
+    <input type="text" id="ce-refuse-comment" placeholder="Ex: budget trop élevé, délai trop long…" maxlength="300">
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeRefuseModal()">Annuler</button>
+      <button class="ce-modal-send" id="ce-refuse-btn" onclick="submitRefuseDevis()">Refuser</button>
+    </div>
+  </div>
+</div>
+
+<!-- Détail devis/facture (feature/quote-to-cash) -->
+<div class="ce-modal-overlay" id="ce-detail-overlay">
+  <div class="ce-modal" style="max-width:420px;">
+    <h3 id="ce-detail-title">Détail</h3>
+    <div id="ce-detail-body" style="font-size:.86rem;color:var(--ink);max-height:60vh;overflow-y:auto;"></div>
+    <div class="ce-modal-actions">
+      <button class="ce-modal-cancel" onclick="closeDetailModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Demande de report (Intervention 360) -->
 <div class="ce-modal-overlay" id="ce-reschedule-overlay">
   <div class="ce-modal">
@@ -448,9 +472,9 @@ function escapeHtml(s) {
 function fmtMoney(n) { return (n || 0).toLocaleString('fr-FR') + ' €'; }
 
 const REQUEST_STATUT_LABELS = { nouvelle: 'Reçue', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
-const DEVIS_STATUT_LABELS = { attente: 'En attente', signe: 'Accepté', refuse: 'Refusé', expire: 'Expiré' };
-const FACTURE_STATUT_LABELS = { attente: 'À payer', payee: 'Payée', retard: 'En retard', annulee: 'Annulée' };
-const FACTURE_CSS = { attente: 'a-payer', payee: 'payee', retard: 'retard', annulee: 'annulee' };
+const DEVIS_STATUT_LABELS = { attente: 'En attente', signe: 'Accepté', refuse: 'Refusé', expire: 'Expiré', annule: 'Annulé' };
+const FACTURE_STATUT_LABELS = { attente: 'À payer', payee: 'Payée', retard: 'En retard', annulee: 'Annulée', issued: 'À payer', paid: 'Payée', overdue: 'En retard', partially_paid: 'Partiellement payée', cancelled: 'Annulée', draft: 'Brouillon' };
+const FACTURE_CSS = { attente: 'a-payer', payee: 'payee', retard: 'retard', annulee: 'annulee', issued: 'a-payer', paid: 'payee', overdue: 'retard', partially_paid: 'a-payer', cancelled: 'annulee', draft: 'a-payer' };
 
 let _profile = null;
 let _requestsById = {};
@@ -695,13 +719,13 @@ function renderQuoteRow(d) {
   return '<div class="cp-list-row">' +
     '<div class="cp-list-main">' +
       '<div class="cp-list-title">' + escapeHtml(d.num || d.numero || 'Devis') + '</div>' +
-      '<div class="cp-list-meta">' + escapeHtml(d.date || '') + ' · <span class="mono-num">' + fmtMoney(d.amount) + '</span></div>' +
+      '<div class="cp-list-meta">' + escapeHtml(d.date || '') + ' · <span class="mono-num">' + fmtMoney(d.totalTTC != null ? d.totalTTC : d.amount) + '</span></div>' +
     '</div>' +
     '<div class="cp-list-side">' +
       '<span class="cp-badge ' + (d.status || '') + '">' + (DEVIS_STATUT_LABELS[d.status] || d.status || '') + '</span>' +
-      '<button type="button" class="cp-link-btn" onclick="alert(\'Consultation du devis — fonctionnalité à brancher sur le document réel.\')">Consulter</button>' +
-      (canAct ? '<button type="button" class="cp-link-btn" onclick="confirmDevisAction(\'' + d.id + '\',\'signe\')">Accepter</button>' +
-                '<button type="button" class="cp-link-btn" style="color:var(--danger-text);" onclick="confirmDevisAction(\'' + d.id + '\',\'refuse\')">Refuser</button>' : '') +
+      '<button type="button" class="cp-link-btn" onclick="consulterDevis(\'' + d.id + '\')">Consulter</button>' +
+      (canAct ? '<button type="button" class="cp-link-btn" onclick="confirmAcceptDevis(\'' + d.id + '\')">Accepter</button>' +
+                '<button type="button" class="cp-link-btn" style="color:var(--danger-text);" onclick="openRefuseModal(\'' + d.id + '\')">Refuser</button>' : '') +
     '</div>' +
   '</div>';
 }
@@ -717,15 +741,91 @@ function renderQuotes(vm) {
   preview.innerHTML = '<div class="cp-card">' + vm.quotes.slice(0, 3).map(renderQuoteRow).join('') + '</div>';
   full.innerHTML = html;
 }
-function confirmDevisAction(id, newStatus) {
-  const label = newStatus === 'signe' ? 'accepter' : 'refuser';
-  openConfirmModal('Confirmer', 'Voulez-vous vraiment ' + label + ' ce devis ? Cette action ne peut pas être annulée facilement.', () => {
-    if (!hasRemoteSession()) {
-      try { SebaDB.update('devis', id, { status: newStatus }); } catch (e) {}
-    }
+
+/* Acceptation/refus — passent TOUJOURS par SebaDB.clientPortal.acceptDevis/
+   refuseDevis(), jamais un SebaDB.update('devis', ...) direct depuis cette
+   page : ces méthodes appellent les RPC SECURITY DEFINER dédiées en session
+   réelle (client_accept_devis/client_refuse_devis,
+   migrations/2026-07-26-quote-to-cash.sql), avec repli local cohérent en
+   mode démo -- jamais d'écriture qui contourne le rattachement client.
+   Corrige : avant ce chantier, cette page n'écrivait RIEN du tout en
+   session cloud réelle (le if(!hasRemoteSession()) laissait la branche
+   réelle vide), Accepter/Refuser étaient silencieusement des no-op. */
+function confirmAcceptDevis(id) {
+  openConfirmModal('Confirmer', 'Voulez-vous vraiment accepter ce devis ? Cette action ne peut pas être annulée facilement.', async () => {
+    const res = await SebaDB.clientPortal.acceptDevis(id);
     closeConfirmModal();
+    if (!res.ok) { alert(res.error || 'Échec de l\'acceptation.'); return; }
     refreshView();
   });
+}
+let _refuseDevisId = null;
+function openRefuseModal(id) {
+  _refuseDevisId = id;
+  document.getElementById('ce-refuse-comment').value = '';
+  document.getElementById('ce-refuse-overlay').classList.add('open');
+}
+function closeRefuseModal() {
+  document.getElementById('ce-refuse-overlay').classList.remove('open');
+  _refuseDevisId = null;
+}
+async function submitRefuseDevis() {
+  const comment = document.getElementById('ce-refuse-comment').value.trim();
+  if (!comment) { document.getElementById('ce-refuse-comment').focus(); return; }
+  const id = _refuseDevisId;
+  const btn = document.getElementById('ce-refuse-btn');
+  btn.disabled = true;
+  const res = await SebaDB.clientPortal.refuseDevis(id, comment);
+  btn.disabled = false;
+  closeRefuseModal();
+  if (!res.ok) { alert(res.error || 'Échec du refus.'); return; }
+  refreshView();
+}
+
+/* ── Détail réel (devis/facture) — RPC get_my_client_devis_detail/
+   get_my_client_facture_detail en session réelle, repli local sinon.
+   Remplace l'ancien alert() de stub ("fonctionnalité à brancher"). ── */
+function openDetailModal(title, bodyHtml) {
+  document.getElementById('ce-detail-title').textContent = title;
+  document.getElementById('ce-detail-body').innerHTML = bodyHtml;
+  document.getElementById('ce-detail-overlay').classList.add('open');
+}
+function closeDetailModal() { document.getElementById('ce-detail-overlay').classList.remove('open'); }
+
+function renderDevisLinesHtml(d) {
+  const lines = (d.lines || []).map(l =>
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">' +
+      '<span>' + escapeHtml(l.desc || '') + (l.qty > 1 ? ' × ' + l.qty : '') + '</span><span>' + fmtMoney((l.qty || 1) * (l.u || 0)) + '</span></div>'
+  ).join('');
+  return lines || '<div class="cp-empty">Aucune ligne.</div>';
+}
+
+async function consulterDevis(id) {
+  const res = await SebaDB.clientPortal.devisDetail(id);
+  if (!res.ok) { alert(res.error || 'Devis introuvable.'); return; }
+  const d = res.devis;
+  const body = renderDevisLinesHtml(d) +
+    '<div style="display:flex;justify-content:space-between;padding-top:10px;font-size:.8rem;color:var(--text-2);"><span>Total HT</span><span>' + fmtMoney(d.totalHT) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-2);"><span>TVA</span><span>' + fmtMoney(d.totalTVA) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-weight:700;padding-top:6px;"><span>Total TTC</span><span>' + fmtMoney(d.totalTTC) + '</span></div>' +
+    (d.validityDate ? '<div style="margin-top:10px;font-size:.8rem;color:var(--text-2);">Valable jusqu\'au ' + escapeHtml(d.validityDate) + '</div>' : '') +
+    (d.conditions ? '<div style="margin-top:6px;font-size:.8rem;color:var(--text-2);">' + escapeHtml(d.conditions) + '</div>' : '') +
+    (d.refusalComment ? '<div style="margin-top:10px;font-size:.8rem;color:var(--danger-text);">Votre commentaire : ' + escapeHtml(d.refusalComment) + '</div>' : '');
+  openDetailModal(d.num || 'Devis', body);
+}
+
+async function consulterFacture(id) {
+  const res = await SebaDB.clientPortal.factureDetail(id);
+  if (!res.ok) { alert(res.error || 'Facture introuvable.'); return; }
+  const f = res.facture;
+  const payments = (f.payments || []).map(p =>
+    '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;color:var(--text-2);"><span>' + escapeHtml(p.date || '') + ' · ' + escapeHtml(p.mode || '') + '</span><span>' + fmtMoney(p.amount) + '</span></div>'
+  ).join('');
+  const body = renderDevisLinesHtml(f) +
+    '<div style="display:flex;justify-content:space-between;padding-top:10px;font-size:.8rem;color:var(--text-2);"><span>Total TTC</span><span>' + fmtMoney(f.totalTTC) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-weight:700;"><span>Solde restant</span><span>' + fmtMoney(f.solde) + '</span></div>' +
+    (payments ? '<div style="margin-top:10px;font-size:.72rem;text-transform:uppercase;color:var(--text-2);">Paiements</div>' + payments : '');
+  openDetailModal(f.num || 'Facture', body);
 }
 
 function renderInvoiceRow(f) {
@@ -735,9 +835,9 @@ function renderInvoiceRow(f) {
       '<div class="cp-list-meta">Échéance ' + escapeHtml(f.dateEcheance || f.date || '') + '</div>' +
     '</div>' +
     '<div class="cp-list-side">' +
-      '<span class="mono-num cp-list-amount">' + fmtMoney(f.amount) + '</span>' +
+      '<span class="mono-num cp-list-amount">' + fmtMoney(f.totalTTC != null ? f.totalTTC : f.amount) + '</span>' +
       '<span class="cp-badge ' + (FACTURE_CSS[f.status] || '') + '">' + (FACTURE_STATUT_LABELS[f.status] || f.status || '') + '</span>' +
-      '<button type="button" class="cp-link-btn" onclick="alert(\'Consultation de la facture — fonctionnalité à brancher sur le document réel.\')">Consulter</button>' +
+      '<button type="button" class="cp-link-btn" onclick="consulterFacture(\'' + f.id + '\')">Consulter</button>' +
       (f.paymentLink ? '<button type="button" class="cp-link-btn" onclick="window.open(' + JSON.stringify(f.paymentLink) + ',\'_blank\')">Payer</button>' : '') +
     '</div>' +
   '</div>';
