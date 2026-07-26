@@ -79,6 +79,14 @@ migrations/2026-07-26-quote-to-cash.sql
 # portent notes patron + historique + paiements notés). Voir l'en-tête du
 # fichier pour le détail complet.
 
+migrations/2026-07-26-team-availability-suggestions.sql
+# Team availability + suggestions (feature/team-availability-suggestions) :
+# 2 RPC employé nouvelles (create_my_unavailability_request,
+# cancel_my_unavailability_request). Aucune nouvelle RPC de lecture --
+# get_my_employee_profile() (baseline) renvoie déjà l'objet employé complet,
+# unavailabilityRequests y est donc déjà exposé. Ajouts purs, ne modifie
+# aucune RPC existante. Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════

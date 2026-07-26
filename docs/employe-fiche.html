@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
-:root{--danger-text:#EF4444;}
+:root{--danger-text:#EF4444;--em-ink:#031A12;--danger-bg:rgba(239,68,68,.1);--emerald-tint-bg:rgba(16,185,129,.08);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -115,6 +115,35 @@
   .notes-area{width:100%;padding:12px;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;color:var(--ink);background:var(--bg);resize:vertical;min-height:80px;line-height:1.5;}
   .notes-area:focus{border-color:var(--emerald);outline:none;}
 
+  /* ── Compétences / disponibilités (feature/team-availability-suggestions) ── */
+  .skill-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .skill-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:0.82rem;cursor:pointer;user-select:none;}
+  .skill-chip input{margin:0;}
+  .skill-chip.on{border-color:var(--emerald);background:var(--emerald-tint-bg);}
+  .avail-day-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .avail-day-row:last-child{border-bottom:none;}
+  .avail-day-name{width:80px;flex-shrink:0;font-size:0.84rem;font-weight:500;padding-top:6px;}
+  .avail-slots{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .avail-slot{display:flex;align-items:center;gap:4px;background:var(--bg);border-radius:6px;padding:4px 8px;font-size:0.78rem;}
+  .avail-slot button{background:none;border:none;color:var(--text-2);cursor:pointer;font-size:0.9rem;padding:0 2px;}
+  .avail-add-slot{font-size:0.78rem;color:var(--emerald);cursor:pointer;background:none;border:1px dashed var(--border);border-radius:6px;padding:4px 8px;}
+  .max-weekly-row{display:flex;align-items:center;gap:10px;margin-top:16px;}
+  .max-weekly-row input{width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;}
+  .unavail-item{padding:10px 0;border-bottom:1px solid var(--border);}
+  .unavail-item:last-child{border-bottom:none;}
+  .unavail-dates{font-weight:600;font-size:0.88rem;}
+  .unavail-reason{font-size:0.82rem;color:var(--text-2);margin:2px 0 6px;}
+  .unavail-badge{font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;}
+  .unavail-badge.pending{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .unavail-badge.accepted{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+  .unavail-badge.rejected{background:var(--danger-bg);color:var(--danger-text);}
+  .unavail-badge.cancelled{background:var(--bg);color:var(--text-2);}
+  .unavail-actions{display:flex;gap:8px;margin-top:8px;}
+  .unavail-actions button{padding:6px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;border:none;}
+  .unavail-accept{background:var(--emerald);color:var(--em-ink);}
+  .unavail-reject{background:transparent;border:1px solid var(--border)!important;color:var(--text-2);}
+  .unavail-comment{margin-top:4px;font-size:0.8rem;color:var(--text-2);font-style:italic;}
+
   /* MESSAGERIE (journal patron -- pas encore d'accès direct côté employé) */
   .msg-note{font-size:0.78rem;color:var(--text-2);margin:-6px 0 14px;line-height:1.5;}
   .msg-thread{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
@@ -206,6 +235,7 @@
         <button class="btn-outline" disabled title="Fonctionnalité à venir" style="opacity:.5;cursor:not-allowed;">Modifier les accès</button>
         <button class="btn-outline" onclick="document.getElementById('messagerie-panel').scrollIntoView({behavior:'smooth'});document.getElementById('message-input').focus();">Message Appli</button>
         <button class="btn-outline" disabled title="Aucun numéro de téléphone enregistré pour cet employé" style="opacity:.5;cursor:not-allowed;">Appeler</button>
+        <button class="btn-outline" id="btn-toggle-actif" onclick="toggleEmployeActif()">Désactiver</button>
         <button class="btn-em" onclick="location.href='planning.html'">+ Assigner une mission</button>
         <button class="btn-outline" style="color:#DC2626;border-color:#DC2626;" onclick="supprimerEmploye()">Retirer de l'équipe</button>
       </div>
@@ -291,6 +321,31 @@
               <span class="access-status denied"><span class="access-icon">—</span>Non accordé</span>
             </div>
           </div>
+        </div>
+
+        <!-- COMPÉTENCES (feature/team-availability-suggestions) -->
+        <div class="panel">
+          <div class="panel-head"><h3>Compétences</h3></div>
+          <p class="msg-note">Services que cet employé est habilité à réaliser. Aucune sélection = aucune restriction (compatible avec toutes les interventions).</p>
+          <div class="skill-chips" id="skill-chips"></div>
+        </div>
+
+        <!-- DISPONIBILITÉS HABITUELLES -->
+        <div class="panel">
+          <div class="panel-head"><h3>Disponibilités habituelles</h3></div>
+          <p class="msg-note">Créneaux type par jour de la semaine. Un jour sans créneau reste neutre (pas de restriction pour ce jour).</p>
+          <div id="avail-days"></div>
+          <div class="max-weekly-row">
+            <label for="max-weekly-input" style="font-size:0.84rem;">Maximum hebdomadaire (heures)</label>
+            <input type="number" id="max-weekly-input" min="0" step="1" placeholder="Aucun">
+            <button class="btn-outline" onclick="saveMaxWeekly()">Enregistrer</button>
+          </div>
+        </div>
+
+        <!-- DEMANDES D'INDISPONIBILITÉ -->
+        <div class="panel" id="unavail-panel">
+          <div class="panel-head"><h3>Demandes d'indisponibilité</h3></div>
+          <div id="unavail-list"><p class="msg-empty">Aucune demande.</p></div>
         </div>
 
         <!-- EMAIL DE CONNEXION (Espace Terrain) -->
@@ -392,6 +447,13 @@
      réellement trouvé (plus jamais du ?nom= brut de l'URL), et un id
      absent/invalide affiche "Employé introuvable" au lieu du squelette de
      démo statique "Léa Martin" sous un faux nom. */
+  // Déclarées AVANT loadRealEmploye() -- l'IIFE ci-dessous appelle
+  // renderAvailability()/renderUnavailList() de manière synchrone dès son
+  // exécution, avant que le reste du script (plus bas) n'ait atteint ces
+  // déclarations `const` (zone morte temporelle -- ReferenceError observé
+  // en QA sinon).
+  const DAY_LABELS = { monday: 'Lundi', tuesday: 'Mardi', wednesday: 'Mercredi', thursday: 'Jeudi', friday: 'Vendredi', saturday: 'Samedi', sunday: 'Dimanche' };
+  const UNAVAIL_LABELS = { pending: 'En attente', accepted: 'Acceptée', rejected: 'Refusée', cancelled: 'Annulée' };
   (function loadRealEmploye() {
     if (!window.SebaDB || !_id) { showEmployeNotFound(); return; }
     const emp = SebaDB.list('employes').find(e => e.id === _id);
@@ -462,8 +524,148 @@
     const notesArea = document.querySelector('.notes-area');
     if (notesArea) { notesArea.value = ''; }
 
+    // Compétences/disponibilités/indisponibilités (feature/team-availability-
+    // suggestions) -- normalisation rétrocompatible, aucune migration
+    // destructive : un ancien employé sans ces champs récupère les
+    // valeurs par défaut au premier rendu.
+    SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+    updateActifToggle(emp);
+    renderSkillChips(emp);
+    renderAvailability(emp);
+    document.getElementById('max-weekly-input').value = emp.maxWeeklyMinutes != null ? Math.round(emp.maxWeeklyMinutes / 60) : '';
+    renderUnavailList(emp);
+
     renderMessagesThread();
   })();
+
+  function currentEmploye() { return SebaDB.list('employes').find(e => e.id === _id); }
+
+  function updateActifToggle(emp) {
+    const btn = document.getElementById('btn-toggle-actif');
+    btn.textContent = emp.actif ? 'Désactiver' : 'Réactiver';
+  }
+  function toggleEmployeActif() {
+    const emp = currentEmploye();
+    if (!emp) return;
+    const res = SebaDB.employes.setActive(_id, !emp.actif);
+    if (!res.ok) { showEmpToast(res.error || 'Échec.'); return; }
+    updateActifToggle(res.employe);
+    const badgeEl = document.querySelector('.emp-name-row .badge');
+    badgeEl.className = 'badge ' + (res.employe.actif ? 'actif' : 'repos');
+    badgeEl.textContent = res.employe.actif ? 'En mission' : 'Au repos';
+    document.querySelector('.status-dot').className = 'status-dot ' + (res.employe.actif ? 'on' : 'off');
+    showEmpToast(res.employe.actif ? 'Employé réactivé.' : 'Employé désactivé — n\'apparaîtra plus dans les suggestions/assignations normales.');
+  }
+
+  /* ── Compétences -- catalogue réel (tarifs personnalisés sinon services
+     par défaut du secteur), jamais une liste statique propre à cette page --
+     même source que devis-nouveau.html (currentServiceCatalog()), reprise
+     ici à l'identique (cette page ne charge pas services/quote-engine.js). ── */
+  function realServiceCatalog() {
+    let _ent = null;
+    try { _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null'); } catch (e) {}
+    const secteur = (_ent && _ent.secteur) || 'autre';
+    const custom = (window.SebaDB ? SebaDB.list('custom_services') : []).filter(s => s.active !== false);
+    if (custom.length > 0) return custom.map(s => s.name);
+    return ((window.businessTypes && window.businessTypes[secteur]) || {}).services?.map(s => s.name) || [];
+  }
+
+  function renderSkillChips(emp) {
+    const box = document.getElementById('skill-chips');
+    const services = realServiceCatalog();
+    if (!services.length) { box.innerHTML = '<p class="msg-empty">Aucun service configuré pour ce secteur.</p>'; return; }
+    box.innerHTML = services.map(s => {
+      const on = emp.skills.indexOf(s) !== -1;
+      return '<label class="skill-chip' + (on ? ' on' : '') + '"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="toggleSkill(' + JSON.stringify(s).replace(/"/g, '&quot;') + ', this.checked)">' + escapeHtml(s) + '</label>';
+    }).join('');
+  }
+  function toggleSkill(service, checked) {
+    const emp = currentEmploye();
+    if (!emp) return;
+    const skills = new Set(emp.skills || []);
+    if (checked) skills.add(service); else skills.delete(service);
+    const res = SebaDB.employes.setSkills(_id, [...skills]);
+    if (!res.ok) { showEmpToast(res.error || 'Échec.'); return; }
+    renderSkillChips(res.employe);
+  }
+
+  /* ── Disponibilités habituelles -- plusieurs créneaux/jour, validation
+     start<end + non-chevauchement déléguée à SebaDB.employes.setDayAvailability
+     (jamais dupliquée ici), persistance immédiate à chaque changement.
+     DAY_LABELS déclaré plus haut (avant loadRealEmploye()). ── */
+  function renderAvailability(emp) {
+    const box = document.getElementById('avail-days');
+    box.innerHTML = SebaDB.scheduling.DAYS_OF_WEEK.map(day => {
+      const slots = emp.weeklyAvailability[day] || [];
+      const slotsHtml = slots.map((s, i) =>
+        '<span class="avail-slot">' + escapeHtml(s.start) + '–' + escapeHtml(s.end) + '<button onclick="removeAvailSlot(' + JSON.stringify(day) + ',' + i + ')" title="Retirer">✕</button></span>'
+      ).join('');
+      return '<div class="avail-day-row"><div class="avail-day-name">' + DAY_LABELS[day] + '</div>' +
+        '<div class="avail-slots">' + slotsHtml +
+        '<button class="avail-add-slot" onclick="addAvailSlot(' + JSON.stringify(day) + ')">+ créneau</button></div></div>';
+    }).join('');
+  }
+  function addAvailSlot(day) {
+    const start = prompt('Heure de début (HH:MM)', '09:00');
+    if (!start) return;
+    const end = prompt('Heure de fin (HH:MM)', '17:00');
+    if (!end) return;
+    const emp = currentEmploye();
+    if (!emp) return;
+    SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+    const slots = (emp.weeklyAvailability[day] || []).concat([{ start, end }]);
+    const res = SebaDB.employes.setDayAvailability(_id, day, slots);
+    if (!res.ok) { showEmpToast(res.error || 'Créneau invalide.'); return; }
+    renderAvailability(res.employe);
+  }
+  function removeAvailSlot(day, index) {
+    const emp = currentEmploye();
+    if (!emp) return;
+    SebaDB.scheduling.normalizeEmployeeAvailability(emp);
+    const slots = (emp.weeklyAvailability[day] || []).filter((_, i) => i !== index);
+    const res = SebaDB.employes.setDayAvailability(_id, day, slots);
+    if (!res.ok) { showEmpToast(res.error || 'Échec.'); return; }
+    renderAvailability(res.employe);
+  }
+  function saveMaxWeekly() {
+    const v = document.getElementById('max-weekly-input').value;
+    const minutes = v === '' ? null : Number(v) * 60;
+    const res = SebaDB.employes.setMaxWeeklyMinutes(_id, minutes);
+    if (!res.ok) { showEmpToast(res.error || 'Échec.'); return; }
+    showEmpToast('Plafond hebdomadaire enregistré.');
+  }
+
+  /* ── Demandes d'indisponibilité -- accepter/refuser (pending uniquement),
+     historique conservé pour les demandes terminées (jamais supprimé).
+     UNAVAIL_LABELS déclaré plus haut (avant loadRealEmploye()). ── */
+  function renderUnavailList(emp) {
+    const box = document.getElementById('unavail-list');
+    const reqs = (emp.unavailabilityRequests || []).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    if (!reqs.length) { box.innerHTML = '<p class="msg-empty">Aucune demande.</p>'; return; }
+    box.innerHTML = reqs.map(r => {
+      const actions = r.status === 'pending'
+        ? '<div class="unavail-actions">' +
+            '<button class="unavail-accept" onclick="resolveUnavail(' + JSON.stringify(r.id) + ',true)">Accepter</button>' +
+            '<button class="unavail-reject" onclick="resolveUnavail(' + JSON.stringify(r.id) + ',false)">Refuser</button>' +
+          '</div>'
+        : '';
+      return '<div class="unavail-item">' +
+        '<div class="unavail-dates">' + escapeHtml(r.startDate) + ' → ' + escapeHtml(r.endDate) + ' <span class="unavail-badge ' + r.status + '">' + UNAVAIL_LABELS[r.status] + '</span></div>' +
+        '<div class="unavail-reason">' + escapeHtml(r.reason || '') + '</div>' +
+        (r.reviewComment ? '<div class="unavail-comment">Réponse : ' + escapeHtml(r.reviewComment) + '</div>' : '') +
+        actions +
+      '</div>';
+    }).join('');
+  }
+  function resolveUnavail(requestId, accept) {
+    const comment = prompt(accept ? 'Commentaire (optionnel) :' : 'Motif du refus (optionnel) :', '') || '';
+    const res = SebaDB.employes.resolveUnavailabilityRequest(_id, requestId, accept, comment);
+    if (!res.ok) { showEmpToast(res.error || 'Échec.'); return; }
+    renderUnavailList(res.employe);
+    showEmpToast(accept ? 'Demande acceptée.' : 'Demande refusée.');
+  }
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   /* ── Messagerie (journal patron -- voir note dans le panneau, même
      principe que client-fiche.html). ── */

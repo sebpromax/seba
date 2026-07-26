@@ -207,12 +207,14 @@
               <div class="field">
                 <label for="f-employe">Employé assigné</label>
                 <select id="f-employe"></select>
+                <button type="button" class="btn-outline" style="margin-top:6px;padding:5px 10px;font-size:.76rem;" onclick="openSuggestPanel()">Suggérer un employé</button>
               </div>
               <div class="field">
                 <label for="f-service">Service</label>
                 <input type="text" id="f-service">
               </div>
             </div>
+            <div id="suggest-panel" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-top:10px;font-size:.84rem;"></div>
             <div class="field-row">
               <div class="field">
                 <label for="f-date">Date</label>
@@ -423,9 +425,12 @@
 
   function renderPreparationForm() {
     const sel = document.getElementById('f-employe');
-    const employes = SebaDB.list('employes');
+    // Un employé désactivé disparaît des choix normaux, mais reste visible
+    // (et sélectionné) si c'est déjà lui l'assigné actuel de cette mission
+    // -- règle explicite du chantier (feature/team-availability-suggestions).
+    const employes = SebaDB.list('employes').filter(e => e.actif !== false || e.id === interv.employeId);
     sel.innerHTML = '<option value="">— Non assigné —</option>' + employes.map(e =>
-      '<option value="' + e.id + '"' + (e.id === interv.employeId ? ' selected' : '') + '>' + escapeHtml(((e.prenom||'')+' '+(e.nom||'')).trim()) + '</option>'
+      '<option value="' + e.id + '"' + (e.id === interv.employeId ? ' selected' : '') + '>' + escapeHtml(((e.prenom||'')+' '+(e.nom||'')).trim()) + (e.actif === false ? ' (inactif)' : '') + '</option>'
     ).join('');
     document.getElementById('f-service').value = interv.service || '';
     document.getElementById('f-date').value = interv.date || '';
@@ -438,7 +443,7 @@
     document.getElementById('prep-status').textContent = '';
   }
 
-  function savePreparation() {
+  function savePreparation(force) {
     const employes = SebaDB.list('employes');
     const employeId = document.getElementById('f-employe').value || null;
     const emp = employes.find(e => e.id === employeId);
@@ -454,12 +459,69 @@
       requirePhotoBefore: document.getElementById('f-photo-before').checked,
       requirePhotoAfter: document.getElementById('f-photo-after').checked,
     };
-    SebaDB.interventions.prepareIntervention(_id, patch);
-    interv = SebaDB.get('interventions', _id);
+    // Moteur de disponibilité (feature/team-availability-suggestions) --
+    // même fonction centrale que planning.html (SebaDB.interventions.
+    // prepareIntervention), jamais une deuxième logique locale. Blocker dur
+    // -> refus, warning -> confirmation explicite avant écriture.
+    const res = SebaDB.interventions.prepareIntervention(_id, patch, force ? { force: true } : undefined);
+    if (!res.ok) {
+      if (res.needsConfirm) {
+        if (confirm(res.error + ' Continuer quand même ?')) { savePreparation(true); return; }
+        return;
+      }
+      document.getElementById('prep-status').textContent = res.error || 'Échec de l\'enregistrement.';
+      document.getElementById('prep-status').style.color = 'var(--danger-text)';
+      return;
+    }
+    interv = res.intervention;
     window.SebaClientIntelligence.normalizeIntervention(interv);
     document.getElementById('prep-status').textContent = 'Enregistré.';
     document.getElementById('prep-status').style.color = 'var(--emerald)';
     render();
+  }
+
+  /* ── Suggestion d'employé (feature/team-availability-suggestions) --
+     même moteur/même présentation que planning.html (SebaDB.scheduling.
+     rankEmployeesForIntervention), jamais une deuxième logique. N'assigne
+     jamais automatiquement : remplit #f-employe, le patron valide via
+     "Enregistrer" (savePreparation -> prepareIntervention). ── */
+  function openSuggestPanel() {
+    const candidate = {
+      id: _id,
+      date: document.getElementById('f-date').value || interv.date,
+      time: document.getElementById('f-time').value || interv.time,
+      duree: document.getElementById('f-duree').value ? Number(document.getElementById('f-duree').value) : interv.duree,
+      service: document.getElementById('f-service').value || interv.service,
+    };
+    if (!candidate.date || !candidate.time) { showToast('Renseignez d\'abord une date et une heure.'); return; }
+    const result = SebaDB.scheduling.rankEmployeesForIntervention(candidate, SebaDB.list('employes').filter(e => e.actif !== false), SebaDB.list('interventions'));
+    renderSuggestResult(result);
+  }
+
+  function pickSuggestedEmployee(employeeId) {
+    document.getElementById('f-employe').value = employeeId;
+  }
+
+  function renderSuggestResult(result) {
+    const box = document.getElementById('suggest-panel');
+    box.style.display = 'block';
+    if (!result.ranked.length) {
+      const reasons = result.excluded.map(e => '<li>' + escapeHtml(e.name) + ' — ' + e.blockers.map(b => escapeHtml(b.message)).join(' ') + '</li>').join('');
+      box.innerHTML = '<b>Aucun employé disponible.</b>' + (reasons ? '<ul style="margin:6px 0 0 18px;">' + reasons + '</ul>' : '<p>Aucun employé actif dans l\'équipe.</p>');
+      return;
+    }
+    const top = result.ranked[0];
+    const others = result.ranked.slice(1);
+    const warnHtml = w => w.length ? '<div style="color:var(--danger-text);font-size:.78rem;margin-top:2px;">' + w.map(x => escapeHtml(x.message)).join(' · ') + '</div>' : '';
+    box.innerHTML =
+      '<b>Recommandé : ' + escapeHtml(top.name) + '</b>' +
+      '<div style="color:var(--text-2);font-size:.78rem;">Charge prévue cette semaine : ' + top.weeklyMinutes + ' min · ' + top.weeklyCount + ' mission(s)</div>' +
+      warnHtml(top.warnings) +
+      '<button type="button" class="btn-outline" style="padding:5px 10px;font-size:.76rem;margin-top:6px;" data-suggest-id="' + top.employeeId + '">Choisir ' + escapeHtml(top.name) + '</button>' +
+      (others.length ? '<div style="margin-top:10px;font-size:.78rem;color:var(--text-2);">Autres : ' + others.map(o => escapeHtml(o.name)).join(', ') + '</div>' : '') +
+      (result.excluded.length ? '<div style="margin-top:6px;font-size:.76rem;color:var(--text-2);">Exclus : ' + result.excluded.map(e => escapeHtml(e.name) + ' (' + e.blockers.map(b => escapeHtml(b.message)).join('; ') + ')').join(' · ') + '</div>' : '');
+    const pickBtn = box.querySelector('[data-suggest-id]');
+    if (pickBtn) pickBtn.addEventListener('click', () => pickSuggestedEmployee(pickBtn.dataset.suggestId));
   }
 
   function renderChecklist() {

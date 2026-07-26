@@ -331,9 +331,13 @@
   }
 
   const EMPLOYEES_CACHE = SebaDB.list('employes') || [];
+  // Un employé désactivé disparaît des choix normaux (feature/team-
+  // availability-suggestions), sauf s'il est déjà l'assigné actuel de LA
+  // carte affichée (reste visible/sélectionné, jamais blanchi).
   function employeeOptionsHtml(selectedId) {
+    const pool = EMPLOYEES_CACHE.filter(e => e.actif !== false || e.id === selectedId);
     return '<option value="">Non assigné</option>' +
-      EMPLOYEES_CACHE.map(e => '<option value="' + e.id + '"' + (e.id === selectedId ? ' selected' : '') + '>' + esc(e.prenom + ' ' + e.nom) + '</option>').join('');
+      pool.map(e => '<option value="' + e.id + '"' + (e.id === selectedId ? ' selected' : '') + '>' + esc(e.prenom + ' ' + e.nom) + (e.actif === false ? ' (inactif)' : '') + '</option>').join('');
   }
 
   const _selectedIds = new Set();
@@ -630,8 +634,10 @@
           <!-- options remplies depuis SebaDB (etaient codees en dur et
                jamais lues a la creation avant ce correctif) -->
         </select>
+        <button type="button" class="btn-ss-ghost" style="flex:none;margin-top:6px;padding:6px 12px;font-size:.78rem;width:auto;" onclick="openSuggestPanel()">Suggérer un employé</button>
       </div>
     </div>
+    <div id="suggest-panel" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-top:4px;margin-bottom:16px;font-size:.84rem;"></div>
     <div class="ss-sep"></div>
     <div class="ss-section-lbl">Notes internes</div>
     <div class="ss-field">
@@ -738,6 +744,50 @@
     document.getElementById('ss-panel').classList.remove('open');
     document.body.style.overflow = '';
     _editingId = null;
+    document.getElementById('suggest-panel').style.display = 'none';
+  }
+
+  /* ── Suggestion d'employé (feature/team-availability-suggestions) --
+     n'assigne JAMAIS automatiquement : remplit juste #ss-employee, le
+     patron valide via le circuit d'enregistrement existant (submitIntervention
+     -> reschedule()/assign(), même moteur de blocage/avertissement). ── */
+  function openSuggestPanel() {
+    const candidate = {
+      id: _editingId || null,
+      date: document.getElementById('ss-date').value,
+      time: document.getElementById('ss-time').value || '09:00',
+      duree: document.getElementById('ss-duration').value,
+      service: document.getElementById('ss-service').value,
+    };
+    if (!candidate.date) { showToast('Choisissez d\'abord une date.'); return; }
+    const result = SebaDB.scheduling.rankEmployeesForIntervention(candidate, SebaDB.list('employes').filter(e => e.actif !== false), SebaDB.list('interventions'));
+    renderSuggestResult(result);
+  }
+
+  function pickSuggestedEmployee(employeeId) {
+    document.getElementById('ss-employee').value = employeeId;
+  }
+
+  function renderSuggestResult(result) {
+    const box = document.getElementById('suggest-panel');
+    box.style.display = 'block';
+    if (!result.ranked.length) {
+      const reasons = result.excluded.map(e => '<li>' + esc(e.name) + ' — ' + e.blockers.map(b => esc(b.message)).join(' ') + '</li>').join('');
+      box.innerHTML = '<b>Aucun employé disponible.</b>' + (reasons ? '<ul style="margin:6px 0 0 18px;">' + reasons + '</ul>' : '<p>Aucun employé actif dans l\'équipe.</p>');
+      return;
+    }
+    const top = result.ranked[0];
+    const others = result.ranked.slice(1);
+    const warnHtml = w => w.length ? '<div style="color:var(--critical);font-size:.78rem;margin-top:2px;">' + w.map(x => esc(x.message)).join(' · ') + '</div>' : '';
+    box.innerHTML =
+      '<b>Recommandé : ' + esc(top.name) + '</b>' +
+      '<div style="color:var(--text-2);font-size:.78rem;">Charge prévue cette semaine : ' + top.weeklyMinutes + ' min · ' + top.weeklyCount + ' mission(s)</div>' +
+      warnHtml(top.warnings) +
+      '<button type="button" class="btn-ss-ghost" style="flex:none;width:auto;padding:5px 10px;font-size:.76rem;margin-top:6px;" data-suggest-id="' + top.employeeId + '">Choisir ' + esc(top.name) + '</button>' +
+      (others.length ? '<div style="margin-top:10px;font-size:.78rem;color:var(--text-2);">Autres : ' + others.map(o => esc(o.name)).join(', ') + '</div>' : '') +
+      (result.excluded.length ? '<div style="margin-top:6px;font-size:.76rem;color:var(--text-2);">Exclus : ' + result.excluded.map(e => esc(e.name) + ' (' + e.blockers.map(b => esc(b.message)).join('; ') + ')').join(' · ') + '</div>' : '');
+    const pickBtn = box.querySelector('[data-suggest-id]');
+    if (pickBtn) pickBtn.addEventListener('click', () => pickSuggestedEmployee(pickBtn.dataset.suggestId));
   }
 
   function acceptRescheduleFromSheet() {
