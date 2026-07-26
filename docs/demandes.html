@@ -167,7 +167,7 @@
 <div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
 <div class="ss-panel" id="ss-panel" role="dialog" aria-modal="true" aria-label="Détail de la demande">
   <div class="ss-hdr">
-    <h2 id="ss-title">Demande</h2>
+    <div><h2 id="ss-title">Demande</h2><div style="font-size:0.78rem;color:var(--text-2);font-family:monospace;" id="ss-reference"></div></div>
     <button class="ss-close" onclick="closeSheet()" aria-label="Fermer">&times;</button>
   </div>
   <div class="ss-body">
@@ -336,6 +336,7 @@
     if (!r) return;
     _currentId = id;
     document.getElementById('ss-title').textContent = r.contactName;
+    document.getElementById('ss-reference').textContent = r.publicReference || '';
     document.getElementById('d-name').textContent = r.contactName;
     document.getElementById('d-email').innerHTML = r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '—';
     document.getElementById('d-phone').innerHTML = r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : '—';
@@ -407,6 +408,7 @@
         clientId: claimRes.clientId, clientName: r.contactName,
         lines: [{ desc: r.serviceLabel || 'Prestation', qty: 1, u: (svc && svc.suggestedPrice) || 0 }],
         tvaRate: 20, service: r.serviceLabel || '',
+        sourceRequestId: r.id,
       });
       if (devisRes.ok) quoteId = devisRes.devis.num;
     }
@@ -416,7 +418,7 @@
         service: r.serviceLabel || 'Prestation', adresse: r.address || '',
         date: r.preferredDate || null, time: r.preferredTimeStart || null,
         duree: null, employeId: null, employeName: null, done: false,
-        publicRequestId: r.id,
+        sourceRequestId: r.id,
       });
       interventionId = interv.id;
     }
@@ -455,7 +457,14 @@
 
   // ── Init ──
   CUSTOM_SERVICES = SebaDB.list('custom_services');
-  loadRequests();
+  loadRequests().then(() => {
+    // Deep-link (feature/pilot-ready-v1, buildBusinessObjectHref) --
+    // demandes.html n'avait aucun moyen d'ouvrir une demande précise avant
+    // ce chantier, contrairement à devis.html (?open=<num>)/factures.html
+    // (?highlight=<id>) : ajouté en cohérence avec ces conventions.
+    const openId = new URLSearchParams(location.search).get('open');
+    if (openId && findRequest(openId)) openSheet(openId);
+  });
 </script>
 </body>
 </html>

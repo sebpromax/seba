@@ -814,6 +814,316 @@
     return actions;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════
+     LIENS CANONIQUES + PROCHAINES ACTIONS + TIMELINE (feature/pilot-ready-v1)
+
+     Cette section NE remplace PAS buildClientNextBestActions ci-dessus
+     (suggestions relationnelles/CRM -- facture en retard, client inactif,
+     etc., scopées au client, déjà mergées et utilisées telles quelles par
+     client-fiche.html). getBusinessNextActions ci-dessous répond à une
+     question différente et complémentaire : "quel est LE bouton d'action
+     du cycle de vie à afficher MAINTENANT sur CETTE fiche (demande/devis/
+     intervention/facture/client) ?" -- déterministe, par objet, réutilisé
+     par le composant "Prochaine étape" sur plusieurs pages. Les deux
+     moteurs coexistent, aucun n'est un doublon de l'autre.
+
+     Liens réutilisés tels quels (jamais renommés) : devis.clientId/
+     invoiceId, intervention.clientId/invoiceId, facture.clientId/devisId/
+     interventionId (Quote-to-Cash + Intervention 360, déjà mergés).
+     Seuls ajouts réels (absents avant ce chantier) : intervention.
+     sourceQuoteId (voir SebaDB.interventions.createFromAcceptedQuote) et
+     devis.sourceRequestId/intervention.sourceRequestId (demande publique
+     d'origine, feature/public-intake-conversion — cette dernière ne
+     posait le lien QUE côté intervention jusqu'ici). ═══════════════════ */
+
+  const BUSINESS_OBJECT_COLLECTION = { client: 'clients', devis: 'devis', intervention: 'interventions', facture: 'factures' };
+
+  // Convention de deep-link déjà existante par page, jamais réinventée ici :
+  // devis.html attend un NUM (?open=#0125), factures.html attend un ID
+  // (?highlight=...), les autres attendent un ID. demandes.html n'avait
+  // aucun deep-link avant ce chantier -- ajouté en cohérence avec les autres
+  // (?open=<id>, voir demandes.html openFromUrl()).
+  const BUSINESS_OBJECT_HREF_BASE = {
+    client: 'client-fiche.html?id=', devis: 'devis.html?open=', intervention: 'intervention-fiche.html?id=',
+    facture: 'factures.html?highlight=', demande: 'demandes.html?open=',
+  };
+  function buildBusinessObjectHref(type, id, options) {
+    const base = BUSINESS_OBJECT_HREF_BASE[type];
+    if (!base || id === null || id === undefined || id === '') return null;
+    let href = base + encodeURIComponent(id);
+    if (options) {
+      if (options.returnTo) href += '&returnTo=' + encodeURIComponent(options.returnTo);
+      if (options.focus) href += '&focus=' + encodeURIComponent(options.focus);
+      if (options.tab) href += '&tab=' + encodeURIComponent(options.tab);
+    }
+    return href;
+  }
+
+  // contextId peut être un id (résolu dans state) OU l'objet déjà en main
+  // (cas des demandes publiques, table dédiée hors seba_state -- voir
+  // SebaDB.publicIntake). Jamais un objet copié : uniquement retourné tel
+  // quel s'il est déjà fourni.
+  function resolveBusinessObject(type, idOrObject, state) {
+    if (idOrObject && typeof idOrObject === 'object') return idOrObject;
+    const coll = BUSINESS_OBJECT_COLLECTION[type];
+    if (!coll || !state || !state[coll]) return null;
+    return state[coll].find(x => x.id === idOrObject) || null;
+  }
+  function businessObjectLabel(type, obj) {
+    if (!obj) return null;
+    switch (type) {
+      case 'client': return fullName(obj) || 'Client';
+      case 'devis': return (obj.num || 'Devis') + (obj.service ? ' — ' + obj.service : '');
+      case 'intervention': return (obj.service || 'Intervention') + (obj.date ? ' — ' + obj.date : '');
+      case 'facture': return (obj.num || 'Facture') + (obj.service ? ' — ' + obj.service : '');
+      case 'demande': return obj.contactName || 'Demande';
+      default: return null;
+    }
+  }
+  function businessObjectHrefId(type, obj) { return !obj ? null : (type === 'devis' ? obj.num : obj.id); }
+  function linkEntry(type, idOrObject, state, options) {
+    const obj = resolveBusinessObject(type, idOrObject, state);
+    if (!obj) return null;
+    return { type, id: obj.id, label: businessObjectLabel(type, obj), href: buildBusinessObjectHref(type, businessObjectHrefId(type, obj), options) };
+  }
+
+  /* Relations RÉELLEMENT connues d'un objet métier -- jamais l'objet source
+     copié, uniquement les références déjà posées. */
+  function getLinkedBusinessObjects(contextType, contextId, state) {
+    const relations = {};
+    if (contextType === 'demande') {
+      const req = resolveBusinessObject('demande', contextId, state);
+      if (!req) return relations;
+      if (req.convertedClientId) relations.client = linkEntry('client', req.convertedClientId, state);
+      if (req.convertedQuoteId) {
+        const d = (state.devis || []).find(x => x.num === req.convertedQuoteId);
+        if (d) relations.devis = linkEntry('devis', d, state);
+      }
+      if (req.convertedInterventionId) relations.intervention = linkEntry('intervention', req.convertedInterventionId, state);
+      return relations;
+    }
+
+    const obj = resolveBusinessObject(contextType, contextId, state);
+    if (!obj) return relations;
+
+    if (contextType === 'devis') {
+      if (obj.clientId) relations.client = linkEntry('client', obj.clientId, state);
+      if (obj.invoiceId) relations.facture = linkEntry('facture', obj.invoiceId, state);
+      const interv = (state.interventions || []).find(i => i.sourceQuoteId === obj.id);
+      if (interv) relations.intervention = linkEntry('intervention', interv, state);
+    } else if (contextType === 'intervention') {
+      if (obj.clientId) relations.client = linkEntry('client', obj.clientId, state);
+      if (obj.invoiceId) relations.facture = linkEntry('facture', obj.invoiceId, state);
+      if (obj.sourceQuoteId) relations.devis = linkEntry('devis', obj.sourceQuoteId, state);
+    } else if (contextType === 'facture') {
+      if (obj.clientId) relations.client = linkEntry('client', obj.clientId, state);
+      if (obj.devisId) relations.devis = linkEntry('devis', obj.devisId, state);
+      if (obj.interventionId) relations.intervention = linkEntry('intervention', obj.interventionId, state);
+    } else if (contextType === 'client') {
+      relations.devis = (state.devis || []).filter(d => d.clientId === obj.id).map(d => linkEntry('devis', d, state));
+      relations.interventions = (state.interventions || []).filter(i => i.clientId === obj.id).map(i => linkEntry('intervention', i, state));
+      relations.factures = (state.factures || []).filter(f => f.clientId === obj.id).map(f => linkEntry('facture', f, state));
+    }
+    return relations;
+  }
+
+  /* Conversion déjà existante entre une source et un type cible -- unique
+     mécanisme d'idempotence réutilisé par SebaDB.interventions.
+     createFromAcceptedQuote (voir plus bas) et exposé pour tout futur appelant. */
+  function findExistingConversion(sourceType, sourceId, targetType, state) {
+    if (sourceType === 'devis' && targetType === 'intervention') {
+      const src = (state.devis || []).find(d => d.id === sourceId);
+      if (src && src.interventionId) {
+        const existing = (state.interventions || []).find(i => i.id === src.interventionId);
+        if (existing) return existing;
+      }
+      return (state.interventions || []).find(i => i.sourceQuoteId === sourceId) || null;
+    }
+    if (sourceType === 'devis' && targetType === 'facture') {
+      const src = (state.devis || []).find(d => d.id === sourceId);
+      return src && src.invoiceId ? (state.factures || []).find(f => f.id === src.invoiceId) || null : null;
+    }
+    if (sourceType === 'intervention' && targetType === 'facture') {
+      const src = (state.interventions || []).find(i => i.id === sourceId);
+      return src && src.invoiceId ? (state.factures || []).find(f => f.id === src.invoiceId) || null : null;
+    }
+    return null;
+  }
+
+  /* Moteur pur des prochaines actions -- aucune écriture, aucune lecture
+     réseau, résultat déterministe. Ne calcule QUE pour le patron (role
+     owner/patron) : les portails client/employé gardent leurs propres
+     flux dédiés déjà complets (client-espace.html/espace-terrain.html),
+     jamais dupliqués ici. `command` est un identifiant que CHAQUE page
+     appelante mappe vers son propre handler réel (ce fichier n'a aucun
+     accès DOM) ; `href` est déjà construit via buildBusinessObjectHref. */
+  function trimNextActions(actions) {
+    const primary = actions.filter(a => a.priority === 'primary').slice(0, 1);
+    const secondary = actions.filter(a => a.priority === 'secondary').slice(0, 2);
+    return primary.concat(secondary);
+  }
+  function getBusinessNextActions(contextType, contextId, state, actorContext) {
+    actorContext = actorContext || {};
+    if (actorContext.role && actorContext.role !== 'owner' && actorContext.role !== 'patron') return [];
+    const obj = resolveBusinessObject(contextType, contextId, state);
+    if (!obj) return [];
+    const actions = [];
+    const add = (id, label, priority, kind, extra) => {
+      actions.push(Object.assign({ id, label, description: '', priority, kind, href: null, command: null, sourceType: contextType, sourceId: obj.id }, extra || {}));
+    };
+
+    if (contextType === 'demande') {
+      if (obj.status === 'new' || obj.status === 'qualified' || obj.status === 'contacted') {
+        add('convert-client', 'Créer le client', 'primary', 'command', { command: 'convertPublicRequest:client', description: 'Créer la fiche client sans ressaisie.' });
+        add('convert-client-devis', 'Créer le client + devis', 'secondary', 'command', { command: 'convertPublicRequest:client_quote' });
+        add('convert-client-intervention', 'Créer le client + intervention', 'secondary', 'command', { command: 'convertPublicRequest:client_intervention' });
+      } else if (obj.status === 'converted') {
+        if (obj.convertedClientId) add('open-client', 'Ouvrir le client', 'primary', 'navigate', { href: buildBusinessObjectHref('client', obj.convertedClientId) });
+        if (obj.convertedQuoteId) add('open-devis', 'Ouvrir le devis', 'secondary', 'navigate', { href: buildBusinessObjectHref('devis', obj.convertedQuoteId) });
+        if (obj.convertedInterventionId) add('open-intervention', 'Ouvrir l\'intervention', 'secondary', 'navigate', { href: buildBusinessObjectHref('intervention', obj.convertedInterventionId) });
+      }
+      return trimNextActions(actions);
+    }
+
+    if (contextType === 'devis') {
+      if (obj.status === 'brouillon') {
+        add('edit-devis', 'Modifier le devis', 'primary', 'navigate', { href: 'devis-nouveau.html?id=' + encodeURIComponent(obj.id) });
+        add('send-devis', 'Envoyer le devis', 'secondary', 'command', { command: 'sendDevis' });
+      } else if (obj.status === 'attente') {
+        add('open-client', 'Ouvrir la fiche client', 'primary', 'navigate', { href: buildBusinessObjectHref('client', obj.clientId) });
+      } else if (obj.status === 'signe') {
+        if (!obj.interventionId) add('create-intervention', 'Créer l\'intervention', 'primary', 'command', { command: 'createInterventionFromAcceptedQuote' });
+        else add('open-intervention', 'Ouvrir l\'intervention', 'primary', 'navigate', { href: buildBusinessObjectHref('intervention', obj.interventionId) });
+        if (!obj.invoiceId) add('create-invoice', 'Créer la facture', 'secondary', 'command', { command: 'createFromDevis' });
+      } else if (obj.status === 'refuse' || obj.status === 'annule') {
+        add('duplicate-devis', 'Dupliquer le devis', 'secondary', 'command', { command: 'duplicateDevis' });
+      }
+      return trimNextActions(actions);
+    }
+
+    if (contextType === 'intervention') {
+      normalizeIntervention(obj);
+      const cs = obj.execution.completionStatus;
+      if (!obj.date) add('plan', 'Planifier', 'primary', 'navigate', { href: 'planning.html' });
+      else if (!obj.employeId) {
+        add('suggest-employee', 'Suggérer un employé', 'primary', 'command', { command: 'suggestEmployee' });
+        add('choose-employee', 'Choisir un employé', 'secondary', 'navigate', { href: 'planning.html' });
+      } else if (cs === 'in_progress' || cs === 'paused') {
+        add('follow-execution', 'Suivre l\'exécution', 'primary', 'navigate', { href: buildBusinessObjectHref('intervention', obj.id) });
+      } else if (cs === 'submitted') {
+        add('owner-approve', 'Valider l\'intervention', 'primary', 'command', { command: 'ownerApproveIntervention' });
+      } else if (cs === 'owner_approved') {
+        if (!obj.invoiceId) add('create-invoice', 'Créer la facture', 'primary', 'command', { command: 'createInvoiceFromIntervention' });
+        else add('open-invoice', 'Ouvrir la facture', 'primary', 'navigate', { href: buildBusinessObjectHref('facture', obj.invoiceId) });
+      } else if (cs === 'not_started') {
+        add('open-planning', 'Ouvrir dans le planning', 'secondary', 'navigate', { href: 'planning.html' });
+      }
+      return trimNextActions(actions);
+    }
+
+    if (contextType === 'facture') {
+      if (SebaDB.factures.isDraft(obj)) add('complete-invoice', 'Compléter ou émettre', 'primary', 'command', { command: 'completeInvoice' });
+      else if (SebaDB.factures.isPartial(obj)) add('record-payment', 'Enregistrer le solde', 'primary', 'command', { command: 'recordPayment' });
+      else if (SebaDB.factures.isPaid(obj)) add('open-history', 'Ouvrir l\'historique client', 'primary', 'navigate', { href: buildBusinessObjectHref('client', obj.clientId) });
+      else if (!SebaDB.factures.isCancelled(obj)) add('record-payment', 'Enregistrer un paiement', 'primary', 'command', { command: 'recordPayment' });
+      return trimNextActions(actions);
+    }
+
+    if (contextType === 'client') {
+      const openDevis = (state.devis || []).find(d => d.clientId === obj.id && d.status === 'attente');
+      const openInterv = (state.interventions || []).find(i => i.clientId === obj.id && !i.done && (!i.execution || i.execution.completionStatus !== 'owner_approved'));
+      if (openDevis) add('open-devis', 'Ouvrir le devis en attente', 'primary', 'navigate', { href: buildBusinessObjectHref('devis', openDevis.num) });
+      else if (openInterv) add('open-intervention', 'Ouvrir l\'intervention en cours', 'primary', 'navigate', { href: buildBusinessObjectHref('intervention', openInterv.id) });
+      else {
+        add('new-devis', 'Créer un devis', 'primary', 'navigate', { href: 'devis-nouveau.html?clientId=' + encodeURIComponent(obj.id) });
+        add('new-intervention', 'Créer une intervention', 'secondary', 'navigate', { href: 'planning.html' });
+      }
+      return trimNextActions(actions);
+    }
+
+    return [];
+  }
+
+  /* Timeline dérivée -- jamais une table d'événements séparée, jamais une
+     copie dans le client : calcul PUR sur devis/interventions/factures déjà
+     en state à chaque appel. publicRequests (optionnel) : demandes déjà
+     récupérées par l'appelant (table dédiée hors seba_state, voir
+     SebaDB.publicIntake.list()) et pré-filtrées sur ce client -- cette
+     fonction reste pure (zéro lecture réseau elle-même), c'est l'appelant
+     qui fait l'aller-retour avant de l'appeler. */
+  const TIMELINE_EVENT_ORDER = [
+    'demande_recue', 'demande_qualifiee', 'demande_convertie',
+    'devis_cree', 'devis_envoye', 'devis_accepte', 'devis_refuse',
+    'intervention_creee', 'intervention_planifiee', 'employe_assigne',
+    'intervention_demarree', 'pause', 'reprise', 'intervention_terminee',
+    'approbation_client', 'validation_patron', 'incident_declare', 'demande_report',
+    'facture_creee', 'paiement_enregistre', 'facture_soldee',
+  ];
+  function buildClientOperationalTimeline(clientId, state, publicRequests) {
+    const events = [];
+    const push = (type, occurredAt, title, description, sourceType, sourceObjOrId, visibility) => {
+      if (!occurredAt) return; // jamais une date inventée (pas de Date.now()) -- source manquante = événement omis
+      const srcId = sourceObjOrId && typeof sourceObjOrId === 'object' ? sourceObjOrId.id : sourceObjOrId;
+      const hrefId = sourceObjOrId && typeof sourceObjOrId === 'object' ? businessObjectHrefId(sourceType, sourceObjOrId) : sourceObjOrId;
+      events.push({
+        id: type + ':' + sourceType + ':' + srcId + ':' + occurredAt,
+        type, occurredAt, title, description: description || '',
+        sourceType, sourceId: srcId, href: buildBusinessObjectHref(sourceType, hrefId),
+        visibility: visibility || 'owner',
+      });
+    };
+
+    (publicRequests || []).forEach(r => {
+      if (r.convertedClientId !== clientId) return;
+      push('demande_recue', r.createdAt, 'Demande reçue', r.serviceLabel || '', 'demande', r.id, 'owner');
+      if (r.status === 'qualified') push('demande_qualifiee', r.updatedAt, 'Demande qualifiée', '', 'demande', r.id, 'owner');
+      if (r.convertedAt) push('demande_convertie', r.convertedAt, 'Demande convertie', '', 'demande', r.id, 'owner');
+    });
+
+    (state.devis || []).filter(d => d.clientId === clientId).forEach(d => {
+      push('devis_cree', d.date, 'Devis créé', d.num || '', 'devis', d, 'owner');
+      if (d.sentAt) push('devis_envoye', d.sentAt, 'Devis envoyé', d.num || '', 'devis', d, 'client');
+      if (d.acceptedAt) push('devis_accepte', d.acceptedAt, 'Devis accepté', d.num || '', 'devis', d, 'client');
+      if (d.refusedAt) push('devis_refuse', d.refusedAt, 'Devis refusé', d.refusalComment || '', 'devis', d, 'client');
+    });
+
+    const INTERVENTION_HISTORY_MAP = {
+      assigned: ['employe_assigne', 'Employé assigné', 'internal'],
+      started: ['intervention_demarree', 'Intervention démarrée', 'internal'],
+      paused: ['pause', 'Pause', 'internal'],
+      resumed: ['reprise', 'Reprise', 'internal'],
+      completed: ['intervention_terminee', 'Intervention terminée', 'client'],
+      client_approved: ['approbation_client', 'Approbation client', 'client'],
+      owner_approved: ['validation_patron', 'Validation patron', 'owner'],
+      incident_reported: ['incident_declare', 'Incident déclaré', 'internal'],
+      reschedule_request_accepted: ['demande_report', 'Report accepté', 'client'],
+    };
+    (state.interventions || []).filter(i => i.clientId === clientId).forEach(i => {
+      normalizeIntervention(i);
+      push('intervention_creee', i.createdAt, 'Intervention créée', i.service || '', 'intervention', i, 'owner');
+      if (i.date) push('intervention_planifiee', i.date, 'Intervention planifiée', i.service || '', 'intervention', i, 'client');
+      (i.statusHistory || []).forEach(ev => {
+        const m = INTERVENTION_HISTORY_MAP[ev.event];
+        if (m) push(m[0], ev.createdAt, m[1], '', 'intervention', i, m[2]);
+      });
+      if (i.rescheduleRequest && i.rescheduleRequest.requestedAt) push('demande_report', i.rescheduleRequest.requestedAt, 'Demande de report', i.rescheduleRequest.comment || '', 'intervention', i, 'client');
+    });
+
+    (state.factures || []).filter(f => f.clientId === clientId).forEach(f => {
+      push('facture_creee', f.date, 'Facture créée', f.num || '', 'facture', f, 'owner');
+      (f.statusHistory || []).forEach(ev => {
+        if (ev.event === 'payment_recorded') push('paiement_enregistre', ev.createdAt, 'Paiement enregistré', (ev.metadata && ev.metadata.amount) ? ev.metadata.amount + ' €' : '', 'facture', f, 'client');
+      });
+      if (SebaDB.factures.isPaid(f) && f.paidAt) push('facture_soldee', f.paidAt, 'Facture soldée', f.num || '', 'facture', f, 'client');
+    });
+
+    const typeRank = (t) => { const idx = TIMELINE_EVENT_ORDER.indexOf(t); return idx === -1 ? 999 : idx; };
+    events.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || (typeRank(a.type) - typeRank(b.type)) || a.id.localeCompare(b.id));
+
+    const seen = new Set();
+    return events.filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; });
+  }
+
   /* ── Plans de service récurrents (section 4) ──────────────────────────
      Ajoute `months` à une date en "clampant" au dernier jour du mois
      cible quand le jour d'origine n'existe pas dedans (31 janvier + 1 mois
@@ -3117,6 +3427,10 @@
           conditions: (input.conditions || '').trim(),
           notes: (input.notes || '').trim(), // interne patron -- jamais envoyé au client (voir migration RPC, allowlist)
           sourceInterventionId: input.sourceInterventionId || null,
+          // Demande publique d'origine (feature/pilot-ready-v1) -- absent
+          // avant ce chantier, ajouté en cohérence avec sourceInterventionId
+          // ci-dessus (même convention de nommage "sourceXxxId").
+          sourceRequestId: input.sourceRequestId || null,
           totalHT: totals.totalHT, totalTVA: totals.totalTVA, totalTTC: totals.totalTTC,
           amount: totals.totalTTC, // alias legacy, voir en-tête de section
           status,
@@ -4116,6 +4430,84 @@
         SebaDB.log('facture', 'Facture préremplie créée depuis la mission — ' + (intervention.clientName || 'client') + ' · ' + facture.num, 'factures.html');
         return { ok: true, facture };
       },
+
+      /* Conversion CANONIQUE devis accepté -> intervention (feature/pilot-
+         ready-v1) -- seule voie autorisée pour cette conversion. Idempotente
+         par construction (findExistingConversion, jamais un simple verrou
+         d'UI) : un retry/double-clic renvoie l'intervention déjà créée,
+         jamais un doublon. Ne copie jamais l'objet devis entier -- ne
+         reprend que les champs opérationnels utiles au terrain (client,
+         service, adresse, durée si connue), jamais prix/TVA/remise/acompte
+         (ceux-ci restent uniquement sur le devis/la facture). Réutilise
+         SebaDB.create('interventions', ...) tel quel : generateMissionBrief
+         s'applique automatiquement (briefing sans aucune donnée financière,
+         déjà garanti par ce mécanisme existant, jamais réécrit ici). */
+      createFromAcceptedQuote(quoteId, options) {
+        if (!state) loadState();
+        options = options || {};
+        if (!quoteId) return { ok: false, error: 'Devis requis.' };
+        const d = state.devis.find(x => x.id === quoteId);
+        if (!d) return { ok: false, error: 'Devis introuvable.' };
+
+        // Idempotence déterministe AVANT toute validation de statut : un
+        // retry sur un devis déjà converti doit renvoyer l'intervention
+        // existante même si, entre-temps, le devis a été annulé -- jamais
+        // recréer, jamais échouer sur un état qui n'empêche pas de retrouver
+        // l'objet déjà produit.
+        const existing = findExistingConversion('devis', quoteId, 'intervention', state);
+        if (existing) {
+          if (d.interventionId !== existing.id) SebaDB.update('devis', d.id, { interventionId: existing.id });
+          return { ok: true, intervention: existing, alreadyExisted: true };
+        }
+
+        if (d.status === 'annule') return { ok: false, error: 'Ce devis est annulé, impossible de créer une intervention.' };
+        if (d.status === 'refuse') return { ok: false, error: 'Ce devis a été refusé, impossible de créer une intervention.' };
+        if (d.status !== 'signe') return { ok: false, error: 'Seul un devis accepté peut être converti en intervention.' };
+        if (!d.clientId) return { ok: false, error: 'Devis sans client associé.' };
+        const client = state.clients.find(c => c.id === d.clientId);
+        if (!client) return { ok: false, error: 'Client introuvable.' };
+
+        // Service principal -- ordre de résolution strict (section 3 du
+        // chantier), jamais un service inventé. d.service est déjà résolu
+        // par SebaDB.devis._buildPayload à la création (jamais vide pour un
+        // vrai devis) : le cas "ambigu" ne couvre que d'anciennes données
+        // incomplètes.
+        let service = d.service || null;
+        if (!service && options.serviceIdOverride) {
+          const svc = (state.custom_services || []).find(s => s.id === options.serviceIdOverride);
+          service = svc ? svc.name : options.serviceIdOverride;
+        }
+        if (!service) return { ok: false, error: 'Service ambigu : indiquez serviceIdOverride avant de créer l\'intervention.', needsServiceChoice: true };
+
+        // Durée -- ordre de résolution strict, jamais un prix/une quantité
+        // transformé en durée (aucun de ces 2 champs n'existe sur le devis
+        // réel aujourd'hui, seul options.durationMinutes peut aboutir).
+        let durationMinutes = null;
+        if (Number.isFinite(d.durationMinutes)) durationMinutes = d.durationMinutes;
+        else if (Array.isArray(d.lines) && d.lines.some(l => Number.isFinite(l.durationMinutes))) {
+          durationMinutes = d.lines.reduce((s, l) => s + (Number.isFinite(l.durationMinutes) ? l.durationMinutes : 0), 0);
+        } else if (Number.isFinite(options.durationMinutes)) durationMinutes = options.durationMinutes;
+
+        const employee = options.employeeId ? state.employes.find(e => e.id === options.employeeId) : null;
+        const created = SebaDB.create('interventions', {
+          clientId: d.clientId, clientName: d.clientName || fullName(client),
+          service, duree: durationMinutes != null ? String(durationMinutes) : null,
+          adresse: options.addressOverride || client.adresse || '',
+          date: options.date || null, time: options.startTime || null,
+          employeId: employee ? employee.id : null, employeName: employee ? (employee.prenom + ' ' + employee.nom).trim() : null,
+          done: false,
+          sourceQuoteId: d.id, sourceRequestId: d.sourceRequestId || null,
+          instructions: (d.conditions || '').trim() || null,
+        });
+
+        SebaDB.update('devis', d.id, { interventionId: created.id });
+        SebaDB.log('intervention', 'Intervention créée depuis le devis accepté ' + d.num + ' — ' + (created.clientName || 'client'), 'intervention-fiche.html?id=' + created.id);
+        // Événement automatisation intervention_created : émis par le scan
+        // réactif existant (detectBusinessEvents, déclenché par le persist()
+        // de SebaDB.create ci-dessus) -- jamais dupliqué manuellement ici,
+        // et jamais avant cette écriture (elle vient de se terminer).
+        return { ok: true, intervention: SebaDB.get('interventions', created.id), alreadyExisted: false };
+      },
     },
   };
 
@@ -4151,6 +4543,9 @@
     // Intervention 360 (feature/intervention-360)
     normalizeIntervention, computeInterventionCompletionBlockers,
     PHOTO_TYPES, CLIENT_APPROVAL_STATUSES, COMPLETION_STATUSES, STATUS_HISTORY_EVENTS,
+    // Parcours pilote complet (feature/pilot-ready-v1)
+    buildBusinessObjectHref, getLinkedBusinessObjects, findExistingConversion,
+    getBusinessNextActions, buildClientOperationalTimeline,
   };
 
   SebaDB.ready();

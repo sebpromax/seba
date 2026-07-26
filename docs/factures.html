@@ -282,10 +282,18 @@
       const soldeLine = (!SebaDB.factures.isCancelled(f) && solde > 0 && solde < total)
         ? '<span class="solde-restant">Solde restant : ' + solde + ' ' + sym + '</span>' : '';
       const canPay = !SebaDB.factures.isCancelled(f) && !SebaDB.factures.isPaid(f) && !SebaDB.factures.isDraft(f);
+      // Origine réelle (feature/pilot-ready-v1) -- une facture vient soit
+      // d'un devis, soit d'une intervention, jamais des deux (voir
+      // SebaDB.factures.createFromDevis / SebaDB.interventions.
+      // createInvoiceFromIntervention). Jamais affiché avant ce chantier.
+      const sourceLink = f.devisId
+        ? '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'devis.html?open=' + encodeURIComponent((SebaDB.get('devis', f.devisId) || {}).num || '') + '\'" title="Devis source">Devis source</span> · '
+        : (f.interventionId ? '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'intervention-fiche.html?id=' + encodeURIComponent(f.interventionId) + '\'" title="Intervention source">Intervention source</span> · ' : '');
       return '<tr data-fid="' + f.id + '"><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
         '<td class="amount">' + total + ' ' + sym + soldeLine + '</td>' +
         '<td><span class="badge ' + s.cls + '">' + s.lbl + '</span></td>' +
         '<td class="row-action">' +
+        sourceLink +
         (s.act ? '<span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span> · ' : '') +
         (canPay ? '<span style="cursor:pointer;font-weight:600;color:var(--emerald);" onclick="openPaymentModal(\'' + f.id + '\')">Enregistrer un paiement</span> · ' : '') +
         '<span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
