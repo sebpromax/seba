@@ -115,6 +115,7 @@
   /* LISTS */
   .info-list{display:flex;flex-direction:column;gap:14px;}
   .info-row{display:flex;flex-direction:column;gap:3px;}
+  .reschedule-btn-row{display:flex;gap:10px;margin-top:14px;}
   .info-label{font-size:0.74rem;color:var(--emerald);text-transform:uppercase;letter-spacing:0.04em;}
   .info-value{font-size:0.9rem;white-space:pre-wrap;}
   .mem-chip{display:inline-block;font-size:0.78rem;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin:0 6px 6px 0;}
@@ -589,15 +590,40 @@
       '<div class="info-row"><span class="info-label">Le</span><span class="info-value">' + fmtDateTime(ca.submittedAt) + '</span></div>';
   }
 
+  /* Accepter/refuser (feature/smart-planning-dispatch) -- accepter passe
+     par SebaDB.interventions.resolveRescheduleRequest(), qui met à jour la
+     VRAIE date de l'intervention (règle métier du chantier) via
+     reschedule() -- donc soumis au même verrou/conflit que le planning.
+     Refuser ne touche jamais date/heure, conserve le commentaire, seul le
+     statut de la demande change. Une fois résolue (accepted/declined), le
+     panneau reste visible (traçabilité) mais sans boutons d'action. */
   function renderReschedule() {
     const panel = document.getElementById('reschedule-panel');
     const rr = interv.rescheduleRequest;
     if (!rr) { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
+    const STATUS_LBL = { pending: 'En attente', accepted: 'Acceptée', declined: 'Refusée' };
     document.getElementById('reschedule-content').innerHTML =
+      '<div class="info-row"><span class="info-label">Statut</span><span class="info-value">' + (STATUS_LBL[rr.status] || rr.status) + '</span></div>' +
       '<div class="info-row"><span class="info-label">Date souhaitée</span><span class="info-value">' + escapeHtml(rr.requestedDate || '—') + '</span></div>' +
       (rr.comment ? '<div class="info-row"><span class="info-label">Commentaire</span><span class="info-value">' + escapeHtml(rr.comment) + '</span></div>' : '') +
-      '<div class="info-row"><span class="info-label">Demandé le</span><span class="info-value">' + fmtDateTime(rr.requestedAt) + '</span></div>';
+      '<div class="info-row"><span class="info-label">Demandé le</span><span class="info-value">' + fmtDateTime(rr.requestedAt) + '</span></div>' +
+      (rr.status === 'pending'
+        ? '<div class="reschedule-btn-row"><button class="btn-em" onclick="resolveReschedule(true)">Accepter</button><button class="btn-outline" onclick="resolveReschedule(false)">Refuser</button></div>'
+        : '');
+  }
+
+  function resolveReschedule(accept) {
+    const res = SebaDB.interventions.resolveRescheduleRequest(_id, accept);
+    if (!res.ok) {
+      if (res.conflict) {
+        const ok = confirm('Conflit horaire avec ' + (interv.employeName || 'cet employé') + ' à ' + res.conflict.time + '. Accepter quand même ?');
+        if (ok) SebaDB.interventions.resolveRescheduleRequest(_id, accept, { force: true });
+        else return;
+      } else { showToast(res.error || 'Échec.'); return; }
+    }
+    showToast(accept ? 'Demande de report acceptée.' : 'Demande de report refusée.');
+    render();
   }
 
   function renderBriefing() {

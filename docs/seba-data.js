@@ -232,7 +232,7 @@
   const PHOTO_TYPES = ['before', 'during', 'after', 'incident'];
   const CLIENT_APPROVAL_STATUSES = ['pending', 'approved', 'issue_reported'];
   const COMPLETION_STATUSES = ['not_started', 'in_progress', 'paused', 'submitted', 'owner_approved', 'reopened'];
-  const STATUS_HISTORY_EVENTS = ['prepared', 'assigned', 'started', 'paused', 'resumed', 'checklist_updated', 'photo_added', 'incident_reported', 'completed', 'client_approved', 'client_issue_reported', 'owner_approved', 'reopened', 'invoice_created'];
+  const STATUS_HISTORY_EVENTS = ['prepared', 'assigned', 'started', 'paused', 'resumed', 'checklist_updated', 'photo_added', 'incident_reported', 'completed', 'client_approved', 'client_issue_reported', 'owner_approved', 'reopened', 'invoice_created', 'rescheduled', 'reassigned', 'reschedule_request_accepted', 'reschedule_request_declined'];
 
   /* Rétrocompatible : une intervention créée avant ce chantier n'a ni
      execution ni statusHistory -- toujours appelée avant toute lecture/
@@ -2687,8 +2687,142 @@
       },
     },
 
+    /* ═══ Dispatch/planning (feature/smart-planning-dispatch) ═══════════
+       Fonctions PURES de calcul horaire -- même logique que celle déjà
+       écrite dans app/dashboard.html (parseDureeToMinutes/addMinutesToTime/
+       détection de chevauchement pour teamCapacity.conflicts), reprise ici
+       à l'identique pour que planning.html et la RPC-like côté patron
+       (SebaDB.interventions.reschedule/assign ci-dessous) partagent
+       EXACTEMENT la même définition d'un conflit -- jamais une deuxième
+       règle de calcul divergente. */
+    scheduling: {
+      parseDureeToMinutes(str) {
+        const m = /^(\d+)h(\d{2})?$/.exec(String(str || '').trim());
+        if (!m) return 0;
+        return parseInt(m[1], 10) * 60 + (m[2] ? parseInt(m[2], 10) : 0);
+      },
+      addMinutesToTime(time, minutes) {
+        const parts = String(time || '00:00').split(':').map(Number);
+        const total = (parts[0] || 0) * 60 + (parts[1] || 0) + minutes;
+        const hh = Math.floor(total / 60) % 24, mm = total % 60;
+        return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+      },
+      heureFin(intervention) {
+        if (!intervention.time) return null;
+        return SebaDB.scheduling.addMinutesToTime(intervention.time, SebaDB.scheduling.parseDureeToMinutes(intervention.duree));
+      },
+      /* Un candidat (date/time/duree/employeId déjà fusionnés par
+         l'appelant) chevauche-t-il une AUTRE intervention du même employé,
+         le même jour ? excludeId : jamais comparé à lui-même (cas d'une
+         intervention existante qu'on déplace). Retourne l'intervention en
+         conflit (premier trouvé) ou null. */
+      findConflict(interventions, candidate, excludeId) {
+        if (!candidate.employeId || !candidate.date || !candidate.time) return null;
+        const candFin = SebaDB.scheduling.heureFin(candidate);
+        if (!candFin) return null;
+        const others = interventions.filter(i =>
+          i.id !== excludeId && i.employeId === candidate.employeId && i.date === candidate.date && i.time
+        );
+        for (const other of others) {
+          const otherFin = SebaDB.scheduling.heureFin(other);
+          if (!otherFin) continue;
+          // Chevauchement classique [start,end) : A commence avant que B finisse ET B commence avant que A finisse.
+          if (candidate.time < otherFin && other.time < candFin) return other;
+        }
+        return null;
+      },
+      /* Tous les conflits d'une date donnée, toutes équipes confondues --
+         même forme que app/dashboard.html (teamCapacity.conflicts),
+         réutilisée par planning.html pour l'affichage des badges. */
+      findDayConflicts(interventions, dateISO) {
+        const byEmploye = {};
+        interventions.filter(i => i.date === dateISO && i.employeId && i.time).forEach(i => {
+          (byEmploye[i.employeId] = byEmploye[i.employeId] || []).push(i);
+        });
+        const conflicts = [];
+        Object.keys(byEmploye).forEach(eid => {
+          const list = byEmploye[eid].slice().sort((a, b) => a.time.localeCompare(b.time));
+          for (let k = 0; k < list.length - 1; k++) {
+            const finK = SebaDB.scheduling.heureFin(list[k]);
+            if (finK && finK > list[k + 1].time) conflicts.push({ employeId: eid, a: list[k], b: list[k + 1] });
+          }
+        });
+        return conflicts;
+      },
+    },
+
     /* ═══ Briefing de mission + retour terrain (feature/client-crm-advanced) ═══ */
     interventions: {
+      /* Déplacement/modification horaire/réassignation (feature/smart-
+         planning-dispatch) -- écriture patron directe (RLS seba_state
+         normale), jamais un second système : passe par SebaDB.update comme
+         toute autre écriture, la synchro T3 (pushOp -> sync-push) reste
+         automatique, aucun appel explicite nécessaire ici.
+         patch : sous-ensemble de {date, time, duree, employeId, employeName}.
+         opts.force=true : ignore un conflit détecté et l'écrit quand même
+         (le patron a déjà vu l'avertissement et confirmé -- "un conflit
+         doit être visible AVANT validation", jamais un blocage silencieux
+         ni une validation automatique). opts.allowLocked=true : autorise le
+         déplacement d'une mission déjà validée par le patron (owner_approved)
+         -- réservé à un flux de réouverture EXPLICITE, jamais implicite. */
+      reschedule(interventionId, patch, opts) {
+        if (!state) loadState();
+        const interv = state.interventions.find(i => i.id === interventionId);
+        if (!interv) return { ok: false, error: 'Intervention introuvable.' };
+        normalizeIntervention(interv);
+        if (interv.execution.completionStatus === 'owner_approved' && !(opts && opts.allowLocked)) {
+          return { ok: false, error: 'Mission terminée et validée -- réouvrez le dossier avant de la déplacer.', locked: true };
+        }
+        const candidate = Object.assign({}, interv, patch);
+        if (candidate.employeId) {
+          const conflict = SebaDB.scheduling.findConflict(state.interventions, candidate, interventionId);
+          if (conflict && !(opts && opts.force)) {
+            return { ok: false, error: 'Conflit horaire : ' + (candidate.employeName || 'cet employé') + ' a déjà une mission sur ce créneau.', conflict: { id: conflict.id, time: conflict.time, clientName: conflict.clientName } };
+          }
+        }
+        const statusHistory = (interv.statusHistory || []).concat([{ id: uid(), event: 'rescheduled', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: patch }]);
+        SebaDB.update('interventions', interventionId, Object.assign({}, patch, { statusHistory }));
+        SebaDB.log('intervention', 'Intervention replanifiée — ' + (interv.clientName || 'client') + (patch.date ? ' · ' + patch.date : '') + (patch.time ? ' ' + patch.time : ''), 'planning.html');
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+      },
+
+      /* Assignation/réassignation seule (raccourci de reschedule() sans
+         changer date/heure) -- même garde-fous (verrou owner_approved,
+         conflit visible avant validation). */
+      assign(interventionId, employeId, employeName, opts) {
+        return SebaDB.interventions.reschedule(interventionId, { employeId: employeId || null, employeName: employeId ? (employeName || null) : null }, opts);
+      },
+
+      /* Résout une demande de report client (intervention.rescheduleRequest,
+         posée par request_my_intervention_reschedule() côté client --
+         migrations/2026-07-25-intervention-360.sql). accept=true : met à
+         jour la VRAIE date de l'intervention (section règles métier du
+         chantier) -- passe par reschedule() donc soumis aux mêmes garde-
+         fous (verrou/conflit). accept=false : ne touche JAMAIS
+         date/time/employeId, conserve le commentaire client tel quel,
+         seul le statut de la demande change. */
+      resolveRescheduleRequest(interventionId, accept, opts) {
+        if (!state) loadState();
+        const interv = state.interventions.find(i => i.id === interventionId);
+        if (!interv) return { ok: false, error: 'Intervention introuvable.' };
+        if (!interv.rescheduleRequest || interv.rescheduleRequest.status !== 'pending') {
+          return { ok: false, error: 'Aucune demande de report en attente.' };
+        }
+        const req = Object.assign({}, interv.rescheduleRequest, { status: accept ? 'accepted' : 'declined', resolvedAt: new Date().toISOString() });
+        if (accept) {
+          const res = SebaDB.interventions.reschedule(interventionId, { date: req.requestedDate, rescheduleRequest: req }, opts);
+          if (!res.ok) return res; // conflit/verrou : la demande reste 'pending', rien n'est modifié
+          const withEvent = state.interventions.find(i => i.id === interventionId);
+          pushStatusHistory(withEvent, 'reschedule_request_accepted', 'patron', null, { requestedDate: req.requestedDate });
+          SebaDB.update('interventions', interventionId, { statusHistory: withEvent.statusHistory });
+          return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+        }
+        pushStatusHistory(interv, 'reschedule_request_declined', 'patron', null, { comment: req.comment });
+        SebaDB.update('interventions', interventionId, { rescheduleRequest: req, statusHistory: interv.statusHistory });
+        SebaDB.log('intervention', 'Demande de report refusée — ' + (interv.clientName || 'client'), 'planning.html');
+        return { ok: true, intervention: SebaDB.get('interventions', interventionId) };
+      },
+
       /* Patron uniquement (accès direct à seba_state) -- régénère le
          snapshot missionBrief à partir de l'état ACTUEL de la mémoire
          client (jamais automatique après coup : bouton explicite, voir

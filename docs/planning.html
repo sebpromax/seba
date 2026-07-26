@@ -16,6 +16,7 @@
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
 <style>
+:root{--critical:#DC2626;--toast-bg:#1C1D21;--toast-text:#fff;--toast-shadow:rgba(0,0,0,.25);--em-ink:#031A12;--toast-border-light:rgba(255,255,255,.3);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -48,16 +49,55 @@
   .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
   .day-col{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:14px;min-height:340px;box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .day-col.today{border-color:var(--emerald);box-shadow:0 0 0 1px var(--emerald);}
-  .day-head{margin-bottom:12px;}
+  .day-head{margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
   .day-head .dname{font-size:0.74rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.03em;}
   .day-head .dnum{font-weight:600;font-size:1.1rem;}
-  .job{background:var(--bg);border-left:3px solid var(--emerald);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;font-size:0.78rem;cursor:pointer;}
+  .day-jobs{min-height:40px;}
+  .job{background:var(--bg);border-left:3px solid var(--emerald);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;font-size:0.78rem;cursor:grab;position:relative;}
   .job.moss{border-left-color:var(--emerald);}
-  .job .jtime{font-size:0.7rem;color:var(--emerald);display:block;margin-bottom:3px;}
+  .job.conflict{border-left-color:var(--critical);box-shadow:0 0 0 1px var(--critical);}
+  .job.locked{cursor:not-allowed;opacity:.72;}
+  .job.sortable-ghost{opacity:.35;}
+  .job .jtop{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+  .job .jtime{font-size:0.7rem;color:var(--emerald);}
   .job.moss .jtime{color:var(--emerald);}
+  .job.conflict .jtime{color:var(--critical);}
   .job .jclient{font-weight:500;}
   .job .jservice{color:var(--text-2);font-size:0.72rem;}
+  .job .jemp-row{display:flex;align-items:center;gap:4px;margin-top:5px;}
+  .job .jemp-select{flex:1;font-size:.7rem;padding:3px 4px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--ink);font-family:inherit;}
+  .job .jcheck{position:absolute;top:6px;right:6px;width:14px;height:14px;cursor:pointer;}
+  .job .jbadge{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px;vertical-align:middle;}
+  .job .jbadge.conflict{background:var(--critical);color:var(--toast-text);}
+  .job .jbadge.pending{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
   .empty-day{font-size:0.76rem;color:var(--text-2);text-align:center;padding:30px 0;}
+
+  /* ── Filtres ── */
+  .filters-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+  .filters-bar select{padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);color:var(--ink);font-size:.82rem;font-family:inherit;cursor:pointer;}
+
+  /* ── File non assignée ── */
+  .unassigned-panel{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;}
+  .unassigned-hdr{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:10px;}
+  .unassigned-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .unassigned-list .job{width:200px;margin-bottom:0;cursor:pointer;}
+  .unassigned-empty{font-size:.8rem;color:var(--text-2);}
+
+  /* ── Barre d'action groupée (déplacer plusieurs interventions) ── */
+  .bulk-toolbar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--toast-bg);color:var(--toast-text);padding:12px 18px;border-radius:12px;display:flex;align-items:center;gap:10px;font-size:.85rem;z-index:600;box-shadow:0 8px 28px var(--toast-shadow);transition:transform .2s ease;}
+  .bulk-toolbar.open{transform:translateX(-50%) translateY(0);}
+  .bulk-toolbar input[type="date"]{padding:6px 8px;border-radius:6px;border:none;font-family:inherit;}
+  .bulk-toolbar button{background:var(--emerald);color:var(--em-ink);border:none;padding:7px 14px;border-radius:8px;font-weight:600;font-size:.82rem;cursor:pointer;}
+  .bulk-toolbar .bulk-cancel{background:transparent;color:var(--toast-text);border:1px solid var(--toast-border-light);}
+
+  /* ── Demande de report (side sheet) ── */
+  .reschedule-box{background:var(--badge-warning-bg);border-radius:var(--rs);padding:12px 14px;margin-bottom:16px;font-size:.84rem;}
+  .reschedule-box b{display:block;margin-bottom:4px;}
+  .reschedule-actions{display:flex;gap:8px;margin-top:10px;}
+  .reschedule-actions button{flex:1;padding:8px;border-radius:8px;border:none;font-weight:600;font-size:.82rem;cursor:pointer;}
+  .reschedule-accept{background:var(--emerald);color:var(--em-ink);}
+  .reschedule-decline{background:transparent;border:1px solid var(--border)!important;color:var(--text-2);}
+  .locked-msg{background:var(--badge-info-bg);color:var(--text-2);border-radius:var(--rs);padding:10px 12px;font-size:.82rem;margin-bottom:14px;}
 
   .topbar-right{display:flex;align-items:center;gap:14px;}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:#031A12;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
@@ -159,42 +199,47 @@
       </div>
     </div>
 
-    <div class="week-grid">
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Lun.</span><div class="dnum">22</div></div>
-        <div class="job"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard</div></div>
-        <div class="job moss"><span class="jtime">14:00</span><div class="jclient">Pierre Tessier</div><div class="jservice">Ménage standard</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Mar.</span><div class="dnum">23</div></div>
-        <div class="job moss"><span class="jtime">10:30</span><div class="jclient">Julie Dumont</div><div class="jservice">Repassage</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Mer.</span><div class="dnum">24</div></div>
-        <div class="empty-day">Aucune intervention</div>
-      </div>
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Jeu.</span><div class="dnum">25</div></div>
-        <div class="job"><span class="jtime">11:00</span><div class="jclient">Marc Roussel</div><div class="jservice">Fin de bail</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Ven.</span><div class="dnum">26</div></div>
-        <div class="job moss"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard</div></div>
-      </div>
-      <div class="day-col today">
-        <div class="day-head"><span class="dname">Sam.</span><div class="dnum">27</div></div>
-        <div class="job"><span class="jtime">09:00</span><div class="jclient">Sophie Lacroix</div><div class="jservice">Ménage standard — 2h</div></div>
-        <div class="job"><span class="jtime">13:30</span><div class="jclient">Pierre Tessier</div><div class="jservice">Ménage standard — 1h30</div></div>
-        <div class="job"><span class="jtime">16:00</span><div class="jclient">Marc Roussel</div><div class="jservice">Fin de bail — 3h</div></div>
-      </div>
-      <div class="day-col">
-        <div class="day-head"><span class="dname">Dim.</span><div class="dnum">28</div></div>
-        <div class="empty-day">Aucune intervention</div>
-      </div>
+    <!-- Filtres (feature/smart-planning-dispatch) -->
+    <div class="filters-bar">
+      <select id="flt-employe"><option value="">Tous les employés</option></select>
+      <select id="flt-statut">
+        <option value="">Tous les statuts</option>
+        <option value="non_assignee">Non assignée</option>
+        <option value="a_venir">À venir</option>
+        <option value="en_cours">En cours</option>
+        <option value="terminee">Terminée</option>
+      </select>
+      <select id="flt-client"><option value="">Tous les clients</option></select>
+      <select id="flt-service"><option value="">Toutes les prestations</option></select>
+    </div>
+
+    <!-- File non assignée (feature/smart-planning-dispatch) -->
+    <div class="unassigned-panel">
+      <div class="unassigned-hdr">File non assignée — semaine affichée</div>
+      <div class="unassigned-list" id="unassigned-list"></div>
+    </div>
+
+    <div class="week-grid" id="week-grid">
+      <div class="day-col"><div class="day-head"><span class="dname">Lun.</span><div class="dnum">22</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Mar.</span><div class="dnum">23</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Mer.</span><div class="dnum">24</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Jeu.</span><div class="dnum">25</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Ven.</span><div class="dnum">26</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Sam.</span><div class="dnum">27</div></div><div class="day-jobs"></div></div>
+      <div class="day-col"><div class="day-head"><span class="dname">Dim.</span><div class="dnum">28</div></div><div class="day-jobs"></div></div>
     </div>
   </main>
 </div>
 
+<!-- Barre d'action groupée -->
+<div class="bulk-toolbar" id="bulk-toolbar">
+  <span id="bulk-count">0 sélectionnée(s)</span>
+  <input type="date" id="bulk-date">
+  <button onclick="applyBulkMove()">Déplacer</button>
+  <button class="bulk-cancel" onclick="clearBulkSelection()">Annuler</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="seba-data.js"></script>
 <script>
   // Semaine de référence = semaine courante (lundi réel, plus de date figée)
@@ -210,15 +255,57 @@
   function localISO(d) {
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  // Interventions du jour donné, lues depuis le moteur de données
+
+  /* ── Filtres (feature/smart-planning-dispatch) ── */
+  const fltEmploye = document.getElementById('flt-employe');
+  const fltStatut  = document.getElementById('flt-statut');
+  const fltClient  = document.getElementById('flt-client');
+  const fltService = document.getElementById('flt-service');
+  (function fillFilterOptions() {
+    (SebaDB.list('employes') || []).forEach(e => {
+      const o = document.createElement('option'); o.value = e.id; o.textContent = e.prenom + ' ' + e.nom;
+      fltEmploye.appendChild(o);
+    });
+    (SebaDB.list('clients') || []).forEach(c => {
+      const o = document.createElement('option'); o.value = c.id; o.textContent = c.prenom + ' ' + c.nom;
+      fltClient.appendChild(o);
+    });
+    const services = [...new Set((SebaDB.list('interventions') || []).map(i => i.service).filter(Boolean))].sort();
+    services.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; fltService.appendChild(o); });
+  })();
+  [fltEmploye, fltStatut, fltClient, fltService].forEach(sel => sel.addEventListener('change', () => renderWeek(weekOffset)));
+
+  /* Statut simplifié pour le filtre -- même vocabulaire que planning/
+     dashboard existants (execution.completionStatus Intervention 360 en
+     priorité, jamais un champ inventé en plus). */
+  function jobStatusKey(i) {
+    if (!i.employeId) return 'non_assignee';
+    const cs = (i.execution && i.execution.completionStatus) || (i.done ? 'owner_approved' : 'not_started');
+    if (cs === 'owner_approved' || i.done) return 'terminee';
+    if (cs === 'not_started') return 'a_venir';
+    return 'en_cours';
+  }
+
+  function matchesFilters(i) {
+    if (fltEmploye.value && i.employeId !== fltEmploye.value) return false;
+    if (fltClient.value && i.clientId !== fltClient.value) return false;
+    if (fltService.value && i.service !== fltService.value) return false;
+    if (fltStatut.value && jobStatusKey(i) !== fltStatut.value) return false;
+    return true;
+  }
+
+  // Interventions du jour donné (filtrées), lues depuis le moteur de données --
+  // objet complet (plus une forme réduite) : le rendu a besoin de id/employeId/
+  // execution/rescheduleRequest pour badges/actions.
   function jobsForDate(dateISO) {
     return SebaDB.list('interventions')
-      .filter(i => i.date === dateISO)
-      .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
-      .map(i => ({ time: i.time, client: i.clientName, service: i.service, moss: !!i.done, date: i.date }));
+      .filter(i => i.date === dateISO && matchesFilters(i))
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   }
 
   let weekOffset = 0;
+  let _weekDates = []; // ISO des 7 jours actuellement affichés (utile à la file non assignée)
+  let _isLoadingJob = false; // relecture par renderWeek : ignore les événements onchange déclenchés par le re-rendu lui-même
 
   function addDays(date, n) {
     const d = new Date(date);
@@ -243,39 +330,191 @@
     return t.getTime();
   }
 
+  const EMPLOYEES_CACHE = SebaDB.list('employes') || [];
+  function employeeOptionsHtml(selectedId) {
+    return '<option value="">Non assigné</option>' +
+      EMPLOYEES_CACHE.map(e => '<option value="' + e.id + '"' + (e.id === selectedId ? ' selected' : '') + '>' + esc(e.prenom + ' ' + e.nom) + '</option>').join('');
+  }
+
+  const _selectedIds = new Set();
+
+  /* Carte d'une intervention -- badges conflit/report client, case à
+     cocher (sélection groupée), mini-select employé (réassignation directe,
+     sans drag), verrou visuel si terminée+validée (owner_approved, ne peut
+     pas être déplacée sans réouverture explicite -- règle métier du
+     chantier). */
+  function renderJobCard(i, dayConflictIds) {
+    const locked = i.execution && i.execution.completionStatus === 'owner_approved';
+    const hasConflict = dayConflictIds.has(i.id);
+    const pending = i.rescheduleRequest && i.rescheduleRequest.status === 'pending';
+    const classes = 'job' + (i.done ? ' moss' : '') + (hasConflict ? ' conflict' : '') + (locked ? ' locked' : '');
+    return '<div class="' + classes + '" data-id="' + i.id + '"' + (locked ? ' data-locked="1"' : '') + '>' +
+      '<input type="checkbox" class="jcheck" data-id="' + i.id + '"' + (_selectedIds.has(i.id) ? ' checked' : '') + ' onclick="event.stopPropagation();toggleSelect(\'' + i.id + '\',this.checked)" title="Sélectionner">' +
+      '<div class="jtop"><span class="jtime">' + esc(i.time || '') + '</span>' +
+        (hasConflict ? '<span class="jbadge conflict">Conflit</span>' : '') +
+        (pending ? '<span class="jbadge pending">Report demandé</span>' : '') +
+      '</div>' +
+      '<div class="jclient">' + esc(i.clientName || '') + '</div>' +
+      '<div class="jservice">' + esc(i.service || '') + (i.duree ? ' — ' + esc(i.duree) : '') + '</div>' +
+      '<div class="jemp-row" onclick="event.stopPropagation()">' +
+        '<select class="jemp-select" data-id="' + i.id + '" onchange="reassignFromCard(\'' + i.id + '\', this.value, this)">' + employeeOptionsHtml(i.employeId) + '</select>' +
+      '</div>' +
+    '</div>';
+  }
+
+  let _sortables = [];
+  function destroySortables() { _sortables.forEach(s => s.destroy()); _sortables = []; }
+
+  function initSortables() {
+    destroySortables();
+    if (!window.Sortable) return;
+    const containers = [document.getElementById('unassigned-list'), ...document.querySelectorAll('.day-jobs')];
+    containers.forEach(el => {
+      _sortables.push(Sortable.create(el, {
+        group: 'planning', animation: 150, ghostClass: 'sortable-ghost',
+        filter: '.jcheck, .jemp-select, .job.locked', preventOnFilter: false,
+        onEnd(evt) { onCardDropped(evt); },
+      }));
+    });
+  }
+
+  /* Glisser-déposer = changement de jour (ou mise en file non assignée si
+     déposé dans la file, qui retire l'employé). Le conflit est vérifié
+     AVANT toute écriture (jamais une validation automatique) -- en cas de
+     conflit, confirmation explicite requise, sinon le déplacement est
+     annulé et l'affichage est reconstruit depuis les vraies données
+     (jamais une confiance dans la position DOM laissée par SortableJS). */
+  function onCardDropped(evt) {
+    const id = evt.item.dataset.id;
+    const toUnassigned = evt.to.id === 'unassigned-list';
+    const newDate = toUnassigned ? null : evt.to.closest('.day-col').dataset.date;
+    const interv = SebaDB.get('interventions', id);
+    if (!interv) { renderWeek(weekOffset); return; }
+    const patch = toUnassigned ? { employeId: null, employeName: null } : { date: newDate };
+    const res = SebaDB.interventions.reschedule(id, patch);
+    if (!res.ok) {
+      if (res.conflict) {
+        const ok = confirm('Conflit horaire avec ' + (interv.employeName || 'cet employé') + ' à ' + res.conflict.time + ' (' + (res.conflict.clientName || '') + '). Déplacer quand même ?');
+        if (ok) { SebaDB.interventions.reschedule(id, patch, { force: true }); }
+      } else if (res.locked) {
+        showToast('Mission terminée et validée — réouvrez le dossier depuis la fiche pour la déplacer.');
+      } else {
+        showToast(res.error || 'Échec du déplacement.');
+      }
+    }
+    renderWeek(weekOffset); // toujours reconstruit depuis SebaDB, jamais la position DOM laissée par le drag
+  }
+
+  function reassignFromCard(id, employeId, selectEl) {
+    const employeName = employeId ? (EMPLOYEES_CACHE.find(e => e.id === employeId) || {}).prenom + ' ' + (EMPLOYEES_CACHE.find(e => e.id === employeId) || {}).nom : null;
+    const res = SebaDB.interventions.assign(id, employeId || null, employeName);
+    if (!res.ok) {
+      if (res.conflict) {
+        const ok = confirm('Conflit horaire avec ' + (employeName || 'cet employé') + ' à ' + res.conflict.time + ' (' + (res.conflict.clientName || '') + '). Assigner quand même ?');
+        if (ok) SebaDB.interventions.assign(id, employeId || null, employeName, { force: true });
+        else { renderWeek(weekOffset); return; }
+      } else {
+        showToast(res.error || 'Échec de l\'assignation.');
+        renderWeek(weekOffset);
+        return;
+      }
+    }
+    renderWeek(weekOffset);
+  }
+
+  function toggleSelect(id, checked) {
+    if (checked) _selectedIds.add(id); else _selectedIds.delete(id);
+    updateBulkToolbar();
+  }
+  function clearBulkSelection() {
+    _selectedIds.clear();
+    document.querySelectorAll('.jcheck').forEach(c => c.checked = false);
+    updateBulkToolbar();
+  }
+  function updateBulkToolbar() {
+    const bar = document.getElementById('bulk-toolbar');
+    const n = _selectedIds.size;
+    document.getElementById('bulk-count').textContent = n + ' sélectionnée(s)';
+    bar.classList.toggle('open', n > 0);
+  }
+  /* Déplace plusieurs interventions d'une même journée vers une nouvelle
+     date en une seule action (section 10 du chantier) -- même garde-fous
+     que le glisser-déposer unitaire (verrou/conflit), agrégés en un seul
+     message de confirmation plutôt qu'une popup par intervention. */
+  function applyBulkMove() {
+    const newDate = document.getElementById('bulk-date').value;
+    if (!newDate || _selectedIds.size === 0) return;
+    const ids = [..._selectedIds];
+    const conflicts = [];
+    const locked = [];
+    ids.forEach(id => {
+      const res = SebaDB.interventions.reschedule(id, { date: newDate });
+      if (!res.ok) { if (res.conflict) conflicts.push(id); else if (res.locked) locked.push(id); }
+    });
+    if (conflicts.length > 0) {
+      const ok = confirm(conflicts.length + ' intervention(s) sur ' + ids.length + ' ont un conflit horaire à cette date. Déplacer quand même ?');
+      if (ok) conflicts.forEach(id => SebaDB.interventions.reschedule(id, { date: newDate }, { force: true }));
+    }
+    if (locked.length > 0) showToast(locked.length + ' intervention(s) terminée(s) et validée(s) n\'ont pas été déplacées (réouverture requise).');
+    clearBulkSelection();
+    renderWeek(weekOffset);
+    showToast('Déplacement groupé effectué.');
+  }
+
+  function renderUnassignedList() {
+    const box = document.getElementById('unassigned-list');
+    const items = SebaDB.list('interventions')
+      .filter(i => !i.employeId && _weekDates.includes(i.date) && matchesFilters(i))
+      .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    if (!items.length) { box.innerHTML = '<div class="unassigned-empty">Aucune intervention non assignée cette semaine.</div>'; return; }
+    box.innerHTML = items.map(i => renderJobCard(i, new Set())).join('');
+    wireCardClicks(box);
+  }
+
+  function wireCardClicks(container) {
+    container.querySelectorAll('.job').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.jcheck') || e.target.closest('.jemp-select')) return;
+        openSheet(el.dataset.id);
+      });
+    });
+  }
+
   function renderWeek(offset) {
     weekOffset = offset;
     const monday = addDays(BASE_MONDAY, offset * 7);
     const todayTs = today0();
 
     document.querySelector('.week-label').textContent = weekLabel(monday);
+    _weekDates = [];
 
     document.querySelectorAll('.day-col').forEach((col, i) => {
       const date = addDays(monday, i);
       date.setHours(0, 0, 0, 0);
+      const dateISO = localISO(date);
+      _weekDates.push(dateISO);
+      col.dataset.date = dateISO;
 
       col.querySelector('.dname').textContent = DAY_NAMES[i];
       col.querySelector('.dnum').textContent = addDays(monday, i).getDate();
       col.classList.toggle('today', date.getTime() === todayTs);
 
-      col.querySelectorAll('.job, .empty-day').forEach(el => el.remove());
+      const jobsBox = col.querySelector('.day-jobs');
+      const jobs = jobsForDate(dateISO);
+      const conflicts = SebaDB.scheduling.findDayConflicts(SebaDB.list('interventions'), dateISO);
+      const conflictIds = new Set();
+      conflicts.forEach(c => { conflictIds.add(c.a.id); conflictIds.add(c.b.id); });
 
-      const jobs = jobsForDate(localISO(date));
       if (jobs.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'empty-day';
-        empty.textContent = 'Aucune intervention';
-        col.appendChild(empty);
+        jobsBox.innerHTML = '<div class="empty-day">Aucune intervention</div>';
       } else {
-        jobs.forEach(job => {
-          const div = document.createElement('div');
-          div.className = 'job' + (job.moss ? ' moss' : '');
-          div.innerHTML = `<span class="jtime">${esc(job.time)}</span><div class="jclient">${esc(job.client)}</div><div class="jservice">${esc(job.service)}</div>`;
-          div.addEventListener('click', () => openSheet({client: job.client, service: job.service, time: job.time}));
-          col.appendChild(div);
-        });
+        jobsBox.innerHTML = jobs.map(j => renderJobCard(j, conflictIds)).join('');
+        wireCardClicks(jobsBox);
       }
     });
+
+    renderUnassignedList();
+    initSortables();
   }
 
   const [btnPrev, btnNext] = document.querySelectorAll('.week-nav button');
@@ -335,6 +574,15 @@
     <button class="ss-close" onclick="closeSheet()" aria-label="Fermer">✕</button>
   </div>
   <div class="ss-body">
+    <div id="ss-locked-msg" class="locked-msg" style="display:none;"></div>
+    <div id="ss-reschedule-box" class="reschedule-box" style="display:none;">
+      <b>Demande de report du client</b>
+      <span id="ss-reschedule-text"></span>
+      <div class="reschedule-actions">
+        <button class="reschedule-accept" onclick="acceptRescheduleFromSheet()">Accepter</button>
+        <button class="reschedule-decline" onclick="declineRescheduleFromSheet()">Refuser</button>
+      </div>
+    </div>
     <div class="ss-section-lbl">Qui &amp; Quoi</div>
     <div class="ss-field">
       <label for="ss-client">Client</label>
@@ -392,7 +640,8 @@
   </div>
   <div class="ss-footer">
     <button class="btn-ss-ghost" onclick="closeSheet()">Annuler</button>
-    <button class="btn-ss-em" onclick="submitIntervention()">Créer l'intervention</button>
+    <a class="btn-ss-ghost" id="ss-open-fiche" href="#" style="display:none;text-align:center;text-decoration:none;">Voir la fiche</a>
+    <button class="btn-ss-em" id="ss-submit-btn" onclick="submitIntervention()">Créer l'intervention</button>
   </div>
 </aside>
 
@@ -412,16 +661,75 @@
     SERVICES_FROM_LS.forEach(n => { const o=document.createElement('option'); o.textContent=n; sel.appendChild(o); });
   }
 
-  function openSheet(prefill) {
+  let _editingId = null;
+
+  /* openSheet() sert 2 usages : création (aucun argument) et édition
+     (id d'une intervention existante -- clic sur une carte). Tous les
+     champs sont préremplis en édition, y compris employé/durée (jamais
+     lus avant ce chantier). Mission verrouillée (owner_approved) : champs
+     désactivés + message explicite, jamais un formulaire qui accepte une
+     saisie ensuite silencieusement refusée à l'enregistrement. */
+  function openSheet(idOrNothing) {
     document.getElementById('ss-backdrop').classList.add('open');
     document.getElementById('ss-panel').classList.add('open');
     document.body.style.overflow = 'hidden';
-    if (prefill) {
-      if (prefill.client)  { const s=document.getElementById('ss-client');  [...s.options].forEach(o=>{if(o.text===prefill.client)o.selected=true;}); }
-      if (prefill.service) { const s=document.getElementById('ss-service'); [...s.options].forEach(o=>{if(o.text===prefill.service)o.selected=true;}); }
-      if (prefill.time)    document.getElementById('ss-time').value = prefill.time;
+
+    const fields = ['ss-client', 'ss-service', 'ss-date', 'ss-time', 'ss-duration', 'ss-employee', 'ss-notes'];
+    fields.forEach(id => document.getElementById(id).disabled = false);
+    document.getElementById('ss-locked-msg').style.display = 'none';
+    document.getElementById('ss-reschedule-box').style.display = 'none';
+    document.getElementById('ss-open-fiche').style.display = 'none';
+
+    if (typeof idOrNothing === 'string') {
+      _editingId = idOrNothing;
+      const interv = SebaDB.get('interventions', idOrNothing);
+      if (!interv) { closeSheet(); return; }
+      document.getElementById('ss-title').textContent = 'Modifier l\'intervention';
+      document.getElementById('ss-submit-btn').textContent = 'Enregistrer';
+      const cSel = document.getElementById('ss-client'); cSel.value = interv.clientId || '';
+      const svcSel = document.getElementById('ss-service'); svcSel.value = interv.service || '';
+      if (svcSel.value !== interv.service) { // prestation non listée dans le catalogue actuel -- affichée quand même
+        const o = document.createElement('option'); o.textContent = interv.service; o.value = interv.service; o.selected = true;
+        svcSel.appendChild(o);
+      }
+      document.getElementById('ss-date').value = interv.date || localISO(new Date());
+      document.getElementById('ss-time').value = interv.time || '09:00';
+      const durSel = document.getElementById('ss-duration'); durSel.value = interv.duree || '2h';
+      document.getElementById('ss-employee').value = interv.employeId || '';
+
+      const openFiche = document.getElementById('ss-open-fiche');
+      openFiche.href = 'intervention-fiche.html?id=' + encodeURIComponent(idOrNothing);
+      openFiche.style.display = 'block';
+
+      const locked = interv.execution && interv.execution.completionStatus === 'owner_approved';
+      if (locked) {
+        fields.forEach(id => document.getElementById(id).disabled = true);
+        const msg = document.getElementById('ss-locked-msg');
+        msg.textContent = 'Mission terminée et validée — réouvrez le dossier depuis la fiche intervention pour la modifier.';
+        msg.style.display = 'block';
+        document.getElementById('ss-submit-btn').style.display = 'none';
+      } else {
+        document.getElementById('ss-submit-btn').style.display = '';
+      }
+
+      if (interv.rescheduleRequest && interv.rescheduleRequest.status === 'pending') {
+        document.getElementById('ss-reschedule-text').textContent =
+          'Nouvelle date souhaitée : ' + (interv.rescheduleRequest.requestedDate || '—') + (interv.rescheduleRequest.comment ? ' — "' + interv.rescheduleRequest.comment + '"' : '');
+        document.getElementById('ss-reschedule-box').style.display = 'block';
+      }
+    } else {
+      _editingId = null;
+      document.getElementById('ss-title').textContent = 'Nouvelle intervention';
+      document.getElementById('ss-submit-btn').textContent = 'Créer l\'intervention';
+      document.getElementById('ss-submit-btn').style.display = '';
+      document.getElementById('ss-client').value = '';
+      document.getElementById('ss-service').value = '';
+      document.getElementById('ss-employee').value = '';
+      document.getElementById('ss-duration').value = '2h';
+      document.getElementById('ss-time').value = '09:00';
+      document.getElementById('ss-date').value = localISO(new Date());
+      document.getElementById('ss-notes').value = '';
     }
-    document.getElementById('ss-date').value = prefill?.date || localISO(new Date());
     setTimeout(() => document.getElementById('ss-client').focus(), 120);
   }
 
@@ -429,6 +737,31 @@
     document.getElementById('ss-backdrop').classList.remove('open');
     document.getElementById('ss-panel').classList.remove('open');
     document.body.style.overflow = '';
+    _editingId = null;
+  }
+
+  function acceptRescheduleFromSheet() {
+    if (!_editingId) return;
+    const res = SebaDB.interventions.resolveRescheduleRequest(_editingId, true);
+    if (!res.ok) {
+      if (res.conflict) {
+        const interv = SebaDB.get('interventions', _editingId);
+        const ok = confirm('Conflit horaire avec ' + (interv.employeName || 'cet employé') + ' à ' + res.conflict.time + '. Accepter quand même ?');
+        if (ok) SebaDB.interventions.resolveRescheduleRequest(_editingId, true, { force: true });
+        else return;
+      } else { showToast(res.error || 'Échec.'); return; }
+    }
+    showToast('Demande de report acceptée — intervention replanifiée.');
+    closeSheet();
+    renderWeek(weekOffset);
+  }
+  function declineRescheduleFromSheet() {
+    if (!_editingId) return;
+    const res = SebaDB.interventions.resolveRescheduleRequest(_editingId, false);
+    if (!res.ok) { showToast(res.error || 'Échec.'); return; }
+    showToast('Demande de report refusée.');
+    closeSheet();
+    renderWeek(weekOffset);
   }
 
   /* Remplit la liste des clients depuis le moteur de données */
@@ -468,11 +801,37 @@
     const clientName = sel.options[sel.selectedIndex].text;
     const employeId = empSel.value || null;
     const employeName = employeId ? empSel.options[empSel.selectedIndex].text : null;
+    const duree = document.getElementById('ss-duration').value || null;
+    const notes = document.getElementById('ss-notes').value || '';
+
+    if (_editingId) {
+      const res = SebaDB.interventions.reschedule(_editingId, { date, time, duree, employeId, employeName });
+      if (!res.ok) {
+        if (res.conflict) {
+          const ok = confirm('Conflit horaire avec ' + (employeName || 'cet employé') + ' à ' + res.conflict.time + ' (' + (res.conflict.clientName || '') + '). Enregistrer quand même ?');
+          if (!ok) return;
+          SebaDB.interventions.reschedule(_editingId, { date, time, duree, employeId, employeName }, { force: true });
+        } else { showToast(res.error || 'Échec de l\'enregistrement.'); return; }
+      }
+      // client/service/notes : hors du périmètre de reschedule() (aucun
+      // impact conflit/verrou), écriture directe classique.
+      SebaDB.update('interventions', _editingId, { clientId: sel.value, clientName, service, consignes: notes });
+      SebaDB.log('intervention', 'Intervention modifiée — ' + clientName + ' · ' + service, 'planning.html');
+      closeSheet();
+      renderWeek(weekOffset);
+      showToast('Intervention mise à jour ✓');
+      return;
+    }
+
     // Duree deja saisie dans le formulaire (ss-duration) mais jusqu'ici
     // jamais transmise a SebaDB.create -- aucune intervention n'avait de
     // duree reelle, empechant tout calcul d'heure de fin/charge fiable.
-    const duree = document.getElementById('ss-duration').value || null;
-    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false, employeId, employeName, duree });
+    const candidate = { date, time, employeId, employeName, duree };
+    if (employeId) {
+      const conflict = SebaDB.scheduling.findConflict(SebaDB.list('interventions'), candidate, null);
+      if (conflict && !confirm('Conflit horaire avec ' + employeName + ' à ' + conflict.time + ' (' + (conflict.clientName || '') + '). Créer quand même ?')) return;
+    }
+    SebaDB.create('interventions', { date, time, clientId: sel.value, clientName, service, done: false, employeId, employeName, duree, consignes: notes });
     SebaDB.log('intervention', 'Intervention planifiée — ' + clientName + ' · ' + service + (employeName ? ' · ' + employeName : ''), 'planning.html');
     closeSheet();
     renderWeek(weekOffset);

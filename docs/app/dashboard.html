@@ -694,6 +694,20 @@ function buildOwnerDashboardViewModel(state, options) {
   if (facturesRetard.length > 0) priorityActions.push({ level: 'high', type: 'facture', label: 'Facture(s) échues et impayées', count: facturesRetard.length, cta: 'Ouvrir les factures', href: '../factures.html?status=retard' });
   if (devisEnvoyes > 0) priorityActions.push({ level: 'low', type: 'devis', label: 'Devis sans réponse', count: devisEnvoyes, cta: 'Relancer', href: '../devis.html?status=attente' });
 
+  /* ── Smart planning dispatch (feature/smart-planning-dispatch) -- AJOUT
+     PUR, même modèle que les alertes ci-dessus. 'non-assignee' et 'retard'
+     existaient déjà (lignes ci-dessus) : seuls conflit/demande-report/
+     surcharge sont nouveaux ici. Réutilise teamCapacity.conflicts et
+     teamCapacity.parEmploye[].charge déjà calculés plus haut, aucune
+     deuxième règle de calcul. ── */
+  if (teamCapacity.conflicts.length > 0) priorityActions.push({ level: 'high', type: 'conflit-horaire', label: 'Conflit(s) horaire aujourd\'hui', count: teamCapacity.conflicts.length, cta: 'Voir le planning', href: '../planning.html?date=' + todayISO });
+
+  const demandesReportEnAttente = interventions.filter(i => i.rescheduleRequest && i.rescheduleRequest.status === 'pending');
+  if (demandesReportEnAttente.length > 0) priorityActions.push({ level: 'medium', type: 'demande-report', label: 'Demande(s) de report client en attente', count: demandesReportEnAttente.length, cta: 'Voir la mission', href: '../intervention-fiche.html?id=' + demandesReportEnAttente[0].id });
+
+  const journeesSurchargees = teamCapacity.parEmploye.filter(e => e.charge === 'surcharge').length;
+  if (journeesSurchargees > 0) priorityActions.push({ level: 'medium', type: 'surcharge', label: 'Employé(s) en surcharge aujourd\'hui', count: journeesSurchargees, cta: 'Voir le planning', href: '../planning.html?date=' + todayISO });
+
   /* ── Quote-to-cash (feature/quote-to-cash) -- AJOUT PUR au Centre
      d'actions existant, même modèle que les alertes ci-dessus (jamais une
      nouvelle carte générique). Chaque alerte cible l'objet réel concerné :

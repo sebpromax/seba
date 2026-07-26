@@ -656,7 +656,7 @@ function renderMissionCard(m, returnView) {
   const started = m.statut === 'en_cours' && !m.done;
   return '<div class="et-mission' + (m.done ? ' done' : '') + '">' +
     '<div class="et-mission-top">' +
-      '<span class="et-mission-time">' + escapeHtml(m.time || '') + '</span>' +
+      '<span class="et-mission-time">' + escapeHtml(m.time || '') + (m.duree ? ' · ' + escapeHtml(m.duree) : '') + '</span>' +
       '<span class="et-mission-badge ' + statusKey + '">' + (MISSION_STATUS_LABEL[statusKey] || statusKey) + '</span>' +
     '</div>' +
     '<div class="et-mission-client">' + escapeHtml(m.clientName || 'Client') + '</div>' +
@@ -755,7 +755,7 @@ function renderDetail(id) {
   box.innerHTML = renderMissionCard(m, _detailReturnView) +
     '<div class="et-detail-block">' +
       '<div class="et-detail-label">Horaires</div>' +
-      '<div class="et-detail-value">' + escapeHtml(m.date || '') + (m.time ? ' à ' + escapeHtml(m.time) : '') + '</div>' +
+      '<div class="et-detail-value">' + escapeHtml(m.date || '') + (m.time ? ' à ' + escapeHtml(m.time) : '') + (m.duree ? ' · ' + escapeHtml(m.duree) : '') + '</div>' +
     '</div>' +
     (mapsUrl ? '<div class="et-detail-block"><a href="' + mapsUrl + '" target="_blank" rel="noopener" class="et-maps-link">🧭 Itinéraire</a></div>' : '') +
     (m.consignes ? '<div class="et-detail-block"><div class="et-detail-label">Consignes</div><div class="et-consignes">' + escapeHtml(m.consignes) + '</div></div>' : '') +
