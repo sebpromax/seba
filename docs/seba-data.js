@@ -55,6 +55,9 @@
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
     custom_services: [], contrats: [], messages: [], clientRequests: [],
+    // feature/automation-engine-foundation : moteur de règles patron,
+    // aucun accès employé/client, écritures directes RLS seba_state.
+    automationRules: [], automationRuns: [], automationAlerts: [],
     seq: { devis: 118, facture: 93, contrat: 0 },
   });
 
@@ -286,6 +289,352 @@
     if (intervention.requirePhotoBefore && !hasBefore) blockers.push({ type: 'photo', message: 'Photo "avant" obligatoire manquante' });
     if (intervention.requirePhotoAfter && !hasAfter) blockers.push({ type: 'photo', message: 'Photo "après" obligatoire manquante' });
     return blockers;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     MOTEUR D'AUTOMATISATIONS (feature/automation-engine-foundation)
+
+     QUAND un événement métier arrive / SI des conditions sont vraies /
+     ALORS Seba exécute une ou plusieurs actions. Réutilise les objets
+     existants (clients/devis/factures/interventions/employés) -- jamais
+     de duplication de logique métier (les créations de facture passent
+     par SebaDB.factures.createFromDevis/SebaDB.interventions.
+     createInvoiceFromIntervention déjà écrits pour quote-to-cash/
+     Intervention 360, jamais réécrites ici).
+
+     Séparation stricte évaluation/planification/écriture :
+       - normalizeAutomationRule/validateAutomationRule/
+         evaluateAutomationConditions/planAutomationActions/
+         resolveAutomationFieldValue/resolveClientIdForEvent : PURES,
+         aucun appel SebaDB, aucune écriture.
+       - executeAutomationRule/processBusinessEvent : orchestrateurs
+         d'écriture désignés (les seuls autorisés à appeler SebaDB.create/
+         update via SebaDB.automations._runAction).
+
+     Détection d'événements : PAS d'instrumentation de chaque site
+     d'écriture (des dizaines de pages) -- une fonction de scan unique
+     (detectBusinessEvents) relit l'état APRÈS écriture (jamais un
+     recalcul de statut, une simple lecture de champ déjà calculé
+     ailleurs) et compare aux automationRuns déjà enregistrés pour
+     décider ce qui est "nouveau". Déclenchée par SebaDB.onChange (déjà
+     le mécanisme réactif existant de toute l'app, jamais un setInterval/
+     polling) -- couvre à la fois les écritures locales du patron ET les
+     écritures serveur (RPC client/employé) rapatriées par
+     SupabaseAdapter.pull(), qui appelle aussi persist(). ═══════════════ */
+
+  const AUTOMATION_TRIGGER_TYPES = [
+    'client_created', 'quote_sent', 'quote_accepted', 'quote_rejected',
+    'invoice_issued', 'invoice_partially_paid', 'invoice_paid', 'invoice_overdue',
+    'intervention_created', 'intervention_assigned', 'intervention_completed', 'intervention_owner_approved',
+    'client_reschedule_requested', 'client_issue_reported', 'employee_unavailability_requested',
+  ];
+  const AUTOMATION_ACTION_TYPES = ['create_follow_up_intervention', 'create_invoice_draft', 'add_client_memory_entry', 'create_owner_alert', 'update_intervention_status'];
+  const AUTOMATION_CONDITION_OPERATORS = ['equals', 'not_equals', 'contains', 'greater_than', 'less_than', 'is_set', 'is_not_set'];
+  const AUTOMATION_MAX_ACTIVE_RULES = 20;
+  const AUTOMATION_MAX_ACTIONS_PER_RULE = 5;
+  const AUTOMATION_MAX_CONDITIONS_PER_RULE = 10;
+  const AUTOMATION_MAX_CHAIN_DEPTH = 10;
+  // sourceType (événement) -> collection seba_state correspondante.
+  const AUTOMATION_SOURCE_COLLECTION = { client: 'clients', devis: 'devis', facture: 'factures', intervention: 'interventions', employee: 'employes' };
+
+  /* Modèles activables (section 5 du chantier) -- de VRAIES règles
+     modifiables une fois créées via SebaDB.automations.createFromTemplate(),
+     jamais codées en dur dans le moteur lui-même. Toujours créées
+     `active:false` (le patron active explicitement après relecture). */
+  const AUTOMATION_TEMPLATES = [
+    {
+      id: 'quote_accepted_invoice', name: 'Devis accepté → facture brouillon',
+      trigger: { type: 'quote_accepted', filters: {} }, conditions: [],
+      actions: [{ type: 'create_invoice_draft', config: {} }],
+    },
+    {
+      id: 'intervention_approved_invoice', name: 'Intervention validée → facture brouillon',
+      trigger: { type: 'intervention_owner_approved', filters: {} }, conditions: [],
+      actions: [{ type: 'create_invoice_draft', config: {} }],
+    },
+    {
+      id: 'client_issue_alert', name: 'Problème client → alerte + mémoire',
+      trigger: { type: 'client_issue_reported', filters: {} }, conditions: [],
+      actions: [
+        { type: 'create_owner_alert', config: { title: 'Problème signalé par un client', message: '{{comment}}', priority: 'high' } },
+        { type: 'add_client_memory_entry', config: { category: 'quality', contentTemplate: 'Problème signalé : {{comment}}', visibility: 'internal_team' } },
+      ],
+    },
+    {
+      id: 'reschedule_alert', name: 'Demande de report → alerte',
+      trigger: { type: 'client_reschedule_requested', filters: {} }, conditions: [],
+      actions: [{ type: 'create_owner_alert', config: { title: 'Demande de report client', message: 'Nouvelle date souhaitée : {{requestedDate}}', priority: 'medium' } }],
+    },
+    {
+      id: 'followup_after_completion', name: 'Suivi après intervention',
+      trigger: { type: 'intervention_completed', filters: {} },
+      conditions: [{ field: 'event.service', operator: 'equals', value: '' }],
+      actions: [{ type: 'create_follow_up_intervention', config: { delayDays: 30, service: '', duration: null, assignEmployeeId: null, copyClient: true, copyAddress: true } }],
+    },
+  ];
+
+  function normalizeAutomationRule(rule) {
+    rule = rule || {};
+    if (!rule.id) rule.id = uid();
+    rule.name = (rule.name || '').trim() || 'Automatisation sans nom';
+    rule.active = !!rule.active;
+    rule.trigger = (rule.trigger && typeof rule.trigger === 'object') ? rule.trigger : { type: null, filters: {} };
+    if (!rule.trigger.filters || typeof rule.trigger.filters !== 'object') rule.trigger.filters = {};
+    rule.conditions = Array.isArray(rule.conditions) ? rule.conditions : [];
+    rule.actions = Array.isArray(rule.actions) ? rule.actions : [];
+    rule.createdAt = rule.createdAt || new Date().toISOString();
+    rule.updatedAt = rule.updatedAt || rule.createdAt;
+    rule.lastRunAt = rule.lastRunAt || null;
+    rule.runCount = Number.isFinite(rule.runCount) ? rule.runCount : 0;
+    return rule;
+  }
+
+  function validateAutomationRule(rule) {
+    const errors = [];
+    if (!rule || !rule.name || !rule.name.trim()) errors.push('Le nom de la règle est requis.');
+    if (!rule || !rule.trigger || AUTOMATION_TRIGGER_TYPES.indexOf(rule.trigger.type) === -1) errors.push('Déclencheur invalide.');
+    const conditions = (rule && Array.isArray(rule.conditions)) ? rule.conditions : [];
+    if (conditions.length > AUTOMATION_MAX_CONDITIONS_PER_RULE) errors.push('Maximum ' + AUTOMATION_MAX_CONDITIONS_PER_RULE + ' conditions par règle.');
+    conditions.forEach((c, i) => {
+      if (!c || !c.field) errors.push('Condition ' + (i + 1) + ' : champ manquant.');
+      if (!c || AUTOMATION_CONDITION_OPERATORS.indexOf(c.operator) === -1) errors.push('Condition ' + (i + 1) + ' : opérateur invalide.');
+    });
+    const actions = (rule && Array.isArray(rule.actions)) ? rule.actions : [];
+    if (actions.length === 0) errors.push('Au moins une action est requise.');
+    if (actions.length > AUTOMATION_MAX_ACTIONS_PER_RULE) errors.push('Maximum ' + AUTOMATION_MAX_ACTIONS_PER_RULE + ' actions par règle.');
+    actions.forEach((a, i) => {
+      if (!a || AUTOMATION_ACTION_TYPES.indexOf(a.type) === -1) errors.push('Action ' + (i + 1) + ' : type invalide.');
+    });
+    return { valid: errors.length === 0, errors };
+  }
+
+  /* field: "event.<clé>" lit event.data[clé] ; "source.<clé>" lit l'objet
+     source vivant (état ACTUEL, jamais un snapshot figé dans l'événement)
+     via sourceType/sourceId. */
+  function resolveAutomationFieldValue(field, event, state) {
+    if (!field) return undefined;
+    if (field.indexOf('event.') === 0) {
+      const key = field.slice(6);
+      return event.data ? event.data[key] : undefined;
+    }
+    if (field.indexOf('source.') === 0) {
+      const key = field.slice(7);
+      const coll = AUTOMATION_SOURCE_COLLECTION[event.sourceType];
+      if (!coll || !state[coll]) return undefined;
+      const obj = state[coll].find(x => x.id === event.sourceId);
+      return obj ? obj[key] : undefined;
+    }
+    return undefined;
+  }
+
+  function resolveClientIdForEvent(event, state) {
+    if (event.sourceType === 'client') return event.sourceId;
+    const coll = AUTOMATION_SOURCE_COLLECTION[event.sourceType];
+    if (!coll || !state[coll]) return null;
+    const obj = state[coll].find(x => x.id === event.sourceId);
+    return obj ? obj.clientId : null;
+  }
+
+  function evaluateAutomationConditions(rule, event, state) {
+    const conditions = (rule && Array.isArray(rule.conditions)) ? rule.conditions : [];
+    return conditions.every(c => {
+      const actual = resolveAutomationFieldValue(c.field, event, state);
+      switch (c.operator) {
+        case 'equals': return actual === c.value;
+        case 'not_equals': return actual !== c.value;
+        case 'contains': return typeof actual === 'string' && actual.indexOf(c.value) !== -1;
+        case 'greater_than': return Number(actual) > Number(c.value);
+        case 'less_than': return Number(actual) < Number(c.value);
+        case 'is_set': return actual !== undefined && actual !== null && actual !== '';
+        case 'is_not_set': return actual === undefined || actual === null || actual === '';
+        default: return false;
+      }
+    });
+  }
+
+  /* Résout/valide chaque action SANS écrire -- jamais un SebaDB.create/
+     update ici (fonction PURE). L'exécution réelle vit dans
+     executeAutomationRule() + SebaDB.automations._runAction(). */
+  function planAutomationActions(rule, event, state) {
+    const actions = (rule && Array.isArray(rule.actions)) ? rule.actions : [];
+    return actions.map(action => {
+      if (!action || AUTOMATION_ACTION_TYPES.indexOf(action.type) === -1) {
+        return { type: action && action.type, config: action && action.config, valid: false, error: 'Type d\'action inconnu.' };
+      }
+      if (action.type === 'create_invoice_draft' && event.sourceType !== 'devis' && event.sourceType !== 'intervention') {
+        return { type: action.type, config: action.config, valid: false, error: 'Aucun devis/intervention source pour créer une facture.' };
+      }
+      if (action.type === 'create_follow_up_intervention' && event.sourceType !== 'intervention') {
+        return { type: action.type, config: action.config, valid: false, error: 'Source non compatible (intervention attendue).' };
+      }
+      if (action.type === 'add_client_memory_entry' && !resolveClientIdForEvent(event, state)) {
+        return { type: action.type, config: action.config, valid: false, error: 'Aucun client résolu pour cet événement.' };
+      }
+      if (action.type === 'update_intervention_status') {
+        if (event.sourceType !== 'intervention') return { type: action.type, config: action.config, valid: false, error: 'Source non compatible (intervention attendue).' };
+        // Même allowlist que la RPC update_my_employee_intervention_status
+        // (Intervention 360, migrations/2026-07-23-employee-portal-missions.sql)
+        // -- jamais une transition arbitraire, jamais un contournement du
+        // modèle existant.
+        const allowed = ['en_cours', 'terminee'];
+        if (!action.config || allowed.indexOf(action.config.status) === -1) return { type: action.type, config: action.config, valid: false, error: 'Transition de statut non autorisée.' };
+      }
+      return { type: action.type, config: action.config, valid: true };
+    });
+  }
+
+  /* Applique le plan -- SEULE fonction (avec processBusinessEvent) qui
+     appelle SebaDB.automations._runAction (écriture réelle). continue
+     après un échec d'action (jamais interrompu), status final :
+     success (tout ok) / partial (mélange) / failed (rien n'a réussi). */
+  function executeAutomationRule(rule, event, state) {
+    const plan = planAutomationActions(rule, event, state);
+    const results = [];
+    let anySuccess = false, anyFailure = false;
+    plan.forEach(planned => {
+      if (!planned.valid) { results.push({ type: planned.type, status: 'failed', error: planned.error }); anyFailure = true; return; }
+      let outcome;
+      try { outcome = SebaDB.automations._runAction(planned.type, planned.config, event, state, rule); }
+      catch (e) { outcome = { ok: false, error: e.message }; }
+      if (outcome && outcome.ok) { results.push({ type: planned.type, status: 'success', resultId: outcome.id || null }); anySuccess = true; }
+      else { results.push({ type: planned.type, status: 'failed', error: (outcome && outcome.error) || 'Échec inconnu.' }); anyFailure = true; }
+    });
+    const status = !anyFailure ? 'success' : (anySuccess ? 'partial' : 'failed');
+    return { status, results };
+  }
+
+  function mkAutomationRun(rule, event, status, errorNote, results) {
+    const now = new Date().toISOString();
+    return {
+      id: uid(), ruleId: rule.id, eventId: event.id, triggerType: event.type,
+      sourceType: event.sourceType, sourceId: event.sourceId,
+      status, startedAt: now, completedAt: now,
+      error: errorNote || null, results: results || [],
+    };
+  }
+
+  /* Un événement -> toutes les règles ACTIVES dont le trigger correspond.
+     Dédoublonnage ruleId+eventId AVANT toute écriture (jamais un double
+     traitement, même en cas de rejeu). chainDepth : profondeur de la
+     chaîne d'automatisations déclenchées les unes par les autres (section
+     8) -- au-delà de AUTOMATION_MAX_CHAIN_DEPTH, un run 'failed' avec
+     error='cycle_detected' est journalisé et l'exécution s'arrête
+     proprement pour cette règle, jamais un blocage de l'app. */
+  function processBusinessEvent(event, state, chainDepth) {
+    chainDepth = chainDepth || 0;
+    const rules = (state.automationRules || []).filter(r => r.active && r.trigger && r.trigger.type === event.type);
+    const runs = [];
+    rules.forEach(rule => {
+      const already = (state.automationRuns || []).some(r => r.ruleId === rule.id && r.eventId === event.id);
+      if (already) return;
+
+      if (chainDepth >= AUTOMATION_MAX_CHAIN_DEPTH) {
+        const run = mkAutomationRun(rule, event, 'failed', 'cycle_detected');
+        SebaDB.create('automationRuns', run);
+        SebaDB.log('automation', 'Cycle détecté, exécution stoppée — ' + rule.name, 'automatisations.html');
+        runs.push(run);
+        return;
+      }
+
+      const conditionsOk = evaluateAutomationConditions(rule, event, state);
+      if (!conditionsOk) {
+        const run = mkAutomationRun(rule, event, 'skipped', null);
+        SebaDB.create('automationRuns', run);
+        runs.push(run);
+        return;
+      }
+
+      const exec = executeAutomationRule(rule, event, state);
+      const run = mkAutomationRun(rule, event, exec.status, exec.status === 'failed' ? (exec.results.find(r => r.status === 'failed') || {}).error || null : null, exec.results);
+      SebaDB.create('automationRuns', run);
+      SebaDB.update('automationRules', rule.id, { runCount: (rule.runCount || 0) + 1, lastRunAt: run.completedAt });
+      runs.push(run);
+    });
+    return runs;
+  }
+
+  /* Construit un événement métier -- id STABLE tant que l'appelant
+     réutilise le même sourceId+type (voir detectBusinessEvents : le scan
+     ne réémet jamais un événement déjà couvert par un automationRun
+     existant, donc un rejeu de la même opération ne produit jamais de
+     nouvel id ni de nouveau traitement). */
+  function emitBusinessEvent(type, payload) {
+    payload = payload || {};
+    return {
+      id: uid(), type, occurredAt: new Date().toISOString(),
+      // "account" : non résolu côté client -- ce moteur tourne entièrement
+      // à l'intérieur de l'état LOCAL d'UN SEUL compte à la fois (RLS gère
+      // déjà l'isolation multi-tenant côté serveur, jamais un second
+      // contrôle ici) ; le champ existe pour respecter le modèle canonique
+      // demandé, toujours null côté client.
+      account: null,
+      sourceType: payload.sourceType || null, sourceId: payload.sourceId || null, data: payload.data || {},
+    };
+  }
+
+  /* Scan de l'état ACTUEL (jamais un recalcul de statut -- simple lecture
+     de champs déjà écrits par les écritures métier existantes) : un
+     événement est "nouveau" tant qu'AUCUN automationRun n'existe encore
+     pour (sourceId, triggerType). Limite connue (V1, documentée) : un
+     champ singleton réécrit plusieurs fois dans le temps sur le MÊME
+     objet (ex. une 2e demande de report sur la même intervention après
+     résolution de la 1re) ne redéclenche pas -- acceptable pour cette
+     fondation, pas un bug de sécurité/duplication. */
+  function detectBusinessEvents(state) {
+    const events = [];
+    const hasRun = (sourceId, triggerType) => (state.automationRuns || []).some(r => r.sourceId === sourceId && r.triggerType === triggerType);
+    const push = (type, sourceType, sourceId, data) => { if (sourceId && !hasRun(sourceId, type)) events.push(emitBusinessEvent(type, { sourceType, sourceId, data })); };
+
+    (state.clients || []).forEach(c => push('client_created', 'client', c.id, { name: (c.prenom + ' ' + c.nom).trim() }));
+
+    (state.devis || []).forEach(d => {
+      if (d.sentAt) push('quote_sent', 'devis', d.id, { clientId: d.clientId, totalTTC: d.totalTTC });
+      if (d.status === 'signe') push('quote_accepted', 'devis', d.id, { clientId: d.clientId, totalTTC: d.totalTTC });
+      if (d.status === 'refuse') push('quote_rejected', 'devis', d.id, { clientId: d.clientId, comment: d.refusalComment });
+    });
+
+    (state.factures || []).forEach(f => {
+      if (f.status && f.status !== 'draft') push('invoice_issued', 'facture', f.id, { clientId: f.clientId, totalTTC: SebaDB.factures.total(f) });
+      if (SebaDB.factures.isPartial(f)) push('invoice_partially_paid', 'facture', f.id, { clientId: f.clientId, solde: SebaDB.factures.balance(f) });
+      if (SebaDB.factures.isPaid(f)) push('invoice_paid', 'facture', f.id, { clientId: f.clientId });
+      if (SebaDB.factures.isOverdue(f)) push('invoice_overdue', 'facture', f.id, { clientId: f.clientId, solde: SebaDB.factures.balance(f) });
+    });
+
+    (state.interventions || []).forEach(i => {
+      push('intervention_created', 'intervention', i.id, { clientId: i.clientId, service: i.service });
+      if (i.employeId) push('intervention_assigned', 'intervention', i.id, { employeId: i.employeId, service: i.service });
+      const cs = i.execution && i.execution.completionStatus;
+      if (cs === 'submitted') push('intervention_completed', 'intervention', i.id, { clientId: i.clientId, service: i.service });
+      if (cs === 'owner_approved') push('intervention_owner_approved', 'intervention', i.id, { clientId: i.clientId, service: i.service });
+      if (i.rescheduleRequest && i.rescheduleRequest.status === 'pending') push('client_reschedule_requested', 'intervention', i.id, { clientId: i.clientId, requestedDate: i.rescheduleRequest.requestedDate });
+      if (i.execution && i.execution.clientApproval && i.execution.clientApproval.status === 'issue_reported') push('client_issue_reported', 'intervention', i.id, { clientId: i.clientId, comment: i.execution.clientApproval.comment });
+    });
+
+    (state.employes || []).forEach(e => {
+      (e.unavailabilityRequests || []).forEach(r => {
+        if (r.status === 'pending') push('employee_unavailability_requested', 'employee', r.id, { employeeId: e.id, startDate: r.startDate, endDate: r.endDate, reason: r.reason });
+      });
+    });
+
+    return events;
+  }
+
+  /* Passe complète : détecte + traite. Chaînage interne borné (jamais via
+     un re-déclenchement de SebaDB.onChange, qui boucleraient sans
+     limite) -- si les actions de cette passe ont produit de nouveaux
+     runs (donc potentiellement de nouveaux faits détectables), une passe
+     supplémentaire est tentée, jusqu'à AUTOMATION_MAX_CHAIN_DEPTH. */
+  function runAutomationsPass(state, chainDepth) {
+    chainDepth = chainDepth || 0;
+    if (!state.automationRules || state.automationRules.length === 0) return { events: 0 };
+    if (chainDepth > AUTOMATION_MAX_CHAIN_DEPTH) return { events: 0, cycleDetected: true };
+    const events = detectBusinessEvents(state);
+    if (!events.length) return { events: 0 };
+    const before = (state.automationRuns || []).length;
+    events.forEach(evt => processBusinessEvent(evt, state, chainDepth));
+    const after = (state.automationRuns || []).length;
+    if (after > before && chainDepth < AUTOMATION_MAX_CHAIN_DEPTH) return runAutomationsPass(state, chainDepth + 1);
+    return { events: events.length };
   }
 
   /* ── Synthèse client automatique (section 2) ──────────────────────────
@@ -2744,6 +3093,210 @@
       },
     },
 
+    /* ═══ Moteur d'automatisations -- écritures (feature/automation-engine-
+       foundation) ═══ Toutes les fonctions de CALCUL pur vivent au niveau
+       module (normalizeAutomationRule/validateAutomationRule/
+       evaluateAutomationConditions/planAutomationActions/
+       executeAutomationRule/processBusinessEvent/emitBusinessEvent/
+       detectBusinessEvents/runAutomationsPass, voir plus haut dans ce
+       fichier) -- ce namespace n'est que la couche CRUD patron + les
+       exécuteurs d'action réels (les seuls à appeler SebaDB.create/update
+       pour de vrai), même contrat que SebaDB.devis/SebaDB.employes. */
+    automations: {
+      /* Déclenche une passe manuelle (utile pour un bouton "Vérifier
+         maintenant" et pour les scripts QA) -- la passe automatique tourne
+         déjà sur SebaDB.onChange, voir l'enregistrement du listener en toute
+         fin de fichier. */
+      run() {
+        if (!state) loadState();
+        return runAutomationsPass(state);
+      },
+
+      list() { if (!state) loadState(); return (state.automationRules || []).slice(); },
+      runs(ruleId) { if (!state) loadState(); return (state.automationRuns || []).filter(r => !ruleId || r.ruleId === ruleId).slice(); },
+      alerts() { if (!state) loadState(); return (state.automationAlerts || []).slice(); },
+
+      createRule(input) {
+        if (!state) loadState();
+        const rule = normalizeAutomationRule(Object.assign({}, input, { id: undefined, createdAt: undefined, updatedAt: undefined, lastRunAt: null, runCount: 0 }));
+        const check = validateAutomationRule(rule);
+        if (!check.valid) return { ok: false, error: check.errors.join(' ') };
+        if (rule.active) {
+          const activeCount = (state.automationRules || []).filter(r => r.active).length;
+          if (activeCount >= AUTOMATION_MAX_ACTIVE_RULES) return { ok: false, error: 'Maximum ' + AUTOMATION_MAX_ACTIVE_RULES + ' règles actives par compte.' };
+        }
+        const created = SebaDB.create('automationRules', rule);
+        SebaDB.log('automation', 'Automatisation créée — ' + created.name, 'automatisations.html');
+        return { ok: true, rule: created };
+      },
+
+      updateRule(id, patch) {
+        if (!state) loadState();
+        const existing = state.automationRules.find(r => r.id === id);
+        if (!existing) return { ok: false, error: 'Règle introuvable.' };
+        const merged = normalizeAutomationRule(Object.assign({}, existing, patch, { id, updatedAt: new Date().toISOString() }));
+        const check = validateAutomationRule(merged);
+        if (!check.valid) return { ok: false, error: check.errors.join(' ') };
+        if (merged.active && !existing.active) {
+          const activeCount = state.automationRules.filter(r => r.active && r.id !== id).length;
+          if (activeCount >= AUTOMATION_MAX_ACTIVE_RULES) return { ok: false, error: 'Maximum ' + AUTOMATION_MAX_ACTIVE_RULES + ' règles actives par compte.' };
+        }
+        SebaDB.update('automationRules', id, {
+          name: merged.name, active: merged.active, trigger: merged.trigger, conditions: merged.conditions,
+          actions: merged.actions, updatedAt: merged.updatedAt,
+        });
+        return { ok: true, rule: SebaDB.get('automationRules', id) };
+      },
+
+      setActive(id, active) { return SebaDB.automations.updateRule(id, { active: !!active }); },
+
+      duplicateRule(id) {
+        if (!state) loadState();
+        const src = state.automationRules.find(r => r.id === id);
+        if (!src) return { ok: false, error: 'Règle introuvable.' };
+        return SebaDB.automations.createRule({
+          name: src.name + ' (copie)', active: false,
+          trigger: JSON.parse(JSON.stringify(src.trigger)),
+          conditions: JSON.parse(JSON.stringify(src.conditions)),
+          actions: JSON.parse(JSON.stringify(src.actions)),
+        });
+      },
+
+      removeRule(id) {
+        if (!state) loadState();
+        const existing = state.automationRules.find(r => r.id === id);
+        if (!existing) return { ok: false, error: 'Règle introuvable.' };
+        SebaDB.remove('automationRules', id);
+        return { ok: true };
+      },
+
+      resolveAlert(id, status) {
+        if (['resolved', 'dismissed'].indexOf(status) === -1) return { ok: false, error: 'Statut invalide.' };
+        if (!state) loadState();
+        const alert = state.automationAlerts.find(a => a.id === id);
+        if (!alert) return { ok: false, error: 'Alerte introuvable.' };
+        SebaDB.update('automationAlerts', id, { status });
+        return { ok: true, alert: SebaDB.get('automationAlerts', id) };
+      },
+
+      /* Modèles activables (section 5 du chantier) -- copie profonde
+         retournée, jamais l'objet const partagé (une page pourrait le
+         muter par erreur). */
+      templates() { return AUTOMATION_TEMPLATES.map(t => JSON.parse(JSON.stringify(t))); },
+      createFromTemplate(templateId) {
+        const tpl = AUTOMATION_TEMPLATES.find(t => t.id === templateId);
+        if (!tpl) return { ok: false, error: 'Modèle introuvable.' };
+        return SebaDB.automations.createRule({
+          name: tpl.name, active: false,
+          trigger: JSON.parse(JSON.stringify(tpl.trigger)),
+          conditions: JSON.parse(JSON.stringify(tpl.conditions)),
+          actions: JSON.parse(JSON.stringify(tpl.actions)),
+        });
+      },
+
+      /* ── Exécuteurs d'action réels (section 4 du chantier) -- seuls
+         points d'écriture pour une automatisation, tous réutilisent les
+         méthodes SebaDB existantes, jamais une réécriture de la logique
+         métier. ── */
+      _runAction(type, config, event, state, rule) {
+        config = config || {};
+        switch (type) {
+          case 'create_follow_up_intervention': return SebaDB.automations._actionFollowUp(config, event, state);
+          case 'create_invoice_draft': return SebaDB.automations._actionInvoiceDraft(config, event, state);
+          case 'add_client_memory_entry': return SebaDB.automations._actionMemoryEntry(config, event, state);
+          case 'create_owner_alert': return SebaDB.automations._actionOwnerAlert(config, event, state, rule);
+          case 'update_intervention_status': return SebaDB.automations._actionUpdateStatus(config, event, state);
+          default: return { ok: false, error: 'Action inconnue.' };
+        }
+      },
+
+      _renderTemplate(tpl, event, state) {
+        const coll = AUTOMATION_SOURCE_COLLECTION[event.sourceType];
+        const source = (coll && state[coll]) ? state[coll].find(x => x.id === event.sourceId) : null;
+        return String(tpl || '').replace(/\{\{(\w+)\}\}/g, (m, key) => {
+          if (event.data && event.data[key] !== undefined && event.data[key] !== null) return event.data[key];
+          if (source && source[key] !== undefined && source[key] !== null) return source[key];
+          return '';
+        });
+      },
+
+      /* 1. create_follow_up_intervention -- intervention de suivi réelle,
+         date = date de l'intervention source + delayDays. */
+      _actionFollowUp(config, event, state) {
+        if (event.sourceType !== 'intervention') return { ok: false, error: 'Source non compatible.' };
+        const source = state.interventions.find(i => i.id === event.sourceId);
+        if (!source) return { ok: false, error: 'Intervention source introuvable.' };
+        const delayDays = Number(config.delayDays) || 0;
+        const base = new Date((source.date || todayISO(0)) + 'T00:00:00');
+        base.setDate(base.getDate() + delayDays);
+        const employee = config.assignEmployeeId ? state.employes.find(e => e.id === config.assignEmployeeId) : null;
+        const created = SebaDB.create('interventions', {
+          date: localISO(base), time: source.time || '09:00',
+          clientId: config.copyClient !== false ? source.clientId : null,
+          clientName: config.copyClient !== false ? source.clientName : '',
+          service: config.service || source.service || 'Suivi',
+          duree: config.duration || source.duree || null,
+          adresse: config.copyAddress !== false ? (source.adresse || '') : '',
+          employeId: employee ? employee.id : null,
+          employeName: employee ? (employee.prenom + ' ' + employee.nom).trim() : null,
+          done: false, sourceInterventionId: source.id, createdByAutomation: true,
+        });
+        return { ok: true, id: created.id };
+      },
+
+      /* 2. create_invoice_draft -- réutilise EXACTEMENT le moteur Quote-to-
+         Cash/Intervention 360 existant, jamais une réécriture. */
+      _actionInvoiceDraft(config, event, state) {
+        if (event.sourceType === 'devis') {
+          const res = SebaDB.factures.createFromDevis(event.sourceId);
+          return res.ok ? { ok: true, id: res.facture.id } : { ok: false, error: res.error };
+        }
+        if (event.sourceType === 'intervention') {
+          const res = SebaDB.interventions.createInvoiceFromIntervention(event.sourceId);
+          return res.ok ? { ok: true, id: res.facture.id } : { ok: false, error: res.error };
+        }
+        return { ok: false, error: 'Source non compatible.' };
+      },
+
+      /* 3. add_client_memory_entry -- réutilise SebaDB.clients.addMemoryEntry
+         existant (feature/client-crm-advanced), source:'system' explicite. */
+      _actionMemoryEntry(config, event, state) {
+        const clientId = resolveClientIdForEvent(event, state);
+        if (!clientId) return { ok: false, error: 'Client introuvable pour cet événement.' };
+        const content = SebaDB.automations._renderTemplate(config.contentTemplate || '', event, state);
+        const entry = SebaDB.clients.addMemoryEntry(clientId, {
+          type: MEMORY_TYPES.indexOf(config.category) !== -1 ? config.category : 'instruction',
+          title: 'Automatisation', content,
+          visibility: MEMORY_VISIBILITY.indexOf(config.visibility) !== -1 ? config.visibility : 'internal_team',
+          source: 'system',
+        });
+        return entry ? { ok: true, id: entry.id } : { ok: false, error: 'Échec de l\'ajout à la mémoire (catégorie invalide ?).' };
+      },
+
+      /* 4. create_owner_alert -- nouvelle collection automationAlerts,
+         jamais mélangée aux priorityActions du dashboard (lecture seule
+         côté dashboard, voir app/dashboard.html). */
+      _actionOwnerAlert(config, event, state, rule) {
+        const alert = SebaDB.create('automationAlerts', {
+          title: SebaDB.automations._renderTemplate(config.title || 'Alerte automatisation', event, state) || 'Alerte automatisation',
+          message: SebaDB.automations._renderTemplate(config.message || '', event, state),
+          priority: ['low', 'medium', 'high'].indexOf(config.priority) !== -1 ? config.priority : 'medium',
+          href: config.href || null, status: 'active', ruleId: rule.id, eventId: event.id,
+        });
+        return { ok: true, id: alert.id };
+      },
+
+      /* 5. update_intervention_status -- transition restreinte, voir
+         planAutomationActions() pour l'allowlist (même liste que la RPC
+         Intervention 360 existante, jamais un contournement). */
+      _actionUpdateStatus(config, event, state) {
+        const interv = state.interventions.find(i => i.id === event.sourceId);
+        if (!interv) return { ok: false, error: 'Intervention introuvable.' };
+        SebaDB.update('interventions', interv.id, { statut: config.status, done: config.status === 'terminee' });
+        return { ok: true, id: interv.id };
+      },
+    },
+
     /* ═══ Dispatch/planning (feature/smart-planning-dispatch) ═══════════
        Fonctions PURES de calcul horaire -- même logique que celle déjà
        écrite dans app/dashboard.html (parseDureeToMinutes/addMinutesToTime/
@@ -3358,6 +3911,26 @@
   };
 
   window.SebaDB = SebaDB;
+
+  /* ── Déclenchement automatique du moteur d'automatisations
+     (feature/automation-engine-foundation) -- branché sur le SEUL
+     mécanisme réactif déjà existant de toute l'app (persist() -> notifie
+     les listeners de onChange()), jamais un setInterval/polling. Couvre
+     à la fois les écritures locales du patron ET les écritures serveur
+     (RPC client/employé) rapatriées par SupabaseAdapter.pull() (qui
+     appelle aussi persist()). Garde de ré-entrance : une action
+     d'automatisation qui écrit (SebaDB.create/update) déclenche elle-même
+     persist() -> ne doit JAMAIS relancer une passe imbriquée ici -- le
+     chaînage légitime (une action qui rend un nouvel événement détectable)
+     est géré par l'appel récursif borné DANS runAutomationsPass(), jamais
+     par ce hook. */
+  let _automationPassRunning = false;
+  SebaDB.onChange(function () {
+    if (_automationPassRunning) return;
+    _automationPassRunning = true;
+    try { if (state) runAutomationsPass(state); } catch (e) { /* jamais interrompre l'app pour une erreur d'automatisation */ }
+    finally { _automationPassRunning = false; }
+  });
 
   /* Fonctions pures de la mémoire/intelligence client -- réutilisées telles
      quelles par client-fiche.html, app/dashboard.html et espace-terrain.html
