@@ -33,6 +33,8 @@
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="12" height="16" rx="2"/><circle cx="10" cy="13" r="2"/><line x1="8" y1="5" x2="12" y2="5"/></svg>',
     assignation:
       '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h14v9H8l-3 3v-3H3z"/><path d="M7 8h6M7 5.5h6"/></svg>',
+    automatisations:
+      '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2 3 12h6l-1 6 8-10h-6z"/></svg>',
   };
 
   /* ── Structure de navigation ─────────────────────────────────────────────── */
@@ -46,6 +48,7 @@
         { href: 'planning.html',  label: 'Planning',        key: 'planning',  match: ['planning'], shortcut: 'P' },
         { href: 'devis.html',     label: 'Devis',           key: 'devis',     match: ['devis'],    shortcut: 'D' },
         { href: 'factures.html',  label: 'Factures',        key: 'factures',  match: ['factures'], shortcut: 'F' },
+        { href: 'automatisations.html', label: 'Automatisations', key: 'automatisations', match: ['automatisations'] },
       ],
     },
     {

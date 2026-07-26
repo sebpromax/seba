@@ -539,7 +539,8 @@ function buildOwnerDashboardViewModel(state, options) {
 
   const clients = state.clients || [], devis = state.devis || [], factures = state.factures || [],
         interventions = state.interventions || [], employes = state.employes || [],
-        journal = state.journal || [], messages = state.messages || [], clientRequests = state.clientRequests || [];
+        journal = state.journal || [], messages = state.messages || [], clientRequests = state.clientRequests || [],
+        automationRules = state.automationRules || [], automationRuns = state.automationRuns || [], automationAlerts = state.automationAlerts || [];
   const syncStatus = state.syncStatus || { pending: 0, failed: 0, syncing: false };
 
   const clientsById = {}; clients.forEach(c => { clientsById[c.id] = c; });
@@ -721,6 +722,17 @@ function buildOwnerDashboardViewModel(state, options) {
 
   const facturesPartielles = factures.filter(f => SebaDB.factures.isPartial(f));
   if (facturesPartielles.length > 0) priorityActions.push({ level: 'medium', type: 'facture-partielle', label: 'Facture(s) partiellement payée(s), solde restant', count: facturesPartielles.length, cta: 'Ouvrir les factures', href: '../factures.html?highlight=' + facturesPartielles[0].id });
+
+  /* ── Automatisations (feature/automation-engine-foundation) -- AJOUT PUR,
+     aucun nouveau Command Center : nombre d'exécutions échouées (alerte
+     agrégée) + jusqu'à 3 alertes automationAlerts actives, chacune ciblant
+     l'objet réel via son propre href (posé par l'action create_owner_alert
+     elle-même, jamais recalculé ici). ── */
+  const automationRunsEchoues = automationRuns.filter(r => r.status === 'failed');
+  if (automationRunsEchoues.length > 0) priorityActions.push({ level: 'medium', type: 'automation-failed', label: 'Automatisation(s) en échec', count: automationRunsEchoues.length, cta: 'Voir les automatisations', href: '../automatisations.html' });
+  automationAlerts.filter(a => a.status === 'active').slice(0, 3).forEach(a => {
+    priorityActions.push({ level: a.priority === 'high' ? 'high' : (a.priority === 'low' ? 'low' : 'medium'), type: 'automation-alert', label: a.title || 'Alerte automatisation', count: 1, cta: 'Voir', href: a.href || '../automatisations.html' });
+  });
   const messagesNonLus = messages.filter(m => m.destinataireRole === 'patron' && !m.lu).length;
   const demandesNonTraitees = clientRequests.filter(r => r.statut === 'nouvelle').length;
   if ((messagesNonLus + demandesNonTraitees) > 0) priorityActions.push({ level: 'low', type: 'message', label: 'Demande(s) ou message(s) non lu(s)', count: messagesNonLus + demandesNonTraitees, cta: 'Lire', href: '../assignation.html' });
@@ -777,6 +789,10 @@ function buildOwnerDashboardViewModel(state, options) {
     syncStatus, recommendations, period, activeDateISO,
     secteur: state.biz.secteur, sym: state.biz.deviseSymbole || '€', nom: state.biz.nom || 'Mon entreprise',
     hasRealData: state.hasRealData,
+    // feature/automation-engine-foundation -- disponible pour tout rendu
+    // futur ; les alertes actionnables (échecs/automationAlerts) sont déjà
+    // dans priorityActions ci-dessus, seul un décompte passif vit ici.
+    automationsActivesCount: automationRules.filter(r => r.active).length,
   };
 }
 

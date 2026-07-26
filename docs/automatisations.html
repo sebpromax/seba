@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>Seba — L'écosystème des entreprises de terrain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pro-global.css">
+<script src="theme.js"></script>
+<!-- Page privee : meme verrou que dashboard.html (auth.js AVANT guard.js) -->
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="fx-actions.css">
+<script src="fx-actions.js" defer></script>
+<style>
+:root{--critical:#DC2626;--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.1);--em-ink:#031A12;
+  --sidebar-bg:#0B0C0E;--sidebar-text:rgba(255,255,255,.92);--menu-shadow:rgba(0,0,0,0.08);
+  --panel-shadow-color:rgba(0,0,0,.3);--ss-backdrop-bg:rgba(20,22,26,.45);--ss-panel-shadow:rgba(0,0,0,.13);}
+*{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .layout,.app{position:relative;z-index:2;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:'Inter',sans-serif;}
+  :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
+
+  .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
+  .sidebar{background:var(--sidebar-bg);color:var(--sidebar-text);padding:24px 0;display:flex;flex-direction:column;}
+  .main{padding:32px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
+  .topbar h1{font-size:1.5rem;}
+  .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .btn-em{background:var(--emerald);color:var(--em-ink);border:none;padding:10px 18px;border-radius:var(--rs);font-weight:600;font-size:0.86rem;cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-em:hover{opacity:.88;transform:translateY(-1px);}
+  .btn-outline{border:1px solid var(--border);background:var(--white);color:var(--ink);padding:9px 16px;border-radius:var(--rs);font-size:0.85rem;font-weight:500;cursor:pointer;}
+  .btn-outline:hover{border-color:var(--emerald);color:var(--emerald);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--em-ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
+  .avatar-wrap{position:relative;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:0 4px 16px var(--menu-shadow);display:none;}
+  .user-menu.open{display:block;}
+  .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
+  .user-menu a:hover{background:var(--bg);}
+  .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
+  .user-menu .menu-deconnect{color:var(--text-2);}
+
+  .panel{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:20px;box-shadow:0 1px 3px var(--panel-shadow-color);}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .panel-head h3{font-size:1rem;}
+
+  /* ── Modèles ── */
+  .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+  .tpl-card{border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;background:var(--bg);}
+  .tpl-card h4{font-size:0.9rem;margin-bottom:6px;}
+  .tpl-card p{font-size:0.78rem;color:var(--text-2);margin-bottom:10px;line-height:1.4;}
+
+  /* ── Liste des règles ── */
+  .rule-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 4px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .rule-row:last-child{border-bottom:none;}
+  .rule-main{min-width:0;flex:1;}
+  .rule-name{font-weight:600;font-size:0.92rem;}
+  .rule-meta{font-size:0.78rem;color:var(--text-2);margin-top:3px;}
+  .rule-badge{font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:8px;}
+  .rule-badge.active{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+  .rule-badge.inactive{background:var(--bg);color:var(--text-2);}
+  .rule-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .rule-actions button, .rule-actions a{font-size:0.78rem;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--ink);cursor:pointer;}
+  .rule-actions .danger{color:var(--danger-text);border-color:var(--danger-bg);}
+  .empty-state{font-size:0.85rem;color:var(--text-2);text-align:center;padding:24px 0;}
+
+  /* ── Side sheet (builder + historique) ── */
+  .ss-backdrop{position:fixed;inset:0;z-index:499;background:var(--ss-backdrop-bg);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s ease;}
+  .ss-backdrop.open{opacity:1;pointer-events:auto;}
+  .ss-panel{position:fixed;right:0;top:0;bottom:0;z-index:500;width:min(560px,94vw);background:var(--white);box-shadow:-8px 0 48px var(--ss-panel-shadow);transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+  @media (min-width:841px){ .ss-panel{ top: var(--identity-bar-height); } }
+  .ss-panel.open{transform:translateX(0);}
+  .ss-hdr{padding:22px 26px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .ss-hdr h2{font-size:1.1rem;}
+  .ss-close{width:34px;height:34px;border:1px solid var(--border);background:transparent;border-radius:8px;cursor:pointer;font-size:1rem;}
+  .ss-body{flex:1;overflow-y:auto;padding:20px 26px;}
+  .ss-footer{padding:14px 26px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:var(--white);}
+  .ss-section-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin:18px 0 10px;}
+  .ss-section-lbl:first-child{margin-top:0;}
+  .ss-field{margin-bottom:14px;}
+  .ss-field label{display:block;font-size:.78rem;font-weight:600;color:var(--text-2);margin-bottom:5px;}
+  .ss-field input,.ss-field select,.ss-field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.87rem;color:var(--ink);background:var(--white);}
+  .ss-field textarea{min-height:60px;resize:vertical;}
+  .row-block{border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:10px;background:var(--bg);}
+  .row-block-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .row-block-hdr b{font-size:.8rem;}
+  .row-remove{background:none;border:none;color:var(--danger-text);cursor:pointer;font-size:.85rem;}
+  .row-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .btn-add-row{font-size:.8rem;color:var(--emerald);background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:8px;width:100%;cursor:pointer;}
+  .btn-ss-ghost{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-2);padding:11px;border-radius:var(--rs);font-size:.88rem;font-weight:600;cursor:pointer;}
+  .btn-ss-em{flex:2;background:var(--emerald);border:none;color:var(--em-ink);padding:11px;border-radius:var(--rs);font-size:.88rem;font-weight:700;cursor:pointer;}
+  .field-err{color:var(--danger-text);font-size:.8rem;margin-bottom:10px;}
+
+  /* ── Historique des runs ── */
+  .run-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:.84rem;}
+  .run-item:last-child{border-bottom:none;}
+  .run-status{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;}
+  .run-status.success{background:var(--badge-success-bg);color:var(--badge-success-txt);}
+  .run-status.partial{background:var(--badge-warning-bg);color:var(--badge-warning-txt);}
+  .run-status.failed{background:var(--danger-bg);color:var(--danger-text);}
+  .run-status.skipped{background:var(--bg);color:var(--text-2);}
+  .run-status.running{background:var(--badge-info-bg);color:var(--badge-info-txt);}
+  .run-error{color:var(--danger-text);font-size:.78rem;margin-top:4px;}
+
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;}
+    .main{padding:24px 20px;}
+    .row-3col{grid-template-columns:1fr;}
+  }
+</style>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050505">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+</head>
+<body>
+<div id="identity-bar" class="identity-bar"></div>
+<script src="businessTypes.js"></script>
+<script src="identity-bar.js"></script>
+<div class="layout">
+    <div class="mobile-header">
+    <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar"></nav>
+  <script src="sidebar.js"></script>
+  <script>
+    (function(){
+      const c=localStorage.getItem('user_theme_color');
+      if(c){document.documentElement.style.setProperty('--emerald',c);}
+    })();
+  </script>
+
+  <main class="main">
+    <div class="topbar">
+      <h1>Automatisations</h1>
+      <div class="topbar-right">
+        <button class="btn-outline" onclick="runNowManually()">Vérifier maintenant</button>
+        <button class="btn-em" onclick="openRuleEditor()">+ Nouvelle règle</button>
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="user-menu" id="user-menu">
+            <a href="reglages.html">Mon compte</a>
+            <div class="menu-sep"></div>
+            <a href="connexion.html" class="menu-deconnect" onclick="if(window.sebaAuth)sebaAuth.signOut()">Se déconnecter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="templates-panel">
+      <div class="panel-head"><h3>Modèles</h3></div>
+      <div class="tpl-grid" id="tpl-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Vos règles</h3></div>
+      <div id="rules-list"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Side sheet : builder de règle ── -->
+<div class="ss-backdrop" id="ss-backdrop" onclick="closeSheet()"></div>
+<aside class="ss-panel" id="ss-panel" role="dialog" aria-modal="true">
+  <div class="ss-hdr">
+    <h2 id="ss-title">Nouvelle règle</h2>
+    <button class="ss-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="ss-body">
+    <div class="field-err" id="ss-err" style="display:none;"></div>
+
+    <div class="ss-section-lbl">1. Nom &amp; statut</div>
+    <div class="ss-field">
+      <label for="rb-name">Nom de la règle</label>
+      <input type="text" id="rb-name" placeholder="Ex. Facturer automatiquement les devis acceptés">
+    </div>
+    <div class="ss-field">
+      <label><input type="checkbox" id="rb-active" style="width:auto;margin-right:6px;">Règle active</label>
+    </div>
+
+    <div class="ss-section-lbl">2. Déclencheur (QUAND)</div>
+    <div class="ss-field">
+      <select id="rb-trigger"></select>
+    </div>
+
+    <div class="ss-section-lbl">3. Conditions (SI) <span style="font-weight:400;color:var(--text-2);text-transform:none;">— optionnel</span></div>
+    <div id="rb-conditions"></div>
+    <button type="button" class="btn-add-row" onclick="addConditionRow()">+ Ajouter une condition</button>
+
+    <div class="ss-section-lbl">4. Actions (ALORS)</div>
+    <div id="rb-actions"></div>
+    <button type="button" class="btn-add-row" onclick="addActionRow()">+ Ajouter une action</button>
+  </div>
+  <div class="ss-footer">
+    <button class="btn-ss-ghost" onclick="closeSheet()">Annuler</button>
+    <button class="btn-ss-em" onclick="saveRule()">Enregistrer</button>
+  </div>
+</aside>
+
+<!-- ── Side sheet : historique des runs ── -->
+<div class="ss-backdrop" id="hist-backdrop" onclick="closeHistory()"></div>
+<aside class="ss-panel" id="hist-panel" role="dialog" aria-modal="true">
+  <div class="ss-hdr">
+    <h2 id="hist-title">Historique</h2>
+    <button class="ss-close" onclick="closeHistory()">✕</button>
+  </div>
+  <div class="ss-body" id="hist-body"></div>
+</aside>
+
+<script src="seba-data.js"></script>
+<script>
+  const TRIGGER_LABELS = {
+    client_created: 'Nouveau client', quote_sent: 'Devis envoyé', quote_accepted: 'Devis accepté', quote_rejected: 'Devis refusé',
+    invoice_issued: 'Facture émise', invoice_partially_paid: 'Facture partiellement payée', invoice_paid: 'Facture payée', invoice_overdue: 'Facture en retard',
+    intervention_created: 'Intervention créée', intervention_assigned: 'Intervention assignée', intervention_completed: 'Intervention terminée (soumise)',
+    intervention_owner_approved: 'Intervention validée par le patron', client_reschedule_requested: 'Demande de report client',
+    client_issue_reported: 'Problème signalé par un client', employee_unavailability_requested: 'Demande d\'indisponibilité employé',
+  };
+  const ACTION_LABELS = {
+    create_follow_up_intervention: 'Créer une intervention de suivi', create_invoice_draft: 'Créer une facture brouillon',
+    add_client_memory_entry: 'Ajouter une entrée à la mémoire client', create_owner_alert: 'Créer une alerte',
+    update_intervention_status: 'Modifier le statut de l\'intervention',
+  };
+  const OPERATOR_LABELS = { equals: 'égal à', not_equals: 'différent de', contains: 'contient', greater_than: 'supérieur à', less_than: 'inférieur à', is_set: 'est renseigné', is_not_set: 'est vide' };
+  const RUN_STATUS_LABELS = { running: 'En cours', success: 'Réussi', partial: 'Partiel', failed: 'Échoué', skipped: 'Ignoré (conditions non remplies)' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  /* ── Modèles ── */
+  function renderTemplates() {
+    const box = document.getElementById('tpl-grid');
+    const templates = SebaDB.automations.templates();
+    box.innerHTML = templates.map(t =>
+      '<div class="tpl-card"><h4>' + esc(t.name) + '</h4>' +
+      '<p>QUAND ' + esc(TRIGGER_LABELS[t.trigger.type] || t.trigger.type) + ' → ' + t.actions.map(a => esc(ACTION_LABELS[a.type] || a.type)).join(', ') + '</p>' +
+      '<button class="btn-outline" onclick="useTemplate(\'' + t.id + '\')">Utiliser ce modèle</button></div>'
+    ).join('');
+  }
+  function useTemplate(id) {
+    const res = SebaDB.automations.createFromTemplate(id);
+    if (!res.ok) { alert(res.error); return; }
+    refreshRules();
+    openRuleEditor(res.rule.id);
+  }
+
+  /* ── Liste des règles ── */
+  function refreshRules() {
+    const box = document.getElementById('rules-list');
+    const rules = SebaDB.automations.list();
+    if (!rules.length) { box.innerHTML = '<div class="empty-state">Aucune règle. Créez-en une ou partez d\'un modèle ci-dessus.</div>'; return; }
+    box.innerHTML = rules.map(r => {
+      const lastRun = SebaDB.automations.runs(r.id).slice(-1)[0];
+      const lastRunTxt = lastRun ? (RUN_STATUS_LABELS[lastRun.status] || lastRun.status) + (lastRun.error ? ' — ' + esc(lastRun.error) : '') : 'Jamais exécutée';
+      return '<div class="rule-row">' +
+        '<div class="rule-main">' +
+          '<span class="rule-name">' + esc(r.name) + '</span>' +
+          '<span class="rule-badge ' + (r.active ? 'active' : 'inactive') + '">' + (r.active ? 'Active' : 'Inactive') + '</span>' +
+          '<div class="rule-meta">QUAND ' + esc(TRIGGER_LABELS[r.trigger.type] || r.trigger.type || '—') + ' · ' + r.actions.length + ' action(s) · ' + r.runCount + ' exécution(s)</div>' +
+          '<div class="rule-meta">Dernier résultat : ' + lastRunTxt + '</div>' +
+        '</div>' +
+        '<div class="rule-actions">' +
+          '<button onclick="toggleRuleActive(\'' + r.id + '\',' + !r.active + ')">' + (r.active ? 'Désactiver' : 'Activer') + '</button>' +
+          '<button onclick="openRuleEditor(\'' + r.id + '\')">Modifier</button>' +
+          '<button onclick="duplicateRule(\'' + r.id + '\')">Dupliquer</button>' +
+          '<button onclick="openHistory(\'' + r.id + '\')">Historique</button>' +
+          '<button class="danger" onclick="removeRule(\'' + r.id + '\')">Supprimer</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  function toggleRuleActive(id, active) {
+    const res = SebaDB.automations.setActive(id, active);
+    if (!res.ok) { alert(res.error); return; }
+    refreshRules();
+  }
+  function duplicateRule(id) {
+    const res = SebaDB.automations.duplicateRule(id);
+    if (!res.ok) { alert(res.error); return; }
+    refreshRules();
+  }
+  function removeRule(id) {
+    if (!confirm('Supprimer cette règle ? Cette action est irréversible.')) return;
+    const res = SebaDB.automations.removeRule(id);
+    if (!res.ok) { alert(res.error); return; }
+    refreshRules();
+  }
+  function runNowManually() {
+    SebaDB.automations.run();
+    refreshRules();
+    showToast('Vérification effectuée.');
+  }
+
+  /* ── Builder (side sheet) ── */
+  let _editingRuleId = null;
+  let _conditions = [];
+  let _actions = [];
+
+  function openRuleEditor(ruleId) {
+    _editingRuleId = ruleId || null;
+    document.getElementById('ss-err').style.display = 'none';
+    const triggerSel = document.getElementById('rb-trigger');
+    triggerSel.innerHTML = Object.keys(TRIGGER_LABELS).map(t => '<option value="' + t + '">' + esc(TRIGGER_LABELS[t]) + '</option>').join('');
+
+    if (ruleId) {
+      const rule = SebaDB.automations.list().find(r => r.id === ruleId);
+      if (!rule) return;
+      document.getElementById('ss-title').textContent = 'Modifier la règle';
+      document.getElementById('rb-name').value = rule.name;
+      document.getElementById('rb-active').checked = rule.active;
+      triggerSel.value = rule.trigger.type || '';
+      _conditions = JSON.parse(JSON.stringify(rule.conditions || []));
+      _actions = JSON.parse(JSON.stringify(rule.actions || []));
+    } else {
+      document.getElementById('ss-title').textContent = 'Nouvelle règle';
+      document.getElementById('rb-name').value = '';
+      document.getElementById('rb-active').checked = false;
+      triggerSel.selectedIndex = 0;
+      _conditions = [];
+      _actions = [{ type: AUTOMATION_ACTION_TYPES_UI[0], config: {} }];
+    }
+    renderConditions();
+    renderActions();
+    document.getElementById('ss-backdrop').classList.add('open');
+    document.getElementById('ss-panel').classList.add('open');
+  }
+  function closeSheet() {
+    document.getElementById('ss-backdrop').classList.remove('open');
+    document.getElementById('ss-panel').classList.remove('open');
+    _editingRuleId = null;
+  }
+
+  const AUTOMATION_ACTION_TYPES_UI = Object.keys(ACTION_LABELS);
+  const AUTOMATION_CONDITION_FIELDS_UI = ['event.service', 'event.totalTTC', 'event.clientId', 'event.comment', 'source.status', 'source.employeId'];
+
+  function addConditionRow() { _conditions.push({ field: AUTOMATION_CONDITION_FIELDS_UI[0], operator: 'equals', value: '' }); renderConditions(); }
+  function removeConditionRow(i) { _conditions.splice(i, 1); renderConditions(); }
+  function renderConditions() {
+    const box = document.getElementById('rb-conditions');
+    if (!_conditions.length) { box.innerHTML = '<p style="font-size:.82rem;color:var(--text-2);margin-bottom:8px;">Aucune condition — l\'action s\'exécute à chaque déclenchement.</p>'; return; }
+    box.innerHTML = _conditions.map((c, i) =>
+      '<div class="row-block"><div class="row-block-hdr"><b>Condition ' + (i+1) + '</b><button class="row-remove" onclick="removeConditionRow(' + i + ')">Retirer</button></div>' +
+      '<div class="row-3col">' +
+        '<select onchange="_conditions[' + i + '].field=this.value">' + AUTOMATION_CONDITION_FIELDS_UI.map(f => '<option value="' + f + '"' + (f===c.field?' selected':'') + '>' + esc(f) + '</option>').join('') + '</select>' +
+        '<select onchange="_conditions[' + i + '].operator=this.value">' + Object.keys(OPERATOR_LABELS).map(o => '<option value="' + o + '"' + (o===c.operator?' selected':'') + '>' + esc(OPERATOR_LABELS[o]) + '</option>').join('') + '</select>' +
+        '<input type="text" value="' + esc(c.value) + '" placeholder="Valeur" oninput="_conditions[' + i + '].value=this.value">' +
+      '</div></div>'
+    ).join('');
+  }
+
+  function addActionRow() { if (_actions.length >= 5) { alert('Maximum 5 actions par règle.'); return; } _actions.push({ type: AUTOMATION_ACTION_TYPES_UI[0], config: {} }); renderActions(); }
+  function removeActionRow(i) { _actions.splice(i, 1); renderActions(); }
+  function setActionType(i, type) { _actions[i] = { type, config: {} }; renderActions(); }
+
+  function actionConfigFieldsHtml(i, action) {
+    const cfg = action.config || {};
+    const set = (key, val) => { _actions[i].config = Object.assign({}, _actions[i].config, { [key]: val }); };
+    if (action.type === 'create_follow_up_intervention') {
+      return '<div class="row-3col">' +
+        '<input type="number" min="0" placeholder="Délai (jours)" value="' + esc(cfg.delayDays||'') + '" oninput="_actions[' + i + '].config.delayDays=Number(this.value)">' +
+        '<input type="text" placeholder="Service" value="' + esc(cfg.service||'') + '" oninput="_actions[' + i + '].config.service=this.value">' +
+        '<input type="text" placeholder="Durée (ex. 1h)" value="' + esc(cfg.duration||'') + '" oninput="_actions[' + i + '].config.duration=this.value">' +
+      '</div>';
+    }
+    if (action.type === 'create_invoice_draft') {
+      return '<p style="font-size:.8rem;color:var(--text-2);">Aucune configuration — reprend le devis accepté ou l\'intervention validée à l\'origine de l\'événement.</p>';
+    }
+    if (action.type === 'add_client_memory_entry') {
+      return '<div class="ss-field"><label>Catégorie</label><select onchange="_actions[' + i + '].config.category=this.value">' +
+        ['preference','access','equipment','risk','quality','billing','relationship','instruction'].map(c => '<option value="' + c + '"' + (c===cfg.category?' selected':'') + '>' + c + '</option>').join('') + '</select></div>' +
+        '<div class="ss-field"><label>Contenu (variables : {{clientName}} {{service}} {{comment}}…)</label><textarea oninput="_actions[' + i + '].config.contentTemplate=this.value">' + esc(cfg.contentTemplate||'') + '</textarea></div>';
+    }
+    if (action.type === 'create_owner_alert') {
+      return '<div class="ss-field"><label>Titre</label><input type="text" value="' + esc(cfg.title||'') + '" oninput="_actions[' + i + '].config.title=this.value"></div>' +
+        '<div class="ss-field"><label>Message</label><textarea oninput="_actions[' + i + '].config.message=this.value">' + esc(cfg.message||'') + '</textarea></div>' +
+        '<div class="ss-field"><label>Priorité</label><select onchange="_actions[' + i + '].config.priority=this.value">' +
+        ['low','medium','high'].map(p => '<option value="' + p + '"' + (p===cfg.priority?' selected':'') + '>' + p + '</option>').join('') + '</select></div>';
+    }
+    if (action.type === 'update_intervention_status') {
+      return '<div class="ss-field"><label>Nouveau statut</label><select onchange="_actions[' + i + '].config.status=this.value">' +
+        '<option value="">—</option><option value="en_cours"' + (cfg.status==='en_cours'?' selected':'') + '>En cours</option><option value="terminee"' + (cfg.status==='terminee'?' selected':'') + '>Terminée</option></select></div>';
+    }
+    return '';
+  }
+
+  function renderActions() {
+    const box = document.getElementById('rb-actions');
+    box.innerHTML = _actions.map((a, i) =>
+      '<div class="row-block"><div class="row-block-hdr"><b>Action ' + (i+1) + '</b><button class="row-remove" onclick="removeActionRow(' + i + ')">Retirer</button></div>' +
+      '<div class="ss-field"><select onchange="setActionType(' + i + ',this.value)">' +
+        AUTOMATION_ACTION_TYPES_UI.map(t => '<option value="' + t + '"' + (t===a.type?' selected':'') + '>' + esc(ACTION_LABELS[t]) + '</option>').join('') +
+      '</select></div>' +
+      actionConfigFieldsHtml(i, a) +
+      '</div>'
+    ).join('');
+  }
+
+  function saveRule() {
+    const input = {
+      name: document.getElementById('rb-name').value,
+      active: document.getElementById('rb-active').checked,
+      trigger: { type: document.getElementById('rb-trigger').value, filters: {} },
+      conditions: _conditions,
+      actions: _actions,
+    };
+    const res = _editingRuleId ? SebaDB.automations.updateRule(_editingRuleId, input) : SebaDB.automations.createRule(input);
+    if (!res.ok) {
+      const errEl = document.getElementById('ss-err');
+      errEl.textContent = res.error;
+      errEl.style.display = 'block';
+      return;
+    }
+    closeSheet();
+    refreshRules();
+    showToast('Règle enregistrée ✓');
+  }
+
+  /* ── Historique ── */
+  function openHistory(ruleId) {
+    const rule = SebaDB.automations.list().find(r => r.id === ruleId);
+    if (!rule) return;
+    document.getElementById('hist-title').textContent = 'Historique — ' + rule.name;
+    const runs = SebaDB.automations.runs(ruleId).slice().sort((a, b) => (b.startedAt||'').localeCompare(a.startedAt||''));
+    const body = document.getElementById('hist-body');
+    body.innerHTML = runs.length ? runs.map(r =>
+      '<div class="run-item"><span class="run-status ' + r.status + '">' + (RUN_STATUS_LABELS[r.status] || r.status) + '</span> ' +
+      '<span style="color:var(--text-2);">' + esc(r.startedAt || '') + '</span>' +
+      (r.error ? '<div class="run-error">' + esc(r.error) + '</div>' : '') +
+      ((r.results||[]).length ? '<div style="margin-top:6px;font-size:.78rem;color:var(--text-2);">' + r.results.map(res => esc(ACTION_LABELS[res.type]||res.type) + ' — ' + res.status + (res.error ? ' (' + esc(res.error) + ')' : '')).join('<br>') + '</div>' : '') +
+      '</div>'
+    ).join('') : '<div class="empty-state">Aucune exécution pour cette règle.</div>';
+    document.getElementById('hist-backdrop').classList.add('open');
+    document.getElementById('hist-panel').classList.add('open');
+  }
+  function closeHistory() {
+    document.getElementById('hist-backdrop').classList.remove('open');
+    document.getElementById('hist-panel').classList.remove('open');
+  }
+
+  function showToast(msg) {
+    const ex = document.getElementById('_toast');
+    if (ex) ex.remove();
+    const t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C1D21;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.style.opacity = '0', 3000);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  document.getElementById('rb-active').addEventListener('change', function(){});
+
+  const avatarBtn = document.getElementById('avatar-btn');
+  const userMenu  = document.getElementById('user-menu');
+  avatarBtn.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+  renderTemplates();
+  refreshRules();
+  SebaDB.onChange(() => refreshRules());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSheet(); closeHistory(); } });
+</script>
+
+<script>
+  function toggleSidebar() {
+    const isOpen = document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+</body>
+</html>
