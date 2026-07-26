@@ -363,12 +363,20 @@
   function buildFooter(d) {
     const emailBtn = `<button class="btn-copy" onclick="sendDevisEmail('${d.num}')" title="Envoyer par email">✉️ Email</button>`;
     if (d.status === 'signe') {
-      return `<button class="btn-copy" onclick="copyLink('${d.num}')">
+      // Prochaine étape réelle du parcours pilote (feature/pilot-ready-v1) :
+      // un devis signé sans intervention doit pouvoir en créer une en un
+      // clic (SebaDB.interventions.createFromAcceptedQuote, idempotente),
+      // ou ouvrir directement celle déjà créée.
+      const interventionBtn = d.interventionId
+        ? `<button class="btn-ss-em" onclick="location.href='intervention-fiche.html?id=${d.interventionId}'">Voir l'intervention</button>`
+        : `<button class="btn-ss-em" onclick="planifierDepuisFiche('${d.id}')">Planifier l'intervention</button>`;
+      return `${interventionBtn}
+      <button class="btn-copy" onclick="copyLink('${d.num}')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
         Copier le lien de paiement
       </button>
       ${emailBtn}
-      <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+      <button class="btn-copy" onclick="closeSheet()">Fermer</button>`;
     }
     if (d.status === 'attente') {
       return `<button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
@@ -378,6 +386,13 @@
     return `<button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
       ${emailBtn}
       <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+  }
+
+  function planifierDepuisFiche(id) {
+    const res = SebaDB.interventions.createFromAcceptedQuote(id, {});
+    if (!res.ok) { showToast(res.error || 'Échec de la création de l\'intervention.'); return; }
+    showToast(res.alreadyExisted ? 'Intervention déjà existante — ouverture' : 'Intervention créée — ouverture');
+    setTimeout(() => location.href = 'intervention-fiche.html?id=' + res.intervention.id, 500);
   }
 
   function sendDevisEmail(num) {
@@ -478,6 +493,8 @@
   function rowExtraActions(d) {
     const acts = [];
     if (d.status === 'brouillon') acts.push({ act: 'modifier', label: 'Modifier' });
+    if (d.status === 'signe' && !d.interventionId) acts.push({ act: 'planifier', label: 'Planifier l\'intervention' });
+    if (d.status === 'signe' && d.interventionId) acts.push({ act: 'voir-intervention', label: 'Voir l\'intervention' });
     if (d.status === 'signe' && !d.invoiceId) acts.push({ act: 'convertir', label: 'Convertir en facture' });
     acts.push({ act: 'dupliquer', label: 'Dupliquer' });
     if (d.status !== 'annule' && !d.invoiceId) acts.push({ act: 'annuler', label: 'Annuler' });
@@ -526,6 +543,19 @@
           const res = SebaDB.factures.createFromDevis(id);
           if (res.ok) { showToast('Facture générée — ' + res.facture.num); setTimeout(() => location.href = 'factures.html?highlight=' + res.facture.id, 600); }
           else showToast(res.error || 'Échec de la conversion.');
+          return;
+        }
+        if (xact === 'planifier') {
+          const res = SebaDB.interventions.createFromAcceptedQuote(id, {});
+          if (res.ok) {
+            showToast(res.alreadyExisted ? 'Intervention déjà existante — ouverture' : 'Intervention créée — ouverture');
+            setTimeout(() => location.href = 'intervention-fiche.html?id=' + res.intervention.id, 500);
+          } else showToast(res.error || 'Échec de la création de l\'intervention.');
+          return;
+        }
+        if (xact === 'voir-intervention') {
+          const d = DEVIS_DATA.find(x => x.id === id);
+          if (d && d.interventionId) location.href = 'intervention-fiche.html?id=' + d.interventionId;
           return;
         }
       });

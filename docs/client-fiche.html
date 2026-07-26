@@ -498,6 +498,12 @@
           </table>
         </div>
 
+        <!-- TIMELINE OPÉRATIONNELLE (feature/pilot-ready-v1) -->
+        <div class="panel">
+          <div class="panel-head"><h3>Historique complet</h3></div>
+          <div id="client-timeline"></div>
+        </div>
+
       </div>
 
       <!-- COLONNE LATÉRALE -->
@@ -1036,9 +1042,15 @@
       return '<span style="color:var(--text-2);font-size:0.8rem;">Contrat clôturé</span>';
     }
 
+    // "Voir" ouvre désormais directement l'enregistrement précis (feature/
+    // pilot-ready-v1, SebaClientIntelligence.buildBusinessObjectHref) --
+    // devis.html/factures.html savent en réalité deep-linker depuis
+    // longtemps (?open=<num> / ?highlight=<id>), simplement jamais utilisé
+    // depuis cette page avant ce chantier (le lien renvoyait vers la liste
+    // générique, jamais vers l'enregistrement lui-même).
     const docs = [
-      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente, action: '<a href="devis.html" style="color:inherit;">Voir la liste</a>' })),
-      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente, action: '<a href="factures.html" style="color:inherit;">Voir la liste</a>' })),
+      ...devisList.map(d => ({ num: d.num, type: 'Devis', service: d.service, amount: d.amount, date: d.date, badge: DEVIS_BADGE[d.status] || DEVIS_BADGE.attente, action: '<a href="' + SebaClientIntelligence.buildBusinessObjectHref('devis', d.num) + '" style="color:inherit;">Voir</a>' })),
+      ...facturesList.map(f => ({ num: f.num, type: 'Facture', service: f.service, amount: f.amount, date: f.date, badge: FACT_BADGE[f.status] || FACT_BADGE.attente, action: '<a href="' + SebaClientIntelligence.buildBusinessObjectHref('facture', f.id) + '" style="color:inherit;">Voir</a>' })),
       ...contratsList.map(c => ({ num: c.num, type: 'Contrat', service: (c.lines && c.lines[0] && c.lines[0].title) || 'Abonnement', amount: c.amount, date: c.createdAt, badge: CONTRAT_BADGE[c.status] || CONTRAT_BADGE.actif, action: contratActionsHtml(c) })),
     ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const docsBody = document.querySelectorAll('.panel table tbody')[1];
@@ -1099,6 +1111,17 @@
     const actions = window.SebaClientIntelligence.buildClientNextBestActions(client, st, now);
     renderOperationalSummary(summary);
     renderNextBestActions(actions);
+
+    // Timeline opérationnelle (feature/pilot-ready-v1) -- calculée à chaque
+    // rendu depuis les vraies données (devis/interventions/factures déjà en
+    // main + demandes publiques converties vers ce client, récupérées ici
+    // car hors seba_state -- voir SebaDB.publicIntake.list()). Jamais une
+    // table d'événements séparée, jamais copiée sur le client.
+    let publicRequests = [];
+    try { publicRequests = (await SebaDB.publicIntake.list()).filter(r => r.convertedClientId === client.id); } catch (e) {}
+    if (_lastClient !== client) return;
+    const timeline = window.SebaClientIntelligence.buildClientOperationalTimeline(client.id, st, publicRequests);
+    renderClientTimeline(timeline);
   }
 
   renderClientFiche();
@@ -1160,6 +1183,28 @@
         '<button type="button" class="nba-action" onclick="location.href=' + JSON.stringify(a.actionUrl) + '">' + esc(a.actionLabel) + '</button>' +
       '</div>'
     )).join('');
+  }
+
+  /* ── Timeline opérationnelle (feature/pilot-ready-v1) ──
+     Réutilise la même liste de badges/tokens que le reste de la page --
+     aucun nouveau design system. Chaque entrée ouvre son objet source via
+     le href déjà construit par buildClientOperationalTimeline
+     (buildBusinessObjectHref). "internal" masqué au client (RPC dédiée,
+     jamais exposé ici de toute façon -- cette page est patron uniquement),
+     affiché tel quel côté patron. */
+  function renderClientTimeline(events) {
+    const el = document.getElementById('client-timeline');
+    if (!el) return;
+    if (!events.length) { el.innerHTML = '<p style="color:var(--text-2);font-size:0.85rem;">Aucun événement pour le moment.</p>'; return; }
+    el.innerHTML = '<div style="display:flex;flex-direction:column;gap:2px;">' + events.map(e => (
+      '<div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);align-items:baseline;">' +
+        '<span style="font-size:0.78rem;color:var(--text-2);white-space:nowrap;min-width:78px;">' + esc(fmtDateFr(e.occurredAt.slice(0, 10))) + '</span>' +
+        '<div style="flex:1;">' +
+          (e.href ? '<a href="' + e.href + '" style="color:var(--ink);font-weight:500;font-size:0.87rem;">' + esc(e.title) + '</a>' : '<span style="font-weight:500;font-size:0.87rem;">' + esc(e.title) + '</span>') +
+          (e.description ? '<div style="font-size:0.8rem;color:var(--text-2);">' + esc(e.description) + '</div>' : '') +
+        '</div>' +
+      '</div>'
+    )).join('') + '</div>';
   }
 
   /* ── Mémoire client ── */
