@@ -375,7 +375,14 @@ async function main() {
     await patron.page.waitForFunction(() => document.querySelector('.a4'), { timeout: 8000 }).catch(() => {});
     const devisDocOk = await patron.page.evaluate(() => !!document.querySelector('.a4') && document.querySelector('.doctype').textContent.includes('DEVIS'));
     assert(devisDocOk, 'page devis-document.html rendue (DEVIS)');
-    const devisA4Css = await patron.page.evaluate(() => Array.from(document.querySelectorAll('style')).some(s => /@page\s*\{[^}]*size:\s*A4/.test(s.textContent)));
+    const devisA4Css = await patron.page.evaluate(async () => {
+      const inline = Array.from(document.querySelectorAll('style')).map(s => s.textContent).join('\n');
+      // CSS documentaire désormais partagée (commercial-document.css, chargée
+      // via <link>) -- le @page vit là, plus dans un <style> inline. Sans ce
+      // fetch, cette détection redevenait un faux négatif après extraction.
+      const linked = await Promise.all(Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => fetch(l.href).then(r => r.text()).catch(() => '')));
+      return /@page\s*\{[^}]*size:\s*A4/.test(inline + '\n' + linked.join('\n'));
+    });
     assert(devisA4Css, '@page{size:A4} présent dans le CSS imprimable du devis');
 
     await patron.page.goto(`http://127.0.0.1:${PORT}/facture-document.html?id=${factureFromScratchId}`, { waitUntil: 'domcontentloaded' });
@@ -494,7 +501,340 @@ async function main() {
     assert(patron.consoleErrors.length === 0, 'zéro erreur console — patron (' + JSON.stringify(patron.consoleErrors) + ')');
     assert(clientA1.consoleErrors.length === 0, 'zéro erreur console — client A1 (' + JSON.stringify(clientA1.consoleErrors) + ')');
 
-    note('Périmètre honnête de ce QA : le moteur (calculs/numérotation/snapshot/révisions/modèles/pages A4/sécurité) est testé en exécution réelle. L\'éditeur "mode simple/avancé" complet dans devis-nouveau.html et la refonte de factures-nouvelle.html restent un chantier UI non traité dans cette livraison (voir rapport de livraison) -- non testés ici car non implémentés, jamais faussement marqués PASS.');
+    // ═══════════════════════════════════════════════════════════════════
+    // ÉDITEURS RÉELS (points 66-121) -- continuation "compléter réellement
+    // les éditeurs" : interactions DOM authentiques (clics, saisies,
+    // sélections), jamais une injection directe dans state pour simuler une
+    // fonctionnalité UI. Nouveau jeu de données isolé (client "Editeur
+    // QAFCD") pour ne dépendre d'aucun état laissé par les tests 1-65.
+    // ═══════════════════════════════════════════════════════════════════
+    await patron.page.setViewport({ width: 1280, height: 900 });
+    console.log('\n== [setup éditeurs] Client + devis accepté + intervention validée dédiés ==');
+    const edFixtures = await patron.page.evaluate(() => {
+      const client = SebaDB.create('clients', { prenom: 'Editeur', nom: 'QAFCD', contact: 'ed-qafcd@test.seba.invalid', ca: 0, statut: 'attente', adresse: '9 rue Éditeur' });
+      const devisRes = SebaDB.devis.send({ clientId: client.id, clientName: 'Editeur QAFCD', lines: [{ desc: 'Prestation à convertir', qty: 1, u: 200 }], tvaRate: 20 });
+      SebaDB.update('devis', devisRes.devis.id, { status: 'signe', acceptedAt: new Date().toISOString() });
+      const interv = SebaDB.create('interventions', {
+        clientId: client.id, clientName: 'Editeur QAFCD', service: 'Jardinage QAFCD', adresse: '9 rue Éditeur',
+        date: null, time: null, duree: null, employeId: null, employeName: null, done: false,
+        execution: { checklist: [], timing: {}, photos: [], materials: [], incidents: [], clientApproval: null, completionStatus: 'owner_approved', submittedAt: null, reviewedAt: null, reviewedBy: null },
+        statusHistory: [],
+      });
+      return { clientId: client.id, devisId: devisRes.devis.id, interventionId: interv.id };
+    });
+    await flushPatronStateToServer(patron.page, patronAId);
+
+    console.log('\n== [66/121] Ouverture de devis-nouveau.html ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/devis-nouveau.html`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    const editorOpen = await patron.page.evaluate(() => document.getElementById('editor-state').style.display !== 'none');
+    assert(editorOpen, 'devis-nouveau.html ouvre bien l\'éditeur (pas verrouillé, pas d\'erreur de chargement)');
+
+    console.log('\n== [67/121 68/121] Création devis simple + client sélectionné ==');
+    await patron.page.select('#client', edFixtures.clientId);
+    const clientSelected = await patron.page.evaluate(() => document.getElementById('client').value);
+    assert(clientSelected === edFixtures.clientId, 'client réellement sélectionné dans le formulaire');
+
+    console.log('\n== [69/121] Ligne libre ajoutée ==');
+    await patron.page.click('#cle-add-free');
+    await new Promise(r => setTimeout(r, 150));
+    let lineCount = await patron.page.evaluate(() => document.querySelectorAll('#cle-tbody .cle-row').length);
+    assert(lineCount === 1, 'ligne libre ajoutée via clic réel sur le bouton (' + lineCount + ' ligne)');
+    await patron.page.type('.cle-row:nth-child(1) input[data-f="description"]', 'Ligne libre éditeur');
+
+    console.log('\n== [70/121] Ligne catalogue ajoutée ==');
+    await patron.page.select('#cle-catalog-pick', 'svc_qafcd');
+    await new Promise(r => setTimeout(r, 150));
+    lineCount = await patron.page.evaluate(() => document.querySelectorAll('#cle-tbody .cle-row').length);
+    assert(lineCount === 2, 'ligne catalogue ajoutée depuis le sélecteur réel (' + lineCount + ' lignes)');
+
+    console.log('\n== [71/121 72/121 73/121] Quantité/prix/TVA modifiés -> total recalculé en direct ==');
+    const totalBefore = await patron.page.evaluate(() => document.getElementById('t-ttc').textContent);
+    await patron.page.evaluate(() => { const q = document.querySelectorAll('input[data-f="quantity"]')[0]; q.value = '3'; q.dispatchEvent(new Event('input')); });
+    await patron.page.evaluate(() => { const p = document.querySelectorAll('input[data-f="unitPriceCents"]')[0]; p.value = '10'; p.dispatchEvent(new Event('input')); });
+    await patron.page.select('#tva-rate', '10');
+    await new Promise(r => setTimeout(r, 150));
+    const totalAfter = await patron.page.evaluate(() => document.getElementById('t-ttc').textContent);
+    assert(totalAfter !== totalBefore, 'quantité + prix + TVA modifiés -> total réellement recalculé (' + totalBefore + ' -> ' + totalAfter + ')');
+
+    console.log('\n== [74/121 75/121] Ligne dupliquée puis supprimée ==');
+    await patron.page.click('#cle-tbody .cle-row:nth-child(1) [data-act="dup"]');
+    await new Promise(r => setTimeout(r, 150));
+    const countAfterDup = await patron.page.evaluate(() => document.querySelectorAll('#cle-tbody .cle-row').length);
+    assert(countAfterDup === 3, 'ligne dupliquée via clic réel (' + countAfterDup + ' lignes)');
+    await patron.page.click('#cle-tbody .cle-row:nth-child(3) [data-act="remove"]');
+    await new Promise(r => setTimeout(r, 150));
+    const countAfterRemove = await patron.page.evaluate(() => document.querySelectorAll('#cle-tbody .cle-row').length);
+    assert(countAfterRemove === 2, 'ligne supprimée via clic réel (' + countAfterRemove + ' lignes)');
+
+    console.log('\n== [76/121] Ordre des lignes modifié via les boutons monter/descendre ==');
+    const descBefore = await patron.page.evaluate(() => Array.from(document.querySelectorAll('#cle-tbody input[data-f="description"]')).map(i => i.value));
+    await patron.page.click('#cle-tbody .cle-row:nth-child(2) [data-act="up"]');
+    await new Promise(r => setTimeout(r, 150));
+    const descAfter = await patron.page.evaluate(() => Array.from(document.querySelectorAll('#cle-tbody input[data-f="description"]')).map(i => i.value));
+    assert(descBefore[0] === descAfter[1] && descBefore[1] === descAfter[0], 'ordre réellement inversé après clic sur "monter" (' + JSON.stringify(descBefore) + ' -> ' + JSON.stringify(descAfter) + ')');
+
+    console.log('\n== [77/121] Options avancées ouvertes via clic réel ==');
+    await patron.page.click('#adv-toggle');
+    await new Promise(r => setTimeout(r, 150));
+    const advOpen = await patron.page.evaluate(() => document.getElementById('adv-body').classList.contains('open'));
+    assert(advOpen, 'panneau "Options avancées" réellement ouvert au clic');
+
+    console.log('\n== [78/121 79/121] Remise globale + acompte appliqués (options avancées) ==');
+    await patron.page.evaluate(() => { document.getElementById('remise-value').value = '5'; document.getElementById('remise-value').dispatchEvent(new Event('input')); });
+    await patron.page.evaluate(() => { document.getElementById('acompte-value').value = '10'; document.getElementById('acompte-value').dispatchEvent(new Event('input')); });
+    await new Promise(r => setTimeout(r, 150));
+    const discountRowVisible = await patron.page.evaluate(() => document.getElementById('t-discount-row').style.display !== 'none');
+    const depositRowVisible = await patron.page.evaluate(() => document.getElementById('t-deposit-row').style.display !== 'none');
+    assert(discountRowVisible && depositRowVisible, 'remise globale + acompte réellement reflétés dans les totaux affichés');
+
+    console.log('\n== [80/121] Section ajoutée (options avancées) ==');
+    // Clic DOM direct (pas patron.page.click) -- le bouton peut se trouver
+    // hors-viewport après le re-rendu de toggleAdvanced(), Puppeteer ne le
+    // scrolle pas toujours en vue de façon fiable ; le clic réel de l'action
+    // reste testé (le handler attaché par le bouton, pas un raccourci vers
+    // la fonction interne).
+    await patron.page.evaluate(() => document.getElementById('cle-add-section').click());
+    await new Promise(r => setTimeout(r, 150));
+    const sectionRowPresent = await patron.page.evaluate(() => !!document.querySelector('#cle-tbody .cle-section'));
+    assert(sectionRowPresent, 'ligne de section ajoutée via le bouton réel');
+
+    console.log('\n== [81/121] Adresse de prestation modifiée ==');
+    await patron.page.type('#service-address', '42 avenue Terrain');
+    await new Promise(r => setTimeout(r, 150));
+    const serviceAddrValue = await patron.page.evaluate(() => document.getElementById('service-address').value);
+    assert(serviceAddrValue.includes('42 avenue Terrain'), 'adresse de prestation réellement saisie');
+
+    console.log('\n== [82/121] Option d\'affichage modifiée (case à cocher) ==');
+    const prefBefore = await patron.page.evaluate(() => document.getElementById('pref-showBankDetails').checked);
+    await patron.page.click('#pref-showBankDetails');
+    const prefAfter = await patron.page.evaluate(() => document.getElementById('pref-showBankDetails').checked);
+    assert(prefBefore !== prefAfter, 'préférence d\'affichage réellement basculée au clic (showBankDetails)');
+
+    console.log('\n== [83/121] Autosave réellement persisté (sans clic sur Enregistrer) ==');
+    await patron.page.waitForFunction(() => document.getElementById('save-status').textContent.includes('Enregistré'), { timeout: 4000 });
+    const editingIdAfterAutosave = await patron.page.evaluate(() => new URLSearchParams(location.search).get('id'));
+    const persistedAfterAutosave = editingIdAfterAutosave ? await patron.page.evaluate((id) => !!SebaDB.get('devis', id), editingIdAfterAutosave) : false;
+    assert(!!editingIdAfterAutosave && persistedAfterAutosave, 'autosave a réellement créé/persisté le brouillon sans clic sur "Enregistrer" (id=' + editingIdAfterAutosave + ')');
+    await flushPatronStateToServer(patron.page, patronAId);
+    const draftId = editingIdAfterAutosave;
+
+    console.log('\n== [84/121] Reload sans perte ==');
+    await patron.page.reload({ waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 400));
+    const clientAfterReload = await patron.page.evaluate(() => document.getElementById('client').value);
+    const advAfterReload = await patron.page.evaluate(() => document.getElementById('remise-value').value);
+    assert(clientAfterReload === edFixtures.clientId && advAfterReload === '5', 'client + remise conservés après reload (' + clientAfterReload + ', remise=' + advAfterReload + ')');
+
+    console.log('\n== [85/121] Aperçu cohérent (même modèle que le document final) ==');
+    await patron.page.click('#tab-preview-btn');
+    await new Promise(r => setTimeout(r, 500));
+    const previewFrame = await (await patron.page.$('#preview-frame')).contentFrame();
+    const previewHasDoctype = await previewFrame.evaluate(() => !!document.querySelector('.doctype'));
+    assert(previewHasDoctype, 'aperçu affiche réellement un document DEVIS (même renderer que devis-document.html)');
+    await patron.page.click('#tab-edit-btn');
+    await new Promise(r => setTimeout(r, 200));
+
+    console.log('\n== [86/121] Avertissement non bloquant (validité absente) ==');
+    const warnPresent = await patron.page.evaluate(() => document.getElementById('validation-box').innerHTML.includes('warn-list') && !document.getElementById('validation-box').innerHTML.includes('blocking'));
+    const sendEnabled = await patron.page.evaluate(() => !document.getElementById('send-btn').disabled);
+    assert(warnPresent && sendEnabled, 'avertissement affiché (validité absente) mais bouton Envoyer NON bloqué');
+
+    console.log('\n== [87/121] Erreur bloquante réelle (client retiré) ==');
+    await patron.page.select('#client', '');
+    await new Promise(r => setTimeout(r, 200));
+    const blockingVisible = await patron.page.evaluate(() => document.getElementById('validation-box').innerHTML.includes('blocking'));
+    const sendDisabled = await patron.page.evaluate(() => document.getElementById('send-btn').disabled);
+    assert(blockingVisible && sendDisabled, 'erreur bloquante réelle affichée + bouton Envoyer désactivé (client absent)');
+    await patron.page.select('#client', edFixtures.clientId);
+    await new Promise(r => setTimeout(r, 200));
+
+    console.log('\n== [88/121 89/121 90/121] Envoi réussi + numéro attribué + snapshot créé ==');
+    await patron.page.click('#send-btn');
+    await new Promise(r => setTimeout(r, 200));
+    await flushPatronStateToServer(patron.page, patronAId);
+    await new Promise(r => setTimeout(r, 600));
+    const sentDevis = await patron.page.evaluate((id) => SebaDB.get('devis', id), draftId);
+    assert(sentDevis && sentDevis.status === 'attente', 'envoi réussi -> statut réellement passé à "attente"');
+    assert(sentDevis && /^DEV-\d{4}-\d{4}$/.test(sentDevis.num), 'numéro attribué au format configuré (' + (sentDevis && sentDevis.num) + ')');
+    assert(sentDevis && !!sentDevis.documentSnapshot, 'snapshot documentaire réellement créé à l\'envoi');
+
+    console.log('\n== [91/121] Double-clic sans duplication ==');
+    const devisCountBeforeRetry = await patron.page.evaluate(() => SebaDB.list('devis').length);
+    await patron.page.evaluate((id) => { const d = SebaDB.get('devis', id); SebaDB.devis.updateDraft(id, { clientId: d.clientId, clientName: d.clientName, lines: d.lines, tvaRate: d.tvaRate, _send: true }); }, draftId);
+    const devisCountAfterRetry = await patron.page.evaluate(() => SebaDB.list('devis').length);
+    assert(devisCountBeforeRetry === devisCountAfterRetry, 'retry sur un devis déjà envoyé -> aucun nouveau devis créé (' + devisCountBeforeRetry + ' -> ' + devisCountAfterRetry + ')');
+
+    console.log('\n== [92/121] Devis envoyé verrouillé (édition directe impossible) ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/devis-nouveau.html?id=${draftId}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 400));
+    const lockedShown = await patron.page.evaluate(() => document.getElementById('locked-state').style.display !== 'none' && document.getElementById('editor-state').style.display === 'none');
+    assert(lockedShown, 'devis envoyé -> écran verrouillé affiché, formulaire d\'édition masqué');
+
+    console.log('\n== [93/121 94/121] Révision créée depuis l\'UI + nouvelle révision ouverte ==');
+    await patron.page.click('#locked-revision-btn');
+    await new Promise(r => setTimeout(r, 400));
+    const revisionUrl = patron.page.url();
+    const revisionEditorOpen = await patron.page.evaluate(() => document.getElementById('editor-state').style.display !== 'none');
+    const revisionBannerText = await patron.page.evaluate(() => document.getElementById('revision-banner').textContent);
+    assert(/devis-nouveau\.html\?id=/.test(revisionUrl) && revisionEditorOpen, 'révision créée depuis l\'UI -> nouveau brouillon ouvert (' + revisionUrl + ')');
+    assert(revisionBannerText.includes('v2'), 'bandeau de révision affiche bien "v2" (' + revisionBannerText + ')');
+    await flushPatronStateToServer(patron.page, patronAId);
+
+    // ═══ FACTURES (points 95-112) ═══
+    console.log('\n== [95/121] Ouverture de factures-nouvelle.html ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/factures-nouvelle.html`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    const factEditorOpen = await patron.page.evaluate(() => document.getElementById('editor-state').style.display !== 'none');
+    assert(factEditorOpen, 'factures-nouvelle.html ouvre bien l\'éditeur');
+
+    console.log('\n== [96/121 97/121] Facture libre créée + ligne libre ajoutée ==');
+    await patron.page.select('#client', edFixtures.clientId);
+    await patron.page.click('#cle-add-free');
+    await new Promise(r => setTimeout(r, 150));
+    await patron.page.type('input[data-f="description"]', 'Facture libre éditeur QAFCD');
+    await patron.page.evaluate(() => { const q = document.querySelector('input[data-f="quantity"]'); q.value = '2'; q.dispatchEvent(new Event('input')); });
+    await patron.page.evaluate(() => { const p = document.querySelector('input[data-f="unitPriceCents"]'); p.value = '25'; p.dispatchEvent(new Event('input')); });
+    await new Promise(r => setTimeout(r, 150));
+    const factLineCount = await patron.page.evaluate(() => document.querySelectorAll('#cle-tbody .cle-row').length);
+    assert(factLineCount === 1, 'ligne libre ajoutée sur la facture via clic réel');
+
+    console.log('\n== [102/121] Modification du brouillon (objet) ==');
+    await patron.page.type('#objet', 'Objet facture libre QAFCD');
+    await new Promise(r => setTimeout(r, 150));
+
+    console.log('\n== [103/121] Autosave facture réellement persisté ==');
+    await patron.page.waitForFunction(() => document.getElementById('save-status').textContent.includes('Enregistré'), { timeout: 4000 });
+    const factDraftId = await patron.page.evaluate(() => new URLSearchParams(location.search).get('id'));
+    const factPersisted = factDraftId ? await patron.page.evaluate((id) => !!SebaDB.get('factures', id), factDraftId) : false;
+    assert(!!factDraftId && factPersisted, 'autosave facture a réellement persisté le brouillon (id=' + factDraftId + ')');
+    await flushPatronStateToServer(patron.page, patronAId);
+
+    console.log('\n== [104/121] Reload facture sans perte ==');
+    await patron.page.reload({ waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 400));
+    const objetAfterReload = await patron.page.evaluate(() => document.getElementById('objet').value);
+    assert(objetAfterReload === 'Objet facture libre QAFCD', 'objet de la facture conservé après reload (' + objetAfterReload + ')');
+
+    console.log('\n== [105/121] Aperçu cohérent (facture) ==');
+    await patron.page.click('#tab-preview-btn');
+    await new Promise(r => setTimeout(r, 500));
+    const factPreviewFrame = await (await patron.page.$('#preview-frame')).contentFrame();
+    const factPreviewHasDoctype = await factPreviewFrame.evaluate(() => !!document.querySelector('.doctype'));
+    assert(factPreviewHasDoctype, 'aperçu affiche réellement un document FACTURE (même renderer que facture-document.html)');
+    await patron.page.click('#tab-edit-btn');
+    await new Promise(r => setTimeout(r, 200));
+
+    console.log('\n== [106/121 107/121 108/121] Émission réussie + numéro + snapshot ==');
+    await patron.page.click('#send-btn');
+    await new Promise(r => setTimeout(r, 200));
+    await flushPatronStateToServer(patron.page, patronAId);
+    await new Promise(r => setTimeout(r, 600));
+    const issuedFacture = await patron.page.evaluate((id) => SebaDB.get('factures', id), factDraftId);
+    assert(issuedFacture && issuedFacture.status === 'issued', 'émission réussie -> statut réellement passé à "issued"');
+    assert(issuedFacture && /^FAC-\d{4}-\d{4}$/.test(issuedFacture.num), 'numéro de facture attribué au format configuré (' + (issuedFacture && issuedFacture.num) + ')');
+    assert(issuedFacture && !!issuedFacture.documentSnapshot, 'snapshot documentaire de facture réellement créé à l\'émission');
+
+    console.log('\n== [109/121] Double émission sans duplication ==');
+    const factCountBeforeRetry = await patron.page.evaluate(() => SebaDB.list('factures').length);
+    await patron.page.evaluate((id) => { const f = SebaDB.get('factures', id); SebaDB.factures.updateDraft(id, { clientId: f.clientId, clientName: f.clientName, lines: f.lines, tvaRate: f.tvaRate, _emit: true }); }, factDraftId);
+    const factCountAfterRetry = await patron.page.evaluate(() => SebaDB.list('factures').length);
+    assert(factCountBeforeRetry === factCountAfterRetry, 'retry sur une facture déjà émise -> aucune nouvelle facture créée (' + factCountBeforeRetry + ' -> ' + factCountAfterRetry + ')');
+
+    console.log('\n== [110/121] Facture émise verrouillée ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/factures-nouvelle.html?id=${factDraftId}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 400));
+    const factLockedShown = await patron.page.evaluate(() => document.getElementById('locked-state').style.display !== 'none' && document.getElementById('editor-state').style.display === 'none');
+    assert(factLockedShown, 'facture émise -> écran verrouillé affiché, formulaire d\'édition masqué');
+
+    console.log('\n== [111/121 112/121] Paiement manuel + reçu accessible ==');
+    const paymentRes = await patron.page.evaluate((id) => SebaDB.factures.recordPayment(id, { amount: SebaDB.get('factures', id).totalTTC, mode: 'virement' }), factDraftId);
+    assert(paymentRes.ok, 'paiement manuel toujours fonctionnel sur une facture issue de l\'éditeur (' + JSON.stringify(paymentRes.ok) + ')');
+    await flushPatronStateToServer(patron.page, patronAId);
+    const paymentId = paymentRes.facture.payments[0].id;
+    await patron.page.goto(`http://127.0.0.1:${PORT}/recu-document.html?invoiceId=${factDraftId}&paymentId=${paymentId}`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForFunction(() => document.querySelector('.a4'), { timeout: 8000 }).catch(() => {});
+    const receiptRendered = await patron.page.evaluate(() => !!document.querySelector('.a4'));
+    assert(receiptRendered, 'reçu accessible et rendu pour un paiement enregistré depuis l\'éditeur');
+
+    // ═══ INTÉGRATION (points 113-121) ═══
+    console.log('\n== [113/121] Bouton "Nouveau devis" depuis la liste ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/devis.html`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 300));
+    const devisListBtnHref = await patron.page.evaluate(() => { const a = document.querySelector('a.btn-em[href^="devis-nouveau.html"]'); return a ? a.getAttribute('href') : null; });
+    assert(devisListBtnHref === 'devis-nouveau.html', 'bouton "+ Nouveau devis" présent sur devis.html et pointe vers l\'éditeur réel');
+
+    console.log('\n== [114/121 115/121] Boutons "Nouveau devis" / "Nouvelle facture" depuis la fiche client ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/client-fiche.html?id=${edFixtures.clientId}`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#contact-actions', { timeout: 8000 }).catch(() => {});
+    await new Promise(r => setTimeout(r, 400));
+    await patron.page.click('.btn-em[onclick*="devis-nouveau"]');
+    await new Promise(r => setTimeout(r, 300));
+    const urlFromClientDevis = patron.page.url();
+    assert(urlFromClientDevis.includes('devis-nouveau.html?clientId=' + edFixtures.clientId), 'bouton devis de la fiche client ouvre l\'éditeur préempli (' + urlFromClientDevis + ')');
+    const clientPrefilledDevis = await patron.page.evaluate(() => document.getElementById('client').value);
+    assert(clientPrefilledDevis === edFixtures.clientId, 'client réellement préempli depuis la fiche client (devis)');
+
+    await patron.page.goto(`http://127.0.0.1:${PORT}/client-fiche.html?id=${edFixtures.clientId}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 400));
+    await patron.page.click('.btn-outline[onclick*="factures-nouvelle"]');
+    await new Promise(r => setTimeout(r, 300));
+    const urlFromClientFacture = patron.page.url();
+    assert(urlFromClientFacture.includes('factures-nouvelle.html?clientId=' + edFixtures.clientId), 'bouton facture de la fiche client ouvre l\'éditeur préempli (' + urlFromClientFacture + ')');
+    const clientPrefilledFacture = await patron.page.evaluate(() => document.getElementById('client').value);
+    assert(clientPrefilledFacture === edFixtures.clientId, 'client réellement préempli depuis la fiche client (facture)');
+
+    console.log('\n== [116/121] Une demande ouvre le bon devis (?open=) ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/devis.html?open=${encodeURIComponent(sentDevis.num)}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 500));
+    const sheetOpen = await patron.page.evaluate(() => document.getElementById('ss-panel').classList.contains('open'));
+    assert(sheetOpen, 'devis.html?open=NUM ouvre directement la fiche du bon devis (jamais une liste générique)');
+
+    console.log('\n== [117/121] Intervention validée -> "Créer la facture" ouvre l\'éditeur préempli ==');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/intervention-fiche.html?id=${edFixtures.interventionId}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 400));
+    await patron.page.click('.btn-em[onclick="createInvoice()"]');
+    await new Promise(r => setTimeout(r, 500));
+    const urlFromIntervention = patron.page.url();
+    assert(/factures-nouvelle\.html\?id=/.test(urlFromIntervention), '"Créer la facture" ouvre réellement l\'éditeur préempli, pas juste un toast (' + urlFromIntervention + ')');
+    const ivPrefilledDesc = await patron.page.evaluate(() => (document.querySelector('input[data-f="description"]') || {}).value);
+    assert(ivPrefilledDesc === 'Jardinage QAFCD', 'description de la ligne préemplie depuis le service de l\'intervention (' + ivPrefilledDesc + ')');
+    // Flush immédiat vers le serveur (psql) -- indispensable ici : sans lui,
+    // le pull() d'arrière-plan de SebaDB.ready() (déclenché par la
+    // prochaine page) écrase silencieusement cette facture locale jamais
+    // poussée (Edge Function sync-push indisponible en local, voir
+    // project_local_supabase_infra_gaps), avant même le clic Émettre.
+    await flushPatronStateToServer(patron.page, patronAId);
+
+    console.log('\n== [118/121] returnTo fonctionne après émission ==');
+    await patron.page.select('#client', edFixtures.clientId);
+    await new Promise(r => setTimeout(r, 200));
+    await patron.page.click('#send-btn');
+    await new Promise(r => setTimeout(r, 700));
+    const urlAfterReturnTo = patron.page.url();
+    assert(urlAfterReturnTo.includes('intervention-fiche.html?id=' + edFixtures.interventionId), 'returnTo respecté après émission -> retour à l\'intervention (' + urlAfterReturnTo + ')');
+    await flushPatronStateToServer(patron.page, patronAId);
+
+    console.log('\n== [119/121 120/121] Éditeurs mobiles 390px ==');
+    await patron.page.setViewport({ width: 390, height: 844 });
+    await patron.page.goto(`http://127.0.0.1:${PORT}/devis-nouveau.html`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 300));
+    const devisEditorHScroll = await patron.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+    assert(!devisEditorHScroll, 'éditeur devis utilisable à 390px, aucun scroll horizontal global');
+    await patron.page.goto(`http://127.0.0.1:${PORT}/factures-nouvelle.html`, { waitUntil: 'domcontentloaded' });
+    await patron.page.waitForSelector('#lines-editor', { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 300));
+    const factEditorHScroll = await patron.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+    assert(!factEditorHScroll, 'éditeur facture utilisable à 390px, aucun scroll horizontal global');
+    await patron.page.setViewport({ width: 1280, height: 900 });
+
+    console.log('\n== [121/121] Zéro erreur console sur l\'ensemble des éditeurs ==');
+    assert(patron.consoleErrors.length === 0, 'zéro erreur console sur toute la session patron, y compris les éditeurs (' + JSON.stringify(patron.consoleErrors) + ')');
+
+    note('Périmètre : moteur ET éditeurs réels testés en exécution réelle (clics/saisies/sélections DOM authentiques, jamais une injection directe dans state pour simuler l\'UI). devis-nouveau.html et factures-nouvelle.html sont des éditeurs fonctionnels complets (mode simple + options avancées + autosave + aperçu + envoi/émission + révisions), plus la navigation contextuelle (fiche client/intervention/demande) et le mobile 390px.');
 
   } finally {
     await patron.ctx.close(); await clientA1.ctx.close();

@@ -289,17 +289,29 @@
       const sourceLink = f.devisId
         ? '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'devis.html?open=' + encodeURIComponent((SebaDB.get('devis', f.devisId) || {}).num || '') + '\'" title="Devis source">Devis source</span> · '
         : (f.interventionId ? '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'intervention-fiche.html?id=' + encodeURIComponent(f.interventionId) + '\'" title="Intervention source">Intervention source</span> · ' : '');
+      // Brouillon (feature/flexible-commercial-documents, éditeurs) --
+      // aucune action financière n'a de sens tant que la facture n'est pas
+      // émise (pas de numéro, pas de snapshot, pas de paiement possible) :
+      // uniquement Modifier/Aperçu/Dupliquer, jamais Payer/PDF/Email.
+      const isDraft = SebaDB.factures.isDraft(f);
+      const draftActions = isDraft
+        ? '<span style="cursor:pointer;font-weight:600;color:var(--emerald);" onclick="location.href=\'factures-nouvelle.html?id=' + f.id + '\'" title="Compléter et émettre">Modifier le brouillon</span> · ' +
+          '<span style="cursor:pointer;font-weight:600;" onclick="duplicateFactureDraft(\'' + f.id + '\')" title="Dupliquer en brouillon">Dupliquer</span>'
+        : '';
+      const issuedActions = !isDraft
+        ? ((canPay ? '<span style="cursor:pointer;font-weight:600;color:var(--emerald);" onclick="openPaymentModal(\'' + f.id + '\')">Enregistrer un paiement</span> · ' : '') +
+          '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'facture-document.html?id=' + f.id + '\'" title="Voir le document imprimable">Voir le document</span> · ' +
+          '<span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
+          (canPay ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
+          ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>')
+        : '';
       return '<tr data-fid="' + f.id + '"><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
         '<td class="amount">' + total + ' ' + sym + soldeLine + '</td>' +
         '<td><span class="badge ' + s.cls + '">' + s.lbl + '</span></td>' +
         '<td class="row-action">' +
         sourceLink +
         (s.act ? '<span data-id="' + f.id + '" data-act="' + s.act + '" style="cursor:pointer">' + s.act + '</span> · ' : '') +
-        (canPay ? '<span style="cursor:pointer;font-weight:600;color:var(--emerald);" onclick="openPaymentModal(\'' + f.id + '\')">Enregistrer un paiement</span> · ' : '') +
-        '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'facture-document.html?id=' + f.id + '\'" title="Voir le document imprimable">Voir le document</span> · ' +
-        '<span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
-        (canPay ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
-        ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>' +
+        draftActions + issuedActions +
         '</td></tr>';
     }).join('');
     tbody.querySelectorAll('[data-id]').forEach(el => {
@@ -320,6 +332,12 @@
   function sendFactureEmail(id) {
     const f = SebaDB.get('factures', id);
     if (f && window.sebaEmail) sebaEmail.sendDocument(f, 'facture');
+  }
+
+  function duplicateFactureDraft(id) {
+    const res = SebaDB.factures.duplicate(id);
+    if (!res.ok) { if (window.showFactToast) showFactToast(res.error || 'Échec de la duplication.'); return; }
+    location.href = 'factures-nouvelle.html?id=' + encodeURIComponent(res.facture.id);
   }
 
   /* ── Enregistrement de paiement (partiel/total) — solde/statut TOUJOURS

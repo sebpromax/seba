@@ -14,16 +14,8 @@
 <script src="guard.js"></script>
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
+<link rel="stylesheet" href="commercial-editor.css">
 <style>
-:root{
-  /* Ombres propres à cette page (dropdown/carte/ticket) -- valeurs
-     identiques à devis-nouveau.html pour rester cohérent visuellement
-     entre les deux formulaires, extraites en token car aucune des
-     --shadow-sm/md/lg de theme.css ne correspond exactement. */
-  --dropdown-shadow: 0 4px 16px rgba(0,0,0,.08);
-  --card-shadow: 0 1px 3px rgba(0,0,0,.3);
-  --ticket-shadow: 0 20px 40px -16px rgba(0,0,0,.12);
-}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -33,114 +25,79 @@
   button,input,select,textarea{font-family:'Inter',sans-serif;}
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
-  /* LAYOUT */
   .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
-
-  /* MAIN */
   .main{padding:32px 40px;}
   .fiche-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
   .back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-2);margin-bottom:0;}
   .back-link:hover{color:var(--emerald);}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--emerald);color:var(--on-emerald);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;cursor:pointer;user-select:none;}
   .avatar-wrap{position:relative;}
-  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:var(--dropdown-shadow);display:none;}
+  .user-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:6px;min-width:168px;z-index:200;box-shadow:var(--shadow-md);display:none;}
   .user-menu.open{display:block;}
   .user-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:0.88rem;color:var(--ink);}
   .user-menu a:hover{background:var(--bg);}
   .user-menu .menu-sep{height:1px;background:var(--border);margin:4px 0;}
   .user-menu .menu-deconnect{color:var(--text-2);}
-  .form-wrap{max-width:640px;}
+  .form-wrap{max-width:920px;}
 
-  /* CARD */
-  .card{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:36px 40px;box-shadow:var(--card-shadow);}
+  .card{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--border);border-radius:var(--r);padding:28px 32px;box-shadow:var(--shadow-sm);margin-bottom:18px;}
   .card-ref{font-size:0.75rem;color:var(--emerald);letter-spacing:0.05em;text-transform:uppercase;display:block;margin-bottom:10px;}
-  .card h2{font-size:1.6rem;margin-bottom:6px;}
-  .card .sub{color:var(--text-2);font-size:0.88rem;margin-bottom:30px;}
+  .card h2{font-size:1.4rem;margin-bottom:4px;}
+  .card .sub{color:var(--text-2);font-size:0.86rem;margin-bottom:20px;}
 
-  /* FIELDS */
-  .field-group{margin-bottom:20px;}
-  .field-group label{display:block;font-size:0.84rem;font-weight:500;margin-bottom:8px;color:var(--ink);}
+  .field-group{margin-bottom:16px;}
+  .field-group label{display:block;font-size:0.84rem;font-weight:500;margin-bottom:6px;color:var(--ink);}
   .field-group label .opt{font-weight:400;color:var(--text-2);font-size:0.8rem;}
-  .field-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.92rem;background:var(--bg);color:var(--ink);transition:border-color .15s;}
+  .field-input{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.9rem;background:var(--bg);color:var(--ink);}
   .field-input:focus{border-color:var(--emerald);outline:none;}
-  select.field-input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6A6F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
-  textarea.field-input{resize:vertical;min-height:80px;line-height:1.5;}
-
-  /* NEW CLIENT FIELDS */
-  .new-client-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-top:12px;animation:fadeIn .2s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
-  .state-fade-in{animation:fadeIn .2s ease;}
+  select.field-input{cursor:pointer;}
+  textarea.field-input{resize:vertical;min-height:70px;line-height:1.5;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .new-client-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-top:10px;}
 
-  /* QTY + TOTAL */
-  .qty-total-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;margin-bottom:20px;}
-  .total-box{background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--emerald);color:var(--ink);border-radius:var(--rs);padding:11px 20px;text-align:center;min-width:130px;flex-shrink:0;transition:opacity .15s;}
-  .total-box .total-label{font-size:0.68rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;}
-  .total-box .total-amount{font-size:1.5rem;font-weight:700;color:var(--emerald);}
-  #dyn-fields{animation:fadeIn .18s ease;}
+  .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);}
+  .tab-btn{background:none;border:none;padding:10px 18px;font-size:0.9rem;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab-btn.active{color:var(--emerald);border-bottom-color:var(--emerald);font-weight:600;}
 
-  /* DIVIDER */
-  .divider{border:none;border-top:1px solid var(--border);margin:26px 0;}
+  .adv-toggle{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:0.9rem;font-weight:600;margin-bottom:14px;}
+  .adv-toggle .chev{transition:transform .15s;}
+  .adv-toggle.open .chev{transform:rotate(180deg);}
+  .adv-body{display:none;}
+  .adv-body.open{display:block;}
+  .adv-section{margin-bottom:18px;}
+  .adv-section h4{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-2);margin-bottom:10px;}
+  .checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;font-size:0.86rem;}
+  .checkbox-row input{width:auto;}
 
-  /* ACTIONS */
-  .form-actions{display:flex;justify-content:space-between;align-items:center;margin-top:28px;}
-  .btn-cancel{font-size:0.9rem;color:var(--text-2);padding:11px 20px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);cursor:pointer;}
+  .totals-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;margin:16px 0;}
+  .totals-box .row{display:flex;justify-content:space-between;font-size:0.86rem;color:var(--text-2);margin-bottom:4px;}
+  .totals-box .row b{color:var(--ink);font-weight:600;}
+  .totals-box .row.grand{font-size:1.05rem;font-weight:700;margin-top:6px;padding-top:8px;border-top:1px dashed var(--border);}
+  .totals-box .row.grand span:last-child{color:var(--emerald);}
+
+  .warn-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;font-size:0.83rem;color:var(--text-2);margin-bottom:14px;}
+  .warn-list.blocking{border-color:var(--critical);color:var(--critical);}
+  .warn-list ul{margin:6px 0 0 18px;}
+
+  .form-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;flex-wrap:wrap;gap:12px;}
+  .btn-cancel{font-size:0.9rem;color:var(--text-2);padding:10px 18px;border:1px solid var(--border);border-radius:var(--rs);background:var(--white);cursor:pointer;}
   .btn-cancel:hover{border-color:var(--ink);color:var(--ink);}
-  .btn-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:12px 26px;border-radius:var(--rs);font-weight:700;font-size:0.95rem;cursor:pointer;transition:opacity .15s,transform .15s;}
-  .btn-send:hover{opacity:.88;transform:translateY(-1px);}
+  .btn-send{background:var(--emerald);color:var(--on-emerald);border:none;padding:11px 24px;border-radius:var(--rs);font-weight:700;font-size:0.92rem;cursor:pointer;}
+  .btn-send:hover{opacity:.88;}
+  .btn-send:disabled{opacity:.5;cursor:not-allowed;}
+  .save-status{font-size:0.8rem;color:var(--text-2);}
 
-  /* CHAMPS TARIFAIRES DYNAMIQUES */
-  .dyn-fields{margin-bottom:20px;}
-  .dyn-note{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;font-size:0.85rem;color:var(--text-2);}
+  .source-banner{background:var(--bg);border:1px solid var(--emerald);border-radius:var(--rs);padding:10px 14px;font-size:0.84rem;margin-bottom:16px;}
 
-  /* CHOIX DU TYPE (même patron que devis-nouveau.html) */
-  .template-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
-  .template-card{text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:var(--rs);padding:16px 18px;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;font-family:inherit;}
-  .template-card:hover{border-color:var(--emerald);transform:translateY(-1px);}
-  .template-card:active{transform:scale(.98);background:var(--white);}
-  .template-card .tpl-name{font-weight:600;font-size:0.94rem;margin-bottom:4px;}
-  .template-card .tpl-desc{font-size:0.8rem;color:var(--text-2);line-height:1.4;}
-  @media (max-width:980px){.template-grid{grid-template-columns:1fr;}}
-  .active-template{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:10px 16px;margin-bottom:22px;font-size:0.84rem;}
-  .active-template b{color:var(--ink);}
-  .active-template a{color:var(--emerald);font-weight:500;}
-  #type-fields{animation:fadeIn .18s ease;}
-
-  /* FACTURE GROUPÉE */
-  .groupee-line{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
-  .groupee-line .gl-desc{flex:1;margin-bottom:0;}
-  .groupee-line .gl-amount{width:110px;margin-bottom:0;}
-  .groupee-line .gl-remove{cursor:pointer;color:var(--text-2);font-size:1.2rem;flex-shrink:0;line-height:1;}
-  .groupee-line .gl-remove:hover{color:var(--critical);}
-  .add-line{font-size:0.84rem;color:var(--emerald);cursor:pointer;display:inline-block;margin-top:2px;margin-bottom:20px;}
-
-  /* CONFIRMATION */
-  .confirm-wrap{text-align:center;padding:20px 0;}
-  .confirm-wrap h2{font-size:1.6rem;margin-bottom:8px;}
-  .confirm-wrap .sub{color:var(--text-2);font-size:0.9rem;margin-bottom:32px;}
-  .ticket{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:24px 26px 20px;max-width:360px;margin:0 auto 32px;text-align:left;position:relative;box-shadow:var(--ticket-shadow);}
-  .ticket-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--border);padding-bottom:12px;margin-bottom:14px;}
-  .ticket-head .tnum{font-size:0.76rem;color:var(--text-2);}
-  .ticket-head .tlabel{font-weight:600;font-size:0.93rem;}
-  .ticket-row{display:flex;justify-content:space-between;font-size:0.86rem;padding:5px 0;color:var(--text-2);}
-  .ticket-row b{color:var(--ink);font-weight:500;}
-  .stamp-check{position:absolute;right:16px;bottom:12px;display:flex;align-items:center;gap:7px;}
-  .stamp-check svg{width:30px;height:30px;}
-  .stamp-check-circle{fill:none;stroke:var(--emerald);stroke-width:2.5;stroke-dasharray:145;stroke-dashoffset:145;animation:stampCircle .5s ease forwards;}
-  .stamp-check-path{fill:none;stroke:var(--emerald);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:stampCheck .35s ease forwards .4s;}
-  .stamp-label{font-weight:700;font-size:.85rem;color:var(--emerald);letter-spacing:.03em;opacity:0;animation:stampLabelIn .3s ease forwards .7s;}
-  @keyframes stampCircle{to{stroke-dashoffset:0;}}
-  @keyframes stampCheck{to{stroke-dashoffset:0;}}
-  @keyframes stampLabelIn{to{opacity:1;}}
-  .btn-back{display:inline-block;background:var(--ink);color:var(--bg);padding:13px 26px;border-radius:var(--rs);font-weight:600;font-size:0.92rem;}
-  .btn-back:hover{opacity:.88;}
+  #preview-frame{width:100%;min-height:900px;border:1px solid var(--border);border-radius:var(--rs);background:var(--border);}
 
   @media (max-width:980px){
     .layout{grid-template-columns:1fr;}
-    .main{padding:24px 20px;}
-    .card{padding:24px 22px;}
-    .field-row{grid-template-columns:1fr;}
-    .qty-total-row{grid-template-columns:1fr;}
+    .main{padding:20px 14px;}
+    .card{padding:18px 16px;}
+    .field-row,.field-row-3,.checkbox-grid{grid-template-columns:1fr;}
   }
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -150,24 +107,18 @@
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 </head>
 <body>
-<!-- Bandeau d'identité fixe (nom + secteur), cohérent avec le dashboard --
-     voir docs/identity-bar.js. -->
 <div id="identity-bar" class="identity-bar"></div>
 <script src="businessTypes.js"></script>
 <script src="identity-bar.js"></script>
-<script src="services/pricing-model-registry.js"></script>
-<script src="services/quote-engine.js"></script>
 <div class="layout">
 
-    <div class="mobile-header">
+  <div class="mobile-header">
     <div class="mobile-logo"><div class="mobile-logo-dot"></div><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
     <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" onclick="toggleSidebar()">
       <span></span><span></span><span></span>
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-  <!-- Sidebar générée par sidebar.js (source unique de vérité), même
-       principe que devis-nouveau.html. Voir docs/sidebar.js. -->
   <nav class="sidebar"></nav>
   <script src="sidebar.js"></script>
   <script>
@@ -192,105 +143,142 @@
 
     <div class="form-wrap">
 
-      <!-- CHOIX DU TYPE -->
-      <div id="picker-state">
-        <div class="card">
-          <span class="card-ref">Nouvelle facture</span>
-          <h2>Quel type de facture ?</h2>
-          <p class="sub">Le formulaire s'adapte au type choisi.</p>
-          <div class="template-grid" id="template-grid"></div>
-        </div>
+      <!-- Conversion depuis un devis accepté : aucune ressaisie, la facture
+           existe déjà 'issued' -- redirection directe vers le document. -->
+      <div id="converting-state" style="display:none;">
+        <div class="card"><h2>Conversion du devis…</h2><p class="sub" id="converting-status">Reprise des lignes et montants, sans ressaisie.</p></div>
       </div>
 
-      <!-- FORMULAIRE -->
-      <div id="form-state" style="display:none;">
+      <!-- Facture déjà émise : verrouillée, jamais éditable directement. -->
+      <div id="locked-state" style="display:none;">
         <div class="card">
-          <span class="card-ref">Nouvelle facture</span>
-          <h2>Créer une facture</h2>
-          <p class="sub">Pour une prestation déjà réalisée, sans passer par un devis.</p>
-
-          <div class="active-template">
-            <span>Type : <b id="active-type-name">—</b></span>
-            <a href="#" id="change-type-link">← Changer de type</a>
-          </div>
-
-          <!-- CLIENT -->
-          <div class="field-group">
-            <label for="client">Client</label>
-            <select id="client" class="field-input">
-              <option value="">— Sélectionnez un client —</option>
-              <!-- clients remplis depuis SebaDB -->
-              <option value="new">+ Nouveau client</option>
-            </select>
-          </div>
-
-          <div id="new-client-block" class="new-client-block" style="display:none;">
-            <div class="field-group" style="margin-bottom:14px;">
-              <label for="new-name">Nom complet</label>
-              <input type="text" id="new-name" class="field-input" placeholder="Prénom Nom">
-            </div>
-            <div class="field-row">
-              <div class="field-group" style="margin-bottom:0;">
-                <label for="new-email">Email</label>
-                <input type="email" id="new-email" class="field-input" placeholder="email@exemple.fr">
-              </div>
-              <div class="field-group" style="margin-bottom:0;">
-                <label for="new-phone">Téléphone</label>
-                <input type="tel" id="new-phone" class="field-input" placeholder="06 00 00 00 00">
-              </div>
-            </div>
-          </div>
-
-          <hr class="divider">
-
-          <!-- CHAMPS PROPRES AU TYPE CHOISI -->
-          <div id="type-fields"></div>
-
-          <hr class="divider">
-
-          <!-- DATE -->
-          <div class="field-group">
-            <label for="date">Date de la prestation</label>
-            <input type="date" id="date" class="field-input">
-          </div>
-
-          <!-- NOTES -->
-          <div class="field-group">
-            <label for="notes">Notes <span class="opt">(optionnel)</span></label>
-            <textarea id="notes" class="field-input" placeholder="Précisions sur la prestation…"></textarea>
-          </div>
-
-          <!-- ACTIONS -->
+          <span class="card-ref">Facture <span id="locked-num"></span></span>
+          <h2>Cette facture a déjà été émise.</h2>
+          <p class="sub">Le contenu financier est verrouillé. Pour la corriger, dupliquez-la en nouveau brouillon.</p>
           <div class="form-actions">
-            <a href="factures.html" class="btn-cancel">Annuler</a>
-            <button class="btn-send" onclick="sendFacture()">Créer la facture →</button>
+            <a href="factures.html" class="btn-cancel">← Retour aux factures</a>
+            <span style="display:flex;gap:10px;">
+              <a class="btn-cancel" id="locked-view-link" href="#">Voir le document</a>
+              <button class="btn-send" id="locked-duplicate-btn">Dupliquer en brouillon →</button>
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- CONFIRMATION -->
-      <div id="confirm-state" style="display:none;">
-        <div class="card confirm-wrap">
-          <h2>Facture créée.</h2>
-          <p class="sub" id="conf-email-status">Envoi de l'email au client…</p>
-          <div class="ticket">
-            <div class="ticket-head">
-              <span class="tnum">#F-0001</span>
-              <span class="tlabel">Facture</span>
+      <div id="editor-state">
+        <div class="card">
+          <span class="card-ref" id="card-ref">Nouvelle facture</span>
+          <h2 id="card-title">Créer une facture</h2>
+          <p class="sub">Client, prestations, émettez — les options avancées restent facultatives.</p>
+
+          <div class="source-banner" id="source-banner" style="display:none;"></div>
+
+          <div class="tabs">
+            <button type="button" class="tab-btn active" id="tab-edit-btn" onclick="showTab('edit')">Édition</button>
+            <button type="button" class="tab-btn" id="tab-preview-btn" onclick="showTab('preview')">Aperçu</button>
+          </div>
+
+          <!-- ═══ ONGLET ÉDITION ═══ -->
+          <div id="tab-edit">
+            <div class="field-group">
+              <label for="client">Client</label>
+              <select id="client" class="field-input">
+                <option value="">— Sélectionnez un client —</option>
+                <option value="new">+ Nouveau client</option>
+              </select>
             </div>
-            <div class="ticket-row"><span>Client</span><b id="conf-client">—</b></div>
-            <div class="ticket-row"><span>Service</span><b id="conf-service">—</b></div>
-            <div class="ticket-row"><span>Montant</span><b id="conf-amount">—</b></div>
-            <div class="ticket-row"><span>Date</span><b id="conf-date">—</b></div>
-            <div class="stamp-check">
-              <svg viewBox="0 0 52 52" aria-hidden="true">
-                <circle class="stamp-check-circle" cx="26" cy="26" r="23"/>
-                <path class="stamp-check-path" d="M14 27l7 7 16-16"/>
-              </svg>
-              <span class="stamp-label">Créée</span>
+            <div id="new-client-block" class="new-client-block" style="display:none;">
+              <div class="field-group" style="margin-bottom:10px;">
+                <label for="new-name">Nom complet</label>
+                <input type="text" id="new-name" class="field-input" placeholder="Prénom Nom">
+              </div>
+              <div class="field-row">
+                <div class="field-group" style="margin-bottom:0;"><label for="new-email">Email</label><input type="email" id="new-email" class="field-input" placeholder="email@exemple.fr"></div>
+                <div class="field-group" style="margin-bottom:0;"><label for="new-phone">Téléphone</label><input type="tel" id="new-phone" class="field-input" placeholder="06 00 00 00 00"></div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="objet">Objet de la facture</label>
+              <input type="text" id="objet" class="field-input" placeholder="Ex. Ménage mensuel, rénovation salle de bain…">
+            </div>
+
+            <div id="lines-editor"></div>
+
+            <div class="totals-box" id="totals-box">
+              <div class="row"><span>Total HT</span><b id="t-ht">0,00 €</b></div>
+              <div class="row" id="t-discount-row" style="display:none;"><span>Remise</span><b id="t-discount">0,00 €</b></div>
+              <div class="row"><span>TVA</span><b id="t-tva">0,00 €</b></div>
+              <div class="row grand"><span>Total TTC</span><span id="t-ttc">0,00 €</span></div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-group">
+                <label for="tva-rate">TVA par défaut du document</label>
+                <select id="tva-rate" class="field-input">
+                  <option value="20" selected>20 %</option>
+                  <option value="10">10 %</option>
+                  <option value="5.5">5,5 %</option>
+                  <option value="0">0 % (exonéré)</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="due-date">Date d'échéance <span class="opt">(optionnel)</span></label>
+                <input type="date" id="due-date" class="field-input">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="conditions">Note / modalités visibles par le client <span class="opt">(optionnel)</span></label>
+              <textarea id="conditions" class="field-input" placeholder="Ex. Paiement à réception, virement bancaire uniquement."></textarea>
+            </div>
+
+            <!-- ═══ OPTIONS AVANCÉES (repliées par défaut) ═══ -->
+            <div class="adv-toggle" id="adv-toggle" onclick="toggleAdvanced()">
+              <span>Options avancées</span>
+              <span class="chev">▾</span>
+            </div>
+            <div class="adv-body" id="adv-body">
+              <div class="adv-section">
+                <h4>Commercial</h4>
+                <div class="field-row-3">
+                  <div class="field-group"><label for="remise-value">Remise <span class="opt">(optionnel)</span></label><input type="number" id="remise-value" class="field-input" min="0" step="0.5" placeholder="0"></div>
+                  <div class="field-group"><label for="remise-type">Type de remise</label><select id="remise-type" class="field-input"><option value="amount">€</option><option value="percent">%</option></select></div>
+                  <div class="field-group"><label for="client-reference">Référence client</label><input type="text" id="client-reference" class="field-input"></div>
+                </div>
+                <div class="field-group"><label for="internal-reference">Référence interne <span class="opt">(jamais visible du client)</span></label><input type="text" id="internal-reference" class="field-input"></div>
+              </div>
+              <div class="adv-section">
+                <h4>Adresses</h4>
+                <div class="field-row">
+                  <div class="field-group"><label for="billing-address">Adresse de facturation <span class="opt">(optionnel)</span></label><textarea id="billing-address" class="field-input" style="min-height:50px;"></textarea></div>
+                  <div class="field-group"><label for="service-address">Adresse de prestation <span class="opt">(optionnel)</span></label><textarea id="service-address" class="field-input" style="min-height:50px;"></textarea></div>
+                </div>
+                <div class="checkbox-row"><input type="checkbox" id="update-client-fiche"><label for="update-client-fiche" style="margin:0;">Mettre également à jour la fiche client</label></div>
+              </div>
+              <div class="adv-section">
+                <h4>Affichage sur ce document</h4>
+                <div class="checkbox-grid" id="display-prefs-grid"></div>
+                <button type="button" class="btn-cancel" style="margin-top:10px;font-size:0.82rem;padding:8px 14px;" onclick="useAsDefaultPrefs()">Utiliser comme réglages par défaut</button>
+              </div>
+            </div>
+
+            <div id="validation-box"></div>
+
+            <div class="form-actions">
+              <a href="factures.html" class="btn-cancel">Annuler</a>
+              <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <span class="save-status" id="save-status"></span>
+                <button class="btn-cancel" id="save-now-btn" onclick="saveNow()">Enregistrer maintenant</button>
+                <button class="btn-send" id="send-btn" onclick="emitFacture()">Émettre la facture →</button>
+              </span>
             </div>
           </div>
-          <a href="factures.html" class="btn-back">← Retour aux factures</a>
+
+          <!-- ═══ ONGLET APERÇU ═══ -->
+          <div id="tab-preview" style="display:none;">
+            <iframe id="preview-frame" title="Aperçu de la facture"></iframe>
+          </div>
         </div>
       </div>
 
@@ -299,502 +287,383 @@
 </div>
 
 <script src="seba-data.js"></script>
-<script src="email-service.js"></script>
+<script src="commercial-document-render.js"></script>
+<script src="commercial-editor.js"></script>
 <script>
-  /* ── Conversion devis -> facture (feature/quote-to-cash, section 7 du
-     chantier) : ?devisId=X reprend les lignes/totaux du devis ACCEPTÉ sans
-     ressaisie. Recouvre le formulaire manuel d'un panneau plein écran
-     (jamais retiré du DOM -- le reste du script ci-dessous continue de
-     référencer #client/#new-name sans erreur) le temps de la redirection
-     vers factures.html une fois la facture créée. ── */
-  (function convertFromDevisIfRequested() {
-    const devisId = new URLSearchParams(location.search).get('devisId');
-    if (!devisId) return;
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML = '<div class="card" style="max-width:480px;"><h2>Conversion du devis…</h2><p class="sub" id="convert-status">Reprise des lignes et montants, sans ressaisie.</p></div>';
-    document.body.appendChild(overlay);
-    const res = SebaDB.factures.createFromDevis(devisId);
-    const statusEl = overlay.querySelector('#convert-status');
+const SCI = window.SebaClientIntelligence;
+const params = new URLSearchParams(location.search);
+let _editingId = params.get('id') || null;
+let _devisIdParam = params.get('devisId') || null;
+let _interventionIdParam = params.get('interventionId') || null;
+let _clientIdParam = params.get('clientId') || null;
+let _returnTo = params.get('returnTo') || null;
+
+function esc(s) { return SebaCommercialEditor.esc(s); }
+function showToast(msg) {
+  const ex = document.getElementById('_toast');
+  if (ex) ex.remove();
+  const t = document.createElement('div');
+  t.id = '_toast';
+  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C1D21;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.style.opacity = '0', 2800);
+  setTimeout(() => t.remove(), 3300);
+}
+
+let _existing = null;
+let _sending = false;
+let _saveTimer = null;
+let _lineEditor = null;
+let _displayOverrides = {};
+
+/* Point d'entrée async (IIFE) -- indispensable pour les deux conversions
+   ci-dessous : SebaDB.ready() (bas de seba-data.js) déclenche un
+   SupabaseAdapter.pull() d'arrière-plan à CHAQUE chargement de page ; si ce
+   pull résout APRÈS une écriture locale (facture tout juste créée ici, pas
+   encore poussée -- sync-push indisponible en local, voir project_local_
+   supabase_infra_gaps) il écrase silencieusement state avec la version
+   serveur périmée et fait disparaître la facture qu'on vient de créer.
+   On attend donc explicitement un rapatriement à jour AVANT toute création,
+   pour ne jamais courir contre ce pull. */
+(async function initPage() {
+  if (window.SebaDB && SebaDB.pullFromServer && (_devisIdParam || _interventionIdParam)) {
+    await SebaDB.pullFromServer().catch(() => {});
+  }
+
+  // ── Depuis un devis accepté (?devisId=) : aucune ressaisie, la facture
+  //    est créée 'issued' directement (moteur existant, jamais réécrit) --
+  //    redirige vers le document final. Idempotent via d.invoiceId. ──
+  if (!_editingId && _devisIdParam) {
+    document.getElementById('editor-state').style.display = 'none';
+    document.getElementById('converting-state').style.display = 'block';
+    const d = SebaDB.get('devis', _devisIdParam);
+    let res;
+    if (d && d.invoiceId) res = { ok: true, facture: SebaDB.get('factures', d.invoiceId) };
+    else res = SebaDB.factures.createFromDevis(_devisIdParam);
     if (!res.ok) {
-      if (statusEl) statusEl.textContent = res.error || 'Échec de la conversion.';
-      return;
+      document.getElementById('converting-status').textContent = res.error || 'Échec de la conversion.';
+    } else {
+      document.getElementById('converting-status').textContent = 'Facture ' + (res.facture.num || '') + ' créée — redirection…';
+      setTimeout(() => { location.href = 'facture-document.html?id=' + encodeURIComponent(res.facture.id); }, 400);
     }
-    if (statusEl) statusEl.textContent = 'Facture ' + res.facture.num + ' créée — redirection…';
-    setTimeout(() => { location.href = 'factures.html?highlight=' + res.facture.id; }, 500);
-  })();
+    return;
+  }
 
-  // Lecture des données d'entreprise depuis localStorage (onboarding)
-  let _ent = null;
-  try { _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null'); } catch(e) {}
+  // ── Depuis une intervention validée (?interventionId=) : brouillon
+  //    éditable préempli, idempotent (rouvre la facture déjà créée si elle
+  //    existe). ──
+  if (!_editingId && !_devisIdParam && _interventionIdParam) {
+    const res = SebaDB.interventions.createInvoiceFromIntervention(_interventionIdParam);
+    if (res.ok) {
+      _editingId = res.facture.id;
+      history.replaceState(null, '', 'factures-nouvelle.html?id=' + encodeURIComponent(_editingId));
+    } else {
+      showToast(res.error || 'Échec de la préparation de la facture.');
+    }
+  }
 
+  _existing = _editingId ? SebaDB.get('factures', _editingId) : null;
+  renderPage();
+})();
+
+function renderPage() {
+if (_existing && _existing.status !== 'draft') {
+  document.getElementById('editor-state').style.display = 'none';
+  document.getElementById('locked-state').style.display = 'block';
+  document.getElementById('locked-num').textContent = _existing.num || '';
+  document.getElementById('locked-view-link').href = 'facture-document.html?id=' + encodeURIComponent(_editingId);
+  document.getElementById('locked-duplicate-btn').addEventListener('click', () => {
+    const res = SebaDB.factures.duplicate(_editingId);
+    if (!res.ok) { alert(res.error || 'Échec de la duplication.'); return; }
+    location.href = 'factures-nouvelle.html?id=' + encodeURIComponent(res.facture.id);
+  });
+} else if (!_devisIdParam) {
+  initEditor();
+}
+}
+
+function initEditor() {
   const clientSel = document.getElementById('client');
+  const newBlock = document.getElementById('new-client-block');
 
-  /* Clients réels depuis le moteur de données (insérés avant "+ Nouveau client") */
   (function fillClients() {
     const newOpt = clientSel.querySelector('option[value="new"]');
     SebaDB.list('clients').forEach(c => {
       const o = document.createElement('option');
       o.value = c.id;
-      o.textContent = c.prenom + ' ' + c.nom;
+      o.textContent = (c.prenom + ' ' + c.nom).trim();
       clientSel.insertBefore(o, newOpt);
     });
   })();
-  const newBlock = document.getElementById('new-client-block');
-
   clientSel.addEventListener('change', () => {
     newBlock.style.display = clientSel.value === 'new' ? 'block' : 'none';
+    renderValidation(); // le client fait partie des erreurs bloquantes -- doit se réévaluer même sans toucher aux lignes
+    scheduleAutosave();
   });
 
+  if (_interventionIdParam && _existing) {
+    document.getElementById('source-banner').style.display = 'block';
+    document.getElementById('source-banner').textContent = 'Préremplie depuis la mission terrain — vérifiez le prix avant d\'émettre.';
+  }
+
+  let _ent = null;
+  try { _ent = JSON.parse(localStorage.getItem('sebaEntreprise') || 'null'); } catch (e) {}
   const secteur = (_ent && _ent.secteur) || 'autre';
-
-  const UNIT_LABELS = { square_meter: 'm²', window: 'vitre', room: 'pièce', km: 'km', item: 'unité', passage: 'passage' };
-  const PREFILL_FIELD = { hourly: 'dyn-hourlyRate', fixed: 'dyn-fixedPrice', unit: 'dyn-unitPrice', day_rate: 'dyn-dayRate' };
-
-  /* Modèles tarifaires disponibles pour la facture "standard" : contrairement
-     au devis, pas de 'subscription' (les factures récurrentes viennent des
-     contrats, voir services/contract-billing.js) ni de 'quote_only'
-     (facturer "sur étude" n'a pas de sens -- la prestation est déjà faite)
-     ni de 'included' (suppose un contrat/forfait englobant, absent ici). */
-  const FACTURE_PRICING_MODELS = ['hourly', 'fixed', 'unit', 'day_rate'];
-
-  /* ── Types de facture (même esprit que le sélecteur de format de
-     devis-nouveau.html, mais pas lié au secteur -- ce sont des scénarios de
-     facturation, pas des métiers) ── */
-  const FACTURE_TYPES = {
-    standard: { id: 'standard', name: 'Facture standard', description: 'Une prestation, facturée en une fois.' },
-    acompte: { id: 'acompte', name: "Facture d'acompte", description: 'Une avance sur un montant total à venir.' },
-    solde: { id: 'solde', name: 'Facture de solde', description: 'Le reste dû après un acompte déjà versé.' },
-    groupee: { id: 'groupee', name: 'Facture groupée', description: 'Plusieurs prestations réunies sur une seule facture (ex. fin de mois).' },
-  };
-  let activeType = null;
-  let groupeeLineSeq = 0;
-
-  function showState(id) {
-    const el = document.getElementById(id);
-    el.style.display = 'block';
-    el.classList.remove('state-fade-in');
-    void el.offsetHeight;
-    el.classList.add('state-fade-in');
-  }
-
-  function renderTypeGrid() {
-    const grid = document.getElementById('template-grid');
-    grid.innerHTML = Object.values(FACTURE_TYPES).map(t => `
-      <button type="button" class="template-card" data-id="${t.id}">
-        <div class="tpl-name">${t.name}</div>
-        <div class="tpl-desc">${t.description}</div>
-      </button>`).join('');
-    grid.querySelectorAll('.template-card').forEach(card => {
-      card.addEventListener('click', () => applyType(FACTURE_TYPES[card.dataset.id]));
-    });
-  }
-  renderTypeGrid();
-
-  function applyType(type) {
-    activeType = type.id;
-    document.getElementById('active-type-name').textContent = type.name;
-    renderTypeFields(type.id);
-    document.getElementById('picker-state').style.display = 'none';
-    showState('form-state');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  document.getElementById('change-type-link').addEventListener('click', e => {
-    e.preventDefault();
-    document.getElementById('form-state').style.display = 'none';
-    showState('picker-state');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  function currentServiceCatalog() {
-    const custom = (window.SebaDB ? SebaDB.list('custom_services') : []).filter(s => s.active !== false);
+  function currentCatalog() {
+    const custom = (SebaDB.list('custom_services') || []).filter(s => s.active !== false);
     if (custom.length > 0) return custom;
-    return (window.businessTypes[secteur] || {}).services || [];
+    return ((window.businessTypes && window.businessTypes[secteur]) || {}).services || [];
   }
 
-  /* ── Rendu des champs propres à chaque type, dans #type-fields ── */
-  function renderTypeFields(typeId) {
-    const box = document.getElementById('type-fields');
-    if (typeId === 'standard') {
-      box.innerHTML = `
-        <div class="field-group">
-          <label for="service">Service</label>
-          <select id="service" class="field-input"><option value="">— Sélectionnez un service —</option></select>
-        </div>
-        <div class="field-group" id="service-freetext-group" style="display:none;">
-          <label for="service-freetext">Nom de la prestation</label>
-          <input type="text" id="service-freetext" class="field-input" placeholder="Ex. Prestation sur mesure">
-        </div>
-        <div class="field-group">
-          <label for="pricing-model">Modèle tarifaire</label>
-          <select id="pricing-model" class="field-input"></select>
-        </div>
-        <div class="qty-total-row">
-          <div class="dyn-fields" id="dyn-fields"></div>
-          <div class="total-box"><span class="total-label">Total à facturer</span><span class="total-amount" id="total">— €</span></div>
-        </div>`;
-      initStandardFields();
-    } else if (typeId === 'acompte') {
-      box.innerHTML = `
-        <div class="field-group"><label for="ac-desc">Description</label>
-        <input type="text" id="ac-desc" class="field-input" placeholder="Ex. Rénovation salle de bain"></div>
-        <div class="field-group"><label for="ac-total">Montant total de la prestation (€)</label>
-        <input type="number" id="ac-total" class="field-input" min="0" step="1" placeholder="Ex. 2000"></div>
-        <div class="field-group"><label for="ac-mode">Type d'acompte</label>
-        <select id="ac-mode" class="field-input">
-          <option value="percent">Pourcentage du total</option>
-          <option value="fixed">Montant fixe</option>
-        </select></div>
-        <div class="field-group" id="ac-percent-group">
-          <label for="ac-percent">Pourcentage (%)</label>
-          <input type="number" id="ac-percent" class="field-input" min="1" max="100" step="1" value="30"></div>
-        <div class="field-group" id="ac-fixed-group" style="display:none;">
-          <label for="ac-fixed">Montant de l'acompte (€)</label>
-          <input type="number" id="ac-fixed" class="field-input" min="0" step="1" placeholder="Ex. 600"></div>
-        <div class="qty-total-row" style="grid-template-columns:1fr auto;">
-          <div></div>
-          <div class="total-box"><span class="total-label">Acompte à facturer</span><span class="total-amount" id="total">— €</span></div>
-        </div>`;
-      initAcompteFields();
-    } else if (typeId === 'solde') {
-      box.innerHTML = `
-        <div class="field-group"><label for="so-desc">Description</label>
-        <input type="text" id="so-desc" class="field-input" placeholder="Ex. Rénovation salle de bain"></div>
-        <div class="field-group"><label for="so-total">Montant total de la prestation (€)</label>
-        <input type="number" id="so-total" class="field-input" min="0" step="1" placeholder="Ex. 2000"></div>
-        <div class="field-group"><label for="so-acompte">Acompte déjà versé (€)</label>
-        <input type="number" id="so-acompte" class="field-input" min="0" step="1" placeholder="Ex. 600"></div>
-        <div class="qty-total-row" style="grid-template-columns:1fr auto;">
-          <div></div>
-          <div class="total-box"><span class="total-label">Solde restant dû</span><span class="total-amount" id="total">— €</span></div>
-        </div>`;
-      initSoldeFields();
-    } else if (typeId === 'groupee') {
-      box.innerHTML = `
-        <div class="field-group"><label>Prestations à regrouper</label></div>
-        <div id="groupee-lines"></div>
-        <span class="add-line" onclick="addGroupeeLine()">+ Ajouter une ligne</span>
-        <div class="qty-total-row" style="grid-template-columns:1fr auto;margin-top:0;">
-          <div></div>
-          <div class="total-box"><span class="total-label">Total de la facture</span><span class="total-amount" id="total">— €</span></div>
-        </div>`;
-      groupeeLineSeq = 0;
-      document.getElementById('groupee-lines').innerHTML = '';
-      addGroupeeLine();
-      addGroupeeLine();
-    }
-    box.style.animation = 'none';
-    void box.offsetHeight;
-    box.style.animation = '';
+  const globalPrefs = SebaDB.commercialSettings.getDisplayPrefs();
+  const PREF_LABELS = {
+    showLogo: 'Logo', showCompanyAddress: 'Adresse entreprise', showCompanyPhone: 'Téléphone entreprise',
+    showCompanyEmail: 'Email entreprise', showBankDetails: 'Coordonnées bancaires', showUnitPrices: 'Prix unitaires',
+    showTaxColumn: 'Colonne TVA', showDiscountDetails: 'Détail des remises', showPaymentHistory: 'Historique paiements',
+    showAcceptanceDetails: "Détails d'acceptation", showSignatureArea: 'Zone de signature',
+    showServiceAddress: 'Adresse de prestation', showClientReference: 'Référence client',
+  };
+  _displayOverrides = (_existing && _existing.documentOptions) || {};
+  function renderPrefsGrid() {
+    const grid = document.getElementById('display-prefs-grid');
+    grid.innerHTML = Object.keys(PREF_LABELS).map(key => {
+      const val = _displayOverrides[key] != null ? _displayOverrides[key] : globalPrefs[key];
+      return '<div class="checkbox-row"><input type="checkbox" id="pref-' + key + '" data-pref="' + key + '" ' + (val ? 'checked' : '') + '><label for="pref-' + key + '" style="margin:0;">' + PREF_LABELS[key] + '</label></div>';
+    }).join('');
+    grid.querySelectorAll('[data-pref]').forEach(cb => cb.addEventListener('change', () => {
+      _displayOverrides[cb.dataset.pref] = cb.checked;
+      scheduleAutosave();
+    }));
   }
+  renderPrefsGrid();
+  window.useAsDefaultPrefs = function () {
+    if (!confirm('Utiliser les préférences actuelles comme réglages par défaut pour tous les prochains documents ?')) return;
+    SebaDB.commercialSettings.setDisplayPrefs(_displayOverrides);
+    showToast('Préférences par défaut mises à jour ✓');
+  };
 
-  /* ── Type "standard" : identique au formulaire d'origine ── */
-  function initStandardFields() {
-    const serviceSel = document.getElementById('service');
-    const serviceFreeGroup = document.getElementById('service-freetext-group');
-    const pricingModelSel = document.getElementById('pricing-model');
-
-    const services = currentServiceCatalog();
-    if (services.length === 0) {
-      serviceSel.closest('.field-group').style.display = 'none';
-      serviceFreeGroup.style.display = 'block';
-    } else {
-      serviceSel.innerHTML = '<option value="">— Sélectionnez un service —</option>' +
-        services.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
-    }
-
-    serviceSel.addEventListener('change', () => {
-      const svc = services.find(s => s.name === serviceSel.value);
-      const fieldId = PREFILL_FIELD[pricingModelSel.value];
-      if (svc && svc.suggestedPrice && fieldId) {
-        const el = document.getElementById(fieldId);
-        if (el && !el.value) { el.value = svc.suggestedPrice; calcStandardTotal(); }
-      }
-    });
-
-    pricingModelSel.innerHTML = FACTURE_PRICING_MODELS.map(id =>
-      `<option value="${id}">${window.SebaQuotes.PRICING_MODELS[id].label}</option>`
-    ).join('');
-    pricingModelSel.value = 'hourly';
-    pricingModelSel.addEventListener('change', () => renderDynFields(pricingModelSel.value));
-    renderDynFields(pricingModelSel.value);
-  }
-
-  function renderDynFields(modelId) {
-    const box = document.getElementById('dyn-fields');
-    if (modelId === 'hourly') {
-      box.innerHTML = `
-        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-duration">Nombre d'heures</label>
-        <input type="number" id="dyn-duration" class="field-input" min="0.5" step="0.5" placeholder="Ex. 2"></div>
-        <div class="field-group" style="margin-bottom:0;"><label for="dyn-hourlyRate">Taux horaire (€)</label>
-        <input type="number" id="dyn-hourlyRate" class="field-input" min="0" step="0.5" placeholder="Ex. 25"></div>`;
-    } else if (modelId === 'fixed') {
-      box.innerHTML = `
-        <div class="field-group" style="margin-bottom:0;"><label for="dyn-fixedPrice">Prix forfaitaire (€)</label>
-        <input type="number" id="dyn-fixedPrice" class="field-input" min="0" step="1" placeholder="Ex. 120"></div>`;
-    } else if (modelId === 'unit') {
-      box.innerHTML = `
-        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-quantity">Quantité</label>
-        <input type="number" id="dyn-quantity" class="field-input" min="1" step="1" placeholder="Ex. 3"></div>
-        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-unit">Unité</label>
-        <select id="dyn-unit" class="field-input">${Object.entries(UNIT_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div>
-        <div class="field-group" style="margin-bottom:0;"><label for="dyn-unitPrice">Prix unitaire (€)</label>
-        <input type="number" id="dyn-unitPrice" class="field-input" min="0" step="0.5" placeholder="Ex. 10"></div>`;
-    } else if (modelId === 'day_rate') {
-      box.innerHTML = `
-        <div class="field-group" style="margin-bottom:10px;"><label for="dyn-dayCount">Nombre de jours</label>
-        <input type="number" id="dyn-dayCount" class="field-input" min="0.5" step="0.5" placeholder="Ex. 1"></div>
-        <div class="field-group" style="margin-bottom:0;"><label for="dyn-dayRate">Taux journalier (€)</label>
-        <input type="number" id="dyn-dayRate" class="field-input" min="0" step="1" placeholder="Ex. 200"></div>`;
-    }
-    box.querySelectorAll('input,select').forEach(el => el.addEventListener('input', calcStandardTotal));
-    calcStandardTotal();
-  }
-
-  function activeServiceName() {
-    const freeGroup = document.getElementById('service-freetext-group');
-    return freeGroup.style.display !== 'none'
-      ? document.getElementById('service-freetext').value.trim()
-      : document.getElementById('service').value;
-  }
-
-  function buildRawLine(model, serviceName) {
-    const val = id => (document.getElementById(id) || {}).value || '';
-    const num = id => parseFloat(val(id)) || 0;
-    const line = { title: serviceName, pricingModel: model };
-    if (model === 'hourly') { line.duration = num('dyn-duration'); line.hourlyRate = num('dyn-hourlyRate'); }
-    else if (model === 'fixed') { line.fixedPrice = num('dyn-fixedPrice'); }
-    else if (model === 'unit') { line.quantity = num('dyn-quantity'); line.unitPrice = num('dyn-unitPrice'); line.unit = val('dyn-unit'); }
-    else if (model === 'day_rate') { line.dayCount = num('dyn-dayCount'); line.dayRate = num('dyn-dayRate'); }
-    return line;
-  }
-
-  function lineDesc(model, serviceName, line) {
-    if (model === 'hourly') return `${serviceName} — ${line.duration}h × ${line.hourlyRate}€`;
-    if (model === 'fixed') return `${serviceName} — forfait ${line.fixedPrice}€`;
-    if (model === 'unit') return `${serviceName} — ${line.quantity} ${UNIT_LABELS[line.unit] || line.unit} × ${line.unitPrice}€`;
-    if (model === 'day_rate') return `${serviceName} — ${line.dayCount}j × ${line.dayRate}€/jour`;
-    return serviceName;
-  }
-
-  function calcStandardTotal() {
-    const model = document.getElementById('pricing-model').value;
-    const result = window.SebaQuotes.calculateQuoteLine(buildRawLine(model, ''));
-    const total = result.valid ? (result.total || 0) : 0;
-    document.getElementById('total').textContent = total ? total + ' €' : '— €';
-  }
-
-  /* ── Type "acompte" ── */
-  function initAcompteFields() {
-    const modeSel = document.getElementById('ac-mode');
-    modeSel.addEventListener('change', () => {
-      const isPercent = modeSel.value === 'percent';
-      document.getElementById('ac-percent-group').style.display = isPercent ? 'block' : 'none';
-      document.getElementById('ac-fixed-group').style.display = isPercent ? 'none' : 'block';
-      calcAcompteTotal();
-    });
-    ['ac-total', 'ac-percent', 'ac-fixed'].forEach(id => document.getElementById(id).addEventListener('input', calcAcompteTotal));
-    calcAcompteTotal();
-  }
-  function calcAcompteTotal() {
-    const total = parseFloat(document.getElementById('ac-total').value) || 0;
-    const mode = document.getElementById('ac-mode').value;
-    const amount = mode === 'percent'
-      ? total * ((parseFloat(document.getElementById('ac-percent').value) || 0) / 100)
-      : (parseFloat(document.getElementById('ac-fixed').value) || 0);
-    document.getElementById('total').textContent = amount ? Math.round(amount * 100) / 100 + ' €' : '— €';
-  }
-
-  /* ── Type "solde" ── */
-  function initSoldeFields() {
-    ['so-total', 'so-acompte'].forEach(id => document.getElementById(id).addEventListener('input', calcSoldeTotal));
-    calcSoldeTotal();
-  }
-  function calcSoldeTotal() {
-    const total = parseFloat(document.getElementById('so-total').value) || 0;
-    const acompte = parseFloat(document.getElementById('so-acompte').value) || 0;
-    const solde = Math.max(0, total - acompte);
-    document.getElementById('total').textContent = solde ? solde + ' €' : '— €';
-  }
-
-  /* ── Type "groupée" ── */
-  function addGroupeeLine() {
-    groupeeLineSeq++;
-    const id = 'gl-' + groupeeLineSeq;
-    const container = document.getElementById('groupee-lines');
-    const row = document.createElement('div');
-    row.className = 'groupee-line';
-    row.id = id;
-    row.innerHTML = `
-      <input type="text" class="field-input gl-desc" placeholder="Description de la prestation">
-      <input type="number" class="field-input gl-amount" min="0" step="1" placeholder="Montant €">
-      <span class="gl-remove" onclick="removeGroupeeLine('${id}')" title="Retirer">✕</span>`;
-    container.appendChild(row);
-    row.querySelector('.gl-amount').addEventListener('input', calcGroupeeTotal);
-  }
-  function removeGroupeeLine(id) {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-    calcGroupeeTotal();
-  }
-  function calcGroupeeTotal() {
-    const total = Array.from(document.querySelectorAll('#groupee-lines .gl-amount'))
-      .reduce((s, el) => s + (parseFloat(el.value) || 0), 0);
-    const totalEl = document.getElementById('total');
-    if (totalEl) totalEl.textContent = total ? total + ' €' : '— €';
-  }
-
-  function clientName() {
-    if (clientSel.value === 'new') {
-      return document.getElementById('new-name').value.trim() || 'Nouveau client';
-    }
-    return clientSel.options[clientSel.selectedIndex].text;
-  }
-
-  function formatDate(val) {
-    if (!val) return '—';
-    const [y, m, d] = val.split('-');
-    const MOIS = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
-    return `${parseInt(d)} ${MOIS[parseInt(m)-1]} ${y}`;
-  }
-
-  function showToast(msg) {
-    const ex = document.getElementById('_toast');
-    if (ex) ex.remove();
-    const t = document.createElement('div');
-    t.id = '_toast';
-    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C1D21;color:#fff;padding:12px 22px;border-radius:10px;font-size:.875rem;font-weight:500;z-index:600;box-shadow:0 8px 28px rgba(0,0,0,.22);white-space:nowrap;';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.style.opacity = '0', 3000);
-    setTimeout(() => t.remove(), 3500);
-  }
-
-  /* Construit {service, amount} selon le type actif -- une seule fonction par
-     type, chacune renvoie null (+ un toast) si la saisie est invalide plutôt
-     que de laisser passer une facture à 0€ ou sans description. */
-  function buildStandardContent() {
-    const serviceName = activeServiceName();
-    if (!serviceName) {
-      const freeGroup = document.getElementById('service-freetext-group');
-      const target = freeGroup.style.display !== 'none' ? document.getElementById('service-freetext') : document.getElementById('service');
-      target.focus();
-      target.style.borderColor = 'var(--critical)';
-      showToast(freeGroup.style.display !== 'none' ? 'Veuillez indiquer le nom de la prestation.' : 'Veuillez sélectionner un service.');
-      return null;
-    }
-    const model = document.getElementById('pricing-model').value;
-    const rawLine = buildRawLine(model, serviceName);
-    const calc = window.SebaQuotes.calculateQuoteLine(rawLine);
-    if (!calc.valid) { showToast(calc.errors[0]); return null; }
-    return { service: lineDesc(model, serviceName, rawLine), amount: calc.total || 0 };
-  }
-
-  function buildAcompteContent() {
-    const desc = document.getElementById('ac-desc').value.trim();
-    const total = parseFloat(document.getElementById('ac-total').value) || 0;
-    if (!desc) { document.getElementById('ac-desc').focus(); document.getElementById('ac-desc').style.borderColor = 'var(--critical)'; showToast('Veuillez décrire la prestation.'); return null; }
-    if (!total) { document.getElementById('ac-total').focus(); document.getElementById('ac-total').style.borderColor = 'var(--critical)'; showToast('Veuillez indiquer le montant total de la prestation.'); return null; }
-    const mode = document.getElementById('ac-mode').value;
-    const percent = parseFloat(document.getElementById('ac-percent').value) || 0;
-    const fixed = parseFloat(document.getElementById('ac-fixed').value) || 0;
-    const amount = Math.round((mode === 'percent' ? total * (percent / 100) : fixed) * 100) / 100;
-    if (!amount) { showToast('Veuillez indiquer un montant d\'acompte supérieur à 0.'); return null; }
-    const label = mode === 'percent' ? `Acompte ${percent}%` : 'Acompte';
-    return { service: `${label} — ${desc} (total prévu ${total} €)`, amount };
-  }
-
-  function buildSoldeContent() {
-    const desc = document.getElementById('so-desc').value.trim();
-    const total = parseFloat(document.getElementById('so-total').value) || 0;
-    if (!desc) { document.getElementById('so-desc').focus(); document.getElementById('so-desc').style.borderColor = 'var(--critical)'; showToast('Veuillez décrire la prestation.'); return null; }
-    if (!total) { document.getElementById('so-total').focus(); document.getElementById('so-total').style.borderColor = 'var(--critical)'; showToast('Veuillez indiquer le montant total de la prestation.'); return null; }
-    const acompte = parseFloat(document.getElementById('so-acompte').value) || 0;
-    const solde = Math.max(0, total - acompte);
-    if (!solde) { showToast('Le solde calculé est nul — vérifiez le montant total et l\'acompte déjà versé.'); return null; }
-    return { service: `Solde — ${desc} (total ${total} €, acompte ${acompte} € déjà versé)`, amount: solde };
-  }
-
-  function buildGroupeeContent() {
-    const rows = Array.from(document.querySelectorAll('#groupee-lines .groupee-line')).map(row => ({
-      desc: row.querySelector('.gl-desc').value.trim(),
-      amount: parseFloat(row.querySelector('.gl-amount').value) || 0,
-    })).filter(r => r.desc && r.amount > 0);
-    if (rows.length === 0) { showToast('Ajoutez au moins une ligne avec une description et un montant.'); return null; }
-    const total = rows.reduce((s, r) => s + r.amount, 0);
-    return { service: rows.length + ' prestations groupées : ' + rows.map(r => r.desc).join(', '), amount: Math.round(total * 100) / 100 };
-  }
-
-  function buildFactureContent() {
-    if (activeType === 'standard') return buildStandardContent();
-    if (activeType === 'acompte') return buildAcompteContent();
-    if (activeType === 'solde') return buildSoldeContent();
-    if (activeType === 'groupee') return buildGroupeeContent();
-    return null;
-  }
-
-  async function sendFacture() {
-    if (!clientSel.value) {
-      clientSel.focus();
-      clientSel.style.borderColor = 'var(--critical)';
-      showToast('Veuillez sélectionner un client.');
-      return;
-    }
-    const content = buildFactureContent();
-    if (!content) return;
-    const { service: serviceName, amount: total } = content;
-    const name = clientName();
-
-    let clientId = clientSel.value;
-    if (clientSel.value === 'new') {
-      const created = SebaDB.create('clients', {
-        prenom: name.split(' ')[0] || name, nom: name.split(' ').slice(1).join(' ') || '',
-        contact: (document.getElementById('new-email') || {}).value || '—',
-        service: serviceName, ca: 0, statut: 'attente',
-      });
-      clientId = created.id;
-      SebaDB.log('client', 'Nouveau client — ' + name, 'clients.html');
-    }
-    const localDate = (function(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
-    const dateChoisie = document.getElementById('date').value || localDate;
-    const facture = SebaDB.create('factures', {
-      num: SebaDB.nextNum('facture'), clientId, clientName: name,
-      service: serviceName,
-      amount: total || 0, status: 'attente', date: dateChoisie, paidAt: null,
-    });
-    SebaDB.log('facture', 'Facture créée ' + facture.num + ' — ' + name + (total ? ' · ' + total + ' €' : ''), 'factures.html');
-
-    document.querySelector('#confirm-state .tnum').textContent = facture.num;
-    document.getElementById('conf-client').textContent  = name;
-    document.getElementById('conf-service').textContent = serviceName;
-    document.getElementById('conf-amount').textContent  = (total || 0) + ' €';
-    document.getElementById('conf-date').textContent    = formatDate(document.getElementById('date').value);
-
-    document.getElementById('form-state').style.display = 'none';
-    showState('confirm-state');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    const statusEl = document.getElementById('conf-email-status');
-    if (window.sebaEmail) {
-      const result = await sebaEmail.sendDocument(facture, 'facture');
-      if (statusEl) {
-        statusEl.textContent = result.ok
-          ? 'Un email a été transmis automatiquement au client.'
-          : 'Facture enregistrée — l\'envoi automatique de l\'email a échoué. Contactez le client directement.';
-      }
-    } else if (statusEl) {
-      statusEl.textContent = 'Facture enregistrée.';
-    }
-  }
-
-  const avatarBtn = document.getElementById('avatar-btn');
-  const userMenu  = document.getElementById('user-menu');
-  avatarBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    userMenu.classList.toggle('open');
+  const initialLines = (_existing && _existing.lines) || [];
+  _lineEditor = SebaCommercialEditor.mountLinesEditor(document.getElementById('lines-editor'), {
+    initialLines, catalog: currentCatalog(), advanced: false,
+    onChange: () => { recomputeTotals(); scheduleAutosave(); },
   });
-  document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+  window.toggleAdvanced = function () {
+    const toggle = document.getElementById('adv-toggle');
+    const body = document.getElementById('adv-body');
+    const open = !body.classList.contains('open');
+    toggle.classList.toggle('open', open);
+    body.classList.toggle('open', open);
+    _lineEditor.setAdvanced(open);
+    recomputeTotals();
+  };
+
+  // ── Préremplissage depuis une fiche client (?clientId=), facture libre uniquement ──
+  if (!_existing && _clientIdParam && clientSel.querySelector('option[value="' + _clientIdParam + '"]')) {
+    clientSel.value = _clientIdParam;
+  }
+
+  if (_existing) {
+    if (clientSel.querySelector('option[value="' + _existing.clientId + '"]')) clientSel.value = _existing.clientId;
+    document.getElementById('objet').value = _existing.service || '';
+    document.getElementById('tva-rate').value = String(_existing.tvaRate || 20);
+    if (_existing.dueDate) document.getElementById('due-date').value = _existing.dueDate;
+    if (_existing.conditions) document.getElementById('conditions').value = _existing.conditions;
+    if (_existing.remise) { document.getElementById('remise-value').value = _existing.remise.value; document.getElementById('remise-type').value = _existing.remise.type; }
+    if (_existing.billingAddress) document.getElementById('billing-address').value = _existing.billingAddress;
+    if (_existing.serviceAddress) document.getElementById('service-address').value = _existing.serviceAddress;
+    if (_existing.clientReference) document.getElementById('client-reference').value = _existing.clientReference;
+    if (_existing.internalReference) document.getElementById('internal-reference').value = _existing.internalReference;
+    document.getElementById('card-title').textContent = 'Modifier le brouillon';
+    document.getElementById('card-ref').textContent = 'Brouillon — ' + (_existing.num || '(non numéroté)');
+  }
+
+  ['tva-rate', 'due-date', 'conditions', 'remise-value', 'remise-type', 'client-reference', 'internal-reference', 'billing-address', 'service-address', 'objet'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => { recomputeTotals(); scheduleAutosave(); });
+    el.addEventListener('change', () => { recomputeTotals(); scheduleAutosave(); });
+  });
+
+  recomputeTotals();
+  renderValidation();
+}
+
+function currentTvaRate() { return parseFloat(document.getElementById('tva-rate').value) || 0; }
+function currentRemise() {
+  const v = parseFloat(document.getElementById('remise-value').value) || 0;
+  return v > 0 ? { type: document.getElementById('remise-type').value, value: v } : null;
+}
+
+function recomputeTotals() {
+  const lines = _lineEditor.getLines();
+  const remise = currentRemise();
+  const totals = SCI.buildCommercialDocumentTotals(lines, {
+    documentTaxRate: currentTvaRate(),
+    discountType: remise && remise.type, discountValue: remise && remise.value,
+  });
+  SebaCommercialEditor.updateLineTotals(document.getElementById('lines-editor'), totals.lines);
+  document.getElementById('t-ht').textContent = totals.totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+  document.getElementById('t-tva').textContent = totals.totalTVA.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+  document.getElementById('t-ttc').textContent = totals.totalTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+  document.getElementById('t-discount-row').style.display = totals.globalDiscountCents ? 'flex' : 'none';
+  document.getElementById('t-discount').textContent = '-' + SebaDocRender.eur(totals.globalDiscountCents);
+  renderValidation();
+  if (document.getElementById('tab-preview').style.display !== 'none') renderPreview();
+}
+
+function clientDisplayName() {
+  const clientSel = document.getElementById('client');
+  if (!clientSel.value) return ''; // aucune sélection réelle -- jamais le texte du placeholder ("— Sélectionnez un client —")
+  if (clientSel.value === 'new') return (document.getElementById('new-name').value || '').trim() || 'Nouveau client';
+  const opt = clientSel.options[clientSel.selectedIndex];
+  return opt ? opt.textContent : '';
+}
+
+function buildLiveModelForPreview() {
+  const temp = {
+    id: _editingId || 'preview', status: 'draft', clientId: document.getElementById('client').value !== 'new' ? document.getElementById('client').value : null,
+    clientName: clientDisplayName(), lines: _lineEditor.getLines(), tvaRate: currentTvaRate(),
+    remise: currentRemise(), dueDate: document.getElementById('due-date').value || null,
+    conditions: document.getElementById('conditions').value, documentSnapshot: null,
+    devisId: null, interventionId: _interventionIdParam, payments: [],
+    billingAddress: document.getElementById('billing-address').value, serviceAddress: document.getElementById('service-address').value,
+    clientReference: document.getElementById('client-reference').value, documentOptions: _displayOverrides, num: null,
+  };
+  return SCI.buildInvoiceDocumentModel(temp, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise ? SebaDB.entreprise.get() : {}, documentDisplayPrefs: SebaDB.commercialSettings.getDisplayPrefs() }, { role: 'owner' });
+}
+
+function renderPreview() {
+  const model = buildLiveModelForPreview();
+  const frame = document.getElementById('preview-frame');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="commercial-document.css"></head><body><div class="page-wrap">' + SebaDocRender.invoiceHTML(model) + '</div></body></html>';
+  frame.srcdoc = html;
+}
+
+window.showTab = function (which) {
+  document.getElementById('tab-edit').style.display = which === 'edit' ? 'block' : 'none';
+  document.getElementById('tab-preview').style.display = which === 'preview' ? 'block' : 'none';
+  document.getElementById('tab-edit-btn').classList.toggle('active', which === 'edit');
+  document.getElementById('tab-preview-btn').classList.toggle('active', which === 'preview');
+  if (which === 'preview') renderPreview();
+};
+
+function renderValidation() {
+  const model = buildLiveModelForPreview();
+  const v = SCI.getCommercialDocumentValidation('facture', model);
+  const box = document.getElementById('validation-box');
+  const sendBtn = document.getElementById('send-btn');
+  let html = '';
+  if (v.errors.length) html += '<div class="warn-list blocking"><b>À corriger avant l\'émission :</b><ul>' + v.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+  if (v.warnings.length) html += '<div class="warn-list">Ce document peut être émis, mais certaines informations facultatives sont absentes.<ul>' + v.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>';
+  box.innerHTML = html;
+  sendBtn.disabled = !v.valid || _sending;
+}
+
+function currentClientId() {
+  const clientSel = document.getElementById('client');
+  if (clientSel.value === 'new') {
+    const name = clientDisplayName();
+    const created = SebaDB.create('clients', {
+      prenom: name.split(' ')[0] || name, nom: name.split(' ').slice(1).join(' ') || '',
+      contact: (document.getElementById('new-email') || {}).value || '—', ca: 0, statut: 'attente',
+    });
+    SebaDB.log('client', 'Nouveau client — ' + name, 'clients.html');
+    clientSel.value = created.id;
+    const o = document.createElement('option'); o.value = created.id; o.textContent = name;
+    clientSel.insertBefore(o, clientSel.querySelector('option[value="new"]'));
+    clientSel.value = created.id;
+    return created.id;
+  }
+  return clientSel.value || null;
+}
+
+function buildInput(emitNow) {
+  return {
+    clientId: currentClientId(), clientName: clientDisplayName(),
+    service: document.getElementById('objet').value.trim(),
+    lines: _lineEditor.getLines(), tvaRate: currentTvaRate(), remise: currentRemise(),
+    dueDate: document.getElementById('due-date').value || null,
+    conditions: document.getElementById('conditions').value,
+    billingAddress: document.getElementById('billing-address').value,
+    serviceAddress: document.getElementById('service-address').value,
+    clientReference: document.getElementById('client-reference').value,
+    internalReference: document.getElementById('internal-reference').value,
+    documentOptions: _displayOverrides,
+    interventionId: _interventionIdParam || (_existing && _existing.interventionId) || null,
+    devisId: (_existing && _existing.devisId) || null,
+    _emit: !!emitNow,
+  };
+}
+
+let _saving = false;
+function persist(emitNow, statusLabel) {
+  if (_saving) return null;
+  _saving = true;
+  const input = buildInput(emitNow);
+  let res;
+  try {
+    if (_editingId) {
+      res = SebaDB.factures.updateDraft(_editingId, input);
+    } else {
+      // Première sauvegarde ET émission immédiate (aucun brouillon
+      // intermédiaire encore créé) -- createDraft() ignore _emit par
+      // construction (un brouillon est TOUJOURS créé en 'draft'), il faut
+      // donc enchaîner avec updateDraft(...,{_emit:true}) pour obtenir la
+      // numérotation/snapshot réels, jamais une facture restée en brouillon
+      // silencieusement après un clic sur "Émettre".
+      const created = SebaDB.factures.createDraft(input);
+      res = (created.ok && emitNow) ? SebaDB.factures.updateDraft(created.facture.id, input) : created;
+    }
+  } finally { _saving = false; }
+  if (res.ok) {
+    _editingId = res.facture.id;
+    if (!params.get('id')) history.replaceState(null, '', 'factures-nouvelle.html?id=' + encodeURIComponent(_editingId));
+    document.getElementById('save-status').textContent = statusLabel || 'Enregistré ✓';
+  } else {
+    document.getElementById('save-status').textContent = 'Échec de sauvegarde — ' + (res.error || '');
+  }
+  return res;
+}
+
+function scheduleAutosave() {
+  document.getElementById('save-status').textContent = 'Enregistrement…';
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => { persist(false, 'Enregistré ✓'); }, 1200);
+}
+
+function saveNow() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  const res = persist(false, 'Enregistré ✓');
+  if (res && res.ok) showToast('Brouillon enregistré ✓');
+}
+
+function emitFacture() {
+  if (_sending) return; // double-clic : jamais une seconde émission
+  const model = buildLiveModelForPreview();
+  const v = SCI.getCommercialDocumentValidation('facture', model);
+  if (!v.valid) { renderValidation(); showToast(v.errors[0]); return; }
+  _sending = true;
+  document.getElementById('send-btn').disabled = true;
+  if (_saveTimer) clearTimeout(_saveTimer);
+  const res = persist(true, 'Facture émise ✓');
+  if (!res || !res.ok) {
+    _sending = false;
+    document.getElementById('send-btn').disabled = false;
+    showToast((res && res.error) || 'Échec de l\'émission.');
+    return;
+  }
+  showToast('Facture ' + res.facture.num + ' émise ✓');
+  setTimeout(() => {
+    if (_returnTo) location.href = _returnTo;
+    else location.href = 'facture-document.html?id=' + encodeURIComponent(res.facture.id);
+  }, 500);
+}
+
+const avatarBtn = document.getElementById('avatar-btn');
+const userMenu  = document.getElementById('user-menu');
+avatarBtn.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+document.addEventListener('click', () => userMenu.classList.remove('open'));
 </script>
 
 <script>

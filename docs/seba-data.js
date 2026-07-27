@@ -1771,6 +1771,14 @@
       discountValue: Number(line.discountValue) || 0,
       taxRate: Number.isFinite(line.taxRate) ? Number(line.taxRate) : null, // null = utilise le taux document (rétrocompat)
       position: Number.isFinite(line.position) ? line.position : 0,
+      // Alias rétrocompat (feature/flexible-commercial-documents, éditeurs) --
+      // desc/qty/u : lus par du code plus ancien qui n'a jamais été migré vers
+      // description/quantity/unitPriceCents (ex. client-espace.html
+      // renderDevisLinesHtml, devis.html buildReceipt). Dérivés, jamais une
+      // seconde source de vérité : recalculés à chaque normalisation.
+      desc: line.description || line.desc || '',
+      qty: quantity,
+      u: fromCents(unitPriceCents),
     };
   }
 
@@ -1873,8 +1881,12 @@
       customer: client
         ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
         : { prenom: '', nom: payload.clientName || '', contact: '', email: '', adresse: '' },
-      billingAddress: (client && client.adresse) || '',
-      serviceAddress: (client && client.adresse) || '',
+      // Adresse de facturation/prestation : surcharge propre au document si
+      // fournie (section 11 -- "jamais écraser automatiquement la fiche
+      // client"), repli sur l'adresse de la fiche sinon.
+      billingAddress: payload.billingAddress || (client && client.adresse) || '',
+      serviceAddress: payload.serviceAddress || (client && client.adresse) || '',
+      clientReference: payload.clientReference || '', // client-safe (affiché au client)
       lines: totalsRich.lines.concat(totalsRich.sections),
       totals: {
         subtotalExclCents: totalsRich.subtotalExclCents, globalDiscountCents: totalsRich.globalDiscountCents,
@@ -1888,7 +1900,10 @@
       // migrations/2026-07-27-flexible-commercial-documents.sql), donc tout
       // champ posé ici doit déjà être client-safe. Seul `conditions` l'est.
       terms: { conditions: payload.conditions || '', validityDate: payload.validityDate || null },
-      documentOptions: state.documentDisplayPrefs || null,
+      // Fusion préférences globales + surcharge propre à CE document
+      // (section 19) -- figée ici définitivement, jamais réévaluée après
+      // l'envoi même si les préférences globales changent ensuite.
+      documentOptions: mergeDisplayOptions(state, payload.documentOptions),
     };
   }
 
@@ -1899,6 +1914,15 @@
      rétrocompatible explicite). objOrId peut être l'objet déjà en main
      (portail client, allowlist RPC) ou un id à résoudre dans state
      (patron, accès complet). */
+  /* Préférences d'affichage PAR DOCUMENT (section 19) -- un devis/une
+     facture peut surcharger certaines clés des préférences globales
+     (state.documentDisplayPrefs), la surcharge ne s'appliquant JAMAIS aux
+     autres documents. docOverride : objet partiel (uniquement les clés
+     réellement surchargées), jamais l'objet complet. */
+  function mergeDisplayOptions(state, docOverride) {
+    return Object.assign({}, DEFAULT_DOCUMENT_DISPLAY_PREFS, (state && state.documentDisplayPrefs) || {}, docOverride || {});
+  }
+
   function buildQuoteDocumentModel(quoteObjOrId, state, actorContext) {
     state = state || {};
     const d = (quoteObjOrId && typeof quoteObjOrId === 'object') ? quoteObjOrId : resolveBusinessObject('devis', quoteObjOrId, state);
@@ -1918,8 +1942,9 @@
       customer: (snap && snap.customer) || (client
         ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
         : { prenom: '', nom: d.clientName || '', contact: '', email: '', adresse: '' }),
-      billingAddress: (snap && snap.billingAddress) || (client && client.adresse) || '',
-      serviceAddress: (snap && snap.serviceAddress) || (client && client.adresse) || '',
+      billingAddress: (snap && snap.billingAddress) || d.billingAddress || (client && client.adresse) || '',
+      serviceAddress: (snap && snap.serviceAddress) || d.serviceAddress || (client && client.adresse) || '',
+      clientReference: (snap && snap.clientReference) || d.clientReference || '',
       lines: allLines.filter(l => !isSectionLine(l)), sections: allLines.filter(isSectionLine),
       totals,
       references: {
@@ -1928,7 +1953,7 @@
       },
       notes: (snap && snap.terms && snap.terms.notes) || '',
       terms: { conditions: (snap && snap.terms && snap.terms.conditions) || d.conditions || '' },
-      options: (snap && snap.documentOptions) || state.documentDisplayPrefs || null,
+      options: (snap && snap.documentOptions) || mergeDisplayOptions(state, d.documentOptions),
       acceptance: { acceptedAt: d.acceptedAt || null, acceptedBy: d.acceptedBy || null, refusedAt: d.refusedAt || null, refusalComment: d.refusalComment || null },
       payments: [],
       snapshotSource: snap ? 'snapshot' : 'live',
@@ -1954,14 +1979,15 @@
       customer: (snap && snap.customer) || (client
         ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
         : { prenom: '', nom: f.clientName || '', contact: '', email: '', adresse: '' }),
-      billingAddress: (snap && snap.billingAddress) || (client && client.adresse) || '',
-      serviceAddress: (snap && snap.serviceAddress) || (client && client.adresse) || '',
+      billingAddress: (snap && snap.billingAddress) || f.billingAddress || (client && client.adresse) || '',
+      serviceAddress: (snap && snap.serviceAddress) || f.serviceAddress || (client && client.adresse) || '',
+      clientReference: (snap && snap.clientReference) || f.clientReference || '',
       lines: allLines.filter(l => !isSectionLine(l)), sections: allLines.filter(isSectionLine),
       totals,
       references: { devisId: f.devisId || null, interventionId: f.interventionId || null },
       notes: (snap && snap.terms && snap.terms.notes) || '',
-      terms: { conditions: (snap && snap.terms && snap.terms.conditions) || '' },
-      options: (snap && snap.documentOptions) || state.documentDisplayPrefs || null,
+      terms: { conditions: (snap && snap.terms && snap.terms.conditions) || f.conditions || '' },
+      options: (snap && snap.documentOptions) || mergeDisplayOptions(state, f.documentOptions),
       acceptance: null,
       payments: payments.map(p => ({ id: p.id, amount: p.amount, mode: p.mode, date: p.date, reference: p.reference, createdAt: p.createdAt })),
       montantPaye: (window.SebaDB ? SebaDB.factures.paidAmount(f) : payments.reduce((s, p) => s + (Number(p.amount) || 0), 0)),
@@ -3813,20 +3839,41 @@
          choisit create() pour un nouveau devis ou update() pour corriger un
          brouillon). status forcé par l'appelant (createDraft/send). */
       _buildPayload(input, status) {
-        const lines = (Array.isArray(input.lines) ? input.lines : []).map(l => ({
-          id: l.id || uid(), desc: (l.desc || '').trim(), qty: Number(l.qty) || 0, u: Number(l.u) || 0,
-        })).filter(l => l.desc);
-        const totals = SebaDB.devis.computeTotals(Object.assign({}, input, { lines }));
+        // Lignes RICHES (feature/flexible-commercial-documents, éditeurs
+        // réels) -- normalizeCommercialLine préserve type/serviceId/details/
+        // unit/discountType/discountValue/taxRate (plus les alias desc/qty/u
+        // pour le code non migré), jamais réduites à {id,desc,qty,u} comme
+        // avant ce correctif (qui effaçait silencieusement toute option
+        // avancée saisie dans l'éditeur au moment de la sauvegarde).
+        const remise = input.remise && Number(input.remise.value) > 0 ? { type: input.remise.type === 'percent' ? 'percent' : 'amount', value: Number(input.remise.value) } : null;
+        const acompte = input.acompte && Number(input.acompte.value) > 0 ? { type: input.acompte.type === 'percent' ? 'percent' : 'amount', value: Number(input.acompte.value) } : null;
+        const lines = (Array.isArray(input.lines) ? input.lines : [])
+          .map(normalizeCommercialLine)
+          .filter(l => (l.description || '').trim())
+          .map((l, idx) => Object.assign({}, l, { position: idx }));
+        const richTotals = buildCommercialDocumentTotals(lines, {
+          documentTaxRate: Number(input.tvaRate) || 0,
+          discountType: remise && remise.type, discountValue: remise && remise.value,
+          depositType: acompte && acompte.type, depositValue: acompte && acompte.value,
+        });
+        const totals = { totalHT: richTotals.totalHT, totalTVA: richTotals.totalTVA, totalTTC: richTotals.totalTTC };
         return {
           clientId: input.clientId, clientName: input.clientName || '',
-          service: input.service || (lines[0] ? lines[0].desc : ''),
+          service: input.service || (lines[0] ? (lines[0].description || lines[0].desc) : ''),
           lines,
           tvaRate: Number(input.tvaRate) || 0,
-          remise: input.remise && Number(input.remise.value) > 0 ? { type: input.remise.type === 'percent' ? 'percent' : 'amount', value: Number(input.remise.value) } : null,
-          acompte: input.acompte && Number(input.acompte.value) > 0 ? { type: input.acompte.type === 'percent' ? 'percent' : 'amount', value: Number(input.acompte.value) } : null,
+          remise, acompte,
           validityDate: input.validityDate || null,
           conditions: (input.conditions || '').trim(),
           notes: (input.notes || '').trim(), // interne patron -- jamais envoyé au client (voir migration RPC, allowlist)
+          // Adresses/référence/options par document (sections 11 et 19) --
+          // surcharges facultatives, jamais une modification de la fiche
+          // client. internalReference : jamais dans le snapshot (interne).
+          billingAddress: (input.billingAddress || '').trim(),
+          serviceAddress: (input.serviceAddress || '').trim(),
+          clientReference: (input.clientReference || '').trim(),
+          internalReference: (input.internalReference || '').trim(),
+          documentOptions: input.documentOptions && typeof input.documentOptions === 'object' ? input.documentOptions : null,
           sourceInterventionId: input.sourceInterventionId || null,
           // Demande publique d'origine (feature/pilot-ready-v1) -- absent
           // avant ce chantier, ajouté en cohérence avec sourceInterventionId
@@ -3850,8 +3897,10 @@
           // brouillon n'a pas encore de version figée.
           documentSnapshot: status === 'attente' ? buildDocumentSnapshot('devis', {
             clientId: input.clientId, clientName: input.clientName, lines, tvaRate: Number(input.tvaRate) || 0,
-            remise: input.remise, acompte: input.acompte, conditions: input.conditions, notes: input.notes,
+            remise, acompte, conditions: input.conditions, notes: input.notes,
             validityDate: input.validityDate, totals,
+            billingAddress: input.billingAddress, serviceAddress: input.serviceAddress,
+            clientReference: input.clientReference, documentOptions: input.documentOptions,
           }, state) : null,
           statusHistory: [{ id: uid(), event: status === 'attente' ? 'sent' : 'draft_created', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }],
           history: [{ label: status === 'attente' ? 'Devis envoyé' : 'Brouillon créé', date: todayISO(0), cls: 'o' }], // legacy, lu par la side-sheet devis.html
@@ -3980,6 +4029,95 @@
       },
       balance(f) { return round2(Math.max(0, SebaDB.factures.total(f) - SebaDB.factures.paidAmount(f))); },
 
+      /* Construit l'objet facture complet pour une facture LIBRE ou éditée
+         depuis factures-nouvelle.html (feature/flexible-commercial-documents,
+         éditeurs) -- même patron que SebaDB.devis._buildPayload : lignes
+         riches préservées via normalizeCommercialLine, totaux calculés par
+         le moteur centralisé buildCommercialDocumentTotals, jamais un second
+         calcul. status forcé par l'appelant (createDraft/updateDraft). */
+      _buildPayload(input, status) {
+        const remise = input.remise && Number(input.remise.value) > 0 ? { type: input.remise.type === 'percent' ? 'percent' : 'amount', value: Number(input.remise.value) } : null;
+        const lines = (Array.isArray(input.lines) ? input.lines : [])
+          .map(normalizeCommercialLine)
+          .filter(l => (l.description || '').trim())
+          .map((l, idx) => Object.assign({}, l, { position: idx }));
+        const richTotals = buildCommercialDocumentTotals(lines, {
+          documentTaxRate: Number(input.tvaRate) || 0,
+          discountType: remise && remise.type, discountValue: remise && remise.value,
+        });
+        return {
+          clientId: input.clientId, clientName: input.clientName || '',
+          service: input.service || (lines[0] ? (lines[0].description || lines[0].desc) : ''),
+          lines, tvaRate: Number(input.tvaRate) || 0, remise,
+          totalHT: richTotals.totalHT, totalTVA: richTotals.totalTVA, totalTTC: richTotals.totalTTC,
+          amount: richTotals.totalTTC, // alias legacy
+          status, date: todayISO(0), dueDate: input.dueDate || null, paidAt: null,
+          devisId: input.devisId || null, interventionId: input.interventionId || null,
+          conditions: (input.conditions || '').trim(),
+          billingAddress: (input.billingAddress || '').trim(),
+          serviceAddress: (input.serviceAddress || '').trim(),
+          clientReference: (input.clientReference || '').trim(),
+          internalReference: (input.internalReference || '').trim(),
+          documentOptions: input.documentOptions && typeof input.documentOptions === 'object' ? input.documentOptions : null,
+          payments: [], notes: (input.notes || '').trim(), cancelledAt: null,
+          // Snapshot (section 12) -- posé UNIQUEMENT à l'émission (status
+          // 'issued'), jamais pour un brouillon -- même règle que le devis.
+          documentSnapshot: status === 'issued' ? buildDocumentSnapshot('facture', {
+            clientId: input.clientId, clientName: input.clientName, lines, tvaRate: Number(input.tvaRate) || 0,
+            remise, acompte: null, conditions: input.conditions, notes: input.notes,
+            billingAddress: input.billingAddress, serviceAddress: input.serviceAddress,
+            clientReference: input.clientReference, documentOptions: input.documentOptions,
+          }, state) : null,
+          statusHistory: [{ id: uid(), event: status === 'issued' ? 'issued' : 'draft_created', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }],
+        };
+      },
+
+      createDraft(input) {
+        if (!state) loadState();
+        const payload = SebaDB.factures._buildPayload(input, 'draft');
+        const f = SebaDB.create('factures', Object.assign({ num: null }, payload));
+        SebaDB.log('facture', 'Brouillon de facture créé — ' + (f.clientName || 'client'), 'factures.html');
+        return { ok: true, facture: f };
+      },
+
+      /* Corrige un brouillon existant, ou l'émet si input._emit est vrai
+         (assigne le numéro stable + le snapshot, jamais recalculés ensuite --
+         même contrat que SebaDB.devis.updateDraft/_send). Un brouillon
+         DEVIENT le document définitif à l'émission, jamais un second objet
+         créé (idempotent : ré-émettre un objet déjà 'issued' est refusé). */
+      updateDraft(id, input) {
+        if (!state) loadState();
+        const existing = state.factures.find(f => f.id === id);
+        if (!existing) return { ok: false, error: 'Facture introuvable.' };
+        if (existing.status !== 'draft') return { ok: false, error: 'Seul un brouillon peut être corrigé.' };
+        const emitNow = !!input._emit;
+        const payload = SebaDB.factures._buildPayload(input, emitNow ? 'issued' : 'draft');
+        if (emitNow) payload.num = SebaDB.nextNum('facture');
+        else delete payload.num;
+        delete payload.statusHistory;
+        SebaDB.update('factures', id, payload);
+        if (emitNow) {
+          const f = state.factures.find(x => x.id === id);
+          f.statusHistory = (f.statusHistory || []).concat([{ id: uid(), event: 'issued', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }]);
+          SebaDB.update('factures', id, { statusHistory: f.statusHistory });
+        }
+        SebaDB.log('facture', (emitNow ? 'Facture émise ' + (SebaDB.get('factures', id) || {}).num : 'Brouillon de facture mis à jour ') + (existing.num || ''), 'factures.html');
+        return { ok: true, facture: SebaDB.get('factures', id) };
+      },
+
+      /* Duplication = toujours un nouveau BROUILLON, jamais un ré-émission
+         immédiate (même règle que SebaDB.devis.duplicate). */
+      duplicate(id) {
+        if (!state) loadState();
+        const src = state.factures.find(f => f.id === id);
+        if (!src) return { ok: false, error: 'Facture introuvable.' };
+        const payload = SebaDB.factures._buildPayload(src, 'draft');
+        payload.duplicatedFrom = id;
+        const f = SebaDB.create('factures', Object.assign({ num: null }, payload));
+        SebaDB.log('facture', 'Facture dupliquée (brouillon) depuis ' + (src.num || '(brouillon)') + ' — ' + (f.clientName || 'client'), 'factures.html');
+        return { ok: true, facture: f };
+      },
+
       /* Reprend les lignes/totaux d'un devis ACCEPTÉ sans ressaisie (section
          7 du chantier) -- jamais une nouvelle saisie manuelle des montants.
          status 'issued' immédiatement (même convention que
@@ -4007,6 +4145,7 @@
           totalHT: d.totalHT, totalTVA: d.totalTVA, totalTTC: d.totalTTC, amount: d.totalTTC,
           status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
           devisId: d.id, interventionId: d.sourceInterventionId || null,
+          conditions: d.conditions || '',
           payments: [], notes: '', cancelledAt: null,
           documentSnapshot: snapshot,
           statusHistory: [{ id: uid(), event: 'created_from_devis', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { devisId: d.id } }],
@@ -4873,31 +5012,35 @@
         const intervention = state.interventions.find(i => i.id === interventionId);
         if (!intervention) return { ok: false, error: 'Intervention introuvable.' };
         normalizeIntervention(intervention);
+        if (intervention.invoiceId) {
+          // Idempotent (même contrat que createFromAcceptedQuote) : un
+          // retry/double-clic renvoie la facture déjà créée, jamais une
+          // erreur -- l'éditeur (factures-nouvelle.html?interventionId=)
+          // doit pouvoir rouvrir cette facture sans jamais bloquer.
+          const already = state.factures.find(f => f.id === intervention.invoiceId);
+          if (already) return { ok: true, facture: already, alreadyExisted: true };
+        }
         if (intervention.execution.completionStatus !== 'owner_approved') return { ok: false, error: 'Le dossier doit être validé avant de facturer.' };
-        if (intervention.invoiceId) return { ok: false, error: 'Une facture existe déjà pour cette intervention.' };
-        const facture = SebaDB.create('factures', {
-          num: SebaDB.nextNum('facture'), clientId: intervention.clientId, clientName: intervention.clientName || '',
-          service: intervention.service || '', lines: [], tvaRate: 0, remise: null,
-          totalHT: 0, totalTVA: 0, totalTTC: 0, amount: 0, status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
-          interventionId: intervention.id, devisId: null, payments: [], notes: '', cancelledAt: null,
-          // Snapshot (section 12) -- posé à la création comme pour
-          // createFromDevis ci-dessus (cohérence : le statut passe déjà à
-          // 'issued' ici). Limitation V1 connue : cette facture est
-          // "préremplie" (souvent à 0, le patron la complète ensuite sur
-          // factures.html) -- si les lignes sont éditées après coup via
-          // SebaDB.update() direct, ce snapshot initial n'est PAS
-          // rafraîchi automatiquement (aucune 2e écriture "d'émission"
-          // n'existe dans ce flux). buildInvoiceDocumentModel reste
-          // fiable dans tous les cas : il relit les champs facture
-          // actuels quand aucun changement n'invalide le snapshot.
-          documentSnapshot: buildDocumentSnapshot('facture', {
-            clientId: intervention.clientId, clientName: intervention.clientName, lines: [], tvaRate: 0, remise: null, acompte: null, conditions: '', notes: '',
-          }, state),
-          statusHistory: [{ id: uid(), event: 'created_from_intervention', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { interventionId: intervention.id } }],
-        });
+        // Brouillon éditable (feature/flexible-commercial-documents, éditeurs)
+        // -- JAMAIS émise automatiquement à 0€ (correctif : avant ce chantier
+        // cette fonction créait directement une facture 'issued', verrouillée,
+        // sans passer par l'éditeur -- contraire à la section 10). Le patron
+        // vérifie/complète le prix sur factures-nouvelle.html?id=... avant
+        // d'émettre réellement (numéro + snapshot posés uniquement à ce
+        // moment-là par SebaDB.factures.updateDraft(id,{_emit:true})).
+        // Une seule ligne prérempilie avec le service réel de la mission,
+        // prix à 0 (le patron le connaît, jamais inventé ici) -- aucune note
+        // interne employé/incident/photo copiée (hors périmètre financier).
+        const payload = SebaDB.factures._buildPayload({
+          clientId: intervention.clientId, clientName: intervention.clientName || '',
+          service: intervention.service || '',
+          lines: intervention.service ? [{ description: intervention.service, quantity: 1, unitPriceCents: 0, unit: 'intervention' }] : [],
+          tvaRate: 20, interventionId: intervention.id,
+        }, 'draft');
+        const facture = SebaDB.create('factures', Object.assign({ num: null }, payload));
         pushStatusHistory(intervention, 'invoice_created', 'patron', null, { factureId: facture.id });
         SebaDB.update('interventions', interventionId, { invoiceId: facture.id, statusHistory: intervention.statusHistory });
-        SebaDB.log('facture', 'Facture préremplie créée depuis la mission — ' + (intervention.clientName || 'client') + ' · ' + facture.num, 'factures.html');
+        SebaDB.log('facture', 'Brouillon de facture préremplie créé depuis la mission — ' + (intervention.clientName || 'client'), 'factures.html');
         return { ok: true, facture };
       },
 

@@ -549,9 +549,11 @@
           return;
         }
         if (xact === 'convertir') {
-          const res = SebaDB.factures.createFromDevis(id);
-          if (res.ok) { showToast('Facture générée — ' + res.facture.num); setTimeout(() => location.href = 'factures.html?highlight=' + res.facture.id, 600); }
-          else showToast(res.error || 'Échec de la conversion.');
+          // Ouvre l'éditeur (factures-nouvelle.html?devisId=), qui gère lui-
+          // même la conversion idempotente (SebaDB.factures.createFromDevis)
+          // et la redirection vers le document final -- un seul chemin,
+          // jamais deux implémentations de la même conversion.
+          location.href = 'factures-nouvelle.html?devisId=' + encodeURIComponent(id);
           return;
         }
         if (xact === 'planifier') {

@@ -6,42 +6,15 @@
 <title>Reçu — Seba</title>
 <script src="auth.js"></script>
 <script src="guard.js"></script>
+<link rel="stylesheet" href="commercial-document.css">
 <style>
 :root{
   --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
-  --doc-bg:#FFFFFF; --doc-ink:#1A1A1A; --doc-muted:#6B6B70; --doc-border:#DADADE;
-  --doc-accent:#0D9488; --doc-accent-soft:#E6F5F3;
-  --page-bg:#EDEDEF; --doc-shadow:rgba(0,0,0,.15);
 }
-*{box-sizing:border-box;}
-body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--page-bg);color:var(--doc-ink);}
-a{color:inherit;}
 .toolbar{position:sticky;top:0;z-index:10;background:var(--toolbar-bg);color:var(--toolbar-ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--toolbar-border);}
 .toolbar h1{font-size:1rem;font-weight:600;margin:0;}
 .tbtn{background:transparent;border:1px solid var(--toolbar-border);color:var(--toolbar-ink);padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
 .tbtn.primary{background:var(--doc-accent);border-color:var(--doc-accent);color:var(--doc-bg);}
-.page-wrap{padding:24px;display:flex;justify-content:center;}
-.a4{background:var(--doc-bg);width:210mm;min-height:297mm;padding:14mm;box-shadow:0 4px 24px var(--doc-shadow);}
-.doc-head{display:flex;justify-content:space-between;gap:24px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--doc-accent);}
-.doc-head .company h2{margin:0 0 4px;font-size:1.2rem;}
-.doc-head .company p{margin:0;font-size:0.82rem;color:var(--doc-muted);}
-.doc-head .meta{text-align:right;}
-.doc-head .meta .doctype{font-size:1.4rem;font-weight:800;letter-spacing:0.04em;color:var(--doc-accent);}
-.doc-head .meta .docnum{font-family:monospace;font-size:0.95rem;margin-top:4px;}
-.receipt-body{font-size:0.95rem;line-height:1.8;}
-.receipt-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--doc-border);}
-.receipt-row.grand{font-weight:800;font-size:1.15rem;color:var(--doc-accent);border-bottom:none;border-top:2px solid var(--doc-accent);margin-top:8px;padding-top:12px;}
-.receipt-confirm{margin-top:32px;padding:16px;background:var(--doc-accent-soft);color:var(--doc-accent);border-radius:8px;font-weight:600;}
-.empty-state{padding:60px 24px;text-align:center;color:var(--doc-muted);}
-.empty-state a{color:var(--doc-accent);font-weight:600;}
-@media print{
-  .toolbar{display:none;}
-  .page-wrap{padding:0;}
-  .a4{box-shadow:none;width:auto;min-height:0;margin:0;padding:0;}
-  body{background:var(--doc-bg);}
-  @page{size:A4;margin:14mm;}
-}
-@media (max-width:480px){ .a4{width:100%;padding:16px;} }
 </style>
 </head>
 <body>
@@ -59,10 +32,9 @@ a{color:inherit;}
 </div>
 
 <script src="seba-data.js"></script>
+<script src="commercial-document-render.js"></script>
 <script>
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function eur(v) { return (Number(v) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'; }
+const esc = SebaDocRender.esc;
 
 let _model = null;
 
@@ -72,31 +44,7 @@ function showEmpty(msg) {
 
 function renderDoc(model) {
   document.title = 'Reçu — ' + (model.references.invoiceNumber || '') + ' — Seba';
-  document.getElementById('page-wrap').innerHTML = `
-    <div class="a4">
-      <div class="doc-head">
-        <div class="company">
-          <h2>${esc((model.company && model.company.nom) || 'Entreprise')}</h2>
-          <p>${esc((model.company && model.company.email) || '')}</p>
-        </div>
-        <div class="meta">
-          <div class="doctype">REÇU</div>
-          <div class="docnum">Facture ${esc(model.references.invoiceNumber || '')}</div>
-          <div style="font-size:0.8rem;color:var(--doc-muted);margin-top:4px;">${fmtDate(model.issueDate)}</div>
-        </div>
-      </div>
-      <div class="receipt-body">
-        <div class="receipt-row"><span>Client</span><span>${esc(((model.customer.prenom || '') + ' ' + (model.customer.nom || '')).trim() || '—')}</span></div>
-        <div class="receipt-row"><span>Méthode</span><span>${esc(model.references.paymentMode || '—')}</span></div>
-        ${model.references.paymentReference ? '<div class="receipt-row"><span>Référence</span><span>' + esc(model.references.paymentReference) + '</span></div>' : ''}
-        <div class="receipt-row"><span>Total de la facture</span><span>${eur(model.totals.invoiceTotal)}</span></div>
-        <div class="receipt-row"><span>Cumul payé après ce paiement</span><span>${eur(model.totals.cumulativePaid)}</span></div>
-        <div class="receipt-row"><span>Solde après ce paiement</span><span>${eur(model.totals.balanceAfter)}</span></div>
-        <div class="receipt-row grand"><span>Montant reçu</span><span>${eur(model.totals.paymentAmount)}</span></div>
-      </div>
-      <div class="receipt-confirm">Nous confirmons la réception du paiement indiqué ci-dessus.</div>
-    </div>
-  `;
+  document.getElementById('page-wrap').innerHTML = SebaDocRender.receiptHTML(model);
 }
 
 function printDoc() {

@@ -6,67 +6,18 @@
 <title>Devis — Seba</title>
 <script src="auth.js"></script>
 <script src="guard.js"></script>
+<link rel="stylesheet" href="commercial-document.css">
 <style>
 :root{
   --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
-  --doc-bg:#FFFFFF; --doc-ink:#1A1A1A; --doc-muted:#6B6B70; --doc-border:#DADADE;
-  --doc-accent:#0D9488; --doc-accent-soft:#E6F5F3;
   --btn-ink:#031A12;
-  --page-bg:#EDEDEF; --doc-shadow:rgba(0,0,0,.15); --section-bg:#F7F7F8;
-  --warn-bg:#FFF7E6; --warn-border:#F0C36D; --warn-ink:#8A5A00;
 }
-*{box-sizing:border-box;}
-body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--page-bg);color:var(--doc-ink);}
-a{color:inherit;}
 .toolbar{position:sticky;top:0;z-index:10;background:var(--toolbar-bg);color:var(--toolbar-ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--toolbar-border);}
 .toolbar h1{font-size:1rem;font-weight:600;margin:0;}
 .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .tbtn{background:transparent;border:1px solid var(--toolbar-border);color:var(--toolbar-ink);padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
 .tbtn.primary{background:var(--doc-accent);border-color:var(--doc-accent);color:var(--doc-bg);}
 .tbtn:disabled{opacity:.4;cursor:not-allowed;}
-.page-wrap{padding:24px;display:flex;justify-content:center;}
-.a4{background:var(--doc-bg);width:210mm;min-height:297mm;padding:14mm;box-shadow:0 4px 24px var(--doc-shadow);}
-.doc-head{display:flex;justify-content:space-between;gap:24px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--doc-accent);}
-.doc-head .company h2{margin:0 0 4px;font-size:1.2rem;}
-.doc-head .company p{margin:0;font-size:0.82rem;color:var(--doc-muted);}
-.doc-head .meta{text-align:right;}
-.doc-head .meta .doctype{font-size:1.4rem;font-weight:800;letter-spacing:0.04em;color:var(--doc-accent);}
-.doc-head .meta .docnum{font-family:monospace;font-size:0.95rem;margin-top:4px;}
-.doc-head .meta .status-pill{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;background:var(--doc-accent-soft);color:var(--doc-accent);font-weight:700;font-size:0.78rem;}
-.doc-parties{display:flex;gap:32px;margin-bottom:24px;}
-.doc-parties .block{flex:1;}
-.doc-parties .block h4{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--doc-muted);margin:0 0 6px;}
-.doc-parties .block p{margin:0;font-size:0.88rem;line-height:1.5;white-space:pre-line;}
-table.doc-lines{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:0.85rem;}
-table.doc-lines thead{display:table-header-group;}
-table.doc-lines th{text-align:left;font-size:0.7rem;text-transform:uppercase;color:var(--doc-muted);padding:8px 6px;border-bottom:1px solid var(--doc-border);}
-table.doc-lines td{padding:8px 6px;border-bottom:1px solid var(--doc-border);vertical-align:top;break-inside:avoid;page-break-inside:avoid;}
-table.doc-lines .num-col{text-align:right;white-space:nowrap;}
-.section-row td{font-weight:700;background:var(--section-bg);padding-top:12px;}
-.doc-totals{margin-left:auto;width:280px;margin-bottom:16px;}
-.doc-totals .row{display:flex;justify-content:space-between;padding:4px 0;font-size:0.86rem;}
-.doc-totals .row.grand{font-weight:800;font-size:1.05rem;border-top:2px solid var(--doc-accent);padding-top:8px;margin-top:4px;}
-.doc-totals .row.deposit{color:var(--doc-accent);font-weight:600;}
-tfoot{display:table-footer-group;}
-.doc-terms{margin-top:24px;font-size:0.8rem;color:var(--doc-muted);white-space:pre-line;break-inside:avoid;page-break-inside:avoid;}
-.doc-acceptance{margin-top:24px;padding:14px;border:1px solid var(--doc-border);border-radius:8px;font-size:0.85rem;break-inside:avoid;page-break-inside:avoid;}
-.doc-acceptance.accepted{border-color:var(--doc-accent);background:var(--doc-accent-soft);}
-.doc-footer-text{margin-top:32px;padding-top:12px;border-top:1px solid var(--doc-border);font-size:0.76rem;color:var(--doc-muted);white-space:pre-line;}
-.warn-banner{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-ink);padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:16px;}
-.empty-state{padding:60px 24px;text-align:center;color:var(--doc-muted);}
-.empty-state a{color:var(--doc-accent);font-weight:600;}
-@media print{
-  .toolbar{display:none;}
-  .page-wrap{padding:0;}
-  .a4{box-shadow:none;width:auto;min-height:0;margin:0;padding:0;}
-  body{background:var(--doc-bg);}
-  @page{size:A4;margin:14mm;}
-}
-@media (max-width:480px){
-  .a4{width:100%;padding:16px;}
-  .doc-parties{flex-direction:column;gap:16px;}
-  table.doc-lines{display:block;overflow-x:auto;}
-}
 </style>
 </head>
 <body>
@@ -87,12 +38,9 @@ tfoot{display:table-footer-group;}
 </div>
 
 <script src="seba-data.js"></script>
+<script src="commercial-document-render.js"></script>
 <script>
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function eur(cents) { return ((Number(cents) || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'; }
-
-const STATUS_LABEL = { brouillon: 'BROUILLON — NON ENVOYÉ', attente: 'EN ATTENTE DE RÉPONSE', signe: 'ACCEPTÉ', refuse: 'REFUSÉ', annule: 'ANNULÉ', expire: 'EXPIRÉ' };
+const esc = SebaDocRender.esc;
 
 let _model = null, _isOwner = false, _quoteId = null;
 
@@ -110,70 +58,7 @@ function renderDoc(model) {
     document.getElementById('btn-duplicate').style.display = 'inline-block';
   }
 
-  const linesHtml = model.lines.map(l => (
-    '<tr><td>' + esc(l.description) + (l.details ? '<div style="color:var(--doc-muted);font-size:0.78rem;">' + esc(l.details) + '</div>' : '') + '</td>' +
-    '<td class="num-col">' + (l.quantity || 0) + (l.unit ? ' ' + esc(l.unit) : '') + '</td>' +
-    '<td class="num-col">' + eur(l.unitPriceCents) + '</td>' +
-    '<td class="num-col">' + (l.discountCents ? '-' + eur(l.discountCents) : '—') + '</td>' +
-    '<td class="num-col">' + eur(l.totalExcludingTaxCents) + '</td></tr>'
-  )).join('');
-  const sectionsPositions = (model.sections || []);
-
-  let acceptanceHtml = '';
-  if (model.acceptance) {
-    if (model.acceptance.acceptedAt) acceptanceHtml = '<div class="doc-acceptance accepted">Devis accepté le ' + fmtDate(model.acceptance.acceptedAt) + '.</div>';
-    else if (model.acceptance.refusedAt) acceptanceHtml = '<div class="doc-acceptance">Devis refusé le ' + fmtDate(model.acceptance.refusedAt) + (model.acceptance.refusalComment ? ' — ' + esc(model.acceptance.refusalComment) : '') + '</div>';
-  }
-  if (model.references.supersededByQuoteId) acceptanceHtml = '<div class="doc-acceptance">REMPLACÉ PAR UNE NOUVELLE VERSION.</div>' + acceptanceHtml;
-
-  const byRateHtml = (model.totals.byRate || []).length > 1
-    ? model.totals.byRate.map(r => '<div class="row"><span>TVA ' + r.rate + '%</span><span>' + eur(r.taxCents) + '</span></div>').join('')
-    : '';
-
-  document.getElementById('page-wrap').innerHTML = `
-    <div class="a4">
-      <div class="doc-head">
-        <div class="company">
-          <h2>${esc((model.company && model.company.nom) || 'Entreprise')}</h2>
-          <p>${esc((model.company && model.company.email) || '')}${model.company && model.company.telephone ? ' · ' + esc(model.company.telephone) : ''}</p>
-          <p>${esc((model.company && model.company.zone) || '')}</p>
-        </div>
-        <div class="meta">
-          <div class="doctype">DEVIS</div>
-          <div class="docnum">${esc(model.documentNumber || 'BROUILLON')}${model.revisionNumber > 1 ? ' · v' + model.revisionNumber : ''}</div>
-          <div style="font-size:0.8rem;color:var(--doc-muted);margin-top:4px;">${fmtDate(model.issueDate)}</div>
-          <div class="status-pill">${STATUS_LABEL[model.status] || model.status}</div>
-        </div>
-      </div>
-      <div class="doc-parties">
-        <div class="block">
-          <h4>Client</h4>
-          <p>${esc(((model.customer.prenom || '') + ' ' + (model.customer.nom || '')).trim() || '—')}
-${esc(model.billingAddress || '')}
-${esc(model.customer.email || '')}</p>
-        </div>
-        <div class="block">
-          <h4>Validité</h4>
-          <p>${model.validityDate ? fmtDate(model.validityDate) : 'Non spécifiée'}</p>
-        </div>
-      </div>
-      <table class="doc-lines">
-        <thead><tr><th>Prestation</th><th class="num-col">Qté</th><th class="num-col">Prix unit.</th><th class="num-col">Remise</th><th class="num-col">Total HT</th></tr></thead>
-        <tbody>${linesHtml || '<tr><td colspan="5" style="color:var(--doc-muted);">Aucune ligne.</td></tr>'}</tbody>
-      </table>
-      <div class="doc-totals">
-        <div class="row"><span>Total HT</span><span>${eur(model.totals.totalExclCents)}</span></div>
-        ${model.totals.globalDiscountCents ? '<div class="row"><span>Remise</span><span>-' + eur(model.totals.globalDiscountCents) + '</span></div>' : ''}
-        ${byRateHtml}
-        <div class="row"><span>TVA</span><span>${eur(model.totals.totalTaxCents)}</span></div>
-        <div class="row grand"><span>Total TTC</span><span>${eur(model.totals.totalInclCents)}</span></div>
-        ${model.totals.depositCents ? '<div class="row deposit"><span>Acompte demandé</span><span>' + eur(model.totals.depositCents) + '</span></div><div class="row"><span>Solde après acompte</span><span>' + eur(model.totals.balanceAfterDepositCents) + '</span></div>' : ''}
-      </div>
-      ${model.terms.conditions ? '<div class="doc-terms">' + esc(model.terms.conditions) + '</div>' : ''}
-      ${acceptanceHtml}
-      <div class="doc-footer-text">Document généré par Seba.</div>
-    </div>
-  `;
+  document.getElementById('page-wrap').innerHTML = SebaDocRender.quoteHTML(model);
 }
 
 function goEdit() { location.href = 'devis-nouveau.html?id=' + encodeURIComponent(_quoteId); }
