@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devis — Seba</title>
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="commercial-document.css">
+<style>
+:root{
+  --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
+  --btn-ink:#031A12;
+}
+.toolbar{position:sticky;top:0;z-index:10;background:var(--toolbar-bg);color:var(--toolbar-ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--toolbar-border);}
+.toolbar h1{font-size:1rem;font-weight:600;margin:0;}
+.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.tbtn{background:transparent;border:1px solid var(--toolbar-border);color:var(--toolbar-ink);padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
+.tbtn.primary{background:var(--doc-accent);border-color:var(--doc-accent);color:var(--doc-bg);}
+.tbtn:disabled{opacity:.4;cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1 id="tb-title">Devis</h1>
+  <div class="toolbar-actions">
+    <button class="tbtn" onclick="history.length>1?history.back():location.href='devis.html'">← Retour</button>
+    <button class="tbtn" id="btn-edit" style="display:none;" onclick="goEdit()">Modifier le brouillon</button>
+    <button class="tbtn" id="btn-revision" style="display:none;" onclick="goRevision()">Créer une révision</button>
+    <button class="tbtn" id="btn-duplicate" style="display:none;" onclick="goDuplicate()">Dupliquer</button>
+    <button class="tbtn primary" onclick="printDoc()">Imprimer / Enregistrer en PDF</button>
+  </div>
+</div>
+
+<div class="page-wrap" id="page-wrap">
+  <div class="empty-state" id="loading">Chargement…</div>
+</div>
+
+<script src="seba-data.js"></script>
+<script src="commercial-document-render.js"></script>
+<script>
+const esc = SebaDocRender.esc;
+
+let _model = null, _isOwner = false, _quoteId = null;
+
+function showEmpty(msg) {
+  document.getElementById('page-wrap').innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p><a href="devis.html">Retour aux devis</a></div>';
+}
+
+function renderDoc(model) {
+  document.title = (model.documentNumber || 'Brouillon') + ' — Seba';
+  document.getElementById('tb-title').textContent = 'Devis ' + (model.documentNumber || '(brouillon)');
+
+  if (_isOwner) {
+    document.getElementById('btn-edit').style.display = model.status === 'brouillon' ? 'inline-block' : 'none';
+    document.getElementById('btn-revision').style.display = (model.status === 'attente' || model.status === 'signe' || model.status === 'refuse') && !model.references.supersededByQuoteId ? 'inline-block' : 'none';
+    document.getElementById('btn-duplicate').style.display = 'inline-block';
+  }
+
+  document.getElementById('page-wrap').innerHTML = SebaDocRender.quoteHTML(model);
+}
+
+function goEdit() { location.href = 'devis-nouveau.html?id=' + encodeURIComponent(_quoteId); }
+function goRevision() {
+  const res = SebaDB.devis.createRevision(_quoteId);
+  if (!res.ok) { alert(res.error || 'Échec de la création de la révision.'); return; }
+  location.href = 'devis-nouveau.html?id=' + encodeURIComponent(res.devis.id);
+}
+function goDuplicate() {
+  const res = SebaDB.devis.duplicate(_quoteId);
+  if (!res.ok) { alert(res.error || 'Échec de la duplication.'); return; }
+  location.href = 'devis-nouveau.html?id=' + encodeURIComponent(res.devis.id);
+}
+function printDoc() {
+  const prevTitle = document.title;
+  if (_model) document.title = SebaClientIntelligence.buildCommercialDocumentFilename('devis', _model).replace(/\.pdf$/, '');
+  window.print();
+  setTimeout(() => { document.title = prevTitle; }, 500);
+}
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  _quoteId = params.get('id');
+  if (!_quoteId) { showEmpty('Devis introuvable.'); return; }
+
+  await new Promise(r => { if (window.SebaDB) r(); else document.addEventListener('DOMContentLoaded', r); });
+  if (window.SebaDB) { try { await SebaDB.pullFromServer(); } catch (e) {} }
+
+  const local = window.SebaDB ? SebaDB.get('devis', _quoteId) : null;
+  if (local) {
+    _isOwner = true;
+    _model = SebaClientIntelligence.buildQuoteDocumentModel(local, { devis: SebaDB.list('devis'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get(), documentDisplayPrefs: null }, { role: 'owner' });
+    renderDoc(_model);
+    return;
+  }
+
+  if (window.SebaDB && SebaDB.clientPortal) {
+    const res = await SebaDB.clientPortal.devisDetail(_quoteId);
+    if (res.ok) {
+      _isOwner = false;
+      _model = SebaClientIntelligence.buildQuoteDocumentModel(res.devis, {}, { role: 'client' });
+      renderDoc(_model);
+      return;
+    }
+  }
+
+  showEmpty('Devis introuvable ou accès non autorisé.');
+}
+init();
+</script>
+</body>
+</html>

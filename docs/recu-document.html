@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reçu — Seba</title>
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<link rel="stylesheet" href="commercial-document.css">
+<style>
+:root{
+  --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
+}
+.toolbar{position:sticky;top:0;z-index:10;background:var(--toolbar-bg);color:var(--toolbar-ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--toolbar-border);}
+.toolbar h1{font-size:1rem;font-weight:600;margin:0;}
+.tbtn{background:transparent;border:1px solid var(--toolbar-border);color:var(--toolbar-ink);padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
+.tbtn.primary{background:var(--doc-accent);border-color:var(--doc-accent);color:var(--doc-bg);}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Reçu de paiement</h1>
+  <div>
+    <button class="tbtn" onclick="history.length>1?history.back():location.href='factures.html'">← Retour</button>
+    <button class="tbtn primary" onclick="printDoc()">Imprimer / Enregistrer en PDF</button>
+  </div>
+</div>
+
+<div class="page-wrap" id="page-wrap">
+  <div class="empty-state" id="loading">Chargement…</div>
+</div>
+
+<script src="seba-data.js"></script>
+<script src="commercial-document-render.js"></script>
+<script>
+const esc = SebaDocRender.esc;
+
+let _model = null;
+
+function showEmpty(msg) {
+  document.getElementById('page-wrap').innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p><a href="factures.html">Retour aux factures</a></div>';
+}
+
+function renderDoc(model) {
+  document.title = 'Reçu — ' + (model.references.invoiceNumber || '') + ' — Seba';
+  document.getElementById('page-wrap').innerHTML = SebaDocRender.receiptHTML(model);
+}
+
+function printDoc() {
+  const prevTitle = document.title;
+  if (_model) document.title = SebaClientIntelligence.buildCommercialDocumentFilename('recu', _model).replace(/\.pdf$/, '');
+  window.print();
+  setTimeout(() => { document.title = prevTitle; }, 500);
+}
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const invoiceId = params.get('invoiceId');
+  const paymentId = params.get('paymentId');
+  if (!invoiceId || !paymentId) { showEmpty('Reçu introuvable.'); return; }
+
+  await new Promise(r => { if (window.SebaDB) r(); else document.addEventListener('DOMContentLoaded', r); });
+  if (window.SebaDB) { try { await SebaDB.pullFromServer(); } catch (e) {} }
+
+  const local = window.SebaDB ? SebaDB.get('factures', invoiceId) : null;
+  if (local) {
+    _model = SebaClientIntelligence.buildReceiptDocumentModel(local, paymentId, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
+    if (_model) { renderDoc(_model); return; }
+    showEmpty('Aucun paiement correspondant trouvé pour ce reçu.');
+    return;
+  }
+
+  if (window.SebaDB && SebaDB.clientPortal) {
+    const res = await SebaDB.clientPortal.factureDetail(invoiceId);
+    if (res.ok) {
+      _model = SebaClientIntelligence.buildReceiptDocumentModel(res.facture, paymentId, {}, { role: 'client' });
+      if (_model) { renderDoc(_model); return; }
+      showEmpty('Aucun paiement correspondant trouvé pour ce reçu.');
+      return;
+    }
+  }
+
+  showEmpty('Reçu introuvable ou accès non autorisé.');
+}
+init();
+</script>
+</body>
+</html>

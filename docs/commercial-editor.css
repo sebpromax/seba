@@ -1,0 +1,40 @@
+/* SEBA — CSS de l'éditeur de lignes commerciales partagé
+   (feature/flexible-commercial-documents, éditeurs). Utilise les tokens
+   pro-global.css existants (--bg/--border/--ink/--emerald/--rs), jamais de
+   couleur en dur -- chargée par devis-nouveau.html ET factures-nouvelle.html. */
+.cle-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.cle-catalog-pick{max-width:260px;}
+.cle-add-btn{background:var(--bg);border:1px solid var(--border);color:var(--ink);padding:9px 14px;border-radius:var(--rs);font-size:0.84rem;cursor:pointer;}
+.cle-add-btn:hover{border-color:var(--emerald);color:var(--emerald);}
+.cle-table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+.cle-table th{text-align:left;font-size:0.7rem;text-transform:uppercase;color:var(--text-2);padding:6px 6px;border-bottom:1px solid var(--border);}
+.cle-table td{padding:6px;vertical-align:top;border-bottom:1px solid var(--border);}
+.cle-row .cle-input{width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.84rem;background:var(--bg);color:var(--ink);margin-bottom:4px;}
+.cle-row .cle-input:last-child{margin-bottom:0;}
+.cle-col-type{width:110px;}
+.cle-col-desc{min-width:180px;}
+.cle-col-qty{width:70px;}
+.cle-col-unit{width:120px;}
+.cle-col-price{width:100px;}
+.cle-col-discount{width:120px;}
+.cle-col-tva{width:80px;}
+.cle-col-total{width:100px;text-align:right;font-weight:600;white-space:nowrap;}
+.cle-col-actions{width:120px;white-space:nowrap;}
+.cle-mini{background:var(--bg);border:1px solid var(--border);color:var(--text-2);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:0.8rem;line-height:1;}
+.cle-mini:hover{border-color:var(--emerald);color:var(--emerald);}
+.cle-mini.cle-danger:hover{border-color:var(--critical);color:var(--critical);}
+.cle-mini:disabled{opacity:.35;cursor:not-allowed;}
+.cle-empty{text-align:center;color:var(--text-2);padding:24px;}
+.cle-section-bar{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:6px;padding:6px 8px;}
+.cle-section-tag{font-size:0.68rem;font-weight:700;letter-spacing:0.05em;color:var(--emerald);flex-shrink:0;}
+.cle-section-title{flex:1;border:1px solid transparent;background:transparent;font-weight:600;}
+.cle-row-actions{display:flex;gap:4px;flex-shrink:0;}
+
+@media (max-width:820px){
+  .cle-table, .cle-table thead, .cle-table tbody, .cle-table th, .cle-table td, .cle-table tr{display:block;}
+  .cle-table thead{display:none;}
+  .cle-row{border:1px solid var(--border);border-radius:var(--rs);padding:10px;margin-bottom:10px;display:block;}
+  .cle-row td{border-bottom:none;padding:3px 0;}
+  .cle-col-total{text-align:left;}
+  .cle-section-bar{flex-wrap:wrap;}
+}

@@ -411,8 +411,18 @@
       html += '<button class="btn-outline" onclick="reopenDossier()">Rouvrir</button>';
     } else if (cs === 'owner_approved') {
       html += '<button class="btn-outline" onclick="reopenDossier()">Rouvrir</button>';
-      if (!interv.invoiceId) html += '<button class="btn-em" onclick="createInvoice()">Créer une facture</button>';
-      else html += '<a class="btn-outline" href="factures.html?highlight=' + encodeURIComponent(interv.invoiceId) + '">Voir la facture</a>';
+      if (!interv.invoiceId) {
+        html += '<button class="btn-em" onclick="createInvoice()">Créer une facture</button>';
+      } else {
+        // Brouillon (feature/flexible-commercial-documents, éditeurs) ->
+        // rouvre l'éditeur pour compléter/émettre ; déjà émise -> document
+        // final directement, jamais un détour par la liste factures.html.
+        const linkedFacture = SebaDB.get('factures', interv.invoiceId);
+        const href = linkedFacture && linkedFacture.status === 'draft'
+          ? 'factures-nouvelle.html?id=' + encodeURIComponent(interv.invoiceId)
+          : 'facture-document.html?id=' + encodeURIComponent(interv.invoiceId);
+        html += '<a class="btn-outline" href="' + href + '">Voir la facture</a>';
+      }
     }
     // Devis d'origine (feature/pilot-ready-v1) -- cette intervention a été
     // créée depuis un devis accepté (SebaDB.interventions.
@@ -746,13 +756,10 @@
     render();
   }
 
+  // "Créer la facture ouvre l'éditeur prérempli" (section 12) -- jamais un
+  // simple toast qui laisse le patron sur la même page sans rien à compléter.
   function createInvoice() {
-    const res = SebaDB.interventions.createInvoiceFromIntervention(_id);
-    if (!res.ok) { showToast(res.error || 'Échec de la création de facture.'); return; }
-    interv = SebaDB.get('interventions', _id);
-    window.SebaClientIntelligence.normalizeIntervention(interv);
-    showToast('Facture préremplie créée.');
-    render();
+    location.href = 'factures-nouvelle.html?interventionId=' + encodeURIComponent(_id) + '&returnTo=' + encodeURIComponent('intervention-fiche.html?id=' + _id);
   }
 
   if (loadIntervention()) render();

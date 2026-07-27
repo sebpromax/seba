@@ -715,15 +715,24 @@ function renderRequests(vm) {
 }
 
 function renderQuoteRow(d) {
-  const canAct = d.status === 'attente';
+  // supersededByQuoteId (feature/flexible-commercial-documents, révisions) :
+  // une version remplacée par une révision plus récente ne doit plus
+  // proposer Accepter/Refuser (invariant "aucune action impossible
+  // affichée"), même déjà bloquée côté RPC (client_accept_devis/
+  // client_refuse_devis, migrations/2026-07-27-flexible-commercial-documents.sql).
+  const canAct = d.status === 'attente' && !d.supersededByQuoteId;
   return '<div class="cp-list-row">' +
     '<div class="cp-list-main">' +
-      '<div class="cp-list-title">' + escapeHtml(d.num || d.numero || 'Devis') + '</div>' +
-      '<div class="cp-list-meta">' + escapeHtml(d.date || '') + ' · <span class="mono-num">' + fmtMoney(d.totalTTC != null ? d.totalTTC : d.amount) + '</span></div>' +
+      '<div class="cp-list-title">' + escapeHtml(d.num || d.numero || 'Devis') + (d.revisionNumber > 1 ? ' (v' + d.revisionNumber + ')' : '') + '</div>' +
+      '<div class="cp-list-meta">' + escapeHtml(d.date || '') + ' · <span class="mono-num">' + fmtMoney(d.totalTTC != null ? d.totalTTC : d.amount) + '</span>' + (d.supersededByQuoteId ? ' · Remplacé par une version plus récente' : '') + '</div>' +
     '</div>' +
     '<div class="cp-list-side">' +
       '<span class="cp-badge ' + (d.status || '') + '">' + (DEVIS_STATUT_LABELS[d.status] || d.status || '') + '</span>' +
       '<button type="button" class="cp-link-btn" onclick="consulterDevis(\'' + d.id + '\')">Consulter</button>' +
+      // Document imprimable (feature/flexible-commercial-documents) --
+      // même page que le patron, actorContext résolu automatiquement côté
+      // devis-document.html via la session client (RPC allowlistée).
+      '<button type="button" class="cp-link-btn" onclick="location.href=\'devis-document.html?id=' + d.id + '\'">Imprimer</button>' +
       (canAct ? '<button type="button" class="cp-link-btn" onclick="confirmAcceptDevis(\'' + d.id + '\')">Accepter</button>' +
                 '<button type="button" class="cp-link-btn" style="color:var(--danger-text);" onclick="openRefuseModal(\'' + d.id + '\')">Refuser</button>' : '') +
     '</div>' +
@@ -819,7 +828,8 @@ async function consulterFacture(id) {
   if (!res.ok) { alert(res.error || 'Facture introuvable.'); return; }
   const f = res.facture;
   const payments = (f.payments || []).map(p =>
-    '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;color:var(--text-2);"><span>' + escapeHtml(p.date || '') + ' · ' + escapeHtml(p.mode || '') + '</span><span>' + fmtMoney(p.amount) + '</span></div>'
+    '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;color:var(--text-2);"><span>' + escapeHtml(p.date || '') + ' · ' + escapeHtml(p.mode || '') + '</span><span>' + fmtMoney(p.amount) +
+    (p.id ? ' · <a href="recu-document.html?invoiceId=' + f.id + '&paymentId=' + p.id + '" style="color:var(--emerald);">Reçu</a>' : '') + '</span></div>'
   ).join('');
   const body = renderDevisLinesHtml(f) +
     '<div style="display:flex;justify-content:space-between;padding-top:10px;font-size:.8rem;color:var(--text-2);"><span>Total TTC</span><span>' + fmtMoney(f.totalTTC) + '</span></div>' +
@@ -838,6 +848,7 @@ function renderInvoiceRow(f) {
       '<span class="mono-num cp-list-amount">' + fmtMoney(f.totalTTC != null ? f.totalTTC : f.amount) + '</span>' +
       '<span class="cp-badge ' + (FACTURE_CSS[f.status] || '') + '">' + (FACTURE_STATUT_LABELS[f.status] || f.status || '') + '</span>' +
       '<button type="button" class="cp-link-btn" onclick="consulterFacture(\'' + f.id + '\')">Consulter</button>' +
+      '<button type="button" class="cp-link-btn" onclick="location.href=\'facture-document.html?id=' + f.id + '\'">Imprimer</button>' +
       (f.paymentLink ? '<button type="button" class="cp-link-btn" onclick="window.open(' + JSON.stringify(f.paymentLink) + ',\'_blank\')">Payer</button>' : '') +
     '</div>' +
   '</div>';

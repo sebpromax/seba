@@ -164,6 +164,7 @@
         <div class="settings-nav-item" onclick="showTab('identite')">Identité visuelle</div>
         <div class="settings-nav-item" onclick="showTab('services')">Services & tarifs</div>
         <div class="settings-nav-item" onclick="showTab('demandes')">Demande en ligne</div>
+        <div class="settings-nav-item" onclick="showTab('documents')">Documents</div>
         <div class="settings-nav-item" onclick="showTab('compte')">Compte</div>
       </div>
 
@@ -177,6 +178,11 @@
             <div class="field-group"><label>Téléphone</label><input type="text" id="regl-tel" placeholder="Ex : 04 78 00 00 00"></div>
           </div>
           <div class="field-group"><label>Zone d'intervention</label><input type="text" id="regl-zone" placeholder="Ex : Lyon et agglomération"></div>
+          <div class="field-row">
+            <div class="field-group"><label>Raison sociale (optionnel)</label><input type="text" id="regl-raison" placeholder="Ex : Ménage Express Lyon SARL"></div>
+            <div class="field-group"><label>SIRET (optionnel)</label><input type="text" id="regl-siret" placeholder="Ex : 123 456 789 00012"></div>
+          </div>
+          <div class="field-group"><label>N° TVA intracommunautaire (optionnel)</label><input type="text" id="regl-tva-num" placeholder="Ex : FR12 345678900"></div>
           <div class="field-group">
             <label>Apparence</label>
             <div class="theme-switch-row">
@@ -237,6 +243,30 @@
           </div>
           <div class="field-group"><label>Message de confirmation</label><textarea id="pic-confirmation" rows="2" placeholder="Ex : Merci, nous revenons vers vous sous 24h." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;"></textarea></div>
           <button class="btn-em" onclick="savePublicIntakeConfig()">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-documents" style="display:none;">
+          <h3>Documents (devis, factures, reçus)</h3>
+          <p class="desc">Numérotation, coordonnées bancaires et préférences d'affichage utilisées par défaut sur vos documents. Chaque document peut surcharger ces réglages individuellement.</p>
+
+          <h4 style="margin:18px 0 10px;font-size:0.95rem;">Numérotation</h4>
+          <div id="numbering-rows"></div>
+
+          <h4 style="margin:22px 0 10px;font-size:0.95rem;">Coordonnées bancaires (optionnel)</h4>
+          <div class="field-row">
+            <div class="field-group"><label>IBAN</label><input type="text" id="doc-iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"></div>
+            <div class="field-group"><label>BIC</label><input type="text" id="doc-bic" placeholder="Ex : BNPAFRPPXXX"></div>
+          </div>
+
+          <h4 style="margin:22px 0 10px;font-size:0.95rem;">Conditions par défaut</h4>
+          <div class="field-group"><label>Conditions de devis par défaut</label><textarea id="doc-default-quote-terms" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;" placeholder="Ex : Devis valable 30 jours. Acompte de 30% à la commande."></textarea></div>
+          <div class="field-group"><label>Modalités de facture par défaut</label><textarea id="doc-default-invoice-terms" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;" placeholder="Ex : Paiement à réception, virement ou carte."></textarea></div>
+          <div class="field-group"><label>Pied de page des documents</label><textarea id="doc-footer" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;" placeholder="Ex : SARL au capital de 1000€ — RCS Lyon 123 456 789"></textarea></div>
+
+          <h4 style="margin:22px 0 10px;font-size:0.95rem;">Préférences d'affichage</h4>
+          <div id="display-prefs-rows" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
+
+          <button class="btn-em" style="margin-top:18px;" onclick="saveDocumentSettings()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-compte" style="display:none;">
@@ -324,6 +354,9 @@
       if (_ent.email) document.getElementById('regl-email').value = _ent.email;
       if (_ent.telephone) document.getElementById('regl-tel').value = _ent.telephone;
       if (_ent.zone) document.getElementById('regl-zone').value = _ent.zone;
+      if (_ent.raisonSociale) document.getElementById('regl-raison').value = _ent.raisonSociale;
+      if (_ent.siret) document.getElementById('regl-siret').value = _ent.siret;
+      if (_ent.tvaNumero) document.getElementById('regl-tva-num').value = _ent.tvaNumero;
     }
   } catch(e) {}
 
@@ -339,6 +372,11 @@
       email: document.getElementById('regl-email').value.trim(),
       telephone: document.getElementById('regl-tel').value.trim(),
       zone: document.getElementById('regl-zone').value.trim(),
+      // Identité documentaire (feature/flexible-commercial-documents) --
+      // affichée sur l'en-tête devis/facture, jamais imposée/obligatoire.
+      raisonSociale: document.getElementById('regl-raison').value.trim(),
+      siret: document.getElementById('regl-siret').value.trim(),
+      tvaNumero: document.getElementById('regl-tva-num').value.trim(),
     });
     localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
     if (window.SebaDB) SebaDB.entreprise.set(_ent);
@@ -523,6 +561,91 @@
   }
 
   loadPublicIntakeConfig();
+
+  /* ── Documents (feature/flexible-commercial-documents) ──
+     Numérotation + préférences d'affichage -- state.documentNumbering/
+     documentDisplayPrefs, jamais localStorage (utilisées côté document,
+     pas seulement côté navigateur du patron). */
+  const NUMBERING_LABELS = { devis: 'Devis', facture: 'Factures', recu: 'Reçus' };
+  const DISPLAY_PREF_LABELS = {
+    showLogo: 'Logo', showCompanyAddress: 'Adresse entreprise', showCompanyPhone: 'Téléphone entreprise',
+    showCompanyEmail: 'Email entreprise', showBankDetails: 'Coordonnées bancaires', showUnitPrices: 'Prix unitaires',
+    showTaxColumn: 'Colonne TVA', showDiscountDetails: 'Détail des remises', showPaymentHistory: 'Historique des paiements',
+    showAcceptanceDetails: 'Preuve d\'acceptation', showServiceAddress: 'Adresse de prestation', showClientReference: 'Référence client',
+  };
+
+  function renderNumberingRows() {
+    const cfg = SebaDB.commercialSettings.getNumbering();
+    const box = document.getElementById('numbering-rows');
+    box.innerHTML = Object.keys(NUMBERING_LABELS).map(kind => `
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field-group" style="max-width:120px;"><label>${NUMBERING_LABELS[kind]} — préfixe</label><input type="text" data-kind="${kind}" data-field="prefix" value="${escAttr(cfg[kind].prefix)}" maxlength="10"></div>
+        <div class="field-group" style="max-width:160px;"><label><input type="checkbox" data-kind="${kind}" data-field="showYear" ${cfg[kind].showYear ? 'checked' : ''} style="width:auto;margin-right:6px;">Année dans le numéro</label></div>
+        <div class="field-group" style="max-width:100px;"><label>Longueur</label><input type="number" data-kind="${kind}" data-field="counterLength" value="${cfg[kind].counterLength}" min="2" max="8"></div>
+        <div class="field-group" style="flex:1;"><label>Aperçu</label><input type="text" readonly value="${escAttr(cfg[kind].prefix + (cfg[kind].showYear ? '-' + new Date().getFullYear() : '') + '-' + String(1).padStart(cfg[kind].counterLength, '0'))}" style="color:var(--text-2);"></div>
+      </div>`).join('');
+    box.querySelectorAll('input').forEach(el => el.addEventListener('input', updateNumberingPreview));
+  }
+  function updateNumberingPreview() {
+    document.querySelectorAll('#numbering-rows .field-row').forEach(row => {
+      const prefixEl = row.querySelector('[data-field="prefix"]');
+      const yearEl = row.querySelector('[data-field="showYear"]');
+      const lenEl = row.querySelector('[data-field="counterLength"]');
+      const previewEl = row.querySelector('input[readonly]');
+      const len = Math.max(2, Math.min(8, Number(lenEl.value) || 4));
+      previewEl.value = (prefixEl.value.trim() ? prefixEl.value.trim() + '-' : '') + (yearEl.checked ? new Date().getFullYear() + '-' : '') + String(1).padStart(len, '0');
+    });
+  }
+
+  function renderDisplayPrefsRows() {
+    const prefs = SebaDB.commercialSettings.getDisplayPrefs();
+    const box = document.getElementById('display-prefs-rows');
+    box.innerHTML = Object.keys(DISPLAY_PREF_LABELS).map(key => `
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.86rem;">
+        <input type="checkbox" data-pref="${key}" ${prefs[key] ? 'checked' : ''} style="width:auto;">${DISPLAY_PREF_LABELS[key]}
+      </label>`).join('');
+  }
+
+  function loadDocumentSettings() {
+    renderNumberingRows();
+    renderDisplayPrefsRows();
+    const ent = (window.SebaDB && SebaDB.entreprise.get()) || {};
+    document.getElementById('doc-iban').value = ent.iban || '';
+    document.getElementById('doc-bic').value = ent.bic || '';
+    document.getElementById('doc-default-quote-terms').value = ent.defaultQuoteTerms || '';
+    document.getElementById('doc-default-invoice-terms').value = ent.defaultInvoiceTerms || '';
+    document.getElementById('doc-footer').value = ent.documentFooter || '';
+  }
+
+  function saveDocumentSettings() {
+    const numbering = {};
+    Object.keys(NUMBERING_LABELS).forEach(kind => {
+      const row = document.querySelector('#numbering-rows [data-kind="' + kind + '"][data-field="prefix"]').closest('.field-row');
+      numbering[kind] = {
+        prefix: row.querySelector('[data-field="prefix"]').value.trim().toUpperCase().slice(0, 10) || NUMBERING_LABELS[kind].slice(0, 3).toUpperCase(),
+        showYear: row.querySelector('[data-field="showYear"]').checked,
+        counterLength: Math.max(2, Math.min(8, Number(row.querySelector('[data-field="counterLength"]').value) || 4)),
+      };
+    });
+    SebaDB.commercialSettings.setNumbering(numbering);
+
+    const prefs = {};
+    document.querySelectorAll('#display-prefs-rows [data-pref]').forEach(el => { prefs[el.dataset.pref] = el.checked; });
+    SebaDB.commercialSettings.setDisplayPrefs(prefs);
+
+    if (window.SebaDB) {
+      SebaDB.entreprise.set({
+        iban: document.getElementById('doc-iban').value.trim(),
+        bic: document.getElementById('doc-bic').value.trim(),
+        defaultQuoteTerms: document.getElementById('doc-default-quote-terms').value.trim(),
+        defaultInvoiceTerms: document.getElementById('doc-default-invoice-terms').value.trim(),
+        documentFooter: document.getElementById('doc-footer').value.trim(),
+      });
+    }
+    showReglToast('Réglages documents enregistrés');
+  }
+
+  loadDocumentSettings();
 
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');

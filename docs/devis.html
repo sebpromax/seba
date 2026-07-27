@@ -371,6 +371,7 @@
         ? `<button class="btn-ss-em" onclick="location.href='intervention-fiche.html?id=${d.interventionId}'">Voir l'intervention</button>`
         : `<button class="btn-ss-em" onclick="planifierDepuisFiche('${d.id}')">Planifier l'intervention</button>`;
       return `${interventionBtn}
+      <button class="btn-copy" onclick="location.href='devis-document.html?id=${d.id}'">Voir le document</button>
       <button class="btn-copy" onclick="copyLink('${d.num}')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>
         Copier le lien de paiement
@@ -379,11 +380,17 @@
       <button class="btn-copy" onclick="closeSheet()">Fermer</button>`;
     }
     if (d.status === 'attente') {
-      return `<button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
+      return `<button class="btn-copy" onclick="location.href='devis-document.html?id=${d.id}'">Voir le document</button>
+        <button class="btn-copy" onclick="relancer('${d.num}')">Relancer le client</button>
         ${emailBtn}
         <button class="btn-ss-em" onclick="marquerSigne('${d.num}')">Marquer signé ✓</button>`;
     }
-    return `<button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
+    if (d.status === 'brouillon') {
+      return `<button class="btn-copy" onclick="location.href='devis-document.html?id=${d.id}'">Aperçu</button>
+      <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
+    }
+    return `<button class="btn-copy" onclick="location.href='devis-document.html?id=${d.id}'">Voir le document</button>
+      <button class="btn-copy" onclick="renouveler('${d.num}')">Renouveler</button>
       ${emailBtn}
       <button class="btn-ss-em" onclick="closeSheet()">Fermer</button>`;
   }
@@ -493,9 +500,11 @@
   function rowExtraActions(d) {
     const acts = [];
     if (d.status === 'brouillon') acts.push({ act: 'modifier', label: 'Modifier' });
+    if (d.status !== 'brouillon') acts.push({ act: 'voir-document', label: 'Voir le document' });
     if (d.status === 'signe' && !d.interventionId) acts.push({ act: 'planifier', label: 'Planifier l\'intervention' });
     if (d.status === 'signe' && d.interventionId) acts.push({ act: 'voir-intervention', label: 'Voir l\'intervention' });
     if (d.status === 'signe' && !d.invoiceId) acts.push({ act: 'convertir', label: 'Convertir en facture' });
+    if ((d.status === 'attente' || d.status === 'signe' || d.status === 'refuse') && !d.supersededByQuoteId) acts.push({ act: 'reviser', label: 'Créer une révision' });
     acts.push({ act: 'dupliquer', label: 'Dupliquer' });
     if (d.status !== 'annule' && !d.invoiceId) acts.push({ act: 'annuler', label: 'Annuler' });
     return acts.map(a => '<span class="row-action-sep">·</span><span class="row-action" data-id="' + d.id + '" data-xact="' + a.act + '">' + a.label + '</span>').join('');
@@ -540,9 +549,11 @@
           return;
         }
         if (xact === 'convertir') {
-          const res = SebaDB.factures.createFromDevis(id);
-          if (res.ok) { showToast('Facture générée — ' + res.facture.num); setTimeout(() => location.href = 'factures.html?highlight=' + res.facture.id, 600); }
-          else showToast(res.error || 'Échec de la conversion.');
+          // Ouvre l'éditeur (factures-nouvelle.html?devisId=), qui gère lui-
+          // même la conversion idempotente (SebaDB.factures.createFromDevis)
+          // et la redirection vers le document final -- un seul chemin,
+          // jamais deux implémentations de la même conversion.
+          location.href = 'factures-nouvelle.html?devisId=' + encodeURIComponent(id);
           return;
         }
         if (xact === 'planifier') {
@@ -556,6 +567,17 @@
         if (xact === 'voir-intervention') {
           const d = DEVIS_DATA.find(x => x.id === id);
           if (d && d.interventionId) location.href = 'intervention-fiche.html?id=' + d.interventionId;
+          return;
+        }
+        if (xact === 'voir-document') {
+          const d = DEVIS_DATA.find(x => x.id === id);
+          if (d) location.href = 'devis-document.html?id=' + encodeURIComponent(d.id);
+          return;
+        }
+        if (xact === 'reviser') {
+          const res = SebaDB.devis.createRevision(id);
+          if (res.ok) { showToast('Révision créée — ' + res.devis.num); location.href = 'devis-nouveau.html?id=' + encodeURIComponent(res.devis.id); }
+          else showToast(res.error || 'Échec de la création de la révision.');
           return;
         }
       });

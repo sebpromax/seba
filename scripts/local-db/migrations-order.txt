@@ -87,6 +87,16 @@ migrations/2026-07-26-team-availability-suggestions.sql
 # unavailabilityRequests y est donc déjà exposé. Ajouts purs, ne modifie
 # aucune RPC existante. Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-27-flexible-commercial-documents.sql
+# Espace commercial flexible (feature/flexible-commercial-documents) :
+# resserre client_accept_devis/client_refuse_devis (rejette une version de
+# devis remplacée par une révision plus récente, devis.supersededByQuoteId)
+# + étend get_my_client_devis_detail/get_my_client_devis/
+# get_my_client_facture_detail (allowlist additive : parentQuoteId/
+# revisionNumber/supersededByQuoteId/documentSnapshot, absents avant ce
+# chantier). Seule extension serveur du chantier -- numérotation/snapshot/
+# révisions/modèles de document vivent entièrement dans seba_state.
+
 migrations/2026-07-26-public-intake.sql
 # Fondation acquisition (feature/public-intake-conversion) : table dédiée
 # public_service_requests (RLS select/update patron uniquement, aucun accès
