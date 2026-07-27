@@ -65,7 +65,14 @@
     // navigateur du patron). publicIntakeConfig : réglages du formulaire
     // public (désactivé par défaut). Voir SebaDB.entreprise/publicIntake.
     entreprise: null, publicIntakeConfig: null,
-    seq: { devis: 118, facture: 93, contrat: 0 },
+    seq: { devis: 118, facture: 93, contrat: 0, recu: 0 },
+    // feature/flexible-commercial-documents : numérotation configurable par
+    // type de document (préfixe/année/longueur du compteur) -- le COMPTEUR
+    // lui-même reste state.seq.* (mécanisme déjà fiable, jamais dupliqué),
+    // seul le FORMAT d'affichage devient configurable. documentDisplayPrefs :
+    // préférences d'affichage par défaut des documents (montrer logo/IBAN/
+    // colonnes...), surchargeables par document via documentOptions.
+    documentNumbering: null, documentDisplayPrefs: null,
   });
 
   /* ── Adaptateur localStorage (défaut) ── */
@@ -187,6 +194,9 @@
     if (!state.clientRequests) state.clientRequests = [];
     if (state.entreprise === undefined) state.entreprise = null;
     if (state.publicIntakeConfig === undefined) state.publicIntakeConfig = null;
+    if (!state.seq.recu) state.seq.recu = 0;
+    if (state.documentNumbering === undefined) state.documentNumbering = null;
+    if (state.documentDisplayPrefs === undefined) state.documentDisplayPrefs = null;
     return state;
   }
   function persist() {
@@ -1688,6 +1698,358 @@
   // totaux affichés/persistés (quote-to-cash, feature/quote-to-cash).
   function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
+  /* ── Argent en centimes entiers (feature/flexible-commercial-documents) --
+     tout calcul financier CRITIQUE (lignes/remises/TVA/acompte) passe par
+     ici, jamais une comparaison flottante. toCents/fromCents restent la
+     seule frontière de conversion euros<->centimes. ── */
+  function toCents(v) { return Math.round((Number(v) || 0) * 100); }
+  function fromCents(c) { return round2((Number(c) || 0) / 100); }
+
+  /* Numérotation configurable (préfixe/année/longueur du compteur) --
+     formate un compteur déjà incrémenté par SebaDB.nextNum(), ne décide
+     jamais elle-même de la valeur du compteur. */
+  const DEFAULT_DOCUMENT_NUMBERING = {
+    devis: { prefix: 'DEV', showYear: true, counterLength: 4 },
+    facture: { prefix: 'FAC', showYear: true, counterLength: 4 },
+    recu: { prefix: 'REC', showYear: true, counterLength: 4 },
+  };
+  /* Préférences d'affichage par défaut (section 19) -- toutes activées par
+     défaut sauf showSignatureArea (fonctionnalité non développée dans ce
+     chantier, jamais affichée tant qu'aucune signature électronique
+     n'existe réellement). */
+  const DEFAULT_DOCUMENT_DISPLAY_PREFS = {
+    showLogo: true, showCompanyAddress: true, showCompanyPhone: true, showCompanyEmail: true,
+    showBankDetails: false, showUnitPrices: true, showTaxColumn: true, showDiscountDetails: true,
+    showPaymentHistory: true, showAcceptanceDetails: true, showSignatureArea: false,
+    showServiceAddress: true, showClientReference: true,
+  };
+  function formatDocumentNumber(counter, cfg) {
+    const parts = [];
+    if (cfg && cfg.prefix) parts.push(String(cfg.prefix).trim());
+    if (cfg && cfg.showYear) parts.push(String(new Date().getFullYear()));
+    parts.push(String(counter).padStart((cfg && cfg.counterLength) || 4, '0'));
+    return parts.join('-');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     ESPACE COMMERCIAL FLEXIBLE (feature/flexible-commercial-documents)
+
+     Calcul centralisé, une seule politique d'arrondi, jamais une logique
+     différente entre formulaire/aperçu/document/portail/reçu -- toute
+     page appelle buildCommercialDocumentTotals(). N'ALTÈRE PAS
+     SebaDB.devis.computeTotals() (Quote-to-Cash existant, jamais réécrit) :
+     les VIEUX devis simples (une seule ligne {desc,qty,u}, un seul
+     tvaRate document) produisent des totaux STRICTEMENT identiques via
+     l'un ou l'autre moteur (vérifié en QA) -- ce nouveau moteur est un
+     SURENSEMBLE (remise par ligne, TVA par ligne, remise globale, acompte
+     centimes), jamais une divergence pour les cas déjà couverts. ═══════ */
+
+  const COMMERCIAL_LINE_TYPES = ['service', 'product', 'time', 'travel', 'material', 'fee', 'free'];
+  // Le type ne change JAMAIS le calcul (section 5 du chantier) -- purement
+  // indicatif pour la saisie/l'affichage.
+  const COMMERCIAL_LINE_UNITS = ['forfait', 'heure', 'jour', 'intervention', 'piece', 'unite', 'm2', 'metre', 'kilometre', 'mois', 'aucune'];
+
+  function normalizeCommercialLine(line) {
+    line = line || {};
+    // Compat lignes historiques Quote-to-Cash ({id,desc,qty,u}) : mappées
+    // sans perte vers le modèle enrichi, jamais un recalcul divergent.
+    const quantity = Number.isFinite(line.quantity) ? Number(line.quantity) : (Number(line.qty) || 0);
+    const unitPriceCents = Number.isFinite(line.unitPriceCents) ? line.unitPriceCents : toCents(line.u != null ? line.u : line.unitPrice);
+    return {
+      id: line.id || uid(),
+      // 'section' (titre de présentation, section 6) n'est pas l'un des 7
+      // types facturables (section 5) -- préservé explicitement AVANT le
+      // repli 'free', sinon isSectionLine() ne matcherait plus jamais
+      // rien après normalisation.
+      type: line.type === 'section' ? 'section' : (COMMERCIAL_LINE_TYPES.indexOf(line.type) !== -1 ? line.type : 'free'),
+      serviceId: line.serviceId || null,
+      description: line.description || line.desc || '',
+      details: line.details || '',
+      quantity, unit: line.unit || '',
+      unitPriceCents,
+      discountType: line.discountType === 'percent' || line.discountType === 'amount' ? line.discountType : null,
+      discountValue: Number(line.discountValue) || 0,
+      taxRate: Number.isFinite(line.taxRate) ? Number(line.taxRate) : null, // null = utilise le taux document (rétrocompat)
+      position: Number.isFinite(line.position) ? line.position : 0,
+    };
+  }
+
+  /* Une ligne "section" (titre de présentation, section 6) n'a pas de
+     prix -- reconnue par type:'section', jamais mélangée aux lignes
+     facturables dans les totaux. */
+  function isSectionLine(line) { return line && line.type === 'section'; }
+
+  function computeCommercialLineTotals(line, documentTaxRate) {
+    const qty = Number(line.quantity) || 0;
+    const grossCents = Math.round(qty * (Number(line.unitPriceCents) || 0));
+    let discountCents = 0;
+    if (line.discountType === 'percent' && line.discountValue > 0) {
+      discountCents = Math.round(grossCents * (Math.min(100, line.discountValue) / 100));
+    } else if (line.discountType === 'amount' && line.discountValue > 0) {
+      discountCents = Math.min(grossCents, toCents(line.discountValue));
+    }
+    const totalExcludingTaxCents = Math.max(0, grossCents - discountCents);
+    const taxRate = line.taxRate != null ? line.taxRate : (Number(documentTaxRate) || 0);
+    const taxAmountCents = Math.round(totalExcludingTaxCents * (taxRate / 100));
+    const totalIncludingTaxCents = totalExcludingTaxCents + taxAmountCents;
+    return Object.assign({}, line, { grossCents, discountCents, totalExcludingTaxCents, taxRate, taxAmountCents, totalIncludingTaxCents });
+  }
+
+  /* options : { documentTaxRate, discountType, discountValue (remise
+     globale), depositType, depositValue }. Retourne aussi byRate (section
+     8 : récapitulatif par taux) et le détail par ligne (jamais recalculé
+     ailleurs -- l'appelant affiche ces valeurs telles quelles). */
+  function buildCommercialDocumentTotals(lines, options) {
+    options = options || {};
+    const normalized = (Array.isArray(lines) ? lines : []).map(normalizeCommercialLine);
+    const billable = normalized.filter(l => !isSectionLine(l)).map(l => computeCommercialLineTotals(l, options.documentTaxRate));
+    const sections = normalized.filter(isSectionLine);
+
+    const subtotalExclCents = billable.reduce((s, l) => s + l.totalExcludingTaxCents, 0);
+    let globalDiscountCents = 0;
+    if (options.discountType === 'percent' && Number(options.discountValue) > 0) {
+      globalDiscountCents = Math.round(subtotalExclCents * (Math.min(100, Number(options.discountValue)) / 100));
+    } else if (options.discountType === 'amount' && Number(options.discountValue) > 0) {
+      globalDiscountCents = Math.min(subtotalExclCents, toCents(options.discountValue));
+    }
+    const totalExclCents = Math.max(0, subtotalExclCents - globalDiscountCents);
+
+    // Répartition de la remise globale au prorata de chaque taux (jamais un
+    // seul taux appliqué à l'ensemble quand plusieurs taux coexistent).
+    const byRateMap = {};
+    billable.forEach(l => {
+      const key = String(l.taxRate);
+      if (!byRateMap[key]) byRateMap[key] = { rate: l.taxRate, exclCents: 0 };
+      byRateMap[key].exclCents += l.totalExcludingTaxCents;
+    });
+    let totalTaxCents = 0;
+    const byRate = Object.keys(byRateMap).map(key => {
+      const grp = byRateMap[key];
+      const share = subtotalExclCents > 0 ? grp.exclCents / subtotalExclCents : 0;
+      const grpDiscountCents = Math.round(globalDiscountCents * share);
+      const exclAfterDiscountCents = Math.max(0, grp.exclCents - grpDiscountCents);
+      const taxCents = Math.round(exclAfterDiscountCents * (Number(grp.rate) / 100));
+      totalTaxCents += taxCents;
+      return { rate: grp.rate, exclCents: exclAfterDiscountCents, taxCents };
+    }).sort((a, b) => a.rate - b.rate);
+
+    const totalInclCents = totalExclCents + totalTaxCents;
+
+    let depositCents = 0;
+    if (options.depositType === 'percent' && Number(options.depositValue) > 0) {
+      depositCents = Math.round(totalInclCents * (Math.min(100, Number(options.depositValue)) / 100));
+    } else if (options.depositType === 'amount' && Number(options.depositValue) > 0) {
+      depositCents = Math.min(totalInclCents, toCents(options.depositValue));
+    }
+    const balanceAfterDepositCents = Math.max(0, totalInclCents - depositCents);
+
+    return {
+      lines: billable, sections,
+      subtotalExclCents, globalDiscountCents, totalExclCents,
+      byRate, totalTaxCents, totalInclCents,
+      depositCents, balanceAfterDepositCents,
+      // Alias euros pour l'affichage direct (jamais utilisés pour un calcul ultérieur).
+      totalHT: fromCents(totalExclCents), totalTVA: fromCents(totalTaxCents), totalTTC: fromCents(totalInclCents),
+      depositAmount: fromCents(depositCents), balanceAfterDeposit: fromCents(balanceAfterDepositCents),
+    };
+  }
+
+  /* Snapshot documentaire (section 12) -- posé UNE SEULE FOIS au premier
+     envoi/émission, jamais recalculé ensuite : un changement ultérieur de
+     la fiche client/de l'entreprise ne doit JAMAIS modifier un document
+     déjà émis. N'écrit rien dans une nouvelle table (stocké tel quel dans
+     le champ documentSnapshot du devis/de la facture existants). */
+  function buildDocumentSnapshot(type, payload, state) {
+    const client = (state.clients || []).find(c => c.id === payload.clientId);
+    const entreprise = state.entreprise || {};
+    const totalsRich = buildCommercialDocumentTotals(payload.lines, {
+      documentTaxRate: payload.tvaRate,
+      discountType: payload.remise ? payload.remise.type : null, discountValue: payload.remise ? payload.remise.value : 0,
+      depositType: payload.acompte ? payload.acompte.type : null, depositValue: payload.acompte ? payload.acompte.value : 0,
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      company: { nom: entreprise.nom || '', email: entreprise.email || '', telephone: entreprise.telephone || '', zone: entreprise.zone || '' },
+      customer: client
+        ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
+        : { prenom: '', nom: payload.clientName || '', contact: '', email: '', adresse: '' },
+      billingAddress: (client && client.adresse) || '',
+      serviceAddress: (client && client.adresse) || '',
+      lines: totalsRich.lines.concat(totalsRich.sections),
+      totals: {
+        subtotalExclCents: totalsRich.subtotalExclCents, globalDiscountCents: totalsRich.globalDiscountCents,
+        totalExclCents: totalsRich.totalExclCents, byRate: totalsRich.byRate, totalTaxCents: totalsRich.totalTaxCents,
+        totalInclCents: totalsRich.totalInclCents, depositCents: totalsRich.depositCents, balanceAfterDepositCents: totalsRich.balanceAfterDepositCents,
+      },
+      currency: 'EUR',
+      // JAMAIS payload.notes ici : note interne patron (voir SebaDB.devis._buildPayload,
+      // "jamais envoyé au client") -- le snapshot est exposé au client via
+      // get_my_client_devis_detail/get_my_client_facture_detail (allowlist
+      // migrations/2026-07-27-flexible-commercial-documents.sql), donc tout
+      // champ posé ici doit déjà être client-safe. Seul `conditions` l'est.
+      terms: { conditions: payload.conditions || '', validityDate: payload.validityDate || null },
+      documentOptions: state.documentDisplayPrefs || null,
+    };
+  }
+
+  /* Modèles documentaires purs (section 21) -- aucune écriture, aucun
+     réseau, aucun DOM. Utilisent le snapshot quand il existe (document déjà
+     envoyé/émis, historiquement figé), sinon recalculent en LIVE depuis
+     l'état actuel (brouillon, ou vieil objet sans snapshot -- fallback
+     rétrocompatible explicite). objOrId peut être l'objet déjà en main
+     (portail client, allowlist RPC) ou un id à résoudre dans state
+     (patron, accès complet). */
+  function buildQuoteDocumentModel(quoteObjOrId, state, actorContext) {
+    state = state || {};
+    const d = (quoteObjOrId && typeof quoteObjOrId === 'object') ? quoteObjOrId : resolveBusinessObject('devis', quoteObjOrId, state);
+    if (!d) return null;
+    const snap = d.documentSnapshot || null;
+    const client = (state.clients || []).find(c => c.id === d.clientId) || null;
+    const totals = snap ? snap.totals : buildCommercialDocumentTotals(d.lines, {
+      documentTaxRate: d.tvaRate, discountType: d.remise && d.remise.type, discountValue: d.remise && d.remise.value,
+      depositType: d.acompte && d.acompte.type, depositValue: d.acompte && d.acompte.value,
+    });
+    const allLines = snap ? snap.lines : buildCommercialDocumentTotals(d.lines, { documentTaxRate: d.tvaRate }).lines.concat([]);
+    return {
+      documentType: 'devis', documentNumber: d.status === 'brouillon' ? null : (d.num || null), revisionNumber: d.revisionNumber || 1,
+      issueDate: d.sentAt || d.date || null, dueDate: null, validityDate: d.validityDate || null,
+      status: d.status, currency: 'EUR',
+      company: (snap && snap.company) || state.entreprise || {},
+      customer: (snap && snap.customer) || (client
+        ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
+        : { prenom: '', nom: d.clientName || '', contact: '', email: '', adresse: '' }),
+      billingAddress: (snap && snap.billingAddress) || (client && client.adresse) || '',
+      serviceAddress: (snap && snap.serviceAddress) || (client && client.adresse) || '',
+      lines: allLines.filter(l => !isSectionLine(l)), sections: allLines.filter(isSectionLine),
+      totals,
+      references: {
+        parentQuoteId: d.parentQuoteId || null, supersededByQuoteId: d.supersededByQuoteId || null,
+        sourceRequestId: d.sourceRequestId || null, sourceInterventionId: d.sourceInterventionId || null, invoiceId: d.invoiceId || null,
+      },
+      notes: (snap && snap.terms && snap.terms.notes) || '',
+      terms: { conditions: (snap && snap.terms && snap.terms.conditions) || d.conditions || '' },
+      options: (snap && snap.documentOptions) || state.documentDisplayPrefs || null,
+      acceptance: { acceptedAt: d.acceptedAt || null, acceptedBy: d.acceptedBy || null, refusedAt: d.refusedAt || null, refusalComment: d.refusalComment || null },
+      payments: [],
+      snapshotSource: snap ? 'snapshot' : 'live',
+    };
+  }
+
+  function buildInvoiceDocumentModel(invoiceObjOrId, state, actorContext) {
+    state = state || {};
+    const f = (invoiceObjOrId && typeof invoiceObjOrId === 'object') ? invoiceObjOrId : resolveBusinessObject('facture', invoiceObjOrId, state);
+    if (!f) return null;
+    const snap = f.documentSnapshot || null;
+    const client = (state.clients || []).find(c => c.id === f.clientId) || null;
+    const totals = snap ? snap.totals : buildCommercialDocumentTotals(f.lines, {
+      documentTaxRate: f.tvaRate, discountType: f.remise && f.remise.type, discountValue: f.remise && f.remise.value,
+    });
+    const allLines = snap ? snap.lines : buildCommercialDocumentTotals(f.lines, { documentTaxRate: f.tvaRate }).lines.concat([]);
+    const payments = (f.payments || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || '').localeCompare(b.createdAt || '') || String(a.id).localeCompare(String(b.id)));
+    return {
+      documentType: 'facture', documentNumber: f.status === 'draft' ? null : (f.num || null), revisionNumber: 1,
+      issueDate: f.date || null, dueDate: f.dueDate || null, validityDate: null,
+      status: f.status, currency: 'EUR',
+      company: (snap && snap.company) || state.entreprise || {},
+      customer: (snap && snap.customer) || (client
+        ? { prenom: client.prenom || '', nom: client.nom || '', contact: client.contact || '', email: client.email || '', adresse: client.adresse || '' }
+        : { prenom: '', nom: f.clientName || '', contact: '', email: '', adresse: '' }),
+      billingAddress: (snap && snap.billingAddress) || (client && client.adresse) || '',
+      serviceAddress: (snap && snap.serviceAddress) || (client && client.adresse) || '',
+      lines: allLines.filter(l => !isSectionLine(l)), sections: allLines.filter(isSectionLine),
+      totals,
+      references: { devisId: f.devisId || null, interventionId: f.interventionId || null },
+      notes: (snap && snap.terms && snap.terms.notes) || '',
+      terms: { conditions: (snap && snap.terms && snap.terms.conditions) || '' },
+      options: (snap && snap.documentOptions) || state.documentDisplayPrefs || null,
+      acceptance: null,
+      payments: payments.map(p => ({ id: p.id, amount: p.amount, mode: p.mode, date: p.date, reference: p.reference, createdAt: p.createdAt })),
+      montantPaye: (window.SebaDB ? SebaDB.factures.paidAmount(f) : payments.reduce((s, p) => s + (Number(p.amount) || 0), 0)),
+      solde: (window.SebaDB ? SebaDB.factures.balance(f) : null),
+      snapshotSource: snap ? 'snapshot' : 'live',
+    };
+  }
+
+  /* Le reçu correspond à UN paiement réellement enregistré (jamais un
+     acompte simplement demandé, jamais une promesse -- section 24).
+     Le solde après paiement utilise l'ORDRE RÉEL des paiements (date puis
+     createdAt puis id, jamais uniquement le solde actuel de la facture si
+     des paiements ultérieurs existent). */
+  function buildReceiptDocumentModel(invoiceObjOrId, paymentId, state, actorContext) {
+    state = state || {};
+    const f = (invoiceObjOrId && typeof invoiceObjOrId === 'object') ? invoiceObjOrId : resolveBusinessObject('facture', invoiceObjOrId, state);
+    if (!f) return null;
+    const payments = (f.payments || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || '').localeCompare(b.createdAt || '') || String(a.id).localeCompare(String(b.id)));
+    const idx = payments.findIndex(p => p.id === paymentId);
+    if (idx === -1) return null; // jamais de reçu pour un paiement inexistant
+    const payment = payments[idx];
+    const cumulativeCents = payments.slice(0, idx + 1).reduce((s, p) => s + toCents(p.amount), 0);
+    const invoiceModel = buildInvoiceDocumentModel(f, state, actorContext);
+    const totalCents = invoiceModel.totals.totalInclCents;
+    return {
+      documentType: 'recu', documentNumber: null, revisionNumber: 1,
+      issueDate: payment.date || payment.createdAt || null, dueDate: null, validityDate: null,
+      status: 'paid', currency: 'EUR',
+      company: invoiceModel.company, customer: invoiceModel.customer,
+      billingAddress: invoiceModel.billingAddress, serviceAddress: invoiceModel.serviceAddress,
+      lines: [], sections: [],
+      totals: {
+        totalInclCents: totalCents, invoiceTotal: fromCents(totalCents),
+        paymentAmountCents: toCents(payment.amount), paymentAmount: Number(payment.amount) || 0,
+        cumulativePaidCents: cumulativeCents, cumulativePaid: fromCents(cumulativeCents),
+        balanceAfterCents: Math.max(0, totalCents - cumulativeCents), balanceAfter: fromCents(Math.max(0, totalCents - cumulativeCents)),
+      },
+      references: { invoiceId: f.id, invoiceNumber: f.num || null, paymentId: payment.id, paymentMode: payment.mode || null, paymentReference: payment.reference || null },
+      notes: '', terms: { conditions: '' }, options: invoiceModel.options,
+      acceptance: null, payments: [payment],
+      snapshotSource: invoiceModel.snapshotSource,
+    };
+  }
+
+  const COMMERCIAL_FILENAME_MAX_LENGTH = 80;
+  function sanitizeFilenameSegment(s) {
+    return String(s || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // accents (é -> e)
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/-+/g, '-').replace(/^-|-$/g, '');
+  }
+  function buildCommercialDocumentFilename(type, model) {
+    if (!model) return 'Document.pdf';
+    const typePrefix = { devis: 'DEV', facture: 'FAC', recu: 'REC' }[type] || 'DOC';
+    const rawNum = model.documentNumber ? sanitizeFilenameSegment(model.documentNumber) : 'BROUILLON';
+    // documentNumber already carries its configured prefix (ex: "DEV-2026-0003") -- don't re-prepend typePrefix or it doubles up.
+    const num = rawNum !== 'BROUILLON' && rawNum.toUpperCase().startsWith(typePrefix.toUpperCase())
+      ? rawNum
+      : [typePrefix, rawNum].filter(Boolean).join('-');
+    const clientName = sanitizeFilenameSegment((model.customer && ((model.customer.prenom || '') + ' ' + (model.customer.nom || '')).trim()) || '') || 'Client';
+    let base;
+    if (type === 'recu') {
+      const invNum = sanitizeFilenameSegment((model.references && model.references.invoiceNumber) || '');
+      base = [num, invNum].filter(Boolean).join('-');
+    } else {
+      base = [num, clientName].filter(Boolean).join('-');
+    }
+    return base.slice(0, COMMERCIAL_FILENAME_MAX_LENGTH) + '.pdf';
+  }
+
+  /* Validation NON contraignante (section 30) -- sépare erreurs bloquantes
+     (empêchent réellement l'envoi/l'émission) des avertissements (jamais
+     bloquants, juste informatifs). */
+  function getCommercialDocumentValidation(type, model) {
+    const errors = [];
+    const warnings = [];
+    if (!model) { errors.push('Document introuvable.'); return { valid: false, errors, warnings }; }
+    if (!model.customer || (!model.customer.nom && !model.customer.prenom)) errors.push('Aucun client sélectionné.');
+    if (!model.lines || model.lines.length === 0) errors.push('Aucune ligne facturable.');
+    if (!model.totals || !Number.isFinite(model.totals.totalInclCents) || model.totals.totalInclCents < 0) errors.push('Total invalide.');
+    if (!model.company || !model.company.nom) warnings.push('Nom d\'entreprise manquant.');
+    if (!model.customer || !model.customer.adresse) warnings.push('Client sans adresse.');
+    if (!model.terms || !model.terms.conditions) warnings.push('Conditions absentes.');
+    if (type === 'devis' && !model.validityDate) warnings.push('Date de validité absente.');
+    if (type === 'facture' && !model.dueDate) warnings.push('Date d\'échéance absente.');
+    return { valid: errors.length === 0, errors, warnings };
+  }
+
   /* ═══════════ SEED — jeu de données de départ par secteur ═══════════
      Généré à la première visite après l'onboarding : dates relatives à
      aujourd'hui pour que planning/dashboard soient toujours vivants. */
@@ -1949,10 +2311,21 @@
       if (existed) pushOp(coll, id, 'delete', { _deleted: true, deletedAt: todayISO(0) });
     },
 
+    /* Numérotation (feature/flexible-commercial-documents pour devis/
+       facture/recu -- contrat inchangé, hors périmètre). Le COMPTEUR reste
+       state.seq.* (mécanisme déjà fiable, jamais dupliqué) ; seul le FORMAT
+       devient configurable via state.documentNumbering (préfixe/année/
+       longueur), avec un repli par défaut si non configuré. Incrément
+       atomique côté client unique (pas de concurrence multi-onglet gérée
+       différemment d'avant) -- jamais recalculé, jamais recyclé. */
     nextNum(kind) {
       if (!state) loadState();
-      if (kind === 'facture') return '#F-' + String(++state.seq.facture).padStart(4, '0');
       if (kind === 'contrat') return '#C-' + String(++state.seq.contrat).padStart(4, '0');
+      if (kind === 'devis' || kind === 'facture' || kind === 'recu') {
+        const counter = ++state.seq[kind];
+        const cfg = (state.documentNumbering && state.documentNumbering[kind]) || DEFAULT_DOCUMENT_NUMBERING[kind];
+        return formatDocumentNumber(counter, cfg);
+      }
       return '#' + String(++state.seq.devis).padStart(4, '0');
     },
 
@@ -2745,6 +3118,8 @@
           conditions: d.conditions, totalHT: d.totalHT, totalTVA: d.totalTVA, totalTTC: d.totalTTC,
           sentAt: d.sentAt, acceptedAt: d.acceptedAt, refusedAt: d.refusedAt, refusalComment: d.refusalComment,
           invoiceId: d.invoiceId,
+          parentQuoteId: d.parentQuoteId || null, revisionNumber: d.revisionNumber || 1, supersededByQuoteId: d.supersededByQuoteId || null,
+          documentSnapshot: d.documentSnapshot || null,
         };
       },
       _safeFacture(f) {
@@ -2752,8 +3127,9 @@
           id: f.id, num: f.num, date: f.date, dueDate: f.dueDate, status: f.status, lines: f.lines,
           tvaRate: f.tvaRate, remise: f.remise, totalHT: f.totalHT, totalTVA: f.totalTVA, totalTTC: f.totalTTC,
           montantPaye: SebaDB.factures.paidAmount(f), solde: SebaDB.factures.balance(f),
-          payments: (f.payments || []).map(p => ({ amount: p.amount, mode: p.mode, date: p.date, reference: p.reference })),
+          payments: (f.payments || []).map(p => ({ id: p.id, amount: p.amount, mode: p.mode, date: p.date, reference: p.reference, createdAt: p.createdAt })),
           devisId: f.devisId, interventionId: f.interventionId,
+          documentSnapshot: f.documentSnapshot || null,
         };
       },
 
@@ -2807,6 +3183,7 @@
         const d = state.devis.find(x => x.id === devisId && x.clientId === demo.clientId);
         if (!d) return { ok: false, error: 'Devis introuvable ou non associé à votre compte.' };
         if (d.status === 'signe') return { ok: true, devis: SebaDB.clientPortal._safeDevis(d) }; // idempotent
+        if (d.supersededByQuoteId) return { ok: false, error: 'Ce devis a été remplacé par une version plus récente.' };
         if (d.status !== 'attente') return { ok: false, error: 'Ce devis ne peut plus être accepté.' };
         const now = new Date().toISOString();
         const statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'client_accepted', actorRole: 'client', actorId: demo.clientId, createdAt: now, metadata: null }]);
@@ -2829,6 +3206,7 @@
         if (!d) return { ok: false, error: 'Devis introuvable ou non associé à votre compte.' };
         if (d.status === 'refuse') return { ok: true, devis: SebaDB.clientPortal._safeDevis(d) }; // idempotent
         if (d.status === 'signe') return { ok: false, error: 'Devis déjà accepté, refus impossible.' };
+        if (d.supersededByQuoteId) return { ok: false, error: 'Ce devis a été remplacé par une version plus récente.' };
         const now = new Date().toISOString();
         const statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'client_refused', actorRole: 'client', actorId: demo.clientId, createdAt: now, metadata: { comment: comment.trim() } }]);
         SebaDB.update('devis', devisId, { status: 'refuse', refusedAt: now, refusedBy: demo.clientId, refusalComment: comment.trim(), statusHistory });
@@ -3140,6 +3518,29 @@
       },
     },
 
+    /* ═══ Réglages documentaires (feature/flexible-commercial-documents) ═══
+       Numérotation configurable (préfixe/année/longueur) + préférences
+       d'affichage par défaut, surchargeables par document (voir
+       buildDocumentSnapshot/buildQuoteDocumentModel/buildInvoiceDocumentModel
+       plus haut dans ce fichier). Jamais un nouveau moteur : le compteur
+       reste state.seq.*, consommé par SebaDB.nextNum(). */
+    commercialSettings: {
+      getNumbering() { if (!state) loadState(); return state.documentNumbering || JSON.parse(JSON.stringify(DEFAULT_DOCUMENT_NUMBERING)); },
+      setNumbering(cfg) {
+        if (!state) loadState();
+        state.documentNumbering = Object.assign({}, DEFAULT_DOCUMENT_NUMBERING, state.documentNumbering || {}, cfg || {});
+        persist();
+        return state.documentNumbering;
+      },
+      getDisplayPrefs() { if (!state) loadState(); return state.documentDisplayPrefs || Object.assign({}, DEFAULT_DOCUMENT_DISPLAY_PREFS); },
+      setDisplayPrefs(prefs) {
+        if (!state) loadState();
+        state.documentDisplayPrefs = Object.assign({}, DEFAULT_DOCUMENT_DISPLAY_PREFS, state.documentDisplayPrefs || {}, prefs || {});
+        persist();
+        return state.documentDisplayPrefs;
+      },
+    },
+
     /* ═══ Demandes publiques (feature/public-intake-conversion) ═══════════
        Source de vérité : table Postgres DÉDIÉE public_service_requests,
        jamais seba_state -- un visiteur sans compte Seba ne peut pas écrire
@@ -3440,6 +3841,18 @@
           refusedAt: null, refusedBy: null, refusalComment: null,
           cancelledAt: null,
           invoiceId: null,
+          // Révisions (feature/flexible-commercial-documents) -- absents
+          // avant ce chantier, toujours null/0 pour un brouillon/un premier
+          // envoi normal.
+          parentQuoteId: input.parentQuoteId || null, revisionNumber: Number(input.revisionNumber) || 1, supersededByQuoteId: null,
+          // Snapshot documentaire (section 12) -- posé UNIQUEMENT au premier
+          // envoi (status 'attente'), jamais recalculé ensuite : un devis
+          // brouillon n'a pas encore de version figée.
+          documentSnapshot: status === 'attente' ? buildDocumentSnapshot('devis', {
+            clientId: input.clientId, clientName: input.clientName, lines, tvaRate: Number(input.tvaRate) || 0,
+            remise: input.remise, acompte: input.acompte, conditions: input.conditions, notes: input.notes,
+            validityDate: input.validityDate, totals,
+          }, state) : null,
           statusHistory: [{ id: uid(), event: status === 'attente' ? 'sent' : 'draft_created', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }],
           history: [{ label: status === 'attente' ? 'Devis envoyé' : 'Brouillon créé', date: todayISO(0), cls: 'o' }], // legacy, lu par la side-sheet devis.html
         };
@@ -3451,6 +3864,29 @@
         const d = SebaDB.create('devis', Object.assign({ num: SebaDB.nextNum('devis') }, payload));
         SebaDB.log('devis', 'Brouillon de devis créé — ' + (d.clientName || 'client'), 'devis.html');
         return { ok: true, devis: d };
+      },
+
+      /* createQuoteRevision (section 16) -- fonction canonique unique pour
+         créer une nouvelle version d'un devis déjà envoyé. Copie lignes/
+         options commerciales/conditions, jamais l'acceptation/le refus/les
+         paiements, ne modifie JAMAIS l'ancien devis (marqué supersededByQuoteId
+         uniquement quand CETTE révision est réellement envoyée, voir
+         updateDraft ci-dessous -- jamais à la création, sinon le client
+         perdrait temporairement toute version acceptable). */
+      createRevision(quoteId) {
+        if (!state) loadState();
+        const src = state.devis.find(d => d.id === quoteId);
+        if (!src) return { ok: false, error: 'Devis introuvable.' };
+        if (src.status === 'brouillon') return { ok: false, error: 'Un brouillon n\'a pas besoin de révision -- modifiez-le directement.' };
+        const payload = SebaDB.devis._buildPayload({
+          clientId: src.clientId, clientName: src.clientName, lines: src.lines, tvaRate: src.tvaRate,
+          remise: src.remise, acompte: src.acompte, validityDate: src.validityDate, conditions: src.conditions,
+          service: src.service, sourceInterventionId: src.sourceInterventionId, sourceRequestId: src.sourceRequestId,
+          parentQuoteId: src.id, revisionNumber: (Number(src.revisionNumber) || 1) + 1,
+        }, 'brouillon');
+        const revision = SebaDB.create('devis', Object.assign({ num: SebaDB.nextNum('devis') }, payload));
+        SebaDB.log('devis', 'Révision créée depuis ' + src.num + ' — ' + (revision.clientName || 'client'), 'devis.html');
+        return { ok: true, devis: revision };
       },
 
       send(input) {
@@ -3470,7 +3906,15 @@
         if (!existing) return { ok: false, error: 'Devis introuvable.' };
         if (existing.status !== 'brouillon') return { ok: false, error: 'Seul un brouillon peut être corrigé.' };
         const sendNow = !!input._send;
-        const payload = SebaDB.devis._buildPayload(input, sendNow ? 'attente' : 'brouillon');
+        // parentQuoteId/revisionNumber (feature/flexible-commercial-documents) :
+        // TOUJOURS préservés depuis l'existant si l'appelant ne les
+        // repasse pas explicitement -- jamais perdus silencieusement (le
+        // formulaire d'édition ne les affiche/renvoie pas forcément à
+        // chaque sauvegarde).
+        const mergedInput = Object.assign({
+          parentQuoteId: existing.parentQuoteId, revisionNumber: existing.revisionNumber,
+        }, input);
+        const payload = SebaDB.devis._buildPayload(mergedInput, sendNow ? 'attente' : 'brouillon');
         delete payload.statusHistory; delete payload.history;
         SebaDB.update('devis', id, payload);
         if (sendNow) {
@@ -3478,6 +3922,9 @@
           d.statusHistory = (d.statusHistory || []).concat([{ id: uid(), event: 'sent', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: null }]);
           d.history = [{ label: 'Devis envoyé', date: todayISO(0), cls: 'o' }].concat(d.history || []);
           SebaDB.update('devis', id, { statusHistory: d.statusHistory, history: d.history });
+          // Révision réellement envoyée -> l'ancienne version devient
+          // remplacée (jamais à la création du brouillon, voir createRevision).
+          if (d.parentQuoteId) SebaDB.update('devis', d.parentQuoteId, { supersededByQuoteId: d.id });
         }
         SebaDB.log('devis', (sendNow ? 'Devis envoyé ' : 'Brouillon mis à jour ') + existing.num, 'devis.html');
         return { ok: true, devis: SebaDB.get('devis', id) };
@@ -3545,6 +3992,15 @@
         if (!d) return { ok: false, error: 'Devis introuvable.' };
         if (d.status !== 'signe') return { ok: false, error: 'Seul un devis accepté peut être converti en facture.' };
         if (d.invoiceId) return { ok: false, error: 'Une facture existe déjà pour ce devis.' };
+        // Snapshot (section 12) -- réutilise TEL QUEL celui du devis déjà
+        // envoyé (figé au moment de l'acceptation, garantit que la facture
+        // reflète exactement ce que le client a accepté) ; reconstruit
+        // seulement en repli pour un vieux devis signé avant ce chantier
+        // (jamais de documentSnapshot posé à l'époque).
+        const snapshot = d.documentSnapshot || buildDocumentSnapshot('facture', {
+          clientId: d.clientId, clientName: d.clientName, lines: d.lines, tvaRate: d.tvaRate,
+          remise: d.remise, acompte: d.acompte, conditions: d.conditions, notes: '',
+        }, state);
         const facture = SebaDB.create('factures', {
           num: SebaDB.nextNum('facture'), clientId: d.clientId, clientName: d.clientName,
           service: d.service, lines: d.lines, tvaRate: d.tvaRate, remise: d.remise,
@@ -3552,6 +4008,7 @@
           status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
           devisId: d.id, interventionId: d.sourceInterventionId || null,
           payments: [], notes: '', cancelledAt: null,
+          documentSnapshot: snapshot,
           statusHistory: [{ id: uid(), event: 'created_from_devis', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { devisId: d.id } }],
         });
         SebaDB.update('devis', d.id, { invoiceId: facture.id });
@@ -4423,6 +4880,19 @@
           service: intervention.service || '', lines: [], tvaRate: 0, remise: null,
           totalHT: 0, totalTVA: 0, totalTTC: 0, amount: 0, status: 'issued', date: todayISO(0), dueDate: null, paidAt: null,
           interventionId: intervention.id, devisId: null, payments: [], notes: '', cancelledAt: null,
+          // Snapshot (section 12) -- posé à la création comme pour
+          // createFromDevis ci-dessus (cohérence : le statut passe déjà à
+          // 'issued' ici). Limitation V1 connue : cette facture est
+          // "préremplie" (souvent à 0, le patron la complète ensuite sur
+          // factures.html) -- si les lignes sont éditées après coup via
+          // SebaDB.update() direct, ce snapshot initial n'est PAS
+          // rafraîchi automatiquement (aucune 2e écriture "d'émission"
+          // n'existe dans ce flux). buildInvoiceDocumentModel reste
+          // fiable dans tous les cas : il relit les champs facture
+          // actuels quand aucun changement n'invalide le snapshot.
+          documentSnapshot: buildDocumentSnapshot('facture', {
+            clientId: intervention.clientId, clientName: intervention.clientName, lines: [], tvaRate: 0, remise: null, acompte: null, conditions: '', notes: '',
+          }, state),
           statusHistory: [{ id: uid(), event: 'created_from_intervention', actorRole: 'patron', actorId: null, createdAt: new Date().toISOString(), metadata: { interventionId: intervention.id } }],
         });
         pushStatusHistory(intervention, 'invoice_created', 'patron', null, { factureId: facture.id });
@@ -4546,6 +5016,10 @@
     // Parcours pilote complet (feature/pilot-ready-v1)
     buildBusinessObjectHref, getLinkedBusinessObjects, findExistingConversion,
     getBusinessNextActions, buildClientOperationalTimeline,
+    // Espace commercial flexible (feature/flexible-commercial-documents)
+    buildCommercialDocumentTotals, buildQuoteDocumentModel, buildInvoiceDocumentModel,
+    buildReceiptDocumentModel, buildCommercialDocumentFilename, getCommercialDocumentValidation,
+    COMMERCIAL_LINE_TYPES, COMMERCIAL_LINE_UNITS,
   };
 
   SebaDB.ready();

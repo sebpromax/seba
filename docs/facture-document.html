@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facture — Seba</title>
+<script src="auth.js"></script>
+<script src="guard.js"></script>
+<style>
+:root{
+  --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
+  --doc-bg:#FFFFFF; --doc-ink:#1A1A1A; --doc-muted:#6B6B70; --doc-border:#DADADE;
+  --doc-accent:#0D9488; --doc-accent-soft:#E6F5F3;
+  --page-bg:#EDEDEF; --doc-shadow:rgba(0,0,0,.15); --section-bg:#F7F7F8;
+  --paid-bg:#E8F8EF; --paid-ink:#0F7A3D;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--page-bg);color:var(--doc-ink);}
+a{color:inherit;}
+.toolbar{position:sticky;top:0;z-index:10;background:var(--toolbar-bg);color:var(--toolbar-ink);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--toolbar-border);}
+.toolbar h1{font-size:1rem;font-weight:600;margin:0;}
+.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.tbtn{background:transparent;border:1px solid var(--toolbar-border);color:var(--toolbar-ink);padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
+.tbtn.primary{background:var(--doc-accent);border-color:var(--doc-accent);color:var(--doc-bg);}
+.page-wrap{padding:24px;display:flex;justify-content:center;}
+.a4{background:var(--doc-bg);width:210mm;min-height:297mm;padding:14mm;box-shadow:0 4px 24px var(--doc-shadow);}
+.doc-head{display:flex;justify-content:space-between;gap:24px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--doc-accent);}
+.doc-head .company h2{margin:0 0 4px;font-size:1.2rem;}
+.doc-head .company p{margin:0;font-size:0.82rem;color:var(--doc-muted);}
+.doc-head .meta{text-align:right;}
+.doc-head .meta .doctype{font-size:1.4rem;font-weight:800;letter-spacing:0.04em;color:var(--doc-accent);}
+.doc-head .meta .docnum{font-family:monospace;font-size:0.95rem;margin-top:4px;}
+.doc-head .meta .status-pill{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;background:var(--doc-accent-soft);color:var(--doc-accent);font-weight:700;font-size:0.78rem;}
+.doc-head .meta .status-pill.paid{background:var(--paid-bg);color:var(--paid-ink);}
+.doc-parties{display:flex;gap:32px;margin-bottom:24px;}
+.doc-parties .block{flex:1;}
+.doc-parties .block h4{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--doc-muted);margin:0 0 6px;}
+.doc-parties .block p{margin:0;font-size:0.88rem;line-height:1.5;white-space:pre-line;}
+table.doc-lines{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:0.85rem;}
+table.doc-lines thead{display:table-header-group;}
+table.doc-lines th{text-align:left;font-size:0.7rem;text-transform:uppercase;color:var(--doc-muted);padding:8px 6px;border-bottom:1px solid var(--doc-border);}
+table.doc-lines td{padding:8px 6px;border-bottom:1px solid var(--doc-border);vertical-align:top;break-inside:avoid;page-break-inside:avoid;}
+table.doc-lines .num-col{text-align:right;white-space:nowrap;}
+.doc-totals{margin-left:auto;width:280px;margin-bottom:16px;}
+.doc-totals .row{display:flex;justify-content:space-between;padding:4px 0;font-size:0.86rem;}
+.doc-totals .row.grand{font-weight:800;font-size:1.05rem;border-top:2px solid var(--doc-accent);padding-top:8px;margin-top:4px;}
+.doc-totals .row.balance{font-weight:700;color:var(--doc-accent);}
+tfoot{display:table-footer-group;}
+.payments-block{margin-top:20px;break-inside:avoid;page-break-inside:avoid;}
+.payments-block h4{font-size:0.78rem;text-transform:uppercase;color:var(--doc-muted);margin:0 0 8px;}
+.payments-block table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.payments-block td,.payments-block th{padding:6px;border-bottom:1px solid var(--doc-border);text-align:left;}
+.paid-banner{margin-top:16px;padding:12px 16px;background:var(--paid-bg);color:var(--paid-ink);border-radius:8px;font-weight:700;break-inside:avoid;page-break-inside:avoid;}
+.doc-footer-text{margin-top:32px;padding-top:12px;border-top:1px solid var(--doc-border);font-size:0.76rem;color:var(--doc-muted);white-space:pre-line;}
+.empty-state{padding:60px 24px;text-align:center;color:var(--doc-muted);}
+.empty-state a{color:var(--doc-accent);font-weight:600;}
+@media print{
+  .toolbar{display:none;}
+  .page-wrap{padding:0;}
+  .a4{box-shadow:none;width:auto;min-height:0;margin:0;padding:0;}
+  body{background:var(--doc-bg);}
+  @page{size:A4;margin:14mm;}
+}
+@media (max-width:480px){
+  .a4{width:100%;padding:16px;}
+  .doc-parties{flex-direction:column;gap:16px;}
+  table.doc-lines{display:block;overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1 id="tb-title">Facture</h1>
+  <div class="toolbar-actions">
+    <button class="tbtn" onclick="history.length>1?history.back():location.href='factures.html'">← Retour</button>
+    <button class="tbtn" id="btn-duplicate" style="display:none;" onclick="goDuplicate()">Dupliquer</button>
+    <button class="tbtn primary" onclick="printDoc()">Imprimer / Enregistrer en PDF</button>
+  </div>
+</div>
+
+<div class="page-wrap" id="page-wrap">
+  <div class="empty-state" id="loading">Chargement…</div>
+</div>
+
+<script src="seba-data.js"></script>
+<script>
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function eur(cents) { return ((Number(cents) || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'; }
+
+const STATUS_LABEL = { draft: 'BROUILLON', issued: 'ÉMISE', partially_paid: 'PARTIELLEMENT PAYÉE', paid: 'PAYÉE', overdue: 'EN RETARD', cancelled: 'ANNULÉE', attente: 'ÉMISE', payee: 'PAYÉE', retard: 'EN RETARD' };
+
+let _model = null, _isOwner = false, _invoiceId = null;
+
+function showEmpty(msg) {
+  document.getElementById('page-wrap').innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p><a href="factures.html">Retour aux factures</a></div>';
+}
+
+function renderDoc(model) {
+  document.title = (model.documentNumber || 'Facture') + ' — Seba';
+  document.getElementById('tb-title').textContent = 'Facture ' + (model.documentNumber || '');
+  if (_isOwner) document.getElementById('btn-duplicate').style.display = 'inline-block';
+
+  const isPaid = model.status === 'paid' || model.status === 'payee';
+  const linesHtml = model.lines.map(l => (
+    '<tr><td>' + esc(l.description) + (l.details ? '<div style="color:var(--doc-muted);font-size:0.78rem;">' + esc(l.details) + '</div>' : '') + '</td>' +
+    '<td class="num-col">' + (l.quantity || 0) + (l.unit ? ' ' + esc(l.unit) : '') + '</td>' +
+    '<td class="num-col">' + eur(l.unitPriceCents) + '</td>' +
+    '<td class="num-col">' + eur(l.totalExcludingTaxCents) + '</td></tr>'
+  )).join('');
+
+  const paymentsHtml = model.payments.length ? `
+    <div class="payments-block">
+      <h4>Paiements enregistrés</h4>
+      <table><thead><tr><th>Date</th><th>Montant</th><th>Méthode</th><th>Référence</th></tr></thead>
+      <tbody>${model.payments.map(p => '<tr><td>' + fmtDate(p.date) + '</td><td>' + eur(Math.round(p.amount * 100)) + '</td><td>' + esc(p.mode || '') + '</td><td>' + esc(p.reference || '') + '</td></tr>').join('')}</tbody></table>
+    </div>` : '';
+
+  const balanceCents = Math.round(((model.solde != null ? model.solde : 0)) * 100);
+
+  document.getElementById('page-wrap').innerHTML = `
+    <div class="a4">
+      <div class="doc-head">
+        <div class="company">
+          <h2>${esc((model.company && model.company.nom) || 'Entreprise')}</h2>
+          <p>${esc((model.company && model.company.email) || '')}${model.company && model.company.telephone ? ' · ' + esc(model.company.telephone) : ''}</p>
+        </div>
+        <div class="meta">
+          <div class="doctype">FACTURE</div>
+          <div class="docnum">${esc(model.documentNumber || 'BROUILLON')}</div>
+          <div style="font-size:0.8rem;color:var(--doc-muted);margin-top:4px;">Émise le ${fmtDate(model.issueDate)}${model.dueDate ? ' · échéance ' + fmtDate(model.dueDate) : ''}</div>
+          <div class="status-pill${isPaid ? ' paid' : ''}">${STATUS_LABEL[model.status] || model.status}</div>
+        </div>
+      </div>
+      <div class="doc-parties">
+        <div class="block">
+          <h4>Client</h4>
+          <p>${esc(((model.customer.prenom || '') + ' ' + (model.customer.nom || '')).trim() || '—')}
+${esc(model.billingAddress || '')}
+${esc(model.customer.email || '')}</p>
+        </div>
+        <div class="block">
+          <h4>Origine</h4>
+          <p>${model.references.devisId ? 'Devis source lié' : (model.references.interventionId ? 'Intervention source liée' : 'Facture libre')}</p>
+        </div>
+      </div>
+      <table class="doc-lines">
+        <thead><tr><th>Prestation</th><th class="num-col">Qté</th><th class="num-col">Prix unit.</th><th class="num-col">Total HT</th></tr></thead>
+        <tbody>${linesHtml || '<tr><td colspan="4" style="color:var(--doc-muted);">Aucune ligne.</td></tr>'}</tbody>
+      </table>
+      <div class="doc-totals">
+        <div class="row"><span>Total HT</span><span>${eur(model.totals.totalExclCents)}</span></div>
+        <div class="row"><span>TVA</span><span>${eur(model.totals.totalTaxCents)}</span></div>
+        <div class="row grand"><span>Total TTC</span><span>${eur(model.totals.totalInclCents)}</span></div>
+        <div class="row"><span>Payé</span><span>${eur(Math.round((model.montantPaye || 0) * 100))}</span></div>
+        <div class="row balance"><span>Solde</span><span>${eur(balanceCents)}</span></div>
+      </div>
+      ${isPaid ? '<div class="paid-banner">PAYÉE — Solde : 0,00 €</div>' : ''}
+      ${paymentsHtml}
+      ${model.terms.conditions ? '<div style="margin-top:20px;font-size:0.8rem;color:var(--doc-muted);white-space:pre-line;">' + esc(model.terms.conditions) + '</div>' : ''}
+      <div class="doc-footer-text">Document généré par Seba.</div>
+    </div>
+  `;
+}
+
+function goDuplicate() {
+  const f = SebaDB.get('factures', _invoiceId);
+  if (!f) return;
+  const created = SebaDB.create('factures', {
+    num: SebaDB.nextNum('facture'), clientId: f.clientId, clientName: f.clientName, service: f.service,
+    lines: f.lines, tvaRate: f.tvaRate, remise: f.remise, totalHT: f.totalHT, totalTVA: f.totalTVA, totalTTC: f.totalTTC, amount: f.totalTTC,
+    status: 'draft', date: new Date().toISOString().slice(0, 10), dueDate: null, paidAt: null,
+    devisId: null, interventionId: null, payments: [], notes: '', cancelledAt: null,
+  });
+  SebaDB.log('facture', 'Facture dupliquée (brouillon) depuis ' + f.num, 'factures.html');
+  location.href = 'factures.html?highlight=' + encodeURIComponent(created.id);
+}
+function printDoc() {
+  const prevTitle = document.title;
+  if (_model) document.title = SebaClientIntelligence.buildCommercialDocumentFilename('facture', _model).replace(/\.pdf$/, '');
+  window.print();
+  setTimeout(() => { document.title = prevTitle; }, 500);
+}
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  _invoiceId = params.get('id');
+  if (!_invoiceId) { showEmpty('Facture introuvable.'); return; }
+
+  await new Promise(r => { if (window.SebaDB) r(); else document.addEventListener('DOMContentLoaded', r); });
+  if (window.SebaDB) { try { await SebaDB.pullFromServer(); } catch (e) {} }
+
+  const local = window.SebaDB ? SebaDB.get('factures', _invoiceId) : null;
+  if (local) {
+    _isOwner = true;
+    _model = SebaClientIntelligence.buildInvoiceDocumentModel(local, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
+    renderDoc(_model);
+    return;
+  }
+
+  if (window.SebaDB && SebaDB.clientPortal) {
+    const res = await SebaDB.clientPortal.factureDetail(_invoiceId);
+    if (res.ok) {
+      _isOwner = false;
+      _model = SebaClientIntelligence.buildInvoiceDocumentModel(res.facture, {}, { role: 'client' });
+      renderDoc(_model);
+      return;
+    }
+  }
+
+  showEmpty('Facture introuvable ou accès non autorisé.');
+}
+init();
+</script>
+</body>
+</html>
