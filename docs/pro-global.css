@@ -525,6 +525,17 @@ tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
   align-items: center;
   gap: 6px;
 }
+/* THEME-MOBILE-001 : .mobile-logo réutilise le balisage .logo-se/.logo-ba
+   du logo marketing, mais .logo-se est câblé sur --ink-inverse (texte
+   TOUJOURS blanc, prévu pour la sidebar qui reste toujours sombre — voir
+   commentaire plus haut). .mobile-header, lui, SUIT le thème
+   (background: var(--white)) : en thème clair, "Se" blanc sur fond blanc
+   devenait invisible, seul "ba" (--text-2, gris, correctement adapté au
+   thème) restait lisible -- remonté par le fondateur comme un logo
+   tronqué "ba". Réaffecte --ink (thème-aware) uniquement dans ce
+   contexte précis, sans toucher .logo-se/.logo-ba ailleurs (sidebar,
+   pages marketing). */
+.mobile-logo .logo-se { color: var(--ink); }
 .mobile-logo-dot {
   width: 6px; height: 6px;
   border-radius: 50%;

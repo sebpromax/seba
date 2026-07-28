@@ -142,6 +142,15 @@ migrations/2026-07-28-sync-push-service-role-execute.sql
 # rendu explicite ici plutôt que dépendant d'une convention implicite.
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-29-update-my-entreprise.sql
+# THEME-MOBILE-001 : SebaDB.entreprise.set() (docs/seba-data.js) n'a jamais
+# envoyé la moindre requête réseau -- persist() n'écrit que le cache local
+# depuis le Palier 1, et pushOp()/sync-push ne couvrent que les collections
+# tableau (entreprise est un objet unique). Nouvelle RPC dédiée, écriture
+# authentifiée directe (SECURITY INVOKER, RLS state_update existante),
+# même emplacement canonique que le bootstrap (create_profile_and_company).
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
