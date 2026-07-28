@@ -71,7 +71,13 @@ interface OpResult {
   error?: string;
 }
 
-const VALID_ENTITIES = new Set(['clients', 'devis', 'factures', 'interventions', 'employes', 'journal']);
+// Revue pré-merge PR #98 : grep exhaustif de tous les appels
+// SebaDB.create/update/remove(...) (docs/*.html + docs/seba-data.js)
+// montre 5 collections reellement utilisees et absentes de la liste
+// d'origine -- corrige ici, voir migrations/2026-07-28-sync-push-state-
+// persistence.sql pour le detail complet (meme allowlist cote SQL,
+// sync_operations.entity CHECK et apply_entity_patch()).
+const VALID_ENTITIES = new Set(['clients', 'devis', 'factures', 'interventions', 'employes', 'journal', 'contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts']);
 
 /* Résout account + user_id à partir du JWT patron. Seul le patron pousse
    des écritures via ce chemin (voir commentaire d'en-tête). */

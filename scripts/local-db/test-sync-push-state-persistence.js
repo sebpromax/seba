@@ -40,6 +40,19 @@ function startStaticServer() {
   return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
 }
 
+// Remplace page.type() (frappe caractere par caractere, evenements
+// synthetiques Chrome) : sous charge Docker/CPU, des caracteres peuvent se
+// perdre ou se meler entre deux champs typed() consecutifs -- observe
+// empiriquement ici (prenom/nom corrompus par intermittence). Injection
+// directe de .value + evenement 'input' reel, deterministe.
+async function setValue(page, selector, value) {
+  await page.$eval(selector, (el, v) => {
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
 function getSupabaseStatus() {
   const out = execSync('npx --yes supabase@2.109.1 status -o env', { encoding: 'utf8' });
   const env = {};
@@ -64,6 +77,21 @@ let failures = 0;
 function assert(cond, msg) {
   if (cond) console.log('  OK   -', msg);
   else { console.error('  FAIL -', msg); failures++; }
+}
+// Comparaison profonde insensible a l'ordre des cles (JSONB de Postgres ne
+// garantit pas de preserver l'ordre d'insertion des cles d'un objet) --
+// JSON.stringify(a) === JSON.stringify(b) donnerait de faux echecs.
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a !== typeof b || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === b.length && a.every((v, i) => deepEqual(v, b[i]));
+  if (typeof a === 'object') {
+    const ka = Object.keys(a).sort();
+    const kb = Object.keys(b).sort();
+    return ka.length === kb.length && ka.every((k, i) => k === kb[i]) && ka.every((k) => deepEqual(a[k], b[k]));
+  }
+  return false;
 }
 
 async function signIn(env, email, password) {
@@ -177,6 +205,86 @@ async function main() {
   const finalVersion = psqlJson(`select row_to_json(entity_versions) from entity_versions where account='test-patron-a' and entity='clients' and entity_id='${clientId}';`);
   assert(finalVersion.version === 4, `version incrementee de façon monotone (1 create + 1 update CAS4 + 2 update CAS6 = 4 ; observe=${finalVersion.version})`);
 
+  console.log('\n=== CAS 6-PARALLEL-A -- deux ecritures REELLEMENT simultanees, champs differents (Promise.all, pas deux await successifs) ===');
+  {
+    const pClientId = 'id_qa_parallel_' + Date.now();
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 100, entity: 'clients', entity_id: pClientId, op: 'create', patch: { id: pClientId, nom: 'Parallel', ville: 'Nice' } }]);
+    const [rA, rB] = await Promise.all([
+      syncPush(env, tokenA, deviceA, [{ client_seq: 101, entity: 'clients', entity_id: pClientId, op: 'update', patch: { champA: 'valeurA' } }]),
+      syncPush(env, tokenA, deviceB, [{ client_seq: 1, entity: 'clients', entity_id: pClientId, op: 'update', patch: { champB: 'valeurB' } }]),
+    ]);
+    assert((rA.body.results || [])[0]?.status === 'applied' && (rB.body.results || [])[0]?.status === 'applied', `les deux ecritures paralleles reussissent (aucun deadlock/erreur) (observe A=${JSON.stringify(rA.body.results)}, B=${JSON.stringify(rB.body.results)})`);
+    const pClient = (psqlJson(`select state from seba_state where account='test-patron-a';`).clients || []).find((c) => c.id === pClientId);
+    assert(pClient.champA === 'valeurA' && pClient.champB === 'valeurB', `aucune perte : les deux champs distincts ecrits en parallele coexistent (observe: ${JSON.stringify(pClient)})`);
+  }
+
+  console.log('\n=== CAS 6-PARALLEL-B -- deux ecritures REELLEMENT simultanees, MEME champ (dernier ecrivain valide gagnant, documente honnetement) ===');
+  {
+    const pClientId = 'id_qa_parallel2_' + Date.now();
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 110, entity: 'clients', entity_id: pClientId, op: 'create', patch: { id: pClientId, nom: 'ParallelMemeChamp' } }]);
+    const [rA, rB] = await Promise.all([
+      syncPush(env, tokenA, deviceA, [{ client_seq: 111, entity: 'clients', entity_id: pClientId, op: 'update', patch: { statut: 'valeur-A' } }]),
+      syncPush(env, tokenA, deviceB, [{ client_seq: 2, entity: 'clients', entity_id: pClientId, op: 'update', patch: { statut: 'valeur-B' } }]),
+    ]);
+    assert((rA.body.results || [])[0]?.status === 'applied' && (rB.body.results || [])[0]?.status === 'applied', 'les deux ecritures concurrentes sur le meme champ reussissent toutes les deux (serialisees par le verrou, aucune erreur/rejet)');
+    const pClient = (psqlJson(`select state from seba_state where account='test-patron-a';`).clients || []).find((c) => c.id === pClientId);
+    assert(pClient.statut === 'valeur-A' || pClient.statut === 'valeur-B', `dernier ecrivain valide gagnant sur le champ dispute, aucune corruption (valeur finale coherente, une des deux, jamais un melange) (observe: ${JSON.stringify(pClient.statut)})`);
+    const finalVersionParallel = psqlJson(`select row_to_json(entity_versions) from entity_versions where account='test-patron-a' and entity='clients' and entity_id='${pClientId}';`);
+    assert(finalVersionParallel.version === 3, `version = 3 (1 create + 2 update serialises par le verrou FOR UPDATE) (observe: ${finalVersionParallel.version})`);
+    console.log('    NOTE HONNETE : le protocole actuel ne rejette PAS une version client perimee (le frontend n\'en envoie aucune) -- il serialise les ecritures et applique un dernier-ecrivain-valide-gagnant sur un champ dispute. Ceci n\'est PAS une concurrence optimiste avec rejet explicite.');
+  }
+
+  console.log('\n=== SEMANTIQUE JSONB -- objet imbriqué complet, tableau imbriqué, null, champ absent, id manquant/different, propriete inconnue ===');
+  {
+    const jId = 'id_qa_jsonb_' + Date.now();
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 120, entity: 'interventions', entity_id: jId, op: 'create', patch: { id: jId, service: 'Menage', execution: { checklist: [{ id: 'c1', label: 'Aspirateur', checked: false }], photos: [] } } }]);
+
+    console.log('  -- objet imbriqué complet (le frontend envoie toujours execution en entier, jamais un sous-champ isole) --');
+    const newExecution = { checklist: [{ id: 'c1', label: 'Aspirateur', checked: true }], photos: [{ id: 'p1', type: 'before' }] };
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 121, entity: 'interventions', entity_id: jId, op: 'update', patch: { execution: newExecution } }]);
+    const afterNested = (psqlJson(`select state from seba_state where account='test-patron-a';`).interventions || []).find((i) => i.id === jId);
+    assert(deepEqual(afterNested.execution, newExecution), `objet imbriqué complet remplace integralement, exactement comme Object.assign cote client (observe: ${JSON.stringify(afterNested.execution)})`);
+
+    console.log('  -- tableau imbriqué (photos, remplacement complet du tableau) --');
+    assert(Array.isArray(afterNested.execution.photos) && afterNested.execution.photos.length === 1 && afterNested.execution.photos[0].id === 'p1', `tableau imbriqué correctement stocke (observe: ${JSON.stringify(afterNested.execution.photos)})`);
+
+    console.log('  -- valeur null explicite (conservee telle quelle, jamais convertie en absence de cle) --');
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 122, entity: 'interventions', entity_id: jId, op: 'update', patch: { rescheduleRequest: null } }]);
+    const afterNull = (psqlJson(`select state from seba_state where account='test-patron-a';`).interventions || []).find((i) => i.id === jId);
+    assert(('rescheduleRequest' in afterNull) && afterNull.rescheduleRequest === null, `valeur null explicite conservee comme cle presente = null, pas supprimee (observe cles: ${Object.keys(afterNull).join(',')}, rescheduleRequest=${JSON.stringify(afterNull.rescheduleRequest)})`);
+
+    console.log('  -- champ absent du patch reste inchange --');
+    assert(afterNull.service === 'Menage', `champ non touche par aucun des 2 patchs precedents toujours present (observe service=${afterNull.service})`);
+
+    console.log('  -- propriete inconnue/sensible a l\'interieur du patch : totalement inerte, ne franchit jamais la limite de l\'objet dans le tableau --');
+    await syncPush(env, tokenA, deviceA, [{ client_seq: 123, entity: 'interventions', entity_id: jId, op: 'update', patch: { account: 'compte-vole', user_id: 'fake-uid' } }]);
+    const afterInjection = psql(`select account, user_id from seba_state where account='test-patron-a';`);
+    const [injAccount, injUserId] = afterInjection.split('|');
+    assert(injAccount === 'test-patron-a', `seba_state.account (colonne, hors JSONB) inchange malgre un patch contenant la cle "account" (observe: ${injAccount})`);
+    const injIntervention = (psqlJson(`select state from seba_state where account='test-patron-a';`).interventions || []).find((i) => i.id === jId);
+    assert(injIntervention.account === 'compte-vole', `la propriete "account" reste une simple cle inerte SUR L'OBJET dans le tableau JSONB, sans aucun effet sur la vraie colonne seba_state.account (observe objet.account=${injIntervention.account}, vraie colonne=${injAccount})`);
+
+    console.log('  -- CREATE sans identifiant dans le patch : refuse --');
+    const noIdRes = await syncPush(env, tokenA, deviceA, [{ client_seq: 124, entity: 'clients', entity_id: 'id_qa_noid_' + Date.now(), op: 'create', patch: { nom: 'SansId' } }]);
+    assert((noIdRes.body.results || [])[0]?.status === 'error', `create sans champ "id" dans le patch refuse (observe: ${JSON.stringify(noIdRes.body.results)})`);
+
+    console.log('  -- CREATE avec patch.id different de entity_id : refuse --');
+    const mismatchEntityId = 'id_qa_mismatch_' + Date.now();
+    const mismatchRes = await syncPush(env, tokenA, deviceA, [{ client_seq: 125, entity: 'clients', entity_id: mismatchEntityId, op: 'create', patch: { id: 'id_qa_AUTRE_' + Date.now(), nom: 'Mismatch' } }]);
+    assert((mismatchRes.body.results || [])[0]?.status === 'error', `create avec patch.id != entity_id refuse (observe: ${JSON.stringify(mismatchRes.body.results)})`);
+  }
+
+  console.log('\n=== COLLECTIONS AJOUTEES A L\'ALLOWLIST -- contrats/custom_services/automationRules/automationRuns/automationAlerts ===');
+  {
+    for (const coll of ['contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts']) {
+      const id = 'id_qa_' + coll + '_' + Date.now();
+      const res = await syncPush(env, tokenA, deviceA, [{ client_seq: 200 + ['contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts'].indexOf(coll), entity: coll, entity_id: id, op: 'create', patch: { id, label: 'QA ' + coll } }]);
+      assert((res.body.results || [])[0]?.status === 'applied', `collection "${coll}" (reellement utilisee par le produit, absente de l'allowlist d'origine) acceptee (observe: ${JSON.stringify(res.body.results)})`);
+      const stored = (psqlJson(`select state from seba_state where account='test-patron-a';`)[coll] || []).find((x) => x.id === id);
+      assert(!!stored, `"${coll}" bien present dans seba_state.state.${coll} (observe: ${JSON.stringify(stored)})`);
+    }
+  }
+
   console.log('\n=== CAS 5 -- REMOVE : absence reelle de seba_state.state, retry sans danger ===');
   const del1 = await syncPush(env, tokenA, deviceA, [{ client_seq: 20, entity: 'clients', entity_id: clientId, op: 'delete', patch: { _deleted: true, deletedAt: '2026-07-28' } }]);
   assert((del1.body.results || [])[0]?.status === 'applied', `delete accepte (observe: ${JSON.stringify(del1.body.results)})`);
@@ -221,8 +329,8 @@ async function main() {
     await page.evaluateOnNewDocument((url, key) => { window.SEBA_CONFIG = { supabaseUrl: url, supabaseAnonKey: key, accountId: 'default' }; }, env.API_URL, env.ANON_KEY);
     await page.goto(`http://127.0.0.1:${PORT}/connexion.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.sebaAuth, { timeout: 10000 });
-    await page.type('#email', freshEmail);
-    await page.type('#password', freshPassword);
+    await setValue(page, '#email', freshEmail);
+    await setValue(page, '#password', freshPassword);
     // handleLogin() declenche elle-meme window.location.href='app/dashboard.html'
     // ~450ms apres un succes (onde SebaFX) -- l'execution context peut donc
     // etre detruit PENDANT que evaluate()/waitForFunction() y sont encore
@@ -236,10 +344,20 @@ async function main() {
     await page.goto(`http://127.0.0.1:${PORT}/clients.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.SebaDB, { timeout: 10000 });
     await page.evaluate(() => openSheet());
-    await page.type('#ss-prenom', 'CycleReel');
-    await page.type('#ss-nom', clientName);
+    await page.waitForSelector('#ss-panel.open', { timeout: 5000 }); // le sheet a sa propre transition CSS -- attendre la classe "open" reelle plutot qu'un delai fixe apres openSheet()
+    await page.waitForSelector('#ss-prenom', { visible: true, timeout: 5000 });
+    await setValue(page, '#ss-prenom', 'CycleReel');
+    await setValue(page, '#ss-nom', clientName);
+    const typedValues = await page.evaluate(() => ({ prenom: document.getElementById('ss-prenom').value, nom: document.getElementById('ss-nom').value }));
+    assert(typedValues.prenom === 'CycleReel' && typedValues.nom === clientName, `champs du formulaire reellement remplis avant soumission (observe: ${JSON.stringify(typedValues)})`);
     await page.evaluate(() => submitClient());
-    await new Promise((r) => setTimeout(r, 1500)); // debounce sync (800ms) + aller-retour reseau local
+    // Signal reel de fin de synchro (SebaDB.syncStatus().pending===0) plutot
+    // qu'un delai fixe -- le debounce sync (800ms) + l'aller-retour reseau
+    // local peuvent varier sous charge Docker.
+    const syncSettled = await page
+      .waitForFunction(() => window.SebaDB && window.SebaDB.syncStatus && window.SebaDB.syncStatus().pending === 0, { timeout: 8000, polling: 200 })
+      .then(() => true).catch(() => false);
+    assert(syncSettled, 'file de synchro videe apres la creation reelle depuis l\'interface (SebaDB.syncStatus().pending === 0)');
 
     const stateAfterUiCreate = psqlJson(`select state from seba_state where account='${freshUserId}';`);
     const clientInDb = (stateAfterUiCreate.clients || []).find((c) => c.nom === clientName);
@@ -248,16 +366,17 @@ async function main() {
     console.log('  -- Reload complet --');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.SebaDB, { timeout: 10000 });
-    await new Promise((r) => setTimeout(r, 2000)); // laisse ready()/pull() rapatrier l'etat cloud
-    const visibleAfterReload = await page.evaluate((name) => document.body.innerText.includes(name), clientName);
+    const visibleAfterReload = await page
+      .waitForFunction((name) => document.body.innerText.includes(name), { timeout: 8000, polling: 300 }, clientName)
+      .then(() => true).catch(() => false); // ready()/pull() rapatrient l'etat cloud de façon asynchrone, delai variable selon la charge Docker locale -- on attend la condition reelle plutot qu'un delai fixe
     assert(visibleAfterReload, `client toujours visible dans l'UI apres un reload complet (compte ${freshUserId})`);
 
     console.log('  -- Reconnexion (nouvelle session, localStorage vide) --');
     await page.evaluate(() => localStorage.clear());
     await page.goto(`http://127.0.0.1:${PORT}/connexion.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.sebaAuth, { timeout: 10000 });
-    await page.type('#email', freshEmail);
-    await page.type('#password', freshPassword);
+    await setValue(page, '#email', freshEmail);
+    await setValue(page, '#password', freshPassword);
     // handleLogin() declenche elle-meme window.location.href='app/dashboard.html'
     // ~450ms apres un succes (onde SebaFX) -- l'execution context peut donc
     // etre detruit PENDANT que evaluate()/waitForFunction() y sont encore
@@ -268,8 +387,9 @@ async function main() {
     await new Promise((r) => setTimeout(r, 1200));
     await page.goto(`http://127.0.0.1:${PORT}/clients.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.SebaDB, { timeout: 10000 });
-    await new Promise((r) => setTimeout(r, 2000));
-    const visibleAfterReconnect = await page.evaluate((name) => document.body.innerText.includes(name), clientName);
+    const visibleAfterReconnect = await page
+      .waitForFunction((name) => document.body.innerText.includes(name), { timeout: 8000, polling: 300 }, clientName)
+      .then(() => true).catch(() => false);
     assert(visibleAfterReconnect, `client toujours visible apres reconnexion complete (nouvelle session, compte ${freshUserId})`);
   } finally {
     await browser.close().catch(() => {});

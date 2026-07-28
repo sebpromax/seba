@@ -67,7 +67,64 @@
 --              `_deleted`/`deletedAt` reste conservé dans
 --              entity_versions.last_snapshot pour l'audit. Idempotent :
 --              élément déjà absent = no-op, jamais une erreur.
+--
+-- SÉMANTIQUE JSONB DES PATCHS (revue pré-merge PR #98) : `jsonb || jsonb`
+-- ne fait qu'une fusion de PREMIER NIVEAU -- un patch imbriqué PARTIEL
+-- (ex. {adresse:{ville:'Nice'}} sur un objet adresse existant avec
+-- rue/codePostal) écraserait silencieusement les clés absentes du patch.
+-- Vérifié EXHAUSTIVEMENT (grep de tous les appels SebaDB.update(...) sur
+-- docs/*.html + docs/seba-data.js, ~70 sites) : Seba ne le fait JAMAIS.
+-- Chaque champ imbriqué (execution, fieldReport, champsMetier,
+-- operationalMemory, servicePlans, statusHistory, unavailabilityRequests,
+-- history...) est systématiquement reconstruit en objet/tableau COMPLET
+-- côté client AVANT l'appel (`Object.assign({}, existant, changement)` ou
+-- équivalent), puis envoyé tel quel comme valeur complète de la clé.
+-- `adresse` elle-même est une chaîne (docs/clients.html:410), jamais un
+-- objet imbriqué. La fusion superficielle `||` reproduit donc exactement
+-- Object.assign(item, patch) -- aucun moteur de deep merge n'est
+-- nécessaire ni ajouté ici. Si un futur champ envoie un jour un patch
+-- imbriqué PARTIEL, ce sera un changement de contrat frontend à traiter
+-- alors, pas une lacune silencieuse de cette migration (couvert par un
+-- test explicite ci-dessous, scripts/local-db/test-sync-push-state-
+-- persistence.js CAS "objet imbriqué complet").
+--
+-- MODÈLE DE CONCURRENCE (revue pré-merge PR #98) : le frontend actuel
+-- (docs/seba-data.js pushOp/syncWorker) n'envoie AUCUNE version attendue
+-- avec un patch -- il est donc FAUX d'affirmer que cette migration rejette
+-- une écriture basée sur une version périmée. Le protocole réellement
+-- livré ici est une SÉRIALISATION TRANSACTIONNELLE : le verrou FOR UPDATE
+-- sur la ligne seba_state du compte sérialise toutes les écritures de ce
+-- compte, chacune relit l'état le plus récent avant d'appliquer son
+-- patch. Pour deux écritures concurrentes sur des champs DIFFÉRENTS du
+-- même objet, aucune perte (les deux surviennent, vérifié par un test
+-- réellement parallèle). Pour deux écritures concurrentes sur EXACTEMENT
+-- le même champ, dernier écrivain validé gagnant (celle qui obtient le
+-- verrou en second écrase la première sur ce champ précis) -- comportement
+-- correct et suffisant pour le volume d'écriture réel d'un compte Seba
+-- (usage terrain, pas de collaboration temps réel sur le même champ). Un
+-- vrai protocole de version côté client (rejet explicite d'un patch fondé
+-- sur une version périmée) n'existe pas et n'est pas ajouté ici -- dette
+-- suivie séparément (SYNC-OPTIMISTIC-001) si un besoin réel de
+-- collaboration simultanée apparaît.
 -- ═══════════════════════════════════════════════════════════════
+
+-- Élargit l'allowlist de sync_operations.entity : grep exhaustif de tous
+-- les appels SebaDB.create/update/remove(...) (docs/*.html +
+-- docs/seba-data.js) montre que 5 collections réellement utilisées par le
+-- produit (contrats, custom_services, automationRules, automationRuns,
+-- automationAlerts) étaient absentes de l'allowlist d'origine (Palier 1,
+-- 2026-07-09) -- déjà un défaut PRÉEXISTANT à cette PR (sync-push
+-- n'ayant jamais été déployée, jamais découvert avant), mais qui aurait
+-- cassé silencieusement la création d'un contrat/service personnalisé/
+-- règle d'automatisation dès le premier déploiement réel. Corrigé ici
+-- puisque cette migration a précisément pour objet de terminer le Palier 1.
+-- `messages`/`clientRequests` restent volontairement absentes : elles
+-- vivent dans des tables dédiées (seba_messages/client_requests) avec
+-- leurs propres RPC, jamais via ce chemin générique (vérifié, aucun appel
+-- SebaDB.create/update/remove('messages'|'clientRequests', ...) trouvé).
+alter table public.sync_operations drop constraint if exists sync_operations_entity_check;
+alter table public.sync_operations add constraint sync_operations_entity_check
+  check (entity in ('clients', 'devis', 'factures', 'interventions', 'employes', 'journal', 'contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts'));
 
 drop function if exists public.apply_entity_patch(text, text, text, jsonb);
 
@@ -105,8 +162,13 @@ begin
       using errcode = '22023';
   end if;
 
-  if p_entity not in ('clients', 'devis', 'factures', 'interventions', 'employes', 'journal') then
+  if p_entity not in ('clients', 'devis', 'factures', 'interventions', 'employes', 'journal', 'contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts') then
     raise exception 'apply_entity_patch: entity invalide ''%''', p_entity
+      using errcode = '22023';
+  end if;
+
+  if p_entity_id is null or p_entity_id = '' then
+    raise exception 'apply_entity_patch: entity_id manquant'
       using errcode = '22023';
   end if;
 
@@ -135,6 +197,25 @@ begin
   limit 1;
 
   if p_op = 'create' then
+    if not (p_patch_jsonb ? 'id') then
+      -- SebaDB.create() envoie toujours l'objet complet avec son id (voir
+      -- docs/seba-data.js) -- un patch de création sans identifiant
+      -- canonique ne peut provenir que d'un contrat rompu, jamais toléré
+      -- silencieusement (l'objet stocké serait alors introuvable par
+      -- entity_id ->> 'id' au prochain update/delete).
+      raise exception 'apply_entity_patch: create sans identifiant canonique (patch.id absent)'
+        using errcode = '22023';
+    end if;
+    if (p_patch_jsonb ->> 'id') is distinct from p_entity_id then
+      -- Le frontend envoie toujours patch.id = entity_id (objet complet à
+      -- la création, voir SebaDB.create()) -- une divergence signale soit
+      -- un bug client, soit une tentative de faire pointer entity_id
+      -- (utilisé pour le verrouillage/la recherche) vers un id different
+      -- de celui réellement stocké dans l'objet : refusé explicitement
+      -- plutôt que silencieusement toléré.
+      raise exception 'apply_entity_patch: patch.id (%) different de entity_id (%)', p_patch_jsonb ->> 'id', p_entity_id
+        using errcode = '22023';
+    end if;
     if v_idx is not null then
       -- Idempotent : déjà créé par une tentative précédente (retry réseau
       -- après un ack perdu) -- jamais rejoué, jamais de doublon.
