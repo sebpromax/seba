@@ -133,6 +133,15 @@ migrations/2026-07-28-sync-push-state-persistence.sql
 # dans la même transaction, verrouillage par ligne seba_state (par compte).
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-28-sync-push-service-role-execute.sql
+# Rend explicite le privilège EXECUTE de service_role sur
+# apply_entity_patch(text,text,text,jsonb,text) -- déjà présent en
+# pratique via les privilèges par défaut de la plateforme Supabase
+# (vérifié : has_function_privilege + 550 appels réels réussis pendant
+# les tests de la migration précédente, aucun échec de permission),
+# rendu explicite ici plutôt que dépendant d'une convention implicite.
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
