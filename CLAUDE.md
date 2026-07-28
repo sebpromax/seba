@@ -2,6 +2,23 @@
 
 Stack : HTML5/CSS3/JS vanilla, zéro bundler, zéro framework. Imports via CDN (D3, SortableJS, PapaParse, html2pdf, Leaflet, supabase-js). Backend : Supabase (Postgres + Auth + RLS). `docs/seba-data.js` (SebaDB) est la source de vérité unique pour toutes les données métier (clients, devis, factures, interventions, employés) — jamais de tableaux codés en dur dans les pages.
 
+## Gestion du backlog
+
+Avant tout nouveau chantier :
+1. lire `_architecture/MASTER_BACKLOG.md` ;
+2. vérifier si la tâche existe déjà ;
+3. passer son statut à `EN COURS` ;
+4. ne créer aucune checklist concurrente.
+
+Après livraison :
+1. ajouter la preuve de livraison ;
+2. retirer la tâche des sections actives ;
+3. la déplacer dans Archive récente ;
+4. ajouter les éventuelles nouvelles tâches réellement découvertes ;
+5. mettre à jour la date et le commit observé.
+
+Tout blocage externe doit rester visible avec sa prochaine action exacte.
+
 ## Thème "Tactical Dark Absolu" (dashboard.html uniquement)
 
 Palette : `--bg:#09090B` `--white:#18181B` `--ink:#EDEDED` `--text-2:#A1A1AA` `--emerald:#10B981`. Typographie monospace (JetBrains Mono, classe `.mono-num`) pour tous les chiffres/métriques affichés. Ce thème est **scopé à `docs/dashboard.html` + `docs/widgets.js`** — les autres pages connectées (clients/devis/factures/planning/équipe/historique/réglages) utilisent un thème distinct défini dans `pro-global.css` (tokens 2026-07-06). Ne pas fusionner les deux sans autorisation explicite.
