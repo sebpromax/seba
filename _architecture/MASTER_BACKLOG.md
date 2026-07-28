@@ -2,7 +2,7 @@
 
 Dernière mise à jour : 2026-07-28
 Branche observée : feature/customer-email-delivery
-Commit observé : 2bf00f4
+Commit observé : 9269855
 
 ## Règle de fonctionnement
 
@@ -13,10 +13,22 @@ Commit observé : 2bf00f4
 - aucune tâche ne peut être marquée terminée sans preuve ;
 - aucune nouvelle checklist concurrente ne doit être créée (voir `_architecture/DEPLOYMENT_CHECKLIST.md` et `PLAN.md`, dont les tâches actives ont été centralisées ici).
 
+## Ordre recommandé (priorités de livraison)
+
+1. Correctif critique d'activation sur `main` (AUTH-006).
+2. Migration `account-activation-bootstrap` distante (AUTH-007).
+3. Contrôle CI design system (CORE-008).
+4. Achat du domaine et activation Resend (CED-004).
+5. Validation réelle des emails (CED-008).
+6. Validation terrain du pilote (PILOT-001).
+7. Automatisations seulement après l'envoi manuel réel (AUTO-001).
+
 ## À terminer maintenant
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
+| AUTH-006 | P0 | Authentification | Le correctif critique d'activation (`67d9925` : bootstrap `seba_state` à l'activation patron + redirection par rôle sur `reset-password.html`) n'existe QUE sur `feature/customer-email-delivery`/PR #94 (Draft) — absent de `main`, donc absent de la production. Il est bundlé avec Customer Email Delivery, lui-même bloqué par CED-004 (domaine) : un correctif critique ne doit pas rester otage d'un blocage externe sans rapport | À FAIRE | Aucune | Cherry-pick `67d9925` sur une nouvelle branche depuis `main` (ex: `fix/account-activation-bootstrap`), ouvrir une PR indépendante n'embarquant aucun code Customer Email Delivery | `git merge-base --is-ancestor 67d9925 main` → NO ; `git branch --all --contains 67d9925` → uniquement `feature/customer-email-delivery` |
+| AUTH-007 | P0 | Authentification | `migrations/2026-07-28-account-activation-bootstrap.sql` n'a jamais été appliquée sur le projet Supabase distant `ptmudezhxnhhyctowlqp` (seule `2026-07-28-commercial-email-delivery.sql` a été confirmée appliquée) — un nouveau patron en production aujourd'hui n'a toujours aucune ligne `seba_state` et ne peut réellement rien écrire (401 en boucle) | À FAIRE | AUTH-006 (mérger le correctif avant de l'appliquer en base, ordre recommandé) | Appliquer la migration dans le SQL Editor distant, puis valider en créant un vrai nouveau compte patron et en vérifiant sa première écriture | Aucune preuve d'application distante trouvée ; `migrations/2026-07-28-account-activation-bootstrap.sql` absent de `main` |
 | CORE-008 | P2 | Socle produit | `.github/workflows/static.yml` déploie sur `main` sans exécuter aucun lint/`check-design-system` avant déploiement | À FAIRE | Aucune — contenu déjà proposé (DEC-011) | Ajouter une étape `node tools/check-design-system.js` avant `actions/upload-pages-artifact` | `.github/workflows/static.yml` (vérifié : aucune étape de vérification) ; `_architecture/SEBA_OWNERS_AND_DEADLINES.md` ligne 10 |
 
 ## Bloqué par une action externe
@@ -70,7 +82,7 @@ Commit observé : 2bf00f4
 |---|---|---|
 | CED-001 | Customer Email Delivery — Phase 1 (backend) | commit `cba633b` |
 | CED-002 | Customer Email Delivery — Phase 2 (interface) | commit `9e56065` |
-| CED-003 | Activation réelle des comptes et accès (bootstrap `seba_state` + redirection par rôle sur `reset-password.html`) + `scripts/qa-account-activation.js` (20/20) | commit `67d9925` |
+| CED-003 | Activation réelle des comptes et accès (bootstrap `seba_state` + redirection par rôle sur `reset-password.html`) + `scripts/qa-account-activation.js` (20/20) — **développé et testé en LOCAL uniquement** : absent de `main`, absent du Supabase distant (voir AUTH-006/AUTH-007, tâches actives tant que ce n'est pas corrigé) | commit `67d9925` |
 | CED-DOC | Documentation des prérequis de déploiement (domaine/Resend) | commit `8b7d688`, `_architecture/DEPLOYMENT_CHECKLIST.md` |
 | BILLING-001 | Devis/factures — modes simple/avancé + création flexible des documents commerciaux | commit `e8e7f53`, PR #93, `main` à `d2e4e77` |
 | AUTH-002 | T2 — correction `create_profile_and_company` (idempotence secteur) | branche `fix/t2-onboarding-sector-idempotence`, fusionnée dans `main`, `migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql` |
