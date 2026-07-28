@@ -19,6 +19,129 @@ Après livraison :
 
 Tout blocage externe doit rester visible avec sa prochaine action exacte.
 
+## Doctrine de progression concrète
+
+### Finalité
+
+Seba est un produit destiné à être réellement utilisé par des entreprises de terrain.
+
+Le dépôt, l'architecture, les tests et la documentation sont des moyens. Ils ne sont jamais la finalité.
+
+Chaque chantier doit produire un résultat observable pour au moins un de ces acteurs :
+
+- patron ;
+- employé ;
+- client ;
+- équipe chargée de maintenir le produit.
+
+### Test obligatoire avant de commencer une tâche
+
+Avant de passer une tâche à `EN COURS`, Claude doit pouvoir répondre précisément à ces quatre questions :
+
+1. Quel utilisateur ou quel parcours bénéficie de cette tâche ?
+2. Quel problème réel ou risque prouvé est traité ?
+3. Quel résultat observable prouvera que la tâche est terminée ?
+4. Pourquoi cette tâche doit-elle être faite maintenant plutôt qu'après le pilote ?
+
+Si ces réponses ne sont pas claires :
+
+- ne pas commencer la tâche ;
+- la laisser `À DÉCIDER` ou la passer à `REPORTÉ` ;
+- ne pas inventer une justification technique.
+
+### Travaux autorisés
+
+Un chantier est prioritaire lorsqu'il produit directement l'un des résultats suivants :
+
+- un parcours métier devient utilisable ;
+- un blocage réel est supprimé ;
+- une donnée critique n'est plus perdue ;
+- un risque de sécurité concret est corrigé ;
+- un utilisateur peut terminer une action sans développeur ;
+- une fonctionnalité déjà livrée devient réellement exploitable en production.
+
+### Fondations techniques
+
+Les fondations techniques restent autorisées uniquement lorsqu'elles protègent ou débloquent un usage déjà identifié.
+
+Exemples légitimes :
+
+- corriger l'inscription d'un patron qui ne peut pas créer sa première donnée ;
+- empêcher une fuite entre deux comptes ;
+- bloquer un déploiement connu comme dangereux ;
+- tester une Edge Function critique déjà utilisée ;
+- corriger une synchronisation qui perd ou bloque des données.
+
+Exemples non prioritaires sans problème réel :
+
+- ajouter de la CI uniquement parce qu'elle pourrait être utile ;
+- créer de nouvelles abstractions par anticipation ;
+- restructurer du code qui fonctionne ;
+- multiplier les audits ;
+- réécrire une architecture avant d'en rencontrer les limites ;
+- ajouter des métriques sans utilisateur ni décision associée ;
+- perfectionner un système qui n'est pas encore utilisé.
+
+### Limite des chantiers
+
+Un seul chantier produit principal peut être `EN COURS`.
+
+Une tâche trop grande doit être divisée en livraisons courtes et vérifiables.
+
+Chaque chantier doit pouvoir aboutir à une preuve claire dans une PR bornée ou une session pilote réelle.
+
+Lorsqu'un chantier commence à produire de nouvelles sous-tâches sans résultat visible, Claude doit :
+
+1. arrêter l'élargissement ;
+2. revenir au résultat initial ;
+3. livrer la partie utile ;
+4. reporter le reste dans le Master Backlog.
+
+### Règle après une fondation
+
+Après une tâche principalement technique, la prochaine tâche doit être orientée vers :
+
+- un usage réel ;
+- un parcours utilisateur ;
+- un pilote ;
+- une correction rencontrée pendant ce pilote.
+
+Une nouvelle fondation technique consécutive n'est autorisée que lorsqu'un P0 réel la rend indispensable.
+
+### Preuve de livraison
+
+Une tâche n'est pas terminée parce que le code existe.
+
+La preuve doit correspondre à sa nature :
+
+- fonctionnalité : parcours réel terminé ;
+- bug : reproduction impossible après correction ;
+- sécurité : scénario interdit réellement refusé ;
+- déploiement : exécution distante réussie ;
+- pilote : utilisateur réel arrivé au résultat attendu ;
+- documentation : règle effectivement présente sur `main`.
+
+### Règle de décision
+
+En cas d'hésitation entre :
+
+- améliorer l'infrastructure ;
+- ou faire utiliser le produit ;
+
+privilégier l'utilisation réelle du produit, sauf risque P0 de sécurité, de données ou d'indisponibilité.
+
+### Interdiction d'avancer dans le vide
+
+Claude ne doit jamais proposer une nouvelle fonctionnalité uniquement parce qu'elle semble moderne, complète ou impressionnante.
+
+Toute nouvelle fonctionnalité doit provenir d'au moins une source concrète :
+
+- blocage observé pendant un parcours ;
+- demande répétée d'un utilisateur ;
+- besoin indispensable du cycle métier ;
+- obligation légale ou de sécurité confirmée ;
+- décision explicite du fondateur inscrite dans le Master Backlog.
+
 ## Thème "Tactical Dark Absolu" (dashboard.html uniquement)
 
 Palette : `--bg:#09090B` `--white:#18181B` `--ink:#EDEDED` `--text-2:#A1A1AA` `--emerald:#10B981`. Typographie monospace (JetBrains Mono, classe `.mono-num`) pour tous les chiffres/métriques affichés. Ce thème est **scopé à `docs/dashboard.html` + `docs/widgets.js`** — les autres pages connectées (clients/devis/factures/planning/équipe/historique/réglages) utilisent un thème distinct défini dans `pro-global.css` (tokens 2026-07-06). Ne pas fusionner les deux sans autorisation explicite.

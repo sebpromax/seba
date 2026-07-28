@@ -2,7 +2,7 @@
 
 Dernière mise à jour : 2026-07-28
 Branche observée : main
-Commit observé : 492dda3
+Commit observé : b07d315
 
 ## Règle de fonctionnement
 
@@ -12,6 +12,26 @@ Commit observé : 492dda3
 - une tâche est retirée des sections actives après livraison prouvée (commit, PR, test ou validation externe) ;
 - aucune tâche ne peut être marquée terminée sans preuve ;
 - aucune nouvelle checklist concurrente ne doit être créée (voir `_architecture/DEPLOYMENT_CHECKLIST.md` et `PLAN.md`, dont les tâches actives ont été centralisées ici).
+
+### Filtre de valeur concrète
+
+- aucune tâche ne passe à `EN COURS` sans bénéficiaire identifié ;
+- aucune tâche ne passe à `EN COURS` sans résultat observable ;
+- aucune tâche technique ne devient prioritaire sans blocage ou risque réel ;
+- les idées non validées restent `À DÉCIDER` ou `REPORTÉES` ;
+- une preuve locale ne vaut pas automatiquement une validation en production ;
+- après une fondation technique, priorité au produit ou au pilote ;
+- le nombre de tâches terminées ne mesure pas le progrès ;
+- le progrès est mesuré par les parcours réellement utilisables.
+
+> Seba avance lorsqu'un professionnel peut accomplir davantage de travail réel avec moins de friction, pas lorsque le dépôt contient davantage de complexité.
+
+Priorités (inchangées) :
+
+- `P0` : bloque réellement l'usage, les données, la sécurité ou la production ;
+- `P1` : amélioration directement nécessaire au parcours actif ;
+- `P2` : utile après validation du besoin ;
+- `P3` : reporté ou expérimental.
 
 ## Ordre recommandé (priorités de livraison)
 
@@ -27,8 +47,9 @@ Commit observé : 492dda3
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
+| PILOT-004 | P0 | Pilote produit | Premier cycle métier réel en production : connexion patron → configuration entreprise → création client → devis → consultation/acceptation client → intervention → planning → assignation → exécution mobile → compte rendu/preuve → approbation client → validation patron → facture → paiement → historique client complet (15 étapes) | EN COURS | Aucune | Exécuter le cycle sur la version réellement déployée, avec un utilisateur réel (pas un test automatisé seul) ; consigner chaque étape dans `_architecture/PILOT_RUN_001.md` | `_architecture/PILOT_RUN_001.md` |
 
-Aucune tâche active non bloquée pour l'instant — voir "À faire ensuite" pour les tâches P2 déjà déblocables (CORE-001, CORE-002, CORE-004, PILOT-002).
+Seule tâche produit `EN COURS` (doctrine "Limite des chantiers", `CLAUDE.md`). Aucune autre tâche active tant que PILOT-004 n'a pas produit son résultat (voir "À faire ensuite" pour les tâches P2 en attente : CORE-001, CORE-004, PILOT-002).
 
 ## Bloqué par une action externe
 
@@ -51,7 +72,6 @@ Aucune tâche active non bloquée pour l'instant — voir "À faire ensuite" pou
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
 | CORE-001 | P2 | Socle produit | Périmètre P5 (analytique financière) incomplet : tables `intervention_materiaux`/`intervention_trajets`/`fournisseurs_prix_historique`, table `client_payment_history` + prédiction impayés, widget dashboard "marge réelle" | À FAIRE | Aucune | Concevoir le schéma des 3 tables restantes, puis le widget consommant `vue_marge_interventions`/`get_marge_reelle` | `PLAN.md` lignes 34-36 |
-| CORE-002 | P2 | Socle produit | Aucun environnement CI/CLI Deno n'a jamais exécuté réellement la suite de tests unitaires (`*.test.ts` : sync-push, vision-qa, conscience-seba, llm-providers, invitation-delivery…) | À FAIRE | Aucune | Ajouter Deno CLI/CI (localement ou en pipeline) et exécuter la suite au moins une fois | `PLAN.md` ligne 53 |
 | CORE-004 | P2 | Socle produit | Aucune métrique de monitoring serveur : échecs de synchro, latence `vision-qa`, backlog d'alertes ne remontent qu'en `console.warn` local, jamais au patron/admin | À FAIRE | Aucune | Construire au minimum la métrique "sync failures" + latence vision-qa | `PLAN.md` ligne 69 ; `AUDIT-GO-LIVE-SEBA.md` ligne 131 |
 | PILOT-002 | P2 | Pilote | Groupe 1bis — formulaire de liste d'attente publique (finalité, données, consentement, conservation, anti-spam, notification fondateur) | À FAIRE | Doit rester sans retarder aucune tâche active | Définir finalité/données strictement nécessaires, puis construire le formulaire | `_architecture/SEBA_EXECUTION_ROADMAP.md` §Groupe 1bis |
 | DASH-001 | P2 | Dashboard | Décision bloquante en attente avant la Phase 1 du Dashboard V2 Master Plan (non précisée plus avant dans ce backlog pour éviter la duplication du plan complet) | À DÉCIDER | Arbitrage fondateur/produit | Lire `DASHBOARD_V2_MASTER_PLAN.md` §"Décision en attente" et trancher | `_architecture/DASHBOARD_V2_MASTER_PLAN.md` ligne 25 |
@@ -68,6 +88,7 @@ Aucune tâche active non bloquée pour l'instant — voir "À faire ensuite" pou
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
+| CORE-002 | P3 | Socle produit | Aucun environnement CI/CLI Deno n'a jamais exécuté réellement la suite de tests unitaires (`*.test.ts` : sync-push, vision-qa, conscience-seba, llm-providers, invitation-delivery…) | REPORTÉ | Les tests Deno en CI restent utiles, mais aucun échec Deno réel ne bloque actuellement un utilisateur ou le pilote. Cette fondation ne doit pas retarder la validation concrète du cycle métier. | Redevient prioritaire si : régression réelle d'une Edge Function ; tests Deno nécessaires avant un déploiement critique ; plusieurs développeurs interviennent simultanément sur le backend ; le pilote dépend d'une fonction insuffisamment sécurisée par les tests actuels | `PLAN.md` ligne 53 |
 | AUTO-001 | P3 | Automatisations email | `send_quote_email`/`send_invoice_email`/`send_receipt_email`, intégration builder, idempotence des exécutions automatiques, QA final | REPORTÉ | L'envoi manuel réel doit d'abord être validé en production (CED-008) | Reprendre après validation réelle de CED | Instruction explicite de ce chantier (2026-07-28) |
 | PILOT-003 | P3 | Pilote | Groupes 3 à 6 — face publique complète (fiche publique, revendication, demandes qualifiées, pilote restreint) | REPORTÉ | PILOT-001 (GATE-0) non résolu | Ne démarre qu'après décision GO/AJUSTER enregistrée dans `SEBA_DECISION_LOG.md` | `_architecture/SEBA_EXECUTION_ROADMAP.md` Groupes 3-6 |
 | CORE-003 | P3 | Socle produit | Pas de killswitch DB pour `vision-qa.ts`/`sync-push.ts` (seul le trigger d'alerte a un vrai killswitch) — proposition `app_config(key,value)` déjà écrite, jamais créée | REPORTÉ | Non prioritaire | Créer `app_config` quand un vrai besoin d'arrêt d'urgence se présente | `PLAN.md` ligne 68 (vérifié : table `app_config` absente du schéma) |
