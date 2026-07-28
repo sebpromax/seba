@@ -2,7 +2,7 @@
 
 Dernière mise à jour : 2026-07-28
 Branche observée : feature/customer-email-delivery
-Commit observé : cf31ecd
+Commit observé : 2bf00f4
 
 ## Règle de fonctionnement
 
@@ -17,7 +17,6 @@ Commit observé : cf31ecd
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
-| CED-005 | P1 | Customer Email Delivery | Déployer la migration `2026-07-28-commercial-email-delivery.sql` et les Edge Functions `send-commercial-document`/`commercial-email-webhook` sur le projet Supabase distant | À FAIRE | Aucune (indépendant de l'achat du domaine) | Rejouer la migration dans le SQL Editor distant, déployer les 2 fonctions via le Dashboard | `migrations/2026-07-28-commercial-email-delivery.sql`, `supabase-functions/` |
 | CORE-008 | P2 | Socle produit | `.github/workflows/static.yml` déploie sur `main` sans exécuter aucun lint/`check-design-system` avant déploiement | À FAIRE | Aucune — contenu déjà proposé (DEC-011) | Ajouter une étape `node tools/check-design-system.js` avant `actions/upload-pages-artifact` | `.github/workflows/static.yml` (vérifié : aucune étape de vérification) ; `_architecture/SEBA_OWNERS_AND_DEADLINES.md` ligne 10 |
 
 ## Bloqué par une action externe
@@ -78,5 +77,6 @@ Commit observé : cf31ecd
 | AUTH-003 | T3 — fiabilité de la synchronisation (retry/recovery) | branche `fix/t3-sync-retry-recovery`, fusionnée dans `main` |
 | AUTH-004 | Chevauchement `fix/invitation-delivery` vs `feature/customer-email-delivery` résolu SANS merge : diff isolé (`git diff 63fb0d9 fix/invitation-delivery`) montre que le socle (invitation, liaison compte, redirection par rôle) est déjà couvert et testé (67d9925, 20/20) ; le comportement réellement absent (statut de livraison réel + retry) dépend de `RESEND_API_KEY`, bloqué par la même cause que CED-004 — reporté en `AUTH-005`, branche non mergée conservée telle quelle, aucun code modifié | Décision documentée dans ce fichier (`AUTH-005` ci-dessus) ; commit `77fbb5f` |
 | CED-009 | Draft PR ouverte pour `feature/customer-email-delivery` → `main`, description couvrant Phase 1/2 terminées, activation corrigée, blocage domaine, migrations/Edge Functions non déployées, automatisations reportées | PR #94 (`feat(email): add commercial document delivery`, draft, non mergée) |
+| CED-005 | Backend distant déployé sur le projet Supabase `ptmudezhxnhhyctowlqp` : migration `2026-07-28-commercial-email-delivery.sql` appliquée avec succès (confirmé fondateur), `send-commercial-document` déployée avec vérification JWT active (`verify_jwt:true`), `commercial-email-webhook` déployée avec `--no-verify-jwt` (protégée par sa propre vérification cryptographique de signature Resend/Svix, `verifySvixSignature` toujours présente dans le code) — aucun secret configuré, aucun envoi réel déclenché | `npx supabase functions list --project-ref ptmudezhxnhhyctowlqp` (les deux fonctions `ACTIVE`) |
 
 **Note de correction** : `_architecture/SEBA_OWNERS_AND_DEADLINES.md` (daté 2026-07-22) affiche encore les lignes 5 et 6 (T2/T3) comme "correction NON ASSIGNÉE" — vérifié obsolète : les deux branches sont fusionnées dans `main` (`git branch --merged main`). Ne pas se fier à ce document sans vérification Git — voir AUTH-002/AUTH-003 ci-dessus.
