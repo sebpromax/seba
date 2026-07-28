@@ -2,7 +2,7 @@
 
 Dernière mise à jour : 2026-07-28
 Branche observée : main
-Commit observé : a8eaea8
+Commit observé : 492dda3
 
 ## Règle de fonctionnement
 
@@ -27,7 +27,8 @@ Commit observé : a8eaea8
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
-| CORE-008 | P2 | Socle produit | `.github/workflows/static.yml` déploie sur `main` sans exécuter aucun lint/`check-design-system` avant déploiement | EN COURS | Aucune — contenu déjà proposé (DEC-011) | Ajouter une étape `node tools/check-design-system.js` avant `actions/upload-pages-artifact` sur `fix/ci-design-system-gate` | `.github/workflows/static.yml` (vérifié : aucune étape de vérification) ; `_architecture/SEBA_OWNERS_AND_DEADLINES.md` ligne 10 |
+
+Aucune tâche active non bloquée pour l'instant — voir "À faire ensuite" pour les tâches P2 déjà déblocables (CORE-001, CORE-002, CORE-004, PILOT-002).
 
 ## Bloqué par une action externe
 
@@ -90,5 +91,6 @@ Commit observé : a8eaea8
 | CED-005 | Backend distant déployé sur le projet Supabase `ptmudezhxnhhyctowlqp` : migration `2026-07-28-commercial-email-delivery.sql` appliquée avec succès (confirmé fondateur), `send-commercial-document` déployée avec vérification JWT active (`verify_jwt:true`), `commercial-email-webhook` déployée avec `--no-verify-jwt` (protégée par sa propre vérification cryptographique de signature Resend/Svix, `verifySvixSignature` toujours présente dans le code) — aucun secret configuré, aucun envoi réel déclenché | `npx supabase functions list --project-ref ptmudezhxnhhyctowlqp` (les deux fonctions `ACTIVE`) |
 | AUTH-006 | Correctif critique d'activation (bootstrap `seba_state` + redirection par rôle) extrait de `feature/customer-email-delivery` sur une branche/PR dédiée `fix/account-activation-bootstrap`, sans aucun code Customer Email Delivery (diff vérifié : 9 fichiers, `git diff --name-only main...HEAD`) ; migration corrigée pendant l'extraction pour ne pas régresser le durcissement T2 (SECURITY DEFINER/search_path/idempotence) ; `scripts/qa-account-activation.js` 20/20 réel (incluant un nouveau test explicite de retry idempotent) ; mergée dans `main` | PR #95 (`fix(auth): bootstrap new accounts and preserve role redirects`, Ready, mergée), commit `cef4da0` |
 | AUTH-007 | Migration `2026-07-28-account-activation-bootstrap.sql` appliquée sur le projet Supabase distant `ptmudezhxnhhyctowlqp` (confirmé fondateur) et validée par un scénario réel de bout en bout contre ce projet (utilisateur QA préconfirmé, jamais d'email réel envoyé/lu) : profil+entreprise+`seba_state` créés en un seul appel, `seba_state` présent immédiatement (aucune dépendance à `sync-push`, qui n'est d'ailleurs pas déployée sur ce projet — hors périmètre de cette tâche), rejeu idempotent (même profil, aucun doublon), secteur différent explicitement refusé (code `23514`, durcissement T2 toujours actif), première écriture métier réelle persistée sans boucle 401, isolation cross-account vérifiée, toutes les données QA supprimées après coup (0 restante) | Script de validation exécuté contre `ptmudezhxnhhyctowlqp` ce jour, sortie `TOUT PASSE` (script ad hoc non commité, aucune donnée réelle touchée) |
+| CORE-008 | `.github/workflows/static.yml` bloque désormais le déploiement Pages si `node tools/check-design-system.js` échoue — étape ajoutée après `Checkout`, avant `Setup Pages`/`Upload artifact`/`Deploy to GitHub Pages` ; aucun `actions/setup-node` ajouté (script Node pur, aucune dépendance) ; contrôle local réussi sur `main` avant modification ; run réel déclenché par le merge vérifié sur GitHub Actions — étape "Check design system" exécutée à la bonne position, déploiement terminé avec succès | PR #96 (`ci: block Pages deploy on design system violations`, Ready, mergée), commit `3677e8f`/merge `492dda3`, run GitHub Actions `30356076915` (succès) |
 
 **Note de correction** : `_architecture/SEBA_OWNERS_AND_DEADLINES.md` (daté 2026-07-22) affiche encore les lignes 5 et 6 (T2/T3) comme "correction NON ASSIGNÉE" — vérifié obsolète : les deux branches sont fusionnées dans `main` (`git branch --merged main`). Ne pas se fier à ce document sans vérification Git — voir AUTH-002/AUTH-003 ci-dessus.
