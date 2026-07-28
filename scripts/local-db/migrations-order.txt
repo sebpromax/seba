@@ -108,6 +108,19 @@ migrations/2026-07-26-public-intake.sql
 # navigateur par les moteurs JS existants). Ajouts purs, ne modifie aucune
 # RPC/table existante. Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-28-account-activation-bootstrap.sql
+# Activation réelle des comptes et accès (prérequis avant déploiement des
+# emails commerciaux) : create_profile_and_company crée désormais aussi la
+# ligne seba_state du patron à l'activation (sinon aucune ligne n'existe
+# avant le premier sync-push, qui EXIGE une ligne seba_state existante
+# pour résoudre l'identité -- un patron neuf ne pouvait rien écrire).
+# CREATE OR REPLACE rejoué APRÈS le durcissement T2
+# (migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql) : repart
+# du corps durci de T2 (SECURITY DEFINER, search_path, validation secteur,
+# idempotence profiles/companies) tel quel, ajoute uniquement le bootstrap
+# seba_state -- aucune régression du durcissement existant, ne modifie
+# aucune autre RPC/table. Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
