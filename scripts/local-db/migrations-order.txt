@@ -121,6 +121,18 @@ migrations/2026-07-28-account-activation-bootstrap.sql
 # seba_state -- aucune régression du durcissement existant, ne modifie
 # aucune autre RPC/table. Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-28-sync-push-state-persistence.sql
+# QA360-P0-A : termine le Palier 1 (sync-push, PR #32/2454af4, 2026-07-09) --
+# apply_entity_patch() écrivait uniquement dans entity_versions, jamais
+# dans seba_state.state (lu par SupabaseAdapter.pull() et la quasi-totalité
+# des RPC de lecture) : déployer sync-push tel quel aurait donné un succès
+# HTTP sans persistance réelle après reload. Remplace apply_entity_patch()
+# (nouvelle signature à 5 paramètres, ajout de p_op create/update/delete,
+# ancienne signature à 4 paramètres supprimée -- aucun autre appelant dans
+# le dépôt) pour écrire seba_state.state ET entity_versions atomiquement
+# dans la même transaction, verrouillage par ligne seba_state (par compte).
+# Voir l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
