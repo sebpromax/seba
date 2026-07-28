@@ -363,6 +363,9 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
       <!-- Mission actuelle (mobile uniquement) -->
       <div id="mobile-current-mission"></div>
 
+      <!-- Premiers pas (compte sans donnée réelle uniquement -- voir renderWelcome) -->
+      <div id="db-welcome" style="display:none;"></div>
+
       <!-- Ligne 1 — À traiter maintenant -->
       <section class="db-alerts" id="db-alerts" aria-label="Actions prioritaires">
         <div class="db-skeleton-row" style="margin:14px 18px;"></div>
@@ -454,33 +457,6 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
 
 <script>
 'use strict';
-
-/* ═══════════════════════════════════════════════════════════════
-   DASHBOARD_DEMO_DATA — utilisé UNIQUEMENT quand le compte n'a
-   encore aucune donnée réelle (SebaDB.hasData() === false), pour ne
-   jamais montrer un dashboard totalement vide à un nouvel inscrit.
-   Dès qu'une seule donnée réelle existe, plus aucune valeur d'ici
-   n'est utilisée (voir buildOwnerDashboardViewModel).
-═══════════════════════════════════════════════════════════════ */
-const DASHBOARD_DEMO_DATA = {
-  menage: {
-    jobs: [
-      { time: '08:00', client: 'M. Durand', service: 'Ménage complet', adresse: '12 rue des Lilas, Nice', employe: 'Léa Martin', statut: 'terminee' },
-      { time: '11:30', client: 'Mme Petit', service: 'Devis grand ménage', adresse: '4 av. de la Gare, Nice', employe: null, statut: 'a-venir' },
-      { time: '14:00', client: 'Mme Bernard', service: 'Ménage hebdomadaire', adresse: '9 bd Victor Hugo, Nice', employe: 'Sarah Dupont', statut: 'a-venir' },
-      { time: '17:00', client: 'Sophie Lacroix', service: "Visite d'estimation", adresse: '2 rue Masséna, Nice', employe: null, statut: 'non-assignee' },
-    ],
-    finance: { caMois: 2840, encaisse: 2840, enAttente: 380, impaye: 0, deltaPct: 12 },
-    pipeline: { prospects: 6, devisEnvoyes: 4, devisAcceptes: 2, devisRefuses: 1, tauxConversion: 33 },
-  },
-  autre: {
-    jobs: [],
-    finance: { caMois: 0, encaisse: 0, enAttente: 0, impaye: 0, deltaPct: null },
-    pipeline: { prospects: 0, devisEnvoyes: 0, devisAcceptes: 0, devisRefuses: 0, tauxConversion: null },
-  },
-};
-DASHBOARD_DEMO_DATA.conciergerie = DASHBOARD_DEMO_DATA.menage;
-DASHBOARD_DEMO_DATA.maintenance = DASHBOARD_DEMO_DATA.menage;
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -801,6 +777,25 @@ function buildOwnerDashboardViewModel(state, options) {
 ═══════════════════════════════════════════════════════════════ */
 const STATUS_LABEL = { 'a-venir': 'À venir', 'en-cours': 'En cours', 'terminee': 'Terminée', 'en-retard': 'En retard', 'non-assignee': 'Non assignée' };
 
+/* Premiers pas -- affiché UNIQUEMENT tant que le compte n'a encore aucune
+   donnée réelle (SebaDB.hasData() === false, voir collectState()). Dès la
+   première vraie donnée créée, ce bloc disparaît définitivement -- jamais
+   remplacé par une autre donnée fictive (DASHBOARD_DEMO_DATA supprimé). */
+function renderWelcome(hasRealData) {
+  const el = document.getElementById('db-welcome');
+  if (hasRealData) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div class="db-panel" style="margin-bottom:14px;border-color:var(--emerald);">' +
+    '<div class="db-panel-title"><span>Bienvenue dans Seba</span></div>' +
+    '<p style="margin:8px 0 14px;color:var(--text-2);font-size:.92rem;">Commencez par créer votre premier client pour lancer votre activité.</p>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">' +
+      '<button type="button" class="db-btn-primary" onclick="window.location.href=\'../clients.html\'">Créer mon premier client →</button>' +
+      '<a href="../reglages.html" style="font-size:.86rem;color:var(--text-2);">Configurer mon entreprise</a>' +
+      '<a href="../devis-nouveau.html" style="font-size:.86rem;color:var(--text-2);">Créer un devis</a>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderAlerts(actions) {
   const el = document.getElementById('db-alerts');
   if (!actions.length) { el.innerHTML = '<div class="db-alert-ok">✓ Tout est à jour</div>'; return; }
@@ -1082,13 +1077,9 @@ function collectState(biz) {
       hasRealData: true,
     };
   }
-  const secteur = biz.secteur || 'autre';
-  const demo = DASHBOARD_DEMO_DATA[secteur] || DASHBOARD_DEMO_DATA.autre;
-  const todayISO = todayISOLocal();
   return {
     biz,
-    clients: [], devis: [], factures: [],
-    interventions: demo.jobs.map((j, i) => ({ id: 'demo-' + i, date: todayISO, time: j.time, clientName: j.client, service: j.service, employeName: j.employe, employeId: j.employe ? 'demo-emp-' + i : null, done: j.statut === 'terminee' })),
+    clients: [], devis: [], factures: [], interventions: [],
     employes: [], journal: [], messages: [], clientRequests: [], syncStatus: currentSyncStatus(),
     hasRealData: false,
   };
@@ -1175,6 +1166,7 @@ async function refreshAll() {
     window.__dashSym = state.biz.deviseSymbole || '€';
     const vm = buildOwnerDashboardViewModel(state, { period: _period, customFrom: _customFrom, customTo: _customTo });
     _lastVm = vm;
+    renderWelcome(vm.hasRealData);
     renderAlerts(vm.priorityActions);
     renderJobs(vm.todayInterventions, state.employes.filter(e => e.actif));
     renderFinance(vm.financeSummary, vm.sym);
