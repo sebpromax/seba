@@ -2222,7 +2222,16 @@
       loadState();
       let biz = null;
       try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch (e) {}
-      if (biz && biz.secteur && !state.clients.length && !state._seeded) {
+      // CORRECTIF (DASH-EMPTY-001) : seed() ne doit JAMAIS s'exécuter pour un
+      // compte réellement connecté à Supabase -- avant ce correctif, rien ne
+      // distinguait "vrai patron fraîchement activé" (state.clients vide en
+      // ATTENDANT le rapatriement cloud asynchrone ci-dessous) de "mode démo
+      // local sans compte" : les deux avaient state.clients.length === 0 au
+      // même instant. Un vrai patron se retrouvait donc avec 6 faux clients
+      // + devis/factures/interventions/employés RÉELLEMENT poussés vers son
+      // compte Supabase via pushOp() (jamais un simple affichage local).
+      // hasSupabase = seule condition qui distingue réellement les deux cas.
+      if (!hasSupabase && biz && biz.secteur && !state.clients.length && !state._seeded) {
         state._seeded = true;
         seed(biz);
       }
