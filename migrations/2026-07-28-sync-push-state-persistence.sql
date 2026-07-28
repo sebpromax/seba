@@ -258,5 +258,13 @@ $$;
 revoke all on function public.apply_entity_patch(text, text, text, jsonb, text) from public;
 revoke all on function public.apply_entity_patch(text, text, text, jsonb, text) from anon;
 revoke all on function public.apply_entity_patch(text, text, text, jsonb, text) from authenticated;
--- Aucun grant explicite : appelée exclusivement via service_role (Edge
--- Function sync-push), qui bypasse GRANT/RLS par nature du rôle.
+-- CORRECTION (revue post-merge, voir migrations/2026-07-28-sync-push-
+-- service-role-execute.sql) : l'affirmation initiale ici était inexacte.
+-- service_role contourne les politiques RLS (attribut BYPASSRLS du rôle)
+-- mais nécessite toujours le privilège EXECUTE sur la fonction comme
+-- n'importe quel rôle -- ce n'est pas le même mécanisme. Ce privilège est
+-- accordé explicitement par la migration additive
+-- 2026-07-28-sync-push-service-role-execute.sql (il existait déjà en
+-- pratique via les privilèges par défaut de la plateforme Supabase sur
+-- le schéma public, mais dépendait silencieusement d'une convention
+-- implicite plutôt que d'un GRANT documenté ici).
