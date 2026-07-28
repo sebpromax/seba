@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
+<link rel="stylesheet" href="commercial-email-modal.css">
 <style>
 :root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -297,6 +298,8 @@
 <script src="services/legacy-quote-adapter.js"></script>
 <script src="services/contract-billing.js"></script>
 <script src="email-service.js"></script>
+<script src="commercial-document-render.js"></script>
+<script src="commercial-email-modal.js"></script>
 <script>
   /* ── Devis — lus depuis le moteur de données partagé ── */
   let DEVIS_DATA = SebaDB.list('devis').map(window.SebaQuotes.adaptLegacyQuote).map(d => Object.assign({}, d, { client: d.clientName }));
@@ -501,6 +504,8 @@
     const acts = [];
     if (d.status === 'brouillon') acts.push({ act: 'modifier', label: 'Modifier' });
     if (d.status !== 'brouillon') acts.push({ act: 'voir-document', label: 'Voir le document' });
+    if (d.status !== 'brouillon') acts.push({ act: 'envoyer-email', label: 'Envoyer par email' });
+    if (d.status !== 'brouillon') acts.push({ act: 'copier-lien', label: 'Copier le lien client' });
     if (d.status === 'signe' && !d.interventionId) acts.push({ act: 'planifier', label: 'Planifier l\'intervention' });
     if (d.status === 'signe' && d.interventionId) acts.push({ act: 'voir-intervention', label: 'Voir l\'intervention' });
     if (d.status === 'signe' && !d.invoiceId) acts.push({ act: 'convertir', label: 'Convertir en facture' });
@@ -572,6 +577,18 @@
         if (xact === 'voir-document') {
           const d = DEVIS_DATA.find(x => x.id === id);
           if (d) location.href = 'devis-document.html?id=' + encodeURIComponent(d.id);
+          return;
+        }
+        if (xact === 'envoyer-email') {
+          const raw = SebaDB.get('devis', id);
+          if (!raw) return;
+          const model = SebaClientIntelligence.buildQuoteDocumentModel(raw, { devis: SebaDB.list('devis'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
+          const client = (SebaDB.list('clients') || []).find(c => c.id === raw.clientId) || null;
+          CommercialEmailModal.open({ documentType: 'quote', documentId: id, clientId: raw.clientId, client, documentModel: model, account: SebaDB.accountId() });
+          return;
+        }
+        if (xact === 'copier-lien') {
+          CommercialEmailModal.copyLink('quote', id, { documentLink: SebaDB.commercialEmail.buildClientDocumentLink('quote', id) });
           return;
         }
         if (xact === 'reviser') {

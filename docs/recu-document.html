@@ -7,6 +7,7 @@
 <script src="auth.js"></script>
 <script src="guard.js"></script>
 <link rel="stylesheet" href="commercial-document.css">
+<link rel="stylesheet" href="commercial-email-modal.css">
 <style>
 :root{
   --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
@@ -23,6 +24,8 @@
   <h1>Reçu de paiement</h1>
   <div>
     <button class="tbtn" onclick="history.length>1?history.back():location.href='factures.html'">← Retour</button>
+    <button class="tbtn" id="btn-copy-link" style="display:none;" onclick="copyClientLink()">Copier le lien</button>
+    <button class="tbtn" id="btn-send-email" style="display:none;" onclick="openSendModal()">Envoyer le reçu par email</button>
     <button class="tbtn primary" onclick="printDoc()">Imprimer / Enregistrer en PDF</button>
   </div>
 </div>
@@ -36,7 +39,7 @@
 <script>
 const esc = SebaDocRender.esc;
 
-let _model = null;
+let _model = null, _isOwner = false, _invoiceId = null, _paymentId = null, _rawFacture = null;
 
 function showEmpty(msg) {
   document.getElementById('page-wrap').innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p><a href="factures.html">Retour aux factures</a></div>';
@@ -44,7 +47,24 @@ function showEmpty(msg) {
 
 function renderDoc(model) {
   document.title = 'Reçu — ' + (model.references.invoiceNumber || '') + ' — Seba';
+  if (_isOwner) {
+    document.getElementById('btn-copy-link').style.display = 'inline-block';
+    document.getElementById('btn-send-email').style.display = 'inline-block';
+  }
   document.getElementById('page-wrap').innerHTML = SebaDocRender.receiptHTML(model);
+}
+
+function copyClientLink() {
+  if (!_model) return;
+  CommercialEmailModal.copyLink('receipt', _paymentId, { invoiceId: _invoiceId, paymentId: _paymentId, documentLink: SebaDB.commercialEmail.buildClientDocumentLink('receipt', _paymentId, { invoiceId: _invoiceId, paymentId: _paymentId }) });
+}
+function openSendModal() {
+  if (!_model || !_rawFacture) return;
+  const client = (SebaDB.list('clients') || []).find(c => c.id === _rawFacture.clientId) || null;
+  CommercialEmailModal.open({
+    documentType: 'receipt', documentId: _paymentId, invoiceId: _invoiceId, paymentId: _paymentId, clientId: _rawFacture.clientId,
+    client, documentModel: _model, account: SebaDB.accountId(),
+  });
 }
 
 function printDoc() {
@@ -58,6 +78,7 @@ async function init() {
   const params = new URLSearchParams(location.search);
   const invoiceId = params.get('invoiceId');
   const paymentId = params.get('paymentId');
+  _invoiceId = invoiceId; _paymentId = paymentId;
   if (!invoiceId || !paymentId) { showEmpty('Reçu introuvable.'); return; }
 
   await new Promise(r => { if (window.SebaDB) r(); else document.addEventListener('DOMContentLoaded', r); });
@@ -65,6 +86,8 @@ async function init() {
 
   const local = window.SebaDB ? SebaDB.get('factures', invoiceId) : null;
   if (local) {
+    _isOwner = true;
+    _rawFacture = local;
     _model = SebaClientIntelligence.buildReceiptDocumentModel(local, paymentId, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
     if (_model) { renderDoc(_model); return; }
     showEmpty('Aucun paiement correspondant trouvé pour ce reçu.');
@@ -85,5 +108,6 @@ async function init() {
 }
 init();
 </script>
+<script src="commercial-email-modal.js"></script>
 </body>
 </html>

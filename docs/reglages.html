@@ -165,6 +165,7 @@
         <div class="settings-nav-item" onclick="showTab('services')">Services & tarifs</div>
         <div class="settings-nav-item" onclick="showTab('demandes')">Demande en ligne</div>
         <div class="settings-nav-item" onclick="showTab('documents')">Documents</div>
+        <div class="settings-nav-item" onclick="showTab('emails')">Emails commerciaux</div>
         <div class="settings-nav-item" onclick="showTab('compte')">Compte</div>
       </div>
 
@@ -267,6 +268,16 @@
           <div id="display-prefs-rows" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
 
           <button class="btn-em" style="margin-top:18px;" onclick="saveDocumentSettings()">Enregistrer</button>
+        </div>
+
+        <div class="panel tab-content" id="tab-emails" style="display:none;">
+          <h3>Emails commerciaux</h3>
+          <p class="desc">Objet et message par défaut utilisés à l'ouverture de la modale d'envoi (devis, facture, reçu). Modifiables librement pour chaque envoi sans changer ce modèle.</p>
+
+          <div id="email-templates-rows"></div>
+
+          <p class="desc" style="margin-top:14px;">Textes libres uniquement — aucune balise HTML. Symboles disponibles : <code>{{client_name}}</code>, <code>{{company_name}}</code>, <code>{{document_number}}</code>, <code>{{document_type}}</code>.</p>
+          <button class="btn-em" style="margin-top:10px;" onclick="saveEmailTemplates()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-compte" style="display:none;">
@@ -645,7 +656,44 @@
     showReglToast('Réglages documents enregistrés');
   }
 
+  /* ── Emails commerciaux (feature/customer-email-delivery, PHASE 2) ── */
+  const EMAIL_TYPE_LABELS = { quote: 'Devis', invoice: 'Facture', receipt: 'Reçu de paiement' };
+  function renderEmailTemplatesRows() {
+    const templates = SebaDB.commercialSettings.getEmailTemplates();
+    const box = document.getElementById('email-templates-rows');
+    box.innerHTML = Object.keys(EMAIL_TYPE_LABELS).map(type => `
+      <div class="field-group" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <h4 style="margin:0 0 10px;font-size:0.92rem;">${EMAIL_TYPE_LABELS[type]}</h4>
+        <div class="field-group"><label>Objet</label><input type="text" data-email-type="${type}" data-email-field="subject" value="${escAttr(templates[type].subject)}" maxlength="180"></div>
+        <div class="field-group" style="margin-bottom:0;"><label>Message</label><textarea data-email-type="${type}" data-email-field="message" rows="5" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;">${escHtml(templates[type].message)}</textarea></div>
+        <button type="button" class="btn-outline" style="margin-top:10px;font-size:0.82rem;padding:6px 12px;" onclick="restoreEmailTemplate('${type}')">Restaurer le modèle par défaut</button>
+      </div>`).join('');
+  }
+  // escAttr existe déjà plus haut dans ce fichier (attributs HTML) --
+  // escHtml (contenu textuel d'un textarea) ajouté ici, même besoin que
+  // escapeHtml() des autres pages connectées.
+  function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+  function saveEmailTemplates() {
+    const templates = {};
+    Object.keys(EMAIL_TYPE_LABELS).forEach(type => {
+      templates[type] = {
+        subject: document.querySelector('[data-email-type="' + type + '"][data-email-field="subject"]').value,
+        message: document.querySelector('[data-email-type="' + type + '"][data-email-field="message"]').value,
+      };
+    });
+    SebaDB.commercialSettings.setEmailTemplates(templates);
+    showReglToast('Modèles email enregistrés');
+  }
+  function restoreEmailTemplate(type) {
+    if (!confirm('Restaurer le modèle par défaut pour ' + (EMAIL_TYPE_LABELS[type] || type) + ' ? Le modèle personnalisé actuel sera perdu.')) return;
+    SebaDB.commercialSettings.restoreDefaultEmailTemplate(type);
+    renderEmailTemplatesRows();
+    showReglToast('Modèle par défaut restauré');
+  }
+
   loadDocumentSettings();
+  renderEmailTemplatesRows();
 
   const avatarBtn = document.getElementById('avatar-btn');
   const userMenu  = document.getElementById('user-menu');
