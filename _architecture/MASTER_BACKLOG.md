@@ -1,8 +1,8 @@
 # Seba — Master Backlog
 
 Dernière mise à jour : 2026-07-28
-Branche observée : fix/account-activation-bootstrap (PR #95, mergée dans main)
-Commit observé : cef4da0
+Branche observée : main
+Commit observé : a8eaea8
 
 ## Règle de fonctionnement
 
@@ -27,14 +27,13 @@ Commit observé : cef4da0
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
-| AUTH-007 | P0 | Authentification | `migrations/2026-07-28-account-activation-bootstrap.sql` n'a jamais été appliquée sur le projet Supabase distant `ptmudezhxnhhyctowlqp` (seule `2026-07-28-commercial-email-delivery.sql` a été confirmée appliquée) — un nouveau patron en production aujourd'hui n'a toujours aucune ligne `seba_state` et ne peut réellement rien écrire (401 en boucle) tant que cette migration n'est pas rejouée à distance | À FAIRE (première priorité active) | Aucune — AUTH-006 mergée | Appliquer la migration dans le SQL Editor distant (projet `ptmudezhxnhhyctowlqp`), puis valider en créant un vrai nouveau compte patron et en vérifiant sa première écriture | Aucune preuve d'application distante trouvée à ce jour |
 | CORE-008 | P2 | Socle produit | `.github/workflows/static.yml` déploie sur `main` sans exécuter aucun lint/`check-design-system` avant déploiement | À FAIRE | Aucune — contenu déjà proposé (DEC-011) | Ajouter une étape `node tools/check-design-system.js` avant `actions/upload-pages-artifact` | `.github/workflows/static.yml` (vérifié : aucune étape de vérification) ; `_architecture/SEBA_OWNERS_AND_DEADLINES.md` ligne 10 |
 
 ## Bloqué par une action externe
 
 | ID | Priorité | Domaine | Tâche | Statut | Dépendance ou blocage | Prochaine action exacte | Preuve/source |
 |---|---|---|---|---|---|---|---|
-| CED-004 | P0 | Customer Email Delivery | Acheter un nom de domaine Seba, l'ajouter dans Resend, configurer SPF/DKIM, attendre la validation | BLOQUÉ | Action fondateur (achat + attente DNS) | Achat du domaine par le fondateur | `_architecture/DEPLOYMENT_CHECKLIST.md` ; `MANUEL-SEBA-ADMIN.md` ligne 14 (sandbox Resend = même cause racine) |
+| CED-004 | P0 | Customer Email Delivery | Acheter un nom de domaine Seba, l'ajouter dans Resend, configurer SPF/DKIM, attendre la validation — bloque aussi bien les emails commerciaux que l'inscription par email réel d'un vrai patron (AUTH-006/AUTH-007 valident le mécanisme RPC/RLS, pas la délivrabilité de l'email lui-même, toujours en sandbox Resend) | BLOQUÉ | Action fondateur (achat + attente DNS) | Achat du domaine par le fondateur | `_architecture/DEPLOYMENT_CHECKLIST.md` ; `MANUEL-SEBA-ADMIN.md` ligne 14 (sandbox Resend = même cause racine) |
 | CED-006 | P1 | Customer Email Delivery | Configurer les secrets distants `RESEND_API_KEY`/`EMAIL_FROM`/`APP_BASE_URL`/`RESEND_WEBHOOK_SECRET` (noms seulement, jamais les valeurs ici) | BLOQUÉ | CED-004 | Une fois le domaine validé, saisir les secrets dans Supabase → Edge Functions → Secrets | `_architecture/DEPLOYMENT_CHECKLIST.md` |
 | CED-007 | P1 | Customer Email Delivery | Config Resend complète : domaine expéditeur validé, webhook configuré, événements limités aux événements gérés, secret webhook, test de signature réelle | BLOQUÉ | CED-004, CED-006 | Configurer le webhook Resend une fois le domaine validé, tester une signature réelle | `supabase/functions/commercial-email-webhook/index.ts` |
 | CED-008 | P1 | Customer Email Delivery | Validation réelle en production : invitations (patron/client/employé), reset (patron/client/employé), envoi devis/facture/reçu, deep-link post-auth, isolation client A/B, idempotence, statuts sent/delivered/failed, zéro secret exposé | BLOQUÉ | CED-004, CED-006, CED-007 | Rejouer `scripts/qa-account-activation.js` + les scénarios d'envoi contre le projet distant une fois le domaine validé | `scripts/qa-customer-email-delivery-phase1.js`, `scripts/qa-customer-email-delivery-phase2.js` (équivalents locaux déjà écrits) |
@@ -81,7 +80,7 @@ Commit observé : cef4da0
 |---|---|---|
 | CED-001 | Customer Email Delivery — Phase 1 (backend) | commit `cba633b` |
 | CED-002 | Customer Email Delivery — Phase 2 (interface) | commit `9e56065` |
-| CED-003 | Activation réelle des comptes et accès (bootstrap `seba_state` + redirection par rôle sur `reset-password.html`) + `scripts/qa-account-activation.js` (20/20) — **développé et testé en LOCAL uniquement** : absent de `main`, absent du Supabase distant (voir AUTH-006/AUTH-007, tâches actives tant que ce n'est pas corrigé) | commit `67d9925` |
+| CED-003 | Activation réelle des comptes et accès (bootstrap `seba_state` + redirection par rôle sur `reset-password.html`) + `scripts/qa-account-activation.js` (20/20) — développé en local, **désormais sur `main` (AUTH-006) et validé sur le Supabase distant (AUTH-007)** | commit `67d9925` (dev local) → `cef4da0`/PR #95 (main) → validation distante ce jour |
 | CED-DOC | Documentation des prérequis de déploiement (domaine/Resend) | commit `8b7d688`, `_architecture/DEPLOYMENT_CHECKLIST.md` |
 | BILLING-001 | Devis/factures — modes simple/avancé + création flexible des documents commerciaux | commit `e8e7f53`, PR #93, `main` à `d2e4e77` |
 | AUTH-002 | T2 — correction `create_profile_and_company` (idempotence secteur) | branche `fix/t2-onboarding-sector-idempotence`, fusionnée dans `main`, `migrations/2026-07-22-fix-t2-onboarding-sector-idempotence.sql` |
@@ -90,5 +89,6 @@ Commit observé : cef4da0
 | CED-009 | Draft PR ouverte pour `feature/customer-email-delivery` → `main`, description couvrant Phase 1/2 terminées, activation corrigée, blocage domaine, migrations/Edge Functions non déployées, automatisations reportées | PR #94 (`feat(email): add commercial document delivery`, **reste Draft, distincte de PR #95, toujours bloquée par CED-004** — ne contient plus le correctif d'activation, extrait dans AUTH-006) |
 | CED-005 | Backend distant déployé sur le projet Supabase `ptmudezhxnhhyctowlqp` : migration `2026-07-28-commercial-email-delivery.sql` appliquée avec succès (confirmé fondateur), `send-commercial-document` déployée avec vérification JWT active (`verify_jwt:true`), `commercial-email-webhook` déployée avec `--no-verify-jwt` (protégée par sa propre vérification cryptographique de signature Resend/Svix, `verifySvixSignature` toujours présente dans le code) — aucun secret configuré, aucun envoi réel déclenché | `npx supabase functions list --project-ref ptmudezhxnhhyctowlqp` (les deux fonctions `ACTIVE`) |
 | AUTH-006 | Correctif critique d'activation (bootstrap `seba_state` + redirection par rôle) extrait de `feature/customer-email-delivery` sur une branche/PR dédiée `fix/account-activation-bootstrap`, sans aucun code Customer Email Delivery (diff vérifié : 9 fichiers, `git diff --name-only main...HEAD`) ; migration corrigée pendant l'extraction pour ne pas régresser le durcissement T2 (SECURITY DEFINER/search_path/idempotence) ; `scripts/qa-account-activation.js` 20/20 réel (incluant un nouveau test explicite de retry idempotent) ; mergée dans `main` | PR #95 (`fix(auth): bootstrap new accounts and preserve role redirects`, Ready, mergée), commit `cef4da0` |
+| AUTH-007 | Migration `2026-07-28-account-activation-bootstrap.sql` appliquée sur le projet Supabase distant `ptmudezhxnhhyctowlqp` (confirmé fondateur) et validée par un scénario réel de bout en bout contre ce projet (utilisateur QA préconfirmé, jamais d'email réel envoyé/lu) : profil+entreprise+`seba_state` créés en un seul appel, `seba_state` présent immédiatement (aucune dépendance à `sync-push`, qui n'est d'ailleurs pas déployée sur ce projet — hors périmètre de cette tâche), rejeu idempotent (même profil, aucun doublon), secteur différent explicitement refusé (code `23514`, durcissement T2 toujours actif), première écriture métier réelle persistée sans boucle 401, isolation cross-account vérifiée, toutes les données QA supprimées après coup (0 restante) | Script de validation exécuté contre `ptmudezhxnhhyctowlqp` ce jour, sortie `TOUT PASSE` (script ad hoc non commité, aucune donnée réelle touchée) |
 
 **Note de correction** : `_architecture/SEBA_OWNERS_AND_DEADLINES.md` (daté 2026-07-22) affiche encore les lignes 5 et 6 (T2/T3) comme "correction NON ASSIGNÉE" — vérifié obsolète : les deux branches sont fusionnées dans `main` (`git branch --merged main`). Ne pas se fier à ce document sans vérification Git — voir AUTH-002/AUTH-003 ci-dessus.
