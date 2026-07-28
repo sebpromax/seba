@@ -937,7 +937,15 @@ function switchView(name) {
   if (!window.SebaDB) { showError('Le service de données est indisponible. Réessayez plus tard.'); return; }
   let session;
   try { session = await SebaDB.clientPortal.session(); } catch (e) { showError('Connexion impossible. Réessayez.'); return; }
-  if (!session) { window.location.href = 'client-connexion.html'; return; }
+  if (!session) {
+    // Deep-link email (feature/customer-email-delivery, PHASE 2) : conserve
+    // l'URL de retour COMPLÈTE (avec ?doc=...) pour revenir directement au
+    // document demandé une fois connecté, jamais une redirection générique
+    // qui forcerait le client à re-chercher son document.
+    const returnTo = location.pathname.split('/').pop() + location.search;
+    window.location.href = 'client-connexion.html?return=' + encodeURIComponent(returnTo);
+    return;
+  }
 
   let profileRes;
   try { profileRes = await SebaDB.clientPortal.profile(); } catch (e) { showError('Impossible de charger votre profil.'); return; }
@@ -969,7 +977,53 @@ function switchView(name) {
 
   await refreshView();
   if (window.SebaDB.onChange) SebaDB.onChange(() => refreshView());
+
+  // Deep-link email (feature/customer-email-delivery, PHASE 2) --
+  // ?doc=quote|invoice|receipt&id=...(&invoiceId=&paymentId= pour un reçu).
+  // Le client est authentifié à ce stade (session déjà vérifiée ci-dessus) ;
+  // redirige vers la page document correspondante, qui revérifie elle-même
+  // l'appartenance via les RPC allowlistées existantes (SebaDB.clientPortal.
+  // devisDetail/factureDetail) -- jamais une confiance dans le paramètre
+  // d'URL seul. Aucune donnée financière n'a transité par l'URL.
+  handleDeepLinkIfPresent();
 })();
+
+function handleDeepLinkIfPresent() {
+  const params = new URLSearchParams(location.search);
+  const doc = params.get('doc');
+  if (!doc) return;
+  if (doc === 'quote') {
+    const id = params.get('id');
+    if (!id) { showDeepLinkError(); return; }
+    location.href = 'devis-document.html?id=' + encodeURIComponent(id);
+    return;
+  }
+  if (doc === 'invoice') {
+    const id = params.get('id');
+    if (!id) { showDeepLinkError(); return; }
+    location.href = 'facture-document.html?id=' + encodeURIComponent(id);
+    return;
+  }
+  if (doc === 'receipt') {
+    const invoiceId = params.get('invoiceId'), paymentId = params.get('paymentId');
+    if (!invoiceId || !paymentId) { showDeepLinkError(); return; }
+    location.href = 'recu-document.html?invoiceId=' + encodeURIComponent(invoiceId) + '&paymentId=' + encodeURIComponent(paymentId);
+    return;
+  }
+  // Paramètre doc inconnu : message clair, retour à l'espace client, jamais
+  // une boucle de redirection.
+  showDeepLinkError();
+}
+function showDeepLinkError() {
+  const box = document.getElementById('cp-app');
+  if (!box) return;
+  const banner = document.createElement('div');
+  banner.className = 'cp-card';
+  banner.style.cssText = 'margin:16px 20px;padding:16px;color:var(--danger-text);';
+  banner.textContent = 'Document introuvable ou inaccessible.';
+  box.insertBefore(banner, box.firstChild);
+  history.replaceState(null, '', 'client-espace.html');
+}
 
 function showError(msg) {
   document.getElementById('cp-loading').style.display = 'none';

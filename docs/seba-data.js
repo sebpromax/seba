@@ -73,6 +73,10 @@
     // préférences d'affichage par défaut des documents (montrer logo/IBAN/
     // colonnes...), surchargeables par document via documentOptions.
     documentNumbering: null, documentDisplayPrefs: null,
+    // feature/customer-email-delivery (PHASE 2) : modèles email par défaut
+    // (objet/message) par type de document, éditables dans reglages.html.
+    // null = utilise DEFAULT_COMMERCIAL_EMAIL_TEMPLATES tel quel.
+    commercialEmailTemplates: null,
   });
 
   /* ── Adaptateur localStorage (défaut) ── */
@@ -197,6 +201,7 @@
     if (!state.seq.recu) state.seq.recu = 0;
     if (state.documentNumbering === undefined) state.documentNumbering = null;
     if (state.documentDisplayPrefs === undefined) state.documentDisplayPrefs = null;
+    if (state.commercialEmailTemplates === undefined) state.commercialEmailTemplates = null;
     return state;
   }
   function persist() {
@@ -1723,6 +1728,42 @@
     showPaymentHistory: true, showAcceptanceDetails: true, showSignatureArea: false,
     showServiceAddress: true, showClientReference: true,
   };
+
+  /* ── Emails commerciaux (feature/customer-email-delivery, PHASE 2) --
+     modèles par défaut, éditables dans reglages.html. Texte brut
+     uniquement (jamais de HTML), résolus par resolveTemplate() plus bas. ── */
+  const DEFAULT_COMMERCIAL_EMAIL_TEMPLATES = {
+    quote: {
+      subject: 'Votre devis {{document_number}} — {{company_name}}',
+      message: 'Bonjour {{client_name}},\n\nVotre devis est disponible dans votre espace client.\n\nVous pouvez le consulter et y répondre en utilisant le lien sécurisé ci-dessous.\n\nCordialement,\n{{company_name}}',
+    },
+    invoice: {
+      subject: 'Votre facture {{document_number}} — {{company_name}}',
+      message: 'Bonjour {{client_name}},\n\nVotre facture est disponible dans votre espace client.\n\nVous pouvez la consulter grâce au lien sécurisé ci-dessous.\n\nCordialement,\n{{company_name}}',
+    },
+    receipt: {
+      subject: 'Votre reçu {{document_number}} — {{company_name}}',
+      message: 'Bonjour {{client_name}},\n\nNous confirmons la réception de votre paiement.\n\nVotre reçu est disponible dans votre espace client.\n\nCordialement,\n{{company_name}}',
+    },
+  };
+  // Seuls ces placeholders sont remplacés -- tout autre {{...}} reste
+  // visible tel quel (jamais un undefined/null silencieux).
+  const COMMERCIAL_EMAIL_PLACEHOLDERS = ['client_name', 'company_name', 'document_number', 'document_type'];
+  function resolveCommercialEmailTemplate(template, context) {
+    const ctx = context || {};
+    const map = {
+      client_name: ctx.clientName, company_name: ctx.companyName,
+      document_number: ctx.documentNumber, document_type: ctx.documentType,
+    };
+    function fill(str) {
+      return String(str == null ? '' : str).replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (m, key) => {
+        if (COMMERCIAL_EMAIL_PLACEHOLDERS.indexOf(key) === -1) return m;
+        const v = map[key];
+        return (v == null || v === '') ? '' : String(v);
+      });
+    }
+    return { subject: fill(template && template.subject), message: fill(template && template.message) };
+  }
   function formatDocumentNumber(counter, cfg) {
     const parts = [];
     if (cfg && cfg.prefix) parts.push(String(cfg.prefix).trim());
@@ -3565,6 +3606,143 @@
         persist();
         return state.documentDisplayPrefs;
       },
+      // Emails commerciaux (feature/customer-email-delivery, PHASE 2) --
+      // fusion par type (quote/invoice/receipt), jamais un remplacement
+      // total qui perdrait les 2 autres types lors d'une sauvegarde
+      // partielle depuis reglages.html.
+      getEmailTemplates() {
+        if (!state) loadState();
+        const saved = state.commercialEmailTemplates || {};
+        return {
+          quote: Object.assign({}, DEFAULT_COMMERCIAL_EMAIL_TEMPLATES.quote, saved.quote || {}),
+          invoice: Object.assign({}, DEFAULT_COMMERCIAL_EMAIL_TEMPLATES.invoice, saved.invoice || {}),
+          receipt: Object.assign({}, DEFAULT_COMMERCIAL_EMAIL_TEMPLATES.receipt, saved.receipt || {}),
+        };
+      },
+      setEmailTemplates(templates) {
+        if (!state) loadState();
+        const current = state.commercialEmailTemplates || {};
+        const next = Object.assign({}, current);
+        ['quote', 'invoice', 'receipt'].forEach((type) => {
+          if (templates && templates[type]) {
+            next[type] = {
+              subject: (templates[type].subject != null ? String(templates[type].subject) : (current[type] && current[type].subject) || DEFAULT_COMMERCIAL_EMAIL_TEMPLATES[type].subject),
+              message: (templates[type].message != null ? String(templates[type].message) : (current[type] && current[type].message) || DEFAULT_COMMERCIAL_EMAIL_TEMPLATES[type].message),
+            };
+          }
+        });
+        state.commercialEmailTemplates = next;
+        persist();
+        return SebaDB.commercialSettings.getEmailTemplates();
+      },
+      restoreDefaultEmailTemplate(type) {
+        if (!state) loadState();
+        if (['quote', 'invoice', 'receipt'].indexOf(type) === -1) return SebaDB.commercialSettings.getEmailTemplates();
+        const current = Object.assign({}, state.commercialEmailTemplates || {});
+        delete current[type];
+        state.commercialEmailTemplates = current;
+        persist();
+        return SebaDB.commercialSettings.getEmailTemplates();
+      },
+    },
+
+    /* ═══ Envoi email des documents commerciaux (feature/customer-email-
+       delivery, PHASE 2) -- couche frontend UNIQUEMENT : jamais d'appel
+       direct à Resend, jamais de service_role ici. sendDocument() appelle
+       l'Edge Function send-commercial-document (PHASE 1, déjà déployée en
+       local) avec le JWT de la session patron réelle. listForDocument()
+       lit commercial_email_deliveries directement via PostgREST + le même
+       JWT -- la RLS patron (auth.uid() = user_id, PHASE 1) fait tout le
+       travail d'isolation, jamais un filtrage réinventé côté client. ═══ */
+    commercialEmail: {
+      /* Identifiant de tentative opaque -- jamais un email/numéro de
+         document/secret. Un même clic "Envoyer" réutilise le MÊME id pour
+         tous ses retries réseau (voir section 3 du chantier) ; un "Renvoyer"
+         volontaire en génère un nouveau. */
+      createAttemptId() {
+        return 'att_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      },
+
+      async sendDocument(input) {
+        if (!window.sebaAuth || !window.SEBA_CONFIG) return { ok: false, error: 'Session indisponible.', code: 'no_session' };
+        let session = null;
+        try { session = await sebaAuth.getSession(); } catch (e) {}
+        const token = session && session.access_token;
+        if (!token) return { ok: false, error: 'Session patron introuvable — reconnectez-vous.', code: 'no_session' };
+        try {
+          const res = await fetch(SEBA_CONFIG.supabaseUrl + '/functions/v1/send-commercial-document', {
+            method: 'POST',
+            headers: { apikey: SEBA_CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+          });
+          const json = await res.json().catch(() => ({}));
+          // Réponse serveur réelle, jamais transformée en succès -- ok
+          // reflète tel quel ce que l'Edge Function a décidé.
+          return Object.assign({ httpStatus: res.status }, json);
+        } catch (e) {
+          // Erreur RÉSEAU (jamais une réponse serveur certaine) -- distincte
+          // d'un échec fournisseur explicite : l'UI doit proposer
+          // "Réessayer" (même attemptId), jamais "Renvoyer" (nouvel
+          // attemptId), tant que le résultat réel est inconnu.
+          return { ok: false, error: 'Impossible de confirmer le résultat — vérifiez votre connexion.', code: 'network_uncertain', networkError: true };
+        }
+      },
+
+      normalizeDelivery(row) {
+        if (!row) return null;
+        return {
+          id: row.id, documentType: row.document_type, documentId: row.document_id,
+          recipient: row.recipient, subject: row.subject, status: row.status,
+          providerMessageId: row.provider_message_id || null,
+          sentAt: row.sent_at || null, deliveredAt: row.delivered_at || null, failedAt: row.failed_at || null,
+          failureReason: row.failure_reason || null, createdAt: row.created_at, updatedAt: row.updated_at,
+        };
+      },
+
+      async listForDocument(documentType, documentId) {
+        if (!window.sebaAuth || !window.SEBA_CONFIG || !documentId) return [];
+        let session = null;
+        try { session = await sebaAuth.getSession(); } catch (e) {}
+        const token = session && session.access_token;
+        if (!token) return [];
+        try {
+          const url = SEBA_CONFIG.supabaseUrl + '/rest/v1/commercial_email_deliveries?select=*&document_type=eq.' +
+            encodeURIComponent(documentType) + '&document_id=eq.' + encodeURIComponent(documentId) + '&order=created_at.desc';
+          const res = await fetch(url, { headers: { apikey: SEBA_CONFIG.supabaseAnonKey, Authorization: 'Bearer ' + token } });
+          if (!res.ok) return [];
+          const rows = await res.json();
+          return (Array.isArray(rows) ? rows : []).map(SebaDB.commercialEmail.normalizeDelivery);
+        } catch (e) {
+          return [];
+        }
+      },
+
+      async getLatestForDocument(documentType, documentId) {
+        const list = await SebaDB.commercialEmail.listForDocument(documentType, documentId);
+        return list[0] || null;
+      },
+
+      /* Lien portail sécurisé -- MÊME contrat que le lien construit côté
+         serveur (Edge Function PHASE 1) : uniquement doc + id (ou
+         invoiceId+paymentId pour un reçu), jamais de donnée financière.
+         baseUrl : origine courante par défaut (copie patron) -- l'email
+         réel envoyé par le backend utilise APP_BASE_URL côté serveur, ce
+         lien-ci n'est utilisé QUE pour l'aperçu/la copie manuelle. */
+      buildClientDocumentLink(documentType, documentId, options) {
+        options = options || {};
+        const base = (options.baseUrl || (typeof location !== 'undefined' ? location.origin + location.pathname.replace(/[^/]*$/, '') : '')).replace(/\/*$/, '/');
+        const params = new URLSearchParams();
+        params.set('doc', documentType);
+        if (documentType === 'receipt') {
+          params.set('invoiceId', options.invoiceId || '');
+          params.set('paymentId', options.paymentId || documentId || '');
+        } else {
+          params.set('id', documentId || '');
+        }
+        return base + 'client-espace.html?' + params.toString();
+      },
+
+      resolveTemplate(template, context) { return resolveCommercialEmailTemplate(template, context); },
     },
 
     /* ═══ Demandes publiques (feature/public-intake-conversion) ═══════════

@@ -224,6 +224,18 @@ function shakeCard(){
 
 function isValidEmailFormat(v){ return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v); }
 
+/* Retour au document demandé après connexion (feature/customer-email-
+   delivery, PHASE 2 -- deep-link client-espace.html?doc=...). Allowlist
+   stricte : uniquement un chemin relatif commençant EXACTEMENT par
+   "client-espace.html", jamais une URL absolue/externe (open-redirect). */
+function safeReturnUrl() {
+  const raw = new URLSearchParams(location.search).get('return');
+  if (!raw) return 'client-espace.html';
+  let decoded;
+  try { decoded = decodeURIComponent(raw); } catch (e) { return 'client-espace.html'; }
+  return /^client-espace\.html(\?.*)?$/.test(decoded) ? decoded : 'client-espace.html';
+}
+
 async function handleLogin(){
   const email = document.getElementById('identifiant').value.trim();
   const password = document.getElementById('password').value;
@@ -246,7 +258,7 @@ async function handleLogin(){
   const res = await SebaDB.clientPortal.login(email, password);
 
   if (res.ok) {
-    window.location.href = 'client-espace.html';
+    window.location.href = safeReturnUrl();
     return;
   }
 

@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <script src="esc-global.js"></script>
+<link rel="stylesheet" href="commercial-email-modal.css">
 <style>
 :root{--edge-shadow:rgba(0,0,0,.35);--panel-shadow:rgba(0,0,0,.3);--modal-overlay-bg:rgba(20,22,26,.45);--modal-shadow:rgba(0,0,0,.2);--em-ink:#031A12;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -214,6 +215,8 @@
 <script src="pdf-generator.js" defer></script>
 <script src="stripe-service.js"></script>
 <script src="email-service.js"></script>
+<script src="commercial-document-render.js"></script>
+<script src="commercial-email-modal.js"></script>
 <script>
   /* ── Contrats d'abonnement arrivés à échéance (pas de serveur/cron : la
      seule "détection" possible est au chargement de cette page, quand
@@ -303,7 +306,8 @@
           '<span style="cursor:pointer;font-weight:600;" onclick="location.href=\'facture-document.html?id=' + f.id + '\'" title="Voir le document imprimable">Voir le document</span> · ' +
           '<span style="cursor:pointer;color:var(--emerald);font-weight:600;" onclick="generateInvoicePDF(\'' + f.id + '\')" title="Télécharger la facture en PDF">PDF</span>' +
           (canPay ? ' · <span style="cursor:pointer;font-weight:600;" onclick="sebaStripe.copyPaymentLink(\'' + f.id + '\')" title="Copier le lien de paiement">💳 Lien</span>' : '') +
-          ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>')
+          ' · <span style="cursor:pointer;font-weight:600;" onclick="sendFactureEmail(\'' + f.id + '\')" title="Envoyer par email">✉️ Email</span>' +
+          ' · <span style="cursor:pointer;font-weight:600;" onclick="copyFactureClientLink(\'' + f.id + '\')" title="Copier le lien client">Copier le lien client</span>')
         : '';
       return '<tr data-fid="' + f.id + '"><td class="num">' + f.num + '</td><td>' + esc(f.clientName) + '</td><td>' + esc(f.service) + '</td>' +
         '<td class="amount">' + total + ' ' + sym + soldeLine + '</td>' +
@@ -329,9 +333,19 @@
   }
   renderFactures();
 
+  // Réutilise le backend réel PHASE 1/2 (feature/customer-email-delivery)
+  // -- remplace l'ancien stub email-service.js/sebaEmail.sendDocument, qui
+  // ne faisait qu'une simulation locale sans jamais appeler de fournisseur
+  // réel ni enregistrer d'historique vérifiable.
   function sendFactureEmail(id) {
-    const f = SebaDB.get('factures', id);
-    if (f && window.sebaEmail) sebaEmail.sendDocument(f, 'facture');
+    const raw = SebaDB.get('factures', id);
+    if (!raw) return;
+    const model = SebaClientIntelligence.buildInvoiceDocumentModel(raw, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
+    const client = (SebaDB.list('clients') || []).find(c => c.id === raw.clientId) || null;
+    CommercialEmailModal.open({ documentType: 'invoice', documentId: id, clientId: raw.clientId, client, documentModel: model, account: SebaDB.accountId() });
+  }
+  function copyFactureClientLink(id) {
+    CommercialEmailModal.copyLink('invoice', id, { documentLink: SebaDB.commercialEmail.buildClientDocumentLink('invoice', id) });
   }
 
   function duplicateFactureDraft(id) {

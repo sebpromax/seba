@@ -7,6 +7,7 @@
 <script src="auth.js"></script>
 <script src="guard.js"></script>
 <link rel="stylesheet" href="commercial-document.css">
+<link rel="stylesheet" href="commercial-email-modal.css">
 <style>
 :root{
   --toolbar-bg:#18181B; --toolbar-ink:#EDEDED; --toolbar-border:#2A2A2E;
@@ -26,6 +27,8 @@
     <button class="tbtn" onclick="history.length>1?history.back():location.href='factures.html'">← Retour</button>
     <button class="tbtn" id="btn-edit" style="display:none;" onclick="goEdit()">Modifier le brouillon</button>
     <button class="tbtn" id="btn-duplicate" style="display:none;" onclick="goDuplicate()">Dupliquer</button>
+    <button class="tbtn" id="btn-copy-link" style="display:none;" onclick="copyClientLink()">Copier le lien client</button>
+    <button class="tbtn" id="btn-send-email" style="display:none;" onclick="openSendModal()">Envoyer par email</button>
     <button class="tbtn primary" onclick="printDoc()">Imprimer / Enregistrer en PDF</button>
   </div>
 </div>
@@ -39,7 +42,7 @@
 <script>
 const esc = SebaDocRender.esc;
 
-let _model = null, _isOwner = false, _invoiceId = null;
+let _model = null, _isOwner = false, _invoiceId = null, _rawFacture = null;
 
 function showEmpty(msg) {
   document.getElementById('page-wrap').innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p><a href="factures.html">Retour aux factures</a></div>';
@@ -52,8 +55,25 @@ function renderDoc(model) {
     document.getElementById('btn-duplicate').style.display = 'inline-block';
     const editBtn = document.getElementById('btn-edit');
     if (editBtn) editBtn.style.display = model.status === 'draft' ? 'inline-block' : 'none';
+    // Jamais pour une facture brouillon (section 12 du chantier).
+    const shareable = model.status !== 'draft';
+    document.getElementById('btn-copy-link').style.display = shareable ? 'inline-block' : 'none';
+    document.getElementById('btn-send-email').style.display = shareable ? 'inline-block' : 'none';
   }
   document.getElementById('page-wrap').innerHTML = SebaDocRender.invoiceHTML(model);
+}
+
+function copyClientLink() {
+  if (!_model) return;
+  CommercialEmailModal.copyLink('invoice', _invoiceId, { documentLink: SebaDB.commercialEmail.buildClientDocumentLink('invoice', _invoiceId) });
+}
+function openSendModal() {
+  if (!_model || !_rawFacture) return;
+  const client = (SebaDB.list('clients') || []).find(c => c.id === _rawFacture.clientId) || null;
+  CommercialEmailModal.open({
+    documentType: 'invoice', documentId: _invoiceId, clientId: _rawFacture.clientId,
+    client, documentModel: _model, account: SebaDB.accountId(),
+  });
 }
 
 function goEdit() { location.href = 'factures-nouvelle.html?id=' + encodeURIComponent(_invoiceId); }
@@ -84,6 +104,7 @@ async function init() {
   const local = window.SebaDB ? SebaDB.get('factures', _invoiceId) : null;
   if (local) {
     _isOwner = true;
+    _rawFacture = local;
     _model = SebaClientIntelligence.buildInvoiceDocumentModel(local, { factures: SebaDB.list('factures'), clients: SebaDB.list('clients'), entreprise: SebaDB.entreprise.get() }, { role: 'owner' });
     renderDoc(_model);
     return;
@@ -103,5 +124,6 @@ async function init() {
 }
 init();
 </script>
+<script src="commercial-email-modal.js"></script>
 </body>
 </html>
