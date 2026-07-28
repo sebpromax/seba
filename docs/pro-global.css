@@ -555,7 +555,12 @@ tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.3);
+  /* THEME-MOBILE-001 : .3 laissait trop voir/deviner le contenu derriere
+     sur mobile (remonte fondateur, captures iPhone) -- .3 -> .5, la
+     sidebar mobile ne fait que 224px avant ce chantier, contre un
+     viewport souvent > 375px : le contenu visible derriere restait
+     large et lisible. */
+  background: var(--overlay-backdrop);
   z-index: 149;
 }
 .sidebar-overlay.open { display: block; }
@@ -574,7 +579,11 @@ tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
     position: fixed;
     left: 0; top: 0; bottom: 0;
     z-index: 150;
-    width: 224px;
+    /* THEME-MOBILE-001 : 224px fixe = ~60% de la largeur d'un iPhone SE
+       (375px) -- trop large (remonte fondateur, captures iPhone). Reste
+       borne des deux cotes : jamais plus de 86% du viewport (petits
+       ecrans), jamais plus de 320px (grands mobiles/tablette portrait). */
+    width: min(86vw, 320px);
     height: 100%;
     transform: translateX(-100%);
     transition: transform .25s var(--ease-std);
