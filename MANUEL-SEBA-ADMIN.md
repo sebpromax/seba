@@ -4,6 +4,8 @@ Ce document t'explique **exactement** quoi faire pour passer du prototype (mode 
 
 ---
 
+> Les tâches actives sont désormais centralisées dans `_architecture/MASTER_BACKLOG.md`.
+
 ## ⚠️ Actions en attente (fondateur) — à ne pas oublier
 
 Ces actions ne peuvent être faites que par toi (accès au dashboard Supabase) — sans elles, les fonctionnalités correspondantes restent en mode démo local uniquement sur le site en production. Coche au fur et à mesure.

@@ -1,5 +1,7 @@
 # PLAN — Seba
 
+> Les tâches actives sont désormais centralisées dans `_architecture/MASTER_BACKLOG.md`.
+
 Source unique de vérité pour la direction produit. L'orchestrateur (`tools/orchestrator.js`) traite les tâches dans l'ordre, une par une, en cochant au fur et à mesure. Ne pas réordonner manuellement sans mettre à jour `PROGRESS.md` en conséquence.
 
 ---

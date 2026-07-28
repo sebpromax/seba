@@ -1,5 +1,7 @@
 # SEBA — Checklist de déploiement
 
+> Les tâches actives sont désormais centralisées dans `_architecture/MASTER_BACKLOG.md` (voir CED-004 à CED-008). Ce document reste la référence détaillée du détail pas-à-pas Resend/DNS.
+
 Document de suivi des prérequis bloquants avant mise en production de
 fonctionnalités qui dépendent d'un service externe (email, paiement, etc.).
 Un chantier par section, statut explicite, jamais un déploiement silencieux
