@@ -151,4 +151,17 @@
     init();
   }
 
+  /* THEME-MOBILE-001 : fermeture au clavier (Echap) -- absente jusqu'ici.
+     toggleSidebar()/closeSidebar() sont dupliquees par page (meme motif
+     partout, cf. docs/app/dashboard.html), donc on reste centralise ici
+     plutot que de dupliquer ce listener sur chaque page : on detecte
+     l'etat ouvert via la classe partagee ".sidebar.open" et on appelle la
+     fonction de fermeture DEJA definie par la page si elle existe --
+     aucun nouveau systeme, juste le clavier ajoute a l'existant. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var nav = document.querySelector('nav.sidebar.open');
+    if (nav && typeof window.closeSidebar === 'function') window.closeSidebar();
+  });
+
 })();

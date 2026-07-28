@@ -40,6 +40,14 @@ body { font-family: 'Inter', sans-serif; }
 .cmd-search-trigger { flex: 1; min-width: 180px; max-width: 360px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); color: var(--text-2); font-size: .86rem; cursor: pointer; transition: border-color .15s ease; }
 .cmd-search-trigger:hover, .cmd-search-trigger:focus-visible { border-color: var(--emerald); }
 .cmd-search-trigger kbd { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: .68rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text-2); }
+/* THEME-MOBILE-001 : "Ctrl K" n'a aucun sens sur un appareil sans clavier
+   physique (remonté fondateur) -- masqué uniquement quand ni souris/trackpad
+   (hover) ni clavier physique fiable ne sont détectés ; la recherche reste
+   accessible au tap sur .cmd-search-trigger lui-même, rien ne change côté
+   action. */
+@media (hover: none), (pointer: coarse) {
+  .cmd-search-trigger kbd { display: none; }
+}
 .cmd-period { height: 40px; padding: 0 12px; background: var(--white); border: 1px solid var(--border); border-radius: var(--rs); color: var(--ink); font-size: .84rem; font-family: inherit; cursor: pointer; }
 .cmd-custom-range { display: none; align-items: center; gap: 6px; }
 .cmd-custom-range.open { display: flex; }
@@ -252,6 +260,15 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
   .cmd-bar { gap: 8px; }
   .cmd-search-trigger { max-width: none; }
   .cmd-period, .cmd-custom-range input { font-size: .8rem; }
+  /* THEME-MOBILE-001 : .cmd-sync (statut de synchro) restait en
+     white-space:nowrap, forcé sur une seule ligne à côté de
+     .cmd-search-trigger/.cmd-period dans le même .cmd-bar flex-wrap --
+     le texte ("Synchronisé il y a 30 m…") et le bouton "Réessayer"
+     finissaient chevauchés/coupés au lieu de passer à la ligne (remonté
+     fondateur, captures iPhone). Autorise le retour à la ligne et laisse
+     le groupe rétrécir plutôt que déborder sur ses voisins flex. */
+  .cmd-sync { white-space: normal; flex-shrink: 1; min-width: 0; }
+  #cmd-sync-label { overflow-wrap: anywhere; }
   /* Cibles tactiles >= 44px */
   .db-btn-primary, .db-btn-secondary, .db-alert-action, .db-job-btn, .cmd-search-trigger, .cmd-period, .cmd-sync-retry { min-height: 44px; }
   .db-btn-secondary { min-width: 44px; }

@@ -48,6 +48,13 @@
      jamais dupliqués. */
   --sidebar-hover-bg:  rgba(255,255,255,.06);
   --sidebar-hover-ink: rgba(255,255,255,.9);
+
+  /* Backdrop des overlays modaux (sidebar mobile, Assistant Seba mobile,
+     THEME-MOBILE-001) : toujours un noir semi-transparent quel que soit
+     le thème -- assombrit le contenu derrière, jamais lu comme une
+     surface de contenu, donc hors des blocs dark/light comme les tokens
+     ci-dessus. */
+  --overlay-backdrop: rgba(0,0,0,.5);
 }
 
 /* ── 1b. Thème — Tactical Dark (defaut) / Audit Light ───────────────────── */

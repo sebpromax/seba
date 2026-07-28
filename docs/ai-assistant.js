@@ -161,24 +161,43 @@
        déjà repositionné à droite pour la même raison. */
     /* color ajouté -- sans ça le bouton retombait sur le noir système par
        défaut, invisible (fond blanc/dark selon le thème) sur ce cockpit. */
-    '.ai-chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--white,#fff);color:var(--ink,#000);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}' +
+    '.ai-chat-fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:calc(28px + env(safe-area-inset-right,0px));width:52px;height:52px;border-radius:50%;background:var(--white,#fff);color:var(--ink,#000);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}' +
     '.ai-chat-fab:hover{transform:scale(1.08);box-shadow:0 0 0 3px rgba(0,200,150,.15),0 6px 24px rgba(0,0,0,.18);}' +
-    '.ai-chat-panel{position:fixed;bottom:92px;right:28px;width:340px;max-width:calc(100vw - 40px);max-height:60vh;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border,#E8E6E1);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);z-index:301;display:none;flex-direction:column;overflow:hidden;}' +
+    /* THEME-MOBILE-001 : le FAB reste visible/actionnable meme quand le
+       panneau est ouvert (bouton "fermer" pas dediee) -- mais il ne doit
+       plus rester au-dessus du panneau visuellement quand celui-ci est
+       ouvert sur mobile pour eviter qu'il ne "flotte" par-dessus le champ
+       de saisie sur les tres petits ecrans. */
+    '.ai-chat-backdrop{position:fixed;inset:0;background:var(--overlay-backdrop,rgba(0,0,0,.5));z-index:299;display:none;}' +
+    '.ai-chat-backdrop.open{display:block;}' +
+    /* Fond desormais opaque via var(--white) (plus rgba(255,255,255,.92)
+       fige) : suivait deja le theme pour la bordure/l'ombre mais pas le
+       fond -- carte sombre/texte illisible en theme clair et inversement
+       (remonte fondateur, captures iPhone). backdrop-filter conserve pour
+       la meme sensation de profondeur, desormais purement decorative. */
+    '.ai-chat-panel{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0px));right:calc(28px + env(safe-area-inset-right,0px));left:16px;width:340px;max-width:calc(100vw - 32px);margin-left:auto;max-height:min(60vh,60dvh);background:var(--white,#fff);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border,#E8E6E1);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);z-index:301;display:none;flex-direction:column;overflow:hidden;min-height:0;}' +
     '.ai-chat-panel.open{display:flex;animation:aiPanelIn .22s cubic-bezier(0,0,.2,1) both;}' +
     '@keyframes aiPanelIn{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}' +
-    '.ai-chat-head{padding:13px 16px;border-bottom:1px solid var(--border,#E8E6E1);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;}' +
-    '.ai-chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:120px;}' +
+    '.ai-chat-head{padding:13px 16px;border-bottom:1px solid var(--border,#E8E6E1);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;color:var(--ink,#14161A);flex-shrink:0;}' +
+    '.ai-chat-close{margin-left:8px;background:none;border:none;color:var(--text-2,#6B6A6F);font-size:1rem;line-height:1;cursor:pointer;padding:4px;min-width:32px;min-height:32px;}' +
+    '.ai-chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0;}' +
     '.ai-msg{max-width:85%;padding:9px 13px;border-radius:12px;font-size:.84rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;}' +
-    '.ai-msg.user{align-self:flex-end;background:var(--ink,#14161A);color:#fff;border-bottom-right-radius:4px;}' +
-    '.ai-msg.bot{align-self:flex-start;background:var(--bg,#FAF9F7);border:1px solid var(--border,#E8E6E1);border-bottom-left-radius:4px;}' +
+    '.ai-msg.user{align-self:flex-end;background:var(--emerald,#00C896);color:var(--on-emerald,#031A12);border-bottom-right-radius:4px;}' +
+    '.ai-msg.bot{align-self:flex-start;background:var(--bg,#FAF9F7);color:var(--ink,#14161A);border:1px solid var(--border,#E8E6E1);border-bottom-left-radius:4px;}' +
     '.ai-typing{align-self:flex-start;font-size:1rem;color:var(--text-2,#6B6A6F);padding:2px 8px;letter-spacing:2px;animation:aiBlink 1s infinite;}' +
     '@keyframes aiBlink{50%{opacity:.35;}}' +
-    '.ai-chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border,#E8E6E1);}' +
-    '.ai-chat-input input{flex:1;border:1.5px solid var(--border,#E8E6E1);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.85rem;outline:none;}' +
+    '.ai-chat-input{display:flex;gap:8px;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border,#E8E6E1);flex-shrink:0;}' +
+    '.ai-chat-input input{flex:1;min-width:0;background:var(--white,#fff);color:var(--ink,#14161A);border:1.5px solid var(--border,#E8E6E1);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.85rem;outline:none;}' +
     '.ai-chat-input input:focus{border-color:var(--emerald,#00C896);}' +
-    '.ai-chat-input button{background:var(--emerald,#00C896);color:var(--ink,#14161A);border:none;border-radius:9px;padding:0 16px;font-weight:700;cursor:pointer;font-size:.85rem;}';
+    '.ai-chat-input button{background:var(--emerald,#00C896);color:var(--on-emerald,#031A12);border:none;border-radius:9px;padding:0 16px;font-weight:700;cursor:pointer;font-size:.85rem;}' +
+    /* Petits mobiles : panneau pleine largeur (moins les marges), jamais
+       ancre a 340px fixes qui deborderait ou laisserait des marges
+       incoherentes selon l'appareil. */
+    '@media (max-width:480px){.ai-chat-panel{left:12px;right:12px;width:auto;max-width:none;margin-left:0;bottom:calc(84px + env(safe-area-inset-bottom,0px));}}';
   document.head.appendChild(css);
 
+  const backdrop = document.createElement('div');
+  backdrop.className = 'ai-chat-backdrop';
   const fab = document.createElement('button');
   fab.className = 'ai-chat-fab';
   fab.setAttribute('aria-label', 'Ouvrir l\'assistant IA');
@@ -186,14 +205,42 @@
   fab.textContent = '🤖';
   const panel = document.createElement('div');
   panel.className = 'ai-chat-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  panel.setAttribute('aria-label', 'Assistant Seba');
   panel.innerHTML =
-    '<div class="ai-chat-head">🤖 Assistant Seba <span id="ai-engine-badge" style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (relayUrl ? '…' : (groqKey ? 'IA Groq (locale)' : 'analyste local')) + '</span></div>' +
+    '<div class="ai-chat-head">🤖 Assistant Seba <span id="ai-engine-badge" style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (relayUrl ? '…' : (groqKey ? 'IA Groq (locale)' : 'analyste local')) + '</span><button type="button" class="ai-chat-close" id="ai-chat-close" aria-label="Fermer l\'assistant">✕</button></div>' +
     '<div class="ai-chat-msgs" id="ai-chat-msgs">' +
     '<div class="ai-msg bot">Bonjour ! Posez-moi une question sur votre activité : « Comment va mon CA ? », « Quelles factures relancer ? », « Quel est mon jour le plus chargé ? »…</div>' +
     '</div>' +
     '<div class="ai-chat-input"><input id="ai-chat-inp" type="text" placeholder="Votre question…" aria-label="Question à l\'assistant"><button id="ai-chat-send">→</button></div>';
+  document.body.appendChild(backdrop);
   document.body.appendChild(fab);
   document.body.appendChild(panel);
+
+  /* THEME-MOBILE-001 : jusqu'ici aucun backdrop, aucune fermeture au clic
+     dehors, aucune touche Echap -- l'arriere-plan restait interactif
+     pendant que l'Assistant etait ouvert (remonte fondateur). Meme motif
+     que la sidebar (voir docs/sidebar.js) : backdrop + Echap + clic
+     dehors, focus restaure sur le FAB a la fermeture. */
+  let lastFocused = null;
+  function openPanel() {
+    lastFocused = document.activeElement;
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    document.getElementById('ai-chat-inp').focus();
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+    else fab.focus();
+  }
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+  });
+  panel.querySelector('#ai-chat-close').addEventListener('click', closePanel);
 
   if (relayUrl) {
     window.sebaAIStatus().then((label) => {
@@ -203,8 +250,8 @@
   }
 
   fab.addEventListener('click', () => {
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) document.getElementById('ai-chat-inp').focus();
+    if (panel.classList.contains('open')) closePanel();
+    else openPanel();
   });
 
   async function send() {
