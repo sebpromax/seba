@@ -18,7 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--db-teal:#0D9488;--zinc-950:#09090B;}
+:root{--ink:#14161A;--emerald:#00C896;--emerald-soft:rgba(0,200,150,.08);--emerald-border:rgba(0,200,150,.2);--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--db-teal:#0D9488;--zinc-950:#09090B;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
@@ -85,6 +85,40 @@ a{color:inherit;text-decoration:none;}
   .step-item{grid-template-columns:1fr;gap:16px;}
   .step-detail{grid-template-columns:1fr!important;}
   .wrap{padding:0 20px;}
+}
+
+/* ── Produit (4 captures reelles) : deplace depuis la home (index.html),
+   qui ne doit plus dupliquer le detail "comment ca marche" -- cette page
+   est le seul endroit ou ce detail vit desormais. ── */
+.section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;margin-bottom:16px;}
+.section-head-center{max-width:640px;margin:0 auto 48px;text-align:center;}
+.section-head-center h2{font-size:clamp(1.5rem,2.8vw,2.1rem);font-weight:700;letter-spacing:-.025em;margin-bottom:10px;}
+.product-tour-section{padding:0 0 88px;}
+.product-blocks{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.product-block{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:26px;}
+.product-block-num{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--emerald);margin-bottom:10px;}
+.product-block h3{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
+.product-block p{color:var(--text-2);font-size:.9rem;line-height:1.55;margin-bottom:16px;}
+.product-block img{width:100%;border-radius:10px;border:1px solid var(--border);display:block;}
+@media(max-width:700px){.product-blocks{grid-template-columns:1fr;}}
+
+/* ── Parcours (6 etapes) : idem, deplace depuis la home. ── */
+.flow-section{padding:0 0 88px;}
+.parcours-track{display:flex;gap:0;}
+.parcours-step{flex:1;padding:0 14px;position:relative;}
+.parcours-step:first-child{padding-left:0;}
+.parcours-step:last-child{padding-right:0;}
+.parcours-num{width:32px;height:32px;border-radius:9px;background:var(--emerald-soft);border:1px solid var(--emerald-border);color:var(--emerald);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.parcours-line{position:absolute;top:16px;left:calc(-50% + 16px);right:calc(50% + 16px);height:1px;background:var(--border);}
+.parcours-step:first-child .parcours-line{display:none;}
+.parcours-step h3{font-size:.92rem;font-weight:700;margin-bottom:6px;}
+.parcours-step p{font-size:.82rem;color:var(--text-2);line-height:1.55;}
+@media(max-width:700px){
+  .parcours-track{flex-direction:column;gap:28px;padding-left:24px;}
+  .parcours-step{padding:0 0 0 20px;border-left:1px solid var(--border);}
+  .parcours-step:last-child{border-left:1px solid var(--border);}
+  .parcours-line{display:none;}
+  .parcours-num{margin-left:-36px;margin-bottom:10px;}
 }
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -187,6 +221,58 @@ p{letter-spacing:-0.02em;}
         </div>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<section class="product-tour-section">
+  <div class="wrap">
+    <div class="section-head-center">
+      <div class="section-eyebrow">Comment Seba fonctionne</div>
+      <h2>Quatre étapes, un seul outil.</h2>
+    </div>
+    <div class="product-blocks">
+      <div class="product-block">
+        <div class="product-block-num">01 — CENTRALISER</div>
+        <h3>Centraliser</h3>
+        <p>Clients, adresses, consignes et historique.</p>
+        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba avec historique des interventions et informations de service">
+      </div>
+      <div class="product-block">
+        <div class="product-block-num">02 — ORGANISER</div>
+        <h3>Organiser</h3>
+        <p>Planning, interventions et assignation des équipes.</p>
+        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba avec interventions assignées à l'équipe">
+      </div>
+      <div class="product-block">
+        <div class="product-block-num">03 — VENDRE</div>
+        <h3>Vendre</h3>
+        <p>Devis, validation client et facturation.</p>
+        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Liste des devis Seba avec statuts en attente, signés et expirés">
+      </div>
+      <div class="product-block">
+        <div class="product-block-num">04 — SUIVRE</div>
+        <h3>Suivre</h3>
+        <p>Paiements, rentabilité et actions prioritaires.</p>
+        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Liste des factures Seba avec statuts payée, en attente et en retard">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="flow-section">
+  <div class="wrap">
+    <div class="section-head-center">
+      <div class="section-eyebrow">Un seul flux</div>
+      <h2>De la demande au paiement</h2>
+    </div>
+    <div class="parcours-track">
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">1</div><h3>Client enregistré</h3><p>Le client est enregistré dans votre fiche clients.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">2</div><h3>Devis envoyé</h3><p>Le devis est créé et envoyé pour signature.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">3</div><h3>Intervention planifiée</h3><p>L'intervention est planifiée sur le calendrier de l'équipe.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">4</div><h3>Mission assignée</h3><p>L'employé reçoit sa mission avec les consignes.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">5</div><h3>Client informé</h3><p>Le client suit l'avancement de la prestation.</p></div>
+      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">6</div><h3>Facture envoyée</h3><p>La facture part automatiquement, sans ressaisie.</p></div>
     </div>
   </div>
 </section>
