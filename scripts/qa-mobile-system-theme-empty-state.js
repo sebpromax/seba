@@ -255,6 +255,62 @@ async function main() {
     assert(nomAfterReconnect === 'Entreprise QA Sauvegardée', `nom toujours visible apres deconnexion + nouvelle session (observe: "${nomAfterReconnect}")`);
     await contextC.close();
 
+    console.log('\n=== D. update_my_entreprise : allowlist, validation, isolation cross-compte ===');
+    const patronCToken = (await (await fetch(env.API_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY },
+      body: JSON.stringify({ email: patronC.email, password: patronC.password }),
+    })).json()).access_token;
+
+    const rejUnknownKey = await fetch(env.API_URL + '/rest/v1/rpc/update_my_entreprise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY, Authorization: 'Bearer ' + patronCToken },
+      body: JSON.stringify({ p_patch: { nom: 'Tentative', secteur: 'hacked' } }),
+    });
+    assert(rejUnknownKey.status >= 400, `propriete hors allowlist (secteur) refusee (observe status=${rejUnknownKey.status})`);
+    const rejEmptyNom = await fetch(env.API_URL + '/rest/v1/rpc/update_my_entreprise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY, Authorization: 'Bearer ' + patronCToken },
+      body: JSON.stringify({ p_patch: { nom: '   ' } }),
+    });
+    assert(rejEmptyNom.status >= 400, `nom vide (espaces) refuse (observe status=${rejEmptyNom.status})`);
+    const rejTooLong = await fetch(env.API_URL + '/rest/v1/rpc/update_my_entreprise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY, Authorization: 'Bearer ' + patronCToken },
+      body: JSON.stringify({ p_patch: { nom: 'X'.repeat(201) } }),
+    });
+    assert(rejTooLong.status >= 400, `nom trop long (201 caracteres) refuse (observe status=${rejTooLong.status})`);
+    const stateAfterRejections = await pullState(env, patronC.userId);
+    assert(stateAfterRejections.entreprise.nom === 'Entreprise QA Sauvegardée', `aucune des tentatives refusees n'a modifie la valeur reelle (observe: ${stateAfterRejections.entreprise.nom})`);
+
+    // Isolation cross-compte : B appelle la RPC (sur SON PROPRE jeton),
+    // impossible par construction de cibler le compte de C (aucun
+    // parametre "account", auth.uid() est la seule source d'identite).
+    const patronBToken = (await (await fetch(env.API_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY },
+      body: JSON.stringify({ email: patronB.email, password: patronB.password }),
+    })).json()).access_token;
+    const bUpdatesOwn = await fetch(env.API_URL + '/rest/v1/rpc/update_my_entreprise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.ANON_KEY, Authorization: 'Bearer ' + patronBToken },
+      body: JSON.stringify({ p_patch: { nom: 'Entreprise B Modifiee' } }),
+    });
+    assert(bUpdatesOwn.status === 200, `B peut modifier SON PROPRE nom (observe status=${bUpdatesOwn.status})`);
+    const stateCAfterB = await pullState(env, patronC.userId);
+    assert(stateCAfterB.entreprise.nom === 'Entreprise QA Sauvegardée', `le nom de C est INCHANGE apres que B ait modifie le sien (observe: ${stateCAfterB.entreprise.nom})`);
+    const stateBAfterB = await pullState(env, patronB.userId);
+    assert(stateBAfterB.entreprise.nom === 'Entreprise B Modifiee', `B a bien modifie SON PROPRE nom, nulle part ailleurs (observe: ${stateBAfterB.entreprise.nom})`);
+
+    // Nouveau contexte navigateur DISTINCT (pas juste localStorage.clear()
+    // dans le meme contexte) : B se connecte, ne doit jamais voir le nom
+    // de C (cache stale ou fuite quelconque).
+    const contextD = await browser.newContext({ colorScheme: 'light' });
+    const pageD = await contextD.newPage();
+    await pageD.addInitScript(([url, key]) => { window.SEBA_CONFIG = { supabaseUrl: url, supabaseAnonKey: key, accountId: 'default' }; }, [env.API_URL, env.ANON_KEY]);
+    await loginInPage(pageD, patronB.email, patronB.password);
+    await pageD.goto(`http://127.0.0.1:${PORT}/reglages.html`, { waitUntil: 'domcontentloaded' });
+    await pageD.waitForFunction(() => !!window.SebaDB, { timeout: 15000 });
+    await pageD.waitForTimeout(1000);
+    const nomInSecondContext = await pageD.locator('#regl-nom').inputValue();
+    assert(nomInSecondContext !== 'Entreprise QA Sauvegardée', `second contexte navigateur (B) n'affiche jamais le nom de C (observe: "${nomInSecondContext}")`);
+    assert(nomInSecondContext === 'Entreprise B Modifiee', `second contexte navigateur affiche bien le nom reel de B, lu depuis la meme source canonique (observe: "${nomInSecondContext}")`);
+    await contextD.close();
+
     console.log('\n=== Nettoyage des comptes QA ===');
     for (const p of [patronA, patronB, patronC]) {
       await fetch(env.API_URL + '/auth/v1/admin/users/' + p.userId, { method: 'DELETE', headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SERVICE_ROLE_KEY } });

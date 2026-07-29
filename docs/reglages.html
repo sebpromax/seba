@@ -356,7 +356,15 @@
   function saveGeneralInfo() {
     const nom = document.getElementById('regl-nom').value.trim();
     if (!nom) { showReglToast('Le nom de l\'entreprise ne peut pas être vide'); return; }
-    _ent = Object.assign({}, _ent, {
+    // Revue pré-merge (2026-07-29) : la RPC update_my_entreprise applique
+    // une allowlist stricte de clés -- envoyer _ent en entier (fusionné
+    // depuis SebaDB.entreprise.get()/localStorage, qui contient déjà
+    // "secteur" pour tout compte réel depuis create_profile_and_company)
+    // faisait rejeter CHAQUE sauvegarde reelle par la RPC (propriété
+    // inconnue "secteur"), avec un faux succès local silencieux -- trouvé
+    // en testant reellement un compte non synthetique. Patch precis,
+    // uniquement les 7 champs geres par ce formulaire.
+    const patch = {
       nom,
       email: document.getElementById('regl-email').value.trim(),
       telephone: document.getElementById('regl-tel').value.trim(),
@@ -366,9 +374,10 @@
       raisonSociale: document.getElementById('regl-raison').value.trim(),
       siret: document.getElementById('regl-siret').value.trim(),
       tvaNumero: document.getElementById('regl-tva-num').value.trim(),
-    });
+    };
+    _ent = Object.assign({}, _ent, patch);
     localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
-    if (window.SebaDB) SebaDB.entreprise.set(_ent);
+    if (window.SebaDB) SebaDB.entreprise.set(patch);
     const _f = document.getElementById('sidebar-company');
     if (_f) _f.textContent = nom;
     showReglToast('Réglages enregistrés');

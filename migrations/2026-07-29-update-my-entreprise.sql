@@ -36,6 +36,19 @@
 -- "state_update" (auth.uid() = user_id) suffit à isoler chaque compte,
 -- la clause WHERE explicite ci-dessous est une défense en profondeur, pas
 -- le seul rempart.
+--
+-- REVUE PRÉ-MERGE (2026-07-29) : la première version ne validait que la
+-- forme du patch (objet JSON non nul), pas son contenu -- n'importe quel
+-- patron authentifié aurait pu appeler cette RPC directement (hors
+-- reglages.html) avec un objet contenant des clés arbitraires (aucune
+-- allowlist), un nom vide (la validation "nom non vide" n'existait que
+-- côté client, contournable), ou des chaînes de taille illimitée. Corrigé
+-- ici : allowlist stricte des clés réellement utilisées par
+-- saveGeneralInfo() (docs/reglages.html), nom obligatoire et non vide dès
+-- qu'il est présent dans le patch, longueurs maximales raisonnables sur
+-- tous les champs texte. Aucun risque cross-compte (la portée reste
+-- toujours le propre compte de l'appelant), mais un patron ne doit pas
+-- pouvoir corrompre ses propres données avec un objet arbitraire.
 -- ═══════════════════════════════════════════════════════════════
 
 create or replace function public.update_my_entreprise(p_patch jsonb)
@@ -46,6 +59,8 @@ set search_path = pg_catalog, pg_temp
 as $$
 declare
   v_new jsonb;
+  v_allowed_keys text[] := array['nom', 'email', 'telephone', 'zone', 'raisonSociale', 'siret', 'tvaNumero'];
+  v_key text;
 begin
   if auth.uid() is null then
     raise exception 'update_my_entreprise: authentification requise'
@@ -55,6 +70,54 @@ begin
   if p_patch is null or jsonb_typeof(p_patch) <> 'object' then
     raise exception 'update_my_entreprise: patch invalide (objet requis)'
       using errcode = '22023';
+  end if;
+
+  -- Allowlist stricte : seuls les champs réellement gérés par
+  -- reglages.html/saveGeneralInfo() peuvent être écrits. Aucun chemin
+  -- JSONB arbitraire fourni par l'appelant.
+  for v_key in select jsonb_object_keys(p_patch) loop
+    if not (v_key = any (v_allowed_keys)) then
+      raise exception 'update_my_entreprise: propriété inconnue ''%''', v_key
+        using errcode = '22023';
+    end if;
+  end loop;
+
+  -- Nom obligatoire et non vide dès qu'il est touché par le patch --
+  -- reglages.html l'envoie toujours (saveGeneralInfo() refuse déjà de
+  -- soumettre un nom vide côté client), mais cette règle métier doit
+  -- aussi tenir pour un appel direct de la RPC, pas seulement via le
+  -- formulaire.
+  if p_patch ? 'nom' then
+    if p_patch ->> 'nom' is null or btrim(p_patch ->> 'nom') = '' then
+      raise exception 'update_my_entreprise: le nom de l''entreprise ne peut pas être vide'
+        using errcode = '22023';
+    end if;
+    if length(p_patch ->> 'nom') > 200 then
+      raise exception 'update_my_entreprise: nom trop long (200 caractères maximum)'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- Longueurs maximales raisonnables sur les autres champs texte --
+  -- defense en profondeur contre un objet arbitraire (bruit/abus), pas
+  -- une contrainte metier fine par champ.
+  if (p_patch ->> 'email') is not null and length(p_patch ->> 'email') > 254 then
+    raise exception 'update_my_entreprise: email trop long' using errcode = '22023';
+  end if;
+  if (p_patch ->> 'telephone') is not null and length(p_patch ->> 'telephone') > 40 then
+    raise exception 'update_my_entreprise: telephone trop long' using errcode = '22023';
+  end if;
+  if (p_patch ->> 'zone') is not null and length(p_patch ->> 'zone') > 200 then
+    raise exception 'update_my_entreprise: zone trop longue' using errcode = '22023';
+  end if;
+  if (p_patch ->> 'raisonSociale') is not null and length(p_patch ->> 'raisonSociale') > 200 then
+    raise exception 'update_my_entreprise: raison sociale trop longue' using errcode = '22023';
+  end if;
+  if (p_patch ->> 'siret') is not null and length(p_patch ->> 'siret') > 40 then
+    raise exception 'update_my_entreprise: siret trop long' using errcode = '22023';
+  end if;
+  if (p_patch ->> 'tvaNumero') is not null and length(p_patch ->> 'tvaNumero') > 40 then
+    raise exception 'update_my_entreprise: numero de TVA trop long' using errcode = '22023';
   end if;
 
   update public.seba_state
