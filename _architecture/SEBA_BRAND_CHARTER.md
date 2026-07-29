@@ -1,83 +1,140 @@
 # Seba — Charte de marque
 
-Statut : charte de marque, pas une charte graphique. Ce document ne fixe ni composants ni tokens (voir `SEBA_HOMEPAGE_BRAND_VISION.md` pour ce niveau-là) — il fixe ce que Seba EST, ce qu'il n'est JAMAIS, ce que ressent la personne qui l'utilise, et les principes qui doivent rester vrais quel que soit le support (home, dashboard, onboarding, assistant IA, futures pages). Toute décision de conception future — visuelle, textuelle, produit — doit pouvoir se justifier par ce document.
+Statut : charte de marque, pas une charte graphique. Ce document ne fixe ni composants ni tokens (voir `SEBA_HOMEPAGE_BRAND_VISION.md` pour ce niveau-là) — il fixe qui Seba sert, ce qu'il promet, ce qu'il n'est jamais, ce que ressent la personne qui l'utilise, et les principes qui doivent rester vrais quel que soit le support (home, dashboard, onboarding, assistant IA, futures pages). Toute décision de conception future — visuelle, textuelle, produit — doit pouvoir se justifier par ce document.
 
-Base : `SEBA_VISION_CONTRACT.md` (vision stratégique produit) + `SEBA_HOMEPAGE_BRAND_VISION.md` (premières réponses de marque) + l'exercice LANDING-HOMEPAGE-001 (7 agents + 3 concepts créatifs + arbitrage fondateur).
+Base : `SEBA_VISION_CONTRACT.md` (vision stratégique produit) + `SEBA_HOMEPAGE_BRAND_VISION.md` (premières réponses de marque) + l'exercice LANDING-HOMEPAGE-001 (7 agents + 3 concepts créatifs + arbitrage fondateur + revue critique approfondie du fondateur, qui a précisé le positionnement et la cible que la première version de ce document laissait insuffisamment définis).
 
 ---
 
-## 1. Ce que Seba est
+## 0. Noyau de marque
 
-**Le chef d'équipe qui a vingt ans de métier.** Celui qui arrive tôt, range ses outils toujours au même endroit, ne hausse jamais la voix, et se souvient du nom de chaque client sans avoir besoin de le noter — parce que c'est désormais Seba qui fait ce travail de mémoire à sa place.
+**Essence.** Seba garde le fil de l'activité pour que les professionnels puissent rester concentrés sur leur métier.
 
-Seba est un compagnon de métier, pas une plateforme. Il tient le fil d'une activité de terrain — client, devis, planning, intervention, facture, paiement — dans un seul endroit, sans jamais demander de retaper ce qui est déjà su.
+**Cible.** Le dirigeant ou responsable opérationnel d'une petite ou moyenne entreprise de services (ménage, conciergerie, maintenance, jardinage, vitrerie, pressing, artisans). Cette personne travaille souvent à la fois sur le terrain et dans la gestion. Elle connaît son métier, manque de temps, utilise plusieurs outils imparfaits (cahier, SMS, WhatsApp, tableurs) et ne veut pas devenir experte en logiciel. Elle n'est pas forcément technophobe, ne cherche pas un logiciel spectaculaire, ne veut pas passer des semaines à le configurer, a peur de perdre des informations, doit parfois faire adopter l'outil par son équipe, et veut retrouver le contrôle sans créer une nouvelle charge administrative.
 
-**Personnalité de référence :** fiabilité tranquille, précision sans esbroufe. L'équivalent d'une visseuse professionnelle de qualité (Bosch/Makita Pro, pas le modèle grand public) : on ne l'achète pas pour son design, on l'achète parce qu'on sait qu'elle fonctionnera tous les jours, pendant des années, sans faillir. L'atelier bien rangé, pas le loft de designers : l'efficacité et l'ordre se voient avant qu'un mot ne soit prononcé.
+**Promesse.** Du premier contact client au paiement, chaque information reste reliée, accessible et utilisable sans ressaisie.
 
-## 2. Ce que Seba n'est jamais
+Trois preuves soutiennent cette promesse — sans elles, la promesse reste une affirmation, pas un fait :
+1. Une information saisie une fois reste disponible partout.
+2. Le produit suit le déroulement réel d'une intervention.
+3. Chaque personne (patron, employé, client) voit uniquement ce dont elle a besoin pour avancer.
+
+**Différence.** Seba est l'outil de gestion construit autour du déroulement réel des entreprises de services — demande → client → devis → planning → intervention → facture → paiement — et non autour des besoins d'un service administratif. La différence n'est pas seulement la simplicité ou la fiabilité : c'est que Seba suit la logique du métier plutôt que d'obliger le métier à s'adapter à un logiciel de bureau.
+
+**Personnalité.** Calme, précise, fiable, directe et humaine. Seba est le bras droit fiable des entreprises de terrain — il garde le fil des clients, des interventions et des paiements, pour que le professionnel puisse rester concentré sur son métier. (Une image de travail interne peut aider à incarner cette personnalité au moment de concevoir un texte ou un écran — par exemple celle d'un chef d'équipe expérimenté, calme et qui connaît ses clients par cœur — mais cette image reste un outil de conception, jamais la définition officielle ni publique de la marque : elle est trop étroite, trop masculine et trop associée au bâtiment pour représenter aussi bien une conciergerie, un pressing ou une entreprise de ménage dirigée par une femme.)
+
+**Résultat émotionnel.** La tête libre. La certitude que rien ne va se perdre.
+
+**Phrase fondatrice interne** (arbitre les décisions produit, design et communication — pas nécessairement affichée sur le site) :
+
+> **"Le travail avance. Seba garde le fil."**
+
+**Principe produit :** *"Le métier d'abord. L'outil suit."*
+
+*(Autres formulations validées, utilisables comme accroches de campagne ou de section — jamais comme définition centrale : "Du premier contact au paiement, rien ne se perd." / "Le travail avance. Les papiers suivent." — cette dernière reste vraie et mémorable, mais réduit Seba à l'administratif si elle devient la phrase de référence, alors que Seba couvre aussi la mémoire client, le planning, la coordination d'équipe.)*
+
+## 1. Ce que Seba n'est jamais
 
 - Une plateforme abstraite ou un "écosystème" — Seba est un outil concret pour une activité concrète.
 - Un produit qui impressionne par la technologie — la compétence se prouve, elle ne se déclare pas.
 - Un gadget d'intelligence artificielle — l'IA existe dans Seba, elle n'est jamais le sujet.
-- Un objet de luxe ou un signe d'exclusivité — Seba doit rester accessible à une entreprise de 2-3 personnes, jamais froid ni hors de portée.
-- Un objet rustique, artisanal-décoratif ou "fait main" au sens fragile — la chaleur de Seba vient de la fiabilité, pas d'un supplément de folklore visuel.
 - Un vendeur enthousiaste ou un ingénieur qui explique son architecture — Seba parle comme un collègue compétent, jamais comme une brochure ni comme une documentation technique.
 - Un produit qui infantilise — aucune phrase ne doit jamais laisser entendre que l'utilisateur pourrait ne pas être à la hauteur d'un logiciel.
 - Un produit expérimental ou fragile dans sa présentation — même si une fonctionnalité est jeune, le ton reste celui d'un outil qu'on peut ouvrir tous les matins sans y penser.
 
-## 3. Ce que le client doit ressentir
+Deux nuances volontaires, pour éviter des interdictions trop absolues qui bloqueraient l'évolution de la marque :
 
-Pas seulement à l'arrivée sur la home — **à chaque moment de la relation avec Seba.**
+- **Sur le luxe :** Seba peut être premium par la qualité de son exécution, jamais par l'exclusion, l'ostentation ou la complexité. Une marque accessible peut être extrêmement soignée — accessibilité et qualité premium ne s'opposent pas.
+- **Sur l'artisanal :** la chaleur de Seba vient de la fiabilité, pas d'un supplément de folklore visuel (papier, cuir, motifs "faits main") — mais cela n'interdit pas une exécution chaleureuse, seulement une exécution qui jouerait le décor artisanal comme substitut à la vraie fiabilité.
 
-- **En arrivant sur la home page (5 secondes) :** soulagement pragmatique — "quelqu'un a enfin compris ma situation, et ça a l'air simple."
-- **En utilisant l'outil au quotidien :** la tête libre — la certitude que l'information est quelque part, à sa place, sans avoir à s'en souvenir soi-même. Ce n'est pas de la satisfaction technologique, c'est un allègement mental concret.
-- **En fermant l'ordinateur le soir, après une journée de travail :** *"C'est fait. Demain sera plus simple."* — pas "j'ai utilisé un bel outil", mais "je peux passer à autre chose l'esprit tranquille, rien ne va m'échapper."
+## 2. Vocabulaire
 
-**Phrase fondatrice interne (arbitre toute décision produit, pas nécessairement affichée sur le site) :**
+**Autorisé, toujours :** le vocabulaire du métier de terrain (client, devis, facture, planning, intervention, équipe, tournée, chantier, mission, rendez-vous) et des verbes d'action concrets (envoyer, encaisser, planifier, suivre, relancer, régler).
 
-> **"Le travail avance. Les papiers suivent."**
+**Évité, presque toujours :** le vocabulaire abstrait de la gestion d'entreprise (pipeline, workflow, synergie, solution, agile) et celui du marketing produit (expérience utilisateur, écosystème, plateforme).
 
-Cette phrase inverse la logique habituelle d'un logiciel de gestion, où l'administratif dicte souvent le rythme du travail. Chez Seba, c'est l'inverse : le métier reste premier, l'outil suit discrètement derrière et range ce qu'il faut ranger. Toute fonctionnalité, tout texte, toute animation doit pouvoir se justifier par cette phrase — si une décision fait passer "la gestion" avant "le travail réel", elle est probablement fausse pour Seba.
-
-**Description complémentaire de la sensation d'usage, utilisable en copywriting :** *"La tête libre."*
-
-## 4. Vocabulaire autorisé
-
-Le vocabulaire du métier de terrain, toujours : client, devis, facture, planning, intervention, équipe, tournée, chantier, mission, rendez-vous. Des verbes d'action concrets : envoyer, encaisser, planifier, suivre, relancer, régler.
-
-Jamais le vocabulaire abstrait de la gestion d'entreprise (pipeline, workflow, synergie, solution, agile) ni celui du marketing produit (expérience utilisateur, écosystème, plateforme) — ce ne sont pas les mots d'un chef d'équipe.
-
-## 5. Mots et tournures interdits
-
+**Interdit sans exception :**
 - "Révolutionnaire", "disruptif", "next-gen", "innovant" utilisé comme adjectif vide.
 - "Écosystème" — incohérence déjà réelle et documentée (`SEBA_HOMEPAGE_BRAND_VISION.md`), à corriger partout où le mot subsiste.
 - "Intelligence artificielle" en tête de promesse ou comme argument d'ouverture.
-- "Magique", "intelligent" utilisé comme qualificatif générique du produit — l'IA se décrit par ce qu'elle fait concrètement, jamais par une qualité abstraite.
-- "Simplement"/"facilement" employés comme mots de remplissage pour affirmer une simplicité sans la montrer.
+- "Magique" ou "intelligent" utilisé comme qualificatif générique du produit — l'IA se décrit par ce qu'elle fait concrètement, jamais par une qualité abstraite.
 - "Boostez", "boost", "scalable", tout jargon growth/startup.
 - Toute formule qui commente le niveau technique supposé du visiteur ("même pas besoin d'être informaticien", "facile pour tous") — l'infantilisation est un risque réel et documenté (agent Psychologie client, LANDING-HOMEPAGE-001).
 - Tout superlatif non prouvé ("le meilleur", "le plus rapide du marché") et toute statistique ou témoignage inventé.
 
-## 6. Ton de chaque texte
+**Règle d'usage, plutôt qu'une interdiction lexicale absolue :** "simplement"/"facilement" ne sont pas des mots bannis — c'est leur usage sans preuve qui pose problème. Règle : ne jamais affirmer qu'une action est simple sans le démontrer par le produit ou par un scénario concret. Une interdiction lexicale trop stricte produit des textes artificiels qui contournent le mot sans résoudre le vrai défaut.
 
-Direct, court, jamais impératif agressif ("Cliquez maintenant !"), jamais culpabilisant ("vous devriez déjà utiliser..."). Le ton est celui d'un collègue qui explique une fois, clairement, et qui n'a pas besoin d'insister. Les phrases s'ancrent dans un scénario vécu concret plutôt que dans une qualité abstraite du produit — "vos employés voient leur mission du jour" plutôt que "une interface intuitive pour vos équipes".
+## 3. Ce que le client doit ressentir
 
-Aucune phrase ne doit chercher à impressionner. Si un texte donne envie d'applaudir la formulation plutôt que de comprendre l'action à faire, il est probablement mauvais pour Seba.
+Pas seulement à l'arrivée sur la home — à chaque moment de la relation avec Seba.
 
-## 7. Personnalité de l'Assistant Seba (IA)
+- **En arrivant sur la home page (5 secondes) :** soulagement pragmatique — "quelqu'un a enfin compris ma situation, et ça a l'air simple."
+- **En utilisant l'outil au quotidien :** la tête libre — la certitude que l'information est quelque part, à sa place, sans avoir à s'en souvenir soi-même.
+- **En fermant l'ordinateur le soir :** *"C'est fait. Demain sera plus simple."*
 
-L'assistant se comporte comme le second d'un chef d'équipe compétent : présent quand on l'appelle, silencieux sinon. Il répond précisément, en phrases courtes, jamais en paragraphes qui se justifient. Il n'invente jamais une confiance qu'il n'a pas — s'il n'est pas sûr, il le dit simplement, sans les tournures d'esquive habituelles de l'IA générique ("je ne suis qu'une IA, mais..."). Il ne complimente jamais l'utilisateur sur ses questions, ne s'excuse pas de façon excessive, ne propose jamais spontanément des fonctionnalités non demandées. Il ne dit jamais "en tant qu'assistant intelligent" ni ne se met en scène — cohérent avec la charte : l'IA n'est jamais le sujet, seulement un outil discret de plus dans l'atelier.
+## 4. Ton — le même socle, adapté au contexte
 
-## 8. Principes de design qui ne changeront jamais
+Le socle commun : direct, court, jamais impératif agressif ("Cliquez maintenant !"), jamais culpabilisant ("vous devriez déjà utiliser..."), jamais infantilisant. Les phrases s'ancrent dans un scénario vécu concret plutôt que dans une qualité abstraite du produit. Mais ce socle ne s'exprime pas de la même façon partout — un développeur qui applique le même registre à toutes les interfaces transformerait l'application entière en argumentaire marketing, ce qui serait une erreur :
 
-Ce ne sont pas des règles de composants — ce sont des principes qui doivent rester vrais même si la palette ou la typographie évoluent un jour :
+- **Marketing :** clair, humain, orienté résultat. *"Retrouvez chaque client, devis et intervention au même endroit."*
+- **Interface :** court, opérationnel, immédiatement actionnable. *"Devis envoyé."*
+- **Erreur :** factuel, non accusateur, avec une solution. *"Le devis n'a pas pu être envoyé. Vérifiez la connexion puis réessayez."*
+- **Paiement ou suppression :** plus explicite et prudent, jamais ambigu sur la portée de l'action. *"Cette suppression est définitive. Les factures associées seront conservées."*
+- **Assistant :** concis par défaut, plus détaillé lorsque la situation l'exige (voir §5).
 
-- **Le rythme et l'espace priment sur la décoration.** Un écran chargé produit de l'anxiété avant même la lecture — l'espace négatif n'est pas un luxe esthétique, c'est ce qui permet à la tête de rester libre (cohérent avec §3).
-- **La couleur guide l'action, elle ne décore jamais.** Un accent de marque signale un bouton ou un statut ; il ne remplit jamais un fond ou un aplat sans fonction.
+Règle transverse : aucune phrase ne doit chercher à impressionner. Si un texte donne envie d'applaudir la formulation plutôt que de comprendre l'action à faire, il est probablement mauvais pour Seba.
+
+## 5. Personnalité de l'Assistant Seba (IA)
+
+L'assistant se comporte comme un second compétent : il n'interrompt jamais inutilement, mais il n'est pas passif au point d'ignorer un problème évident. Il peut proposer une seule prochaine action lorsqu'elle est clairement pertinente, fondée sur les données disponibles et directement utile à l'activité.
+
+**Exemples acceptables :**
+- "Cette facture est échue depuis 12 jours. Préparer une relance ?"
+- "Deux interventions se chevauchent mardi matin."
+- "Ce devis est prêt mais n'a pas encore été envoyé."
+
+**Exemples interdits :**
+- "Découvrez notre nouvelle fonctionnalité !"
+- "Souhaitez-vous optimiser davantage votre activité ?"
+- Toute liste longue de recommandations non demandées.
+
+Il répond en phrases courtes par défaut ; le détail n'apparaît que lorsque la décision, le risque ou la demande l'exige — la règle n'est pas "jamais de paragraphe", c'est "réponse courte par défaut, détail seulement si nécessaire". Il n'invente jamais une confiance qu'il n'a pas — s'il n'est pas sûr, il le dit simplement, sans les tournures d'esquive habituelles de l'IA générique. Il ne se met jamais en scène ("en tant qu'assistant intelligent...") — l'IA n'est jamais le sujet, seulement un outil discret de plus.
+
+## 6. Principes de design — constants, pas rigides
+
+Ce ne sont pas des règles de composants — ce sont des principes qui doivent rester vrais même si la palette ou la typographie évoluent un jour. Formulés pour rester vrais dans plusieurs contextes différents (home, application) plutôt que comme des absolus qui se contrediraient d'un support à l'autre :
+
+- **L'espace sert la clarté, pas la décoration — mais sa densité dépend du contexte.** La home respire (l'espace négatif y installe le soulagement recherché en §3). L'application reste dense sans être encombrée — un professionnel en usage quotidien gagne du temps avec une certaine densité d'information. Dans les deux cas, la hiérarchie doit rester immédiate.
+- **La couleur sert d'abord la hiérarchie et l'action.** Son usage identitaire reste mesuré, cohérent, et ne doit jamais réduire la lisibilité — mais un accent de marque peut légitimement habiller un fond de section ou un élément identitaire tant que ça ne nuit pas à la clarté.
 - **Une seule hiérarchie visuelle claire par écran.** Jamais deux éléments qui rivalisent pour l'attention au même niveau.
-- **La preuve produit réelle prime toujours sur l'illustration.** Une vraie capture d'écran vaut plus qu'un visuel décoratif, quel que soit le support.
+- **La preuve prime sur la décoration.** Utiliser une capture réelle du produit pour démontrer, un schéma pour expliquer un flux difficile à montrer autrement, une illustration seulement quand elle apporte une compréhension impossible sans elle.
 - **Le mouvement est fonctionnel, jamais spectaculaire.** Une animation doit servir la compréhension ou signaler un état — jamais l'esbroufe.
-- **La reconnaissance de marque vient de la discipline d'exécution, pas d'une forme répétée.** Ce point répond directement à la question du "coin corné"/chanfrein posée pendant l'exercice : Seba n'a pas besoin d'un motif graphique stamped partout pour être identifiable. La signature vient de la constance — mêmes proportions, mêmes espacements, même retenue, appliqués sans exception sur la home, le dashboard, l'onboarding, les emails — de la même façon qu'on reconnaît un outil de qualité à la précision de ses finitions, pas à un logo gravé sur chaque pièce. Un motif décoratif répété (coin corné, chanfrein systématique ou autre) reste une option de mise en œuvre possible sur UN support précis, jamais la source de l'identité elle-même — si on le retire, Seba doit rester reconnaissable.
+- **La reconnaissance de marque vient de la discipline d'exécution, pas d'une forme répétée.** Seba n'a pas besoin d'un motif graphique stamped partout pour être identifiable. La signature vient de la constance — mêmes proportions, mêmes espacements, même retenue, appliqués sans exception sur la home, le dashboard, l'onboarding, les emails — de la même façon qu'on reconnaît un outil de qualité à la précision de ses finitions, pas à un logo gravé sur chaque pièce. Un motif décoratif répété (coin corné, chanfrein systématique ou autre) reste une option de mise en œuvre possible sur UN support précis, jamais la source de l'identité elle-même — si on le retire, Seba doit rester reconnaissable.
+
+## 7. Principes de confiance
+
+Pour un logiciel de gestion, la confiance compte autant que l'identité visuelle ou le ton — c'est ce qui rend la "fiabilité tranquille" du §0 vérifiable, pas seulement déclarée :
+
+- L'utilisateur reste propriétaire de ses données.
+- Aucune action importante ne doit être dissimulée ou ambiguë.
+- Une automatisation doit toujours pouvoir être comprise, arrêtée ou corrigée.
+- Seba ne doit jamais simuler une certitude qu'il ne possède pas.
+- Les erreurs doivent être récupérables lorsque cela est possible.
+- La performance et la stabilité font partie de l'expérience de marque, pas seulement de la technique.
+- Aucun "dark pattern" pour empêcher le départ, l'export ou l'annulation.
+- Les fonctionnalités futures ne sont jamais présentées comme déjà disponibles.
+
+## 8. Philosophie produit — grille de décision
+
+Ce ne sont pas des principes de ton ni de design, mais des principes qui tranchent une décision de produit quand plusieurs options semblent également valables :
+
+- **Clarté avant sophistication.** Une fonctionnalité immédiatement compréhensible vaut mieux qu'une fonction puissante nécessitant une explication permanente.
+- **Continuité avant multiplication.** Mieux relier les informations existantes vaut mieux qu'ajouter un nouveau module.
+- **Saisie unique.** Toute information déjà connue doit être réutilisée automatiquement.
+- **Terrain avant administration.** Le produit suit l'ordre réel du travail, il n'impose jamais l'ordre d'un logiciel comptable.
+- **Contrôle avant automatisation.** Une automatisation doit aider sans retirer à l'utilisateur la compréhension ou le contrôle de ce qui se passe.
+- **Preuve avant promesse.** Une fonctionnalité montrée vaut mieux que trois bénéfices affirmés.
+- **Fiabilité avant nouveauté.** Une fonction stable et complète vaut mieux que cinq fonctions visibles mais inachevées.
 
 ---
 
