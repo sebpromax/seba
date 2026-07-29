@@ -124,8 +124,16 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
    les groupes de nav restaient plaqués en haut avec un grand vide en
    dessous -- centre le bloc nav-group verticalement dans l'espace
    disponible. .sidebar-footer garde margin-top:auto (règle plus bas), qui
-   prime sur justify-content et le maintient collé en bas quoi qu'il arrive. */
-.sidebar.sidebar-no-logo { justify-content: center; }
+   prime sur justify-content et le maintient collé en bas quoi qu'il arrive.
+   SETTINGS-BRAND-001 (2026-07-29) : "safe center", pas "center" seul --
+   sur un viewport bas (paysage téléphone, ou desktop court), le nombre
+   réel d'items ne tient pas toujours dans l'espace disponible ; "center"
+   centre alors le débordement des DEUX côtés, pousuant le premier item à
+   un top négatif (caché au-dessus du viewport) et le dernier hors du bas
+   -- confirmé par mesure réelle (Playwright, 844×390). "safe center"
+   revient automatiquement à un alignement "start" dès que le contenu
+   déborderait, sans perdre l'avantage du centrage quand tout tient. */
+.sidebar.sidebar-no-logo { justify-content: safe center; }
 @media (min-width: 841px) {
   /* position:fixed (pas sticky) -- demande fondateur explicite 2026-07-20 :
      la sidebar ne doit JAMAIS bouger, sur aucune page, quel que soit le
@@ -634,6 +642,17 @@ body:has(.sidebar.open) .ai-chat-backdrop {
     transform: translateX(-100%);
     transition: transform .25s var(--ease-std);
     box-shadow: none;
+    /* SETTINGS-BRAND-001 (2026-07-29) : la sidebar est position:fixed,
+       top:0, bottom:0 -- couvre tout l'écran y compris sous l'encoche/la
+       barre de statut et au-dessus de la barre d'accueil iOS. padding:18px 0
+       (règle de base, non mobile) ne réservait AUCUN espace pour ces zones
+       -- le premier item ("Tableau de bord") se retrouvait partiellement
+       sous l'encoche, le dernier au ras de la barre d'accueil (remonté
+       fondateur : "le premier item... est partiellement caché en haut").
+       Même mécanisme déjà utilisé par .mobile-header juste en dessous,
+       jamais appliqué ici jusqu'à présent. */
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
   .sidebar.open {
     transform: translateX(0);

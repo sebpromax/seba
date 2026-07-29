@@ -26,16 +26,14 @@
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
   .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
-  .sidebar{background:#0B0C0E;color:rgba(255,255,255,.92);padding:24px 0;display:flex;flex-direction:column;}
-  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
-  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
-  .nav-section{padding:0 14px;}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
-  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
-  .nav-item.active{background:rgba(0,255,157,.12);color:var(--emerald);}
-  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
-  .nav-item.active .dot{opacity:1;}
-  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+  /* SETTINGS-BRAND-001 (2026-07-29) : .sidebar/.logo/.nav-item/.sidebar-footer
+     supprimes ici -- residu mort (balisage .logo/.logo-dot/.nav-section jamais
+     genere par sidebar.js, qui utilise .s-logo/.s-logo-dot) qui ecrasait en
+     plus le fond theme-aware de .sidebar (pro-global.css, meme specificite,
+     ce bloc local gagnait par ordre de cascade) -- sidebar figee en noir sur
+     cette page quel que soit le theme. pro-global.css est deja la source
+     unique "unifiee sur toutes les pages" pour la sidebar (voir son
+     commentaire section 3), inutile de la redupliquer ici. */
 
   .main{padding:32px 40px;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
@@ -138,7 +136,7 @@
       <div class="topbar-right">
         <button class="btn-em" onclick="location.href='factures-nouvelle.html'">+ Facture manuelle</button>
         <div class="avatar-wrap">
-          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="avatar" id="avatar-btn">—</div>
           <div class="user-menu" id="user-menu">
             <a href="reglages.html">Mon compte</a>
             <div class="menu-sep"></div>
@@ -211,6 +209,8 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="avatar-init.js"></script>
+<script src="brand-accent.js"></script>
 <script src="services/contract-billing.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="pdf-generator.js" defer></script>

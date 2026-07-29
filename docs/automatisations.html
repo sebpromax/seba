@@ -15,8 +15,13 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
+/* SETTINGS-BRAND-001 (2026-07-29) : --sidebar-bg/--sidebar-text
+   redefinis ici en dur ecrasaient les vrais tokens theme-aware
+   (docs/src/ui/theme.css) sur cette page uniquement -- sidebar figee en
+   noir quel que soit le theme. Supprimes, pro-global.css/theme.css
+   restent l'unique source. */
 :root{--critical:#DC2626;--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.1);--em-ink:#031A12;
-  --sidebar-bg:#0B0C0E;--sidebar-text:rgba(255,255,255,.92);--menu-shadow:rgba(0,0,0,0.08);
+  --menu-shadow:rgba(0,0,0,0.08);
   --panel-shadow-color:rgba(0,0,0,.3);--ss-backdrop-bg:rgba(20,22,26,.45);--ss-panel-shadow:rgba(0,0,0,.13);}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
@@ -27,7 +32,10 @@
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
   .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
-  .sidebar{background:var(--sidebar-bg);color:var(--sidebar-text);padding:24px 0;display:flex;flex-direction:column;}
+  /* SETTINGS-BRAND-001 (2026-07-29) : la regle .sidebar locale precedente
+     referencait --sidebar-text, qui n'existe pas (voir docs/src/ui/theme.css,
+     le token reel s'appelle --sidebar-ink) -- supprimee, pro-global.css est
+     deja la source unique pour la sidebar sur toutes les pages. */
   .main{padding:32px 40px;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
   .topbar h1{font-size:1.5rem;}
@@ -149,7 +157,7 @@
         <button class="btn-outline" onclick="runNowManually()">Vérifier maintenant</button>
         <button class="btn-em" onclick="openRuleEditor()">+ Nouvelle règle</button>
         <div class="avatar-wrap">
-          <div class="avatar" id="avatar-btn">ML</div>
+          <div class="avatar" id="avatar-btn">—</div>
           <div class="user-menu" id="user-menu">
             <a href="reglages.html">Mon compte</a>
             <div class="menu-sep"></div>
@@ -220,6 +228,8 @@
 </aside>
 
 <script src="seba-data.js"></script>
+<script src="avatar-init.js"></script>
+<script src="brand-accent.js"></script>
 <script>
   const TRIGGER_LABELS = {
     client_created: 'Nouveau client', quote_sent: 'Devis envoyé', quote_accepted: 'Devis accepté', quote_rejected: 'Devis refusé',

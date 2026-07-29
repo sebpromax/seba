@@ -1609,19 +1609,67 @@
   /* entreprise (objet unique) n'entre pas dans le contrat pushOp()/
      sync-push (entite tableau avec id) -- voir SebaDB.entreprise.set()
      plus bas et migrations/2026-07-29-update-my-entreprise.sql. RPC
-     dediee, authentifiee directement (jamais via service_role). */
+     dediee, authentifiee directement (jamais via service_role).
+
+     SETTINGS-BRAND-001 (2026-07-29) : retourne desormais une Promise
+     {ok, data, error} au lieu de rien -- la plupart des appelants (ex.
+     saveGeneralInfo()) restent fire-and-forget (ne l'attendent pas,
+     comportement inchange), mais un appelant qui a besoin d'une
+     confirmation reelle avant d'afficher un succes (ex. sauvegarde de
+     marque : couleur/logo) peut desormais faire
+     `await SebaDB.entreprise.set(patch)` et lire le resultat -- exigence
+     explicite : "aucun faux succes affiche avant confirmation de la
+     requete". */
   function pushEntreprisePatch(patch) {
-    if (!hasSupabase) return;
+    if (!hasSupabase) return Promise.resolve({ ok: false, error: 'Supabase non configuré' });
     const cfg = window.SEBA_CONFIG;
-    if (!SupabaseAdapter._hasSession(cfg)) return; // mode demo/anonyme : rien a synchroniser
-    fetch(cfg.supabaseUrl + '/rest/v1/rpc/update_my_entreprise', {
+    if (!SupabaseAdapter._hasSession(cfg)) return Promise.resolve({ ok: false, error: 'Aucune session active' });
+    return fetch(cfg.supabaseUrl + '/rest/v1/rpc/update_my_entreprise', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, SupabaseAdapter._headers()),
       body: JSON.stringify({ p_patch: patch }),
-    }).then((res) => {
-      if (!res.ok) console.warn('[seba-data] update_my_entreprise refuse par le serveur (HTTP ' + res.status + ') -- valeur locale conservee, reessayer en modifiant a nouveau les reglages.');
+    }).then(async (res) => {
+      if (!res.ok) {
+        let msg = 'HTTP ' + res.status;
+        try { const body = await res.json(); if (body && body.message) msg = body.message; } catch (e) {}
+        console.warn('[seba-data] update_my_entreprise refuse par le serveur (' + msg + ') -- valeur locale conservee, reessayer en modifiant a nouveau les reglages.');
+        return { ok: false, error: msg };
+      }
+      const data = await res.json().catch(() => null);
+      return { ok: true, data };
     }).catch((e) => {
       console.warn('[seba-data] update_my_entreprise en echec (reseau) -- valeur locale conservee, reessayer en modifiant a nouveau les reglages.', e.message);
+      return { ok: false, error: e.message || 'Erreur réseau' };
+    });
+  }
+
+  /* SETTINGS-BRAND-001 (2026-07-29) : meme defaut que pushEntreprisePatch
+     avant son propre correctif -- publicIntakeConfig est un objet unique
+     (pas une collection tableau), hors du contrat pushOp()/sync-push.
+     L'Edge Function public-intake lit seba_state.state.publicIntakeConfig
+     directement en base : sans cet appel reseau, le formulaire public
+     restait bloque "desactive" (cfg=null cote serveur) quoi que le patron
+     configure dans Reglages. */
+  function pushPublicIntakeConfigPatch(patch) {
+    if (!hasSupabase) return Promise.resolve({ ok: false, error: 'Supabase non configuré' });
+    const cfg = window.SEBA_CONFIG;
+    if (!SupabaseAdapter._hasSession(cfg)) return Promise.resolve({ ok: false, error: 'Aucune session active' });
+    return fetch(cfg.supabaseUrl + '/rest/v1/rpc/update_my_public_intake_config', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, SupabaseAdapter._headers()),
+      body: JSON.stringify({ p_patch: patch }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        let msg = 'HTTP ' + res.status;
+        try { const body = await res.json(); if (body && body.message) msg = body.message; } catch (e) {}
+        console.warn('[seba-data] update_my_public_intake_config refuse par le serveur (' + msg + ') -- valeur locale conservee.');
+        return { ok: false, error: msg };
+      }
+      const data = await res.json().catch(() => null);
+      return { ok: true, data };
+    }).catch((e) => {
+      console.warn('[seba-data] update_my_public_intake_config en echec (reseau) -- valeur locale conservee.', e.message);
+      return { ok: false, error: e.message || 'Erreur réseau' };
     });
   }
 
@@ -3589,12 +3637,60 @@
         // migrations/2026-07-29-update-my-entreprise.sql pour le detail
         // complet). Sans cet appel, persist() n'ecrivait QUE le cache
         // local (Palier 1) : la modification n'atteignait jamais le
-        // serveur et disparaissait au prochain pull(). Fire-and-forget
-        // volontaire (comme le reste de ce fichier pour les ecritures
-        // non critiques) : la projection locale fait deja foi
-        // immediatement, ceci aligne le serveur en arriere-plan.
-        pushEntreprisePatch(patch);
-        return state.entreprise;
+        // serveur et disparaissait au prochain pull(). Reste fire-and-
+        // forget par defaut (la projection locale fait deja foi
+        // immediatement) -- mais retourne desormais la Promise du
+        // resultat serveur pour les appelants qui veulent une
+        // confirmation reelle avant d'afficher un succes (SETTINGS-
+        // BRAND-001 : `await SebaDB.entreprise.set(patch)`).
+        const serverPromise = pushEntreprisePatch(patch);
+        return Object.assign(serverPromise, { local: state.entreprise });
+      },
+      // SETTINGS-BRAND-001 (2026-07-29) : fonction unique de calcul des
+      // initiales -- avant ce chantier, chaque page dupliquait son propre
+      // calcul incohérent (reglages.html/clients.html/... hardcodaient
+      // "ML" en dur sans jamais le recalculer ; dashboard.html prenait
+      // biz.nom.charAt(0) -- une seule lettre ; historique.html faisait de
+      // même avec un fallback différent "?"). Règle unique : 2 premiers
+      // mots -> 1ère lettre de chacun ("Seba Clean" -> "SC",
+      // "Maison Lavande" -> "ML") ; un seul mot avec une majuscule interne
+      // (style "SebaClean") -> cette majuscule + la 1ère lettre ("SC") ;
+      // sinon les 2 premiers caractères du mot unique ; nom vide/absent ->
+      // "—" (neutre, jamais le nom d'une entreprise précédente).
+      initials(nom) {
+        const n = (nom || '').trim();
+        if (!n) return '—';
+        const words = n.split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+          return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+        }
+        const w = words[0];
+        const internalCap = w.slice(1).match(/[A-ZÀ-Ý]/);
+        if (internalCap) {
+          return (w.charAt(0) + internalCap[0]).toUpperCase();
+        }
+        return w.slice(0, 2).toUpperCase();
+      },
+      // Rendu partagé de l'avatar (logo si présent, sinon initiales sur
+      // fond de couleur de marque) -- appelé une fois au chargement et à
+      // chaque SebaDB.onChange() (reload/reconnexion/changement de nom ou
+      // logo déjà couverts, aucune logique supplémentaire par page).
+      // Idempotent, sans effet si l'élément ou l'entreprise sont absents
+      // (mode démo, page sans avatar).
+      renderAvatar(elId) {
+        const el = document.getElementById(elId || 'avatar-btn');
+        if (!el) return;
+        const ent = SebaDB.entreprise.get() || {};
+        const branding = ent.branding || {};
+        if (branding.logoUrl) {
+          el.style.background = 'transparent';
+          el.innerHTML = '<img src="' + branding.logoUrl.replace(/"/g, '&quot;') + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">';
+        } else {
+          el.style.background = branding.accent || 'var(--emerald)';
+          el.textContent = SebaDB.entreprise.initials(ent.nom);
+        }
+        const sc = document.getElementById('sidebar-company');
+        if (sc && ent.nom) sc.textContent = ent.nom;
       },
     },
 
@@ -3642,7 +3738,13 @@
           requireAddress: false, allowPreferredDate: true, confirmationMessage: '',
         }, state.publicIntakeConfig || {}, patch || {});
         persist();
-        return state.publicIntakeConfig;
+        // SETTINGS-BRAND-001 : sans cet appel, seul le cache local était
+        // écrit -- l'Edge Function public-intake (seule lectrice réelle
+        // de cette config) ne voyait jamais la modification. Retourne la
+        // Promise du résultat serveur, même mécanisme que
+        // SebaDB.entreprise.set() (await possible côté appelant).
+        const serverPromise = pushPublicIntakeConfigPatch(state.publicIntakeConfig);
+        return Object.assign(serverPromise, { local: state.publicIntakeConfig });
       },
 
       async list(filter) {

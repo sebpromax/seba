@@ -483,6 +483,7 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
 
 <script src="../businessTypes.js"></script>
 <script src="../seba-data.js"></script>
+<script src="../brand-accent.js"></script>
 <script src="../services/config-dashboard.js"></script>
 <script src="../services/contract-billing.js"></script>
 <script src="../services/widget-v2-framework.js"></script>
@@ -1232,9 +1233,11 @@ function renderDashboard(biz) {
   const salut = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
   document.getElementById('db-greeting').textContent = salut + ', ' + (biz.nom || 'Mon entreprise') + ' !';
   document.getElementById('db-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const av = document.getElementById('avatar');
-  av.style.background = biz.couleur || 'var(--emerald)';
-  av.textContent = (biz.nom || 'M').charAt(0).toUpperCase();
+  // SETTINGS-BRAND-001 (2026-07-29) : calcul propre à cette page (1 seule
+  // lettre, biz.couleur jamais écrit nulle part) remplacé par le rendu
+  // partagé -- même règle d'initiales et même source de couleur de marque
+  // (entreprise.branding.accent) que toutes les autres pages connectées.
+  if (window.SebaDB) SebaDB.entreprise.renderAvatar('avatar');
   refreshAll();
 }
 
