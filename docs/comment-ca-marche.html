@@ -76,18 +76,50 @@ a{color:inherit;text-decoration:none;}
 .page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
 .page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:560px;line-height:1.65;}
 
-/* Steps */
-.steps-section{padding:88px 0;}
-.steps-grid{display:grid;grid-template-columns:1fr;gap:0;}
-.step-item{display:grid;grid-template-columns:80px 1fr;gap:32px;padding:48px 0;border-bottom:1px solid var(--border);align-items:start;}
+/* Section head commun */
+.section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald-light);background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;margin-bottom:16px;}
+.section-head-center{max-width:640px;margin:0 auto 44px;text-align:center;}
+.section-head-center h2{font-size:clamp(1.5rem,2.8vw,2.1rem);font-weight:700;letter-spacing:-.025em;margin-bottom:10px;}
+.section-head-center p{color:var(--text-2);font-size:1rem;line-height:1.6;}
+
+/* Section 1 -- Mise en route : 4 etapes compactes, pas de cartes de stats */
+.steps-section{padding:80px 0;}
+.steps-grid{display:grid;grid-template-columns:1fr;gap:0;max-width:720px;margin:0 auto;}
+.step-item{display:grid;grid-template-columns:56px 1fr;gap:24px;padding:32px 0;border-bottom:1px solid var(--border);align-items:start;}
 .step-item:last-child{border-bottom:none;}
-.step-num{width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--emerald);font-size:1.1rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.step-content h3{font-size:1.35rem;font-weight:700;margin-bottom:10px;letter-spacing:-.02em;}
-.step-content p{color:var(--text-2);font-size:1rem;line-height:1.65;max-width:560px;}
-.step-content .step-detail{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.step-detail-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
-.step-detail-card .sdc-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px;}
-.step-detail-card .sdc-val{font-size:.9rem;font-weight:600;}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--emerald);font-size:.95rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-content h3{font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:-.02em;}
+.step-content p{color:var(--text-2);font-size:.92rem;line-height:1.6;max-width:520px;}
+
+/* Section 2 -- Le parcours reel : la demonstration centrale, grandes captures alternees */
+.journey-section{padding:80px 0;background:var(--white);}
+.journey-row{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center;padding:40px 0;}
+.journey-row:not(:last-child){border-bottom:1px solid var(--border);}
+.journey-row.is-reverse .journey-media{order:2;}
+.journey-row.is-reverse .journey-text{order:1;}
+.journey-num{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--emerald-light);margin-bottom:10px;}
+.journey-text h3{font-size:1.25rem;font-weight:700;margin-bottom:10px;letter-spacing:-.02em;}
+.journey-text p{color:var(--text-2);font-size:.95rem;line-height:1.65;max-width:440px;}
+.journey-media img{width:100%;height:auto;border-radius:12px;border:1px solid var(--border);display:block;}
+.journey-caption{margin-top:12px;font-size:.85rem;font-weight:700;color:var(--ink);}
+.journey-caption span{color:var(--text-2);font-weight:500;}
+.journey-connector{display:flex;align-items:center;gap:18px;padding:20px 0;}
+.journey-connector .journey-num{margin-bottom:0;flex-shrink:0;width:32px;}
+.journey-connector p{color:var(--text-2);font-size:.9rem;line-height:1.5;}
+.journey-connector strong{color:var(--ink);}
+@media(max-width:860px){
+  .journey-row{grid-template-columns:1fr;gap:20px;padding:32px 0;}
+  .journey-row.is-reverse .journey-media,.journey-row.is-reverse .journey-text{order:initial;}
+  .journey-text p{max-width:none;}
+}
+
+/* Section 3 -- Les acces */
+.access-section{padding:80px 0;}
+.access-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:960px;margin:0 auto;}
+.access-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:26px;}
+.access-card h3{font-size:1rem;font-weight:700;margin-bottom:8px;}
+.access-card p{color:var(--text-2);font-size:.88rem;line-height:1.6;}
+@media(max-width:700px){.access-grid{grid-template-columns:1fr;}}
 
 /* Dark section */
 .dark-section{background:var(--ink);padding:72px 0;}
@@ -97,43 +129,8 @@ a{color:inherit;text-decoration:none;}
 .btn-em-dark:hover{opacity:.88;}
 
 @media(max-width:700px){
-  .step-item{grid-template-columns:1fr;gap:16px;}
-  .step-detail{grid-template-columns:1fr!important;}
+  .step-item{grid-template-columns:1fr;gap:12px;}
   .wrap{padding:0 20px;}
-}
-
-/* ── Produit (4 captures reelles) : deplace depuis la home (index.html),
-   qui ne doit plus dupliquer le detail "comment ca marche" -- cette page
-   est le seul endroit ou ce detail vit desormais. ── */
-.section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald-light);background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;margin-bottom:16px;}
-.section-head-center{max-width:640px;margin:0 auto 48px;text-align:center;}
-.section-head-center h2{font-size:clamp(1.5rem,2.8vw,2.1rem);font-weight:700;letter-spacing:-.025em;margin-bottom:10px;}
-.product-tour-section{padding:0 0 88px;}
-.product-blocks{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
-.product-block{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:26px;}
-.product-block-num{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--emerald-light);margin-bottom:10px;}
-.product-block h3{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
-.product-block p{color:var(--text-2);font-size:.9rem;line-height:1.55;margin-bottom:16px;}
-.product-block img{width:100%;height:auto;border-radius:10px;border:1px solid var(--border);display:block;}
-@media(max-width:700px){.product-blocks{grid-template-columns:1fr;}}
-
-/* ── Parcours (6 etapes) : idem, deplace depuis la home. ── */
-.flow-section{padding:0 0 88px;}
-.parcours-track{display:flex;gap:0;}
-.parcours-step{flex:1;padding:0 14px;position:relative;}
-.parcours-step:first-child{padding-left:0;}
-.parcours-step:last-child{padding-right:0;}
-.parcours-num{width:32px;height:32px;border-radius:9px;background:var(--emerald-soft);border:1px solid var(--emerald-border);color:var(--emerald-light);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
-.parcours-line{position:absolute;top:16px;left:calc(-50% + 16px);right:calc(50% + 16px);height:1px;background:var(--border);}
-.parcours-step:first-child .parcours-line{display:none;}
-.parcours-step h3{font-size:.92rem;font-weight:700;margin-bottom:6px;}
-.parcours-step p{font-size:.82rem;color:var(--text-2);line-height:1.55;}
-@media(max-width:700px){
-  .parcours-track{flex-direction:column;gap:28px;padding-left:24px;}
-  .parcours-step{padding:0 0 0 20px;border-left:1px solid var(--border);}
-  .parcours-step:last-child{border-left:1px solid var(--border);}
-  .parcours-line{display:none;}
-  .parcours-num{margin-left:-36px;margin-bottom:10px;}
 }
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -183,65 +180,50 @@ p{letter-spacing:-0.02em;}
 
 <section class="page-hero">
   <div class="wrap">
-    <div class="ph-eyebrow"><span class="e-dot"></span>Mode d'emploi</div>
-    <h1>Opérationnel en moins de 5 minutes.</h1>
-    <p>Seba se configure en une seule séance. Pas de formation, pas de technicien — juste vous et votre téléphone.</p>
+    <div class="ph-eyebrow"><span class="e-dot"></span>Comment Seba fonctionne</div>
+    <h1>Du premier contact au paiement, Seba garde le fil.</h1>
+    <p>Clients, devis, planning, interventions et factures restent reliés. Vous avancez sans rechercher une information ni saisir deux fois la même chose.</p>
   </div>
 </section>
 
 <section class="steps-section">
   <div class="wrap">
+    <div class="section-head-center">
+      <div class="section-eyebrow">Mise en route</div>
+      <h2>Votre espace prend la forme de votre activité.</h2>
+      <p>Indiquez vos services, ajoutez vos clients et invitez votre équipe. Seba organise ensuite chaque information autour de votre façon de travailler.</p>
+    </div>
     <div class="steps-grid">
 
       <div class="step-item">
         <div class="step-num">1</div>
         <div class="step-content">
-          <h3>Créez votre espace pro</h3>
-          <p>Répondez à quelques questions sur votre activité — secteur, services proposés, tarifs de base, et les coordonnées de votre entreprise. Seba adapte immédiatement l'interface à votre métier.</p>
-          <div class="step-detail">
-            <div class="step-detail-card"><div class="sdc-label">Durée</div><div class="sdc-val">2 à 5 min</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Sans CB requise</div><div class="sdc-val">Gratuit au départ</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Résultat</div><div class="sdc-val">Tableau de bord prêt</div></div>
-          </div>
+          <h3>Configurez votre activité</h3>
+          <p>Renseignez vos coordonnées, vos services et vos tarifs habituels. Votre espace est préparé avec les informations utiles à votre métier.</p>
         </div>
       </div>
 
       <div class="step-item">
         <div class="step-num">2</div>
         <div class="step-content">
-          <h3>Ajoutez vos clients et votre équipe</h3>
-          <p>Importez ou créez vos fiches clients en quelques secondes. Invitez vos employés — ils reçoivent un accès limité au planning et aux missions qui les concernent, rien de plus.</p>
-          <div class="step-detail">
-            <div class="step-detail-card"><div class="sdc-label">Clients</div><div class="sdc-val">Illimités</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Employés</div><div class="sdc-val">Accès personnalisés</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Import</div><div class="sdc-val">CSV ou saisie manuelle</div></div>
-          </div>
+          <h3>Ajoutez vos clients</h3>
+          <p>Créez vos fiches clients ou importez votre fichier existant. Adresses, consignes, documents et historique restent réunis au même endroit.</p>
         </div>
       </div>
 
       <div class="step-item">
         <div class="step-num">3</div>
         <div class="step-content">
-          <h3>Planifiez et envoyez vos devis</h3>
-          <p>Créez une intervention en 30 secondes. Générez un devis personnalisé avec votre identité visuelle et envoyez-le par lien — votre client signe en ligne depuis son téléphone.</p>
-          <div class="step-detail">
-            <div class="step-detail-card"><div class="sdc-label">Devis en ligne</div><div class="sdc-val">Signature électronique</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Relances auto</div><div class="sdc-val">J+3, J+7</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Conversion</div><div class="sdc-val">→ Facture automatique</div></div>
-          </div>
+          <h3>Invitez votre équipe</h3>
+          <p>Chaque membre retrouve son planning, ses missions et les consignes nécessaires. Les informations internes restent réservées au responsable.</p>
         </div>
       </div>
 
       <div class="step-item">
         <div class="step-num">4</div>
         <div class="step-content">
-          <h3>Vos clients ont leur propre espace</h3>
-          <p>Chaque client reçoit un portail privé où il retrouve ses devis, factures, le calendrier de ses interventions, et peut vous contacter directement. Zéro appel pour "c'est pour quand ?".</p>
-          <div class="step-detail">
-            <div class="step-detail-card"><div class="sdc-label">Portail client</div><div class="sdc-val">Accès par lien</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Historique</div><div class="sdc-val">Documents complets</div></div>
-            <div class="step-detail-card"><div class="sdc-label">Messagerie</div><div class="sdc-val">Directe et tracée</div></div>
-          </div>
+          <h3>Lancez votre première mission</h3>
+          <p>Ajoutez un client, préparez son devis et planifiez l'intervention. Le même dossier vous accompagne ensuite jusqu'à la facture.</p>
         </div>
       </div>
 
@@ -249,63 +231,103 @@ p{letter-spacing:-0.02em;}
   </div>
 </section>
 
-<section class="product-tour-section">
+<section class="journey-section">
   <div class="wrap">
     <div class="section-head-center">
-      <div class="section-eyebrow">Comment Seba fonctionne</div>
-      <h2>Quatre étapes, un seul outil.</h2>
+      <div class="section-eyebrow">Le parcours réel</div>
+      <h2>Une information saisie une fois suit toute la mission.</h2>
+      <p>Le client ne disparaît pas d'un écran à l'autre. Ses coordonnées, son devis, son intervention et sa facture restent reliés dans le même dossier.</p>
     </div>
-    <div class="product-blocks">
-      <div class="product-block">
-        <div class="product-block-num">01 — CENTRALISER</div>
-        <h3>Centraliser</h3>
-        <p>Clients, adresses, consignes et historique.</p>
-        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba avec historique des interventions et informations de service">
+
+    <div class="journey-row">
+      <div class="journey-media">
+        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba : Sophie Lacroix, coordonnées et historique">
+        <p class="journey-caption">Sophie Lacroix <span>· Fiche cliente</span></p>
       </div>
-      <div class="product-block">
-        <div class="product-block-num">02 — ORGANISER</div>
-        <h3>Organiser</h3>
-        <p>Planning, interventions et assignation des équipes.</p>
-        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba avec interventions assignées à l'équipe">
-      </div>
-      <div class="product-block">
-        <div class="product-block-num">03 — VENDRE</div>
-        <h3>Vendre</h3>
-        <p>Devis, validation client et facturation.</p>
-        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Liste des devis Seba avec statuts en attente, signés et expirés">
-      </div>
-      <div class="product-block">
-        <div class="product-block-num">04 — SUIVRE</div>
-        <h3>Suivre</h3>
-        <p>Paiements, rentabilité et actions prioritaires.</p>
-        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Liste des factures Seba avec statuts payée, en attente et en retard">
+      <div class="journey-text">
+        <div class="journey-num">01 — LE CLIENT EST ENREGISTRÉ</div>
+        <h3>Ses coordonnées sont disponibles pour toute la suite</h3>
+        <p>Adresse et consignes sont enregistrées une fois, puis réutilisées à chaque étape suivante.</p>
       </div>
     </div>
+
+    <div class="journey-row is-reverse">
+      <div class="journey-media">
+        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Devis Seba : Sophie Lacroix, ménage standard, 95 €">
+        <p class="journey-caption">Sophie Lacroix <span>· Devis de 95 € envoyé</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">02 — LE DEVIS EST ENVOYÉ</div>
+        <h3>Les informations du client sont déjà reprises</h3>
+        <p>Il ne reste qu'à ajouter la prestation et le prix. Le client signe en ligne, depuis son téléphone.</p>
+      </div>
+    </div>
+
+    <div class="journey-row">
+      <div class="journey-media">
+        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning Seba : intervention de Sophie Lacroix placée sur le calendrier de l'équipe">
+        <p class="journey-caption">Intervention planifiée <span>· Sophie Lacroix</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">03 — L'INTERVENTION EST PLANIFIÉE</div>
+        <h3>Une fois le devis accepté, la mission rejoint le planning</h3>
+        <p>Avec la bonne date, la bonne adresse et les bonnes consignes — sans ressaisie.</p>
+      </div>
+    </div>
+
+    <div class="journey-connector">
+      <div class="journey-num">04</div>
+      <p><strong>La mission est assignée.</strong> L'intervenant retrouve l'horaire, le lieu et les informations dont il a besoin pour travailler, depuis son espace équipe.</p>
+    </div>
+
+    <div class="journey-connector">
+      <div class="journey-num">05</div>
+      <p><strong>Le client reste informé.</strong> Il retrouve ses documents et les informations utiles depuis son espace, sans devoir vous les redemander.</p>
+    </div>
+
+    <div class="journey-row is-reverse">
+      <div class="journey-media">
+        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Facture Seba : Sophie Lacroix, ménage standard, 95 €, statut payée">
+        <p class="journey-caption">Sophie Lacroix <span>· Facture de 95 € payée</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">06 — LA FACTURE REPREND LE DOSSIER</div>
+        <h3>Une fois le travail terminé, la mission devient une facture</h3>
+        <p>Les informations sont reprises sans ressaisie. Vous vérifiez, envoyez et suivez le règlement.</p>
+      </div>
+    </div>
+
   </div>
 </section>
 
-<section class="flow-section">
+<section class="access-section">
   <div class="wrap">
     <div class="section-head-center">
-      <div class="section-eyebrow">Un seul flux</div>
-      <h2>De la demande au paiement</h2>
+      <div class="section-eyebrow">Les accès</div>
+      <h2>Chacun voit ce dont il a besoin pour avancer.</h2>
     </div>
-    <div class="parcours-track">
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">1</div><h3>Client enregistré</h3><p>Le client est enregistré dans votre fiche clients.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">2</div><h3>Devis envoyé</h3><p>Le devis est créé et envoyé pour signature.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">3</div><h3>Intervention planifiée</h3><p>L'intervention est planifiée sur le calendrier de l'équipe.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">4</div><h3>Mission assignée</h3><p>L'employé reçoit sa mission avec les consignes.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">5</div><h3>Client informé</h3><p>Le client suit l'avancement de la prestation.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">6</div><h3>Facture envoyée</h3><p>La facture part automatiquement, sans ressaisie.</p></div>
+    <div class="access-grid">
+      <div class="access-card">
+        <h3>Espace professionnel</h3>
+        <p>Vous gardez la vue d'ensemble sur les clients, le planning, les devis, les interventions et les règlements.</p>
+      </div>
+      <div class="access-card">
+        <h3>Espace équipe</h3>
+        <p>Chaque membre retrouve ses missions, ses horaires et les consignes qui le concernent.</p>
+      </div>
+      <div class="access-card">
+        <h3>Portail client</h3>
+        <p>Le client consulte ses devis, ses factures et les informations liées à ses interventions depuis un accès privé.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="dark-section">
   <div class="wrap">
-    <h2>Prêt à tester ?</h2>
-    <p>Créez votre espace en 5 minutes. Gratuit pour commencer, sans engagement.</p>
-    <a href="onboarding.html" class="btn-em-dark">Créer mon entreprise gratuitement</a>
+    <h2>Votre activité avance. Seba garde le fil.</h2>
+    <p>Créez votre espace et suivez un premier client du devis jusqu'au paiement. Sans carte bancaire.</p>
+    <a href="onboarding.html" class="btn-em-dark">Créer mon espace</a>
   </div>
 </section>
 
