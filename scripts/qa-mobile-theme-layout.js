@@ -114,6 +114,49 @@ async function shot(page, name) {
   await page.screenshot({ path: path.join(SHOT_DIR, name + '.png') });
 }
 
+// THEME-MOBILE-001 (2026-07-29, correctif racine) : html/body n'avaient
+// jamais de background-color -- verifie que le canevas entier est bien
+// peint avec le bon token par theme, pas seulement les composants
+// individuels (voir docs/pro-global.css, commentaire "html, body { ... }").
+const EXPECTED_BG = { light: 'rgb(246, 245, 242)', dark: 'rgb(5, 5, 5)' };
+const EXPECTED_SIDEBAR_BG = { light: 'rgb(255, 255, 255)', dark: 'rgb(11, 12, 14)' };
+
+async function canvasBg(page) {
+  return page.evaluate(() => ({
+    html: getComputedStyle(document.documentElement).backgroundColor,
+    body: getComputedStyle(document.body).backgroundColor,
+  }));
+}
+
+// Un texte peut avoir un getComputedStyle().color parfaitement correct et
+// rester invisible si le fond REEL derriere lui (pas juste le fond direct
+// transparent de son propre element) n'est jamais peint -- c'est
+// exactement la cause racine trouvee ici. Verifie donc le pixel
+// effectivement rendu au centre de l'element, pas seulement le style
+// calcule.
+async function textActuallyVisible(page, sel) {
+  return page.evaluate((s) => {
+    const el = document.querySelector(s);
+    if (!el) return { found: false };
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return { found: true, rendered: false, reason: 'zero-size' };
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) {
+      return { found: true, rendered: false, reason: 'display/visibility/opacity' };
+    }
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const topEl = document.elementFromPoint(cx, cy);
+    const topElIsSelf = topEl === el || (topEl && el.contains(topEl)) || (topEl && topEl.contains(el));
+    return { found: true, rendered: true, topElIsSelf, color: cs.color, text: (el.textContent || '').trim() };
+  }, sel);
+}
+
+async function assistantHidden(page) {
+  const fabVisible = await page.locator('.ai-chat-fab').isVisible().catch(() => false);
+  const panelVisible = await page.locator('.ai-chat-panel.open').isVisible().catch(() => false);
+  return !fabVisible && !panelVisible;
+}
+
 async function runSuite(browserType, browserName) {
   console.log(`\n############## ${browserName} ##############`);
   const env = getSupabaseStatus();
@@ -138,6 +181,20 @@ async function runSuite(browserType, browserName) {
     assert(await noOverlap(page, '.cmd-search-trigger', '#cmd-sync'), `[mobile ${theme}] pas de chevauchement recherche/synchro`);
     const kbdVisible = await page.locator('.cmd-search-trigger kbd').isVisible().catch(() => false);
     assert(!kbdVisible, `[mobile ${theme}] "Ctrl K" absent (pointeur tactile simulé)`);
+
+    // Canevas entier peint (root cause du texte invisible + "grand espace
+    // vide" en sombre -- html/body transparents, cf. commentaire ci-dessus).
+    const bg = await canvasBg(page);
+    assert(bg.html === EXPECTED_BG[theme], `[mobile ${theme}] html peint avec --bg (observe: ${bg.html}, attendu: ${EXPECTED_BG[theme]})`);
+    assert(bg.body === EXPECTED_BG[theme], `[mobile ${theme}] body peint avec --bg (observe: ${bg.body}, attendu: ${EXPECTED_BG[theme]})`);
+
+    // Greeting/statut synchro réellement rendus (pas seulement un style
+    // calculé correct) -- bug confirmé sur iPhone réel malgré un
+    // getComputedStyle() sain, cause racine = canevas non peint ci-dessus.
+    const greet = await textActuallyVisible(page, '#db-greeting');
+    assert(greet.rendered && greet.topElIsSelf && greet.text.length > 0, `[mobile ${theme}] #db-greeting réellement rendu et non recouvert (observe: ${JSON.stringify(greet)})`);
+    const sync = await textActuallyVisible(page, '#cmd-sync-label');
+    assert(sync.rendered && sync.topElIsSelf && sync.text.length > 0, `[mobile ${theme}] #cmd-sync-label réellement rendu et non recouvert (observe: ${JSON.stringify(sync)})`);
 
     // Ouvre l'Assistant
     await page.locator('.ai-chat-fab').click();
@@ -172,11 +229,24 @@ async function runSuite(browserType, browserName) {
     assert(await page.locator('.sidebar-overlay.open').isVisible(), `[sidebar ${theme}] backdrop visible`);
     const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
     assert(bodyOverflow === 'hidden', `[sidebar ${theme}] scroll du body verrouillé (observe: "${bodyOverflow}")`);
+
+    // THEME-MOBILE-001 : la sidebar était câblée #0B0C0E en dur quel que
+    // soit le thème (rail "toujours sombre") -- suit désormais le thème
+    // de la page, décision produit explicite (remonté fondateur : "la
+    // sidebar ne suit pas correctement le thème clair").
+    const sidebarBg = await page.locator('nav.sidebar').evaluate((el) => getComputedStyle(el).backgroundColor);
+    assert(sidebarBg === EXPECTED_SIDEBAR_BG[theme], `[sidebar ${theme}] fond de la sidebar suit le thème (observe: ${sidebarBg}, attendu: ${EXPECTED_SIDEBAR_BG[theme]})`);
+
+    // L'Assistant flottant restait visible/cliquable AU-DESSUS de la
+    // sidebar ouverte (z-index 300/301 > 149/150) -- remonté fondateur.
+    assert(await assistantHidden(page), `[sidebar ${theme}] FAB/panneau Assistant masqués tant que la sidebar est ouverte`);
+
     // Echap ferme la sidebar
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
     assert(!(await page.locator('nav.sidebar.open').count()), `[sidebar ${theme}] Echap ferme la sidebar`);
     assert(await page.evaluate(() => document.body.style.overflow === ''), `[sidebar ${theme}] scroll du body restauré après Echap`);
+    assert(await page.locator('.ai-chat-fab').isVisible(), `[sidebar ${theme}] FAB Assistant réapparaît une fois la sidebar refermée`);
     await page.close();
   }
 
@@ -194,6 +264,13 @@ async function runSuite(browserType, browserName) {
     await setTheme(page, theme);
     await shot(page, name);
     assert(await noHorizontalOverflow(page), `[${name}] scrollWidth <= innerWidth`);
+    const vpBg = await canvasBg(page);
+    assert(vpBg.html === EXPECTED_BG[theme] && vpBg.body === EXPECTED_BG[theme], `[${name}] canevas html/body peint avec --bg (observe: ${JSON.stringify(vpBg)})`);
+    const vpSidebarVisible = await page.locator('nav.sidebar').isVisible().catch(() => false);
+    if (vpSidebarVisible) {
+      const vpSidebarBg = await page.locator('nav.sidebar').evaluate((el) => getComputedStyle(el).backgroundColor);
+      assert(vpSidebarBg === EXPECTED_SIDEBAR_BG[theme], `[${name}] fond de la sidebar suit le thème (observe: ${vpSidebarBg}, attendu: ${EXPECTED_SIDEBAR_BG[theme]})`);
+    }
     await page.close();
   }
 
