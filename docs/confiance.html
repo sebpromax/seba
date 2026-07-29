@@ -16,14 +16,14 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Seba","url":"https://sebpromax.github.io/seba/","logo":"https://sebpromax.github.io/seba/icon-512.png"},{"@type":"SoftwareApplication","name":"Seba","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://sebpromax.github.io/seba/","description":"Logiciel de gestion pour entreprises de terrain : clients, devis, factures, planning et équipe centralisés dans un seul outil.","offers":{"@type":"Offer","price":"19","priceCurrency":"EUR","url":"https://sebpromax.github.io/seba/tarifs.html"}}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
 <!-- Load GSAP dynamically -->
 <script>
   (function(){ function loadScript(src,cb){var s=document.createElement('script');s.src=src;s.defer=true;s.onload=cb;s.onerror=cb;document.head.appendChild(s);} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js');});else loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js'); })();
 </script>
 <style>
-:root{--ink:#14161A;--emerald:#00C896;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;--hero-p-mute:rgba(255,255,255,.5);}
+:root{--ink:#14161A;--emerald:#D97A3C;--emerald-light:#9C5A2A;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--ink-surface:#1C1F25;--ink-border:#2A2D34;--hero-p-mute:rgba(255,255,255,.5);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:auto;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
@@ -76,12 +76,12 @@ a{color:inherit;text-decoration:none;}
 /* Piliers confiance détaillés */
 .trust-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);border-radius:10px;overflow:hidden;border:1px solid var(--border);}
 .td-item{background:var(--white);padding:36px 32px;}
-.td-label{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald);margin-bottom:14px;display:block;}
+.td-label{font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald-light);margin-bottom:14px;display:block;}
 .td-item h3{font-size:1.2rem;font-weight:700;color:var(--ink);margin-bottom:10px;}
 .td-item p{font-size:.92rem;color:var(--text-2);line-height:1.65;margin-bottom:14px;}
 .td-list{list-style:none;}
 .td-list li{display:flex;align-items:baseline;gap:9px;font-size:.88rem;color:var(--ink);padding:5px 0;}
-.td-list li::before{content:'';display:inline-block;width:14px;height:14px;flex-shrink:0;margin-top:2px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='7' cy='7' r='7' fill='%2300C896'/%3E%3Cpath d='M4 7l2 2 4-4' stroke='%2314161A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;}
+.td-list li::before{content:'';display:inline-block;width:14px;height:14px;flex-shrink:0;margin-top:2px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='7' cy='7' r='7' fill='%239C5A2A'/%3E%3Cpath d='M4 7l2 2 4-4' stroke='%2314161A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;}
 
 /* Engagements section (dark) */
 .engage-section{background:var(--ink);padding:88px 0;}
@@ -128,10 +128,10 @@ footer .wrap{display:flex;justify-content:space-between;align-items:center;color
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
-/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+/* ── Harmonisation typographique (LANDING-HOMEPAGE-001) : Inter
    partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
    pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+body,button,input,select,textarea{font-family:'Inter',sans-serif;}
 h2,h3{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
 </style>
@@ -315,7 +315,7 @@ p{letter-spacing:-0.02em;}
 
 <!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
 <style>
-:root{--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;}
+:root{--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#D97A3C;--fx-mist:#94A3B8;}
 #gl-canvas{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;display:block;}
 </style>
 <script src="bg-shader.js" defer></script>

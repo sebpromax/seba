@@ -18,7 +18,7 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -83,10 +83,10 @@ a{color:inherit;text-decoration:none;}
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
-/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+/* ── Harmonisation typographique (LANDING-HOMEPAGE-001) : Inter
    partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
    pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+body,button,input,select,textarea{font-family:'Inter',sans-serif;}
 h2,h3{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
 </style>
@@ -95,25 +95,29 @@ p{letter-spacing:-0.02em;}
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link">Fonctionnalités</a>
-    <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link active">FAQ</a>
+    <a href="product.html" class="nav-link">Produit</a>
+    <a href="index.html#secteurs" class="nav-link">Pour qui</a>
+    <a href="comment-ca-marche.html" class="nav-link">Fonctionnement</a>
+    <a href="tarifs.html" class="nav-link">Tarifs</a>
+    <a href="faq.html" class="nav-link active">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Essayer Seba</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
   <div class="mob-brand"><span class="mob-brand-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
-  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
+  <a href="index.html#secteurs" class="mob-link" onclick="closeMobileMenu()">Pour qui</a>
+  <a href="comment-ca-marche.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnement</a>
+  <a href="tarifs.html" class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
+  <a href="faq.html" class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Créer mon espace</a>
+  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Essayer Seba</a>
 </div>
 
 <!-- HERO -->
@@ -321,7 +325,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--footer-mute:#4B5563;--fx-halo:rgba(13,148,136,.05);--fx-em:#0D9488;--fx-card-glow:rgba(13,148,136,.10);--fx-pick:rgba(13,148,136,.35);--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a35:rgba(255,255,255,.35);}
+:root{--footer-mute:#4B5563;--fx-halo:rgba(194,121,61,.05);--fx-em:#C2793D;--fx-card-glow:rgba(194,121,61,.10);--fx-pick:rgba(194,121,61,.35);--db-teal:#C2793D;--zinc-950:#09090B;--dt-a04:rgba(194,121,61,0.04);--dt-a07:rgba(194,121,61,0.07);--dt-a20:rgba(194,121,61,0.2);--dt-a25:rgba(194,121,61,0.25);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a70:rgba(194,121,61,0.7);--dt-a85:rgba(194,121,61,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a08:rgba(255,255,255,.08);--w-a12:rgba(255,255,255,.12);--w-a35:rgba(255,255,255,.35);}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}

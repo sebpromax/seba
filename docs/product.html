@@ -17,7 +17,7 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <!-- Load GSAP + ScrollTrigger dynamically to avoid mobile overfetch -->
 <script>
   (function(){
@@ -107,10 +107,10 @@ a{color:inherit;text-decoration:none;}
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
-/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+/* ── Harmonisation typographique (LANDING-HOMEPAGE-001) : Inter
    partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
    pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+body,button,input,select,textarea{font-family:'Inter',sans-serif;}
 h2,h3{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
 </style>
@@ -122,25 +122,29 @@ p{letter-spacing:-0.02em;}
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link active">Fonctionnalités</a>
-    <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
+    <a href="product.html" class="nav-link active">Produit</a>
+    <a href="index.html#secteurs" class="nav-link">Pour qui</a>
+    <a href="comment-ca-marche.html" class="nav-link">Fonctionnement</a>
+    <a href="tarifs.html" class="nav-link">Tarifs</a>
+    <a href="faq.html" class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Essayer Seba</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
   <div class="mob-brand"><span class="mob-brand-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></div>
-  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnalités</a>
-  <a href="tarifs.html"    class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
-  <a href="faq.html"       class="mob-link" onclick="closeMobileMenu()">FAQ</a>
+  <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
+  <a href="index.html#secteurs" class="mob-link" onclick="closeMobileMenu()">Pour qui</a>
+  <a href="comment-ca-marche.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnement</a>
+  <a href="tarifs.html" class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
+  <a href="faq.html" class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
-  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Créer mon espace</a>
+  <a href="onboarding.html" class="btn-seba mob-cta" onclick="closeMobileMenu()">Essayer Seba</a>
 </div>
 
 <!-- ═══ HERO ═══ -->
@@ -411,7 +415,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
 
 <!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
 <style>
-:root{--em-bright:#14B8A6;--footer-mute:#4B5563;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#00C896;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a06:rgba(13,148,136,0.06);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a10:rgba(13,148,136,0.1);--dt-a12:rgba(13,148,136,0.12);--dt-a15:rgba(13,148,136,0.15);--dt-a18:rgba(13,148,136,0.18);--dt-a20:rgba(13,148,136,0.2);--dt-a25:rgba(13,148,136,0.25);--dt-a30:rgba(13,148,136,0.3);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--dt-a80:rgba(13,148,136,0.8);--dt-a85:rgba(13,148,136,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
+:root{--em-bright:#D97A3C;--footer-mute:#4B5563;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#D97A3C;--fx-mist:#94A3B8;--db-teal:#C2793D;--zinc-950:#09090B;--dt-a04:rgba(194,121,61,0.04);--dt-a06:rgba(194,121,61,0.06);--dt-a07:rgba(194,121,61,0.07);--dt-a08:rgba(194,121,61,0.08);--dt-a10:rgba(194,121,61,0.1);--dt-a12:rgba(194,121,61,0.12);--dt-a15:rgba(194,121,61,0.15);--dt-a18:rgba(194,121,61,0.18);--dt-a20:rgba(194,121,61,0.2);--dt-a25:rgba(194,121,61,0.25);--dt-a30:rgba(194,121,61,0.3);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a70:rgba(194,121,61,0.7);--dt-a80:rgba(194,121,61,0.8);--dt-a85:rgba(194,121,61,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
 </style>
 <!-- Grille cinétique (kinetic-grid.js) : Canvas 2D vanilla, zéro dépendance. -->
 <script src="kinetic-grid.js"></script>

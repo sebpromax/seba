@@ -18,7 +18,7 @@
 <meta name="description" content="Seba centralise la planification, les devis, la facturation et le suivi financier des entreprises de services, en un seul espace de travail.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0c">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -33,9 +33,10 @@
     --text:#f4f4f5;
     --text-2:#a1a1aa;
     --text-3:#71717a;
-    --accent:#0D9488;
-    --accent-soft:rgba(13,148,136,.10);
-    --accent-border:rgba(13,148,136,.32);
+    --accent:#C2793D;
+    --accent-strong:#9C5A2A;
+    --accent-soft:rgba(194,121,61,.12);
+    --accent-border:rgba(194,121,61,.35);
     --on-accent:#ffffff;
     --shadow:rgba(0,0,0,.35);
     --overlay:rgba(8,8,10,.97);
@@ -44,7 +45,7 @@
   }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  body{margin:0;font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
   h1,h2,h3{letter-spacing:-0.02em;margin:0;}
   p{margin:0;}
   a{color:inherit;text-decoration:none;}
@@ -68,8 +69,8 @@
     transition:background-color .18s ease,border-color .18s ease,color .18s ease;
     cursor:pointer;border:1.5px solid transparent;
   }
-  .btn-primary{background:var(--accent);color:var(--on-accent);}
-  .btn-primary:hover{background:var(--accent);border-color:var(--on-accent);}
+  .btn-primary{background:var(--accent-strong);color:var(--on-accent);}
+  .btn-primary:hover{background:var(--accent-strong);border-color:var(--on-accent);}
   .btn-secondary{background:transparent;color:var(--text);border-color:var(--border-strong);}
   .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
 
@@ -90,7 +91,7 @@
   .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
   .nav-connexion{font-size:14px;color:var(--text-2);font-weight:500;padding:8px 6px;transition:color .18s ease;}
   .nav-connexion:hover{color:var(--text);}
-  .btn-header-cta{display:inline-flex;align-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:8px;padding:9px 18px;transition:opacity .18s ease;}
+  .btn-header-cta{display:inline-flex;align-items:center;background:var(--accent-strong);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:8px;padding:9px 18px;transition:opacity .18s ease;}
   .btn-header-cta:hover{opacity:.9;}
 
   .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;z-index:201;justify-self:end;}
@@ -126,43 +127,23 @@
   .hero-visual{max-width:1040px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 24px 60px var(--shadow);}
   .hero-visual img{width:100%;height:auto;}
 
+  /* ── Apparition au scroll : une seule fois, fonctionnelle (pas de signature de marque animee) ── */
+  .reveal-shot{opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;}
+  .reveal-shot.revealed{opacity:1;transform:translateY(0);}
+  @media(prefers-reduced-motion:reduce){
+    .reveal-shot{opacity:1;transform:none;transition:none;}
+  }
+
   /* ── Problème ── */
   .problem-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);}
   .problem-item{display:flex;align-items:flex-start;gap:14px;padding:18px 22px;border-bottom:1px solid var(--border);font-size:.95rem;color:var(--text);line-height:1.5;}
   .problem-item:last-child{border-bottom:none;}
   .problem-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:6px;}
 
-  /* ── Produit (4 blocs) ── */
-  .product-blocks{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
-  .product-block{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;}
-  .product-block-num{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--accent);margin-bottom:10px;}
-  .product-block h3{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
-  .product-block p{color:var(--text-2);font-size:.9rem;line-height:1.55;margin-bottom:16px;}
-  .product-block img{width:100%;border-radius:10px;border:1px solid var(--border);}
-  @media(max-width:900px){.product-blocks{grid-template-columns:1fr;}}
-
-  /* ── Parcours (horizontal desktop / vertical mobile) ── */
-  .parcours-track{display:flex;gap:0;}
-  .parcours-step{flex:1;padding:0 14px;position:relative;}
-  .parcours-step:first-child{padding-left:0;}
-  .parcours-step:last-child{padding-right:0;}
-  .parcours-num{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);border:1px solid var(--accent-border);color:var(--accent);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
-  .parcours-line{position:absolute;top:16px;left:calc(-50% + 16px);right:calc(50% + 16px);height:1px;background:var(--border-strong);}
-  .parcours-step:first-child .parcours-line{display:none;}
-  .parcours-step h3{font-size:.92rem;font-weight:700;margin-bottom:6px;}
-  .parcours-step p{font-size:.82rem;color:var(--text-2);line-height:1.55;}
-  @media(max-width:860px){
-    .parcours-track{flex-direction:column;gap:28px;padding-left:24px;}
-    .parcours-step{padding:0 0 0 20px;border-left:1px solid var(--border-strong);}
-    .parcours-step:last-child{border-left:1px solid var(--border-strong);}
-    .parcours-line{display:none;}
-    .parcours-num{margin-left:-36px;margin-bottom:10px;}
-  }
-
   /* ── Portails ── */
   .portals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
   .portal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;}
-  .portal-icon{width:44px;height:44px;border-radius:10px;background:var(--accent-soft);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:16px;}
+  .portal-icon{width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--accent-border);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;letter-spacing:.02em;margin-bottom:16px;}
   .portal-card h3{font-size:1.1rem;font-weight:700;margin-bottom:14px;}
   .portal-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
   .portal-list li{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text-2);line-height:1.5;}
@@ -213,9 +194,10 @@
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>Seba</a>
   <div class="nav-center">
     <a href="product.html" class="nav-link">Produit</a>
-    <a href="#secteurs" class="nav-link">Pour qui</a>
+    <a href="index.html#secteurs" class="nav-link">Pour qui</a>
     <a href="comment-ca-marche.html" class="nav-link">Fonctionnement</a>
     <a href="tarifs.html" class="nav-link">Tarifs</a>
+    <a href="faq.html" class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
@@ -229,9 +211,10 @@
 <div class="mobile-menu" id="mobile-menu">
   <button class="mob-close" onclick="closeMobileMenu()" aria-label="Fermer le menu">✕</button>
   <a href="product.html" class="mob-link" onclick="closeMobileMenu()">Produit</a>
-  <a href="#secteurs" class="mob-link" onclick="closeMobileMenu()">Pour qui</a>
+  <a href="index.html#secteurs" class="mob-link" onclick="closeMobileMenu()">Pour qui</a>
   <a href="comment-ca-marche.html" class="mob-link" onclick="closeMobileMenu()">Fonctionnement</a>
   <a href="tarifs.html" class="mob-link" onclick="closeMobileMenu()">Tarifs</a>
+  <a href="faq.html" class="mob-link" onclick="closeMobileMenu()">FAQ</a>
   <div class="mob-sep"></div>
   <a href="connexion.html" class="mob-conn" onclick="closeMobileMenu()">Connexion</a>
   <a href="onboarding.html" class="btn-primary mob-cta" onclick="closeMobileMenu()">Essayer Seba</a>
@@ -239,14 +222,15 @@
 
 <!-- ══ 1. HERO ══ -->
 <section class="hero-section" id="hero">
-  <h1 class="hero-title">Gérez toute votre entreprise de services depuis un seul endroit.</h1>
-  <p class="hero-subtitle">Clients, planning, devis, factures et équipes réunis dans un outil simple, pensé pour le terrain.</p>
+  <div class="eyebrow">Pour les entreprises de services de terrain</div>
+  <h1 class="hero-title">Du premier contact client au paiement encaissé, sans changer d'outil.</h1>
+  <p class="hero-subtitle">Clients, devis, planning, interventions et factures réunis dans un seul espace — pensé pour les entreprises qui travaillent sur le terrain, pas dans un bureau.</p>
   <div class="hero-ctas">
     <a href="onboarding.html" class="btn-primary">Créer mon espace</a>
-    <a href="#produit" class="btn-secondary">Voir comment ça fonctionne</a>
+    <a href="comment-ca-marche.html" class="btn-secondary">Voir comment ça fonctionne</a>
   </div>
   <p class="hero-proof">Configuration en quelques minutes · Sans carte bancaire</p>
-  <div class="hero-visual">
+  <div class="hero-visual reveal-shot">
     <img src="marketing/preview-dashboard.png" width="1440" height="860" loading="eager" alt="Tableau de bord Seba : missions du jour, résumé financier et recommandations">
   </div>
 </section>
@@ -268,61 +252,7 @@
   </div>
 </section>
 
-<!-- ══ 3. PRODUIT ══ -->
-<section class="section" id="produit">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Comment Seba fonctionne</div>
-      <h2>Quatre étapes, un seul outil.</h2>
-    </div>
-    <div class="product-blocks">
-      <div class="product-block">
-        <div class="product-block-num">01 — CENTRALISER</div>
-        <h3>Centraliser</h3>
-        <p>Clients, adresses, consignes et historique.</p>
-        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba avec historique des interventions et informations de service">
-      </div>
-      <div class="product-block">
-        <div class="product-block-num">02 — ORGANISER</div>
-        <h3>Organiser</h3>
-        <p>Planning, interventions et assignation des équipes.</p>
-        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba avec interventions assignées à l'équipe">
-      </div>
-      <div class="product-block">
-        <div class="product-block-num">03 — VENDRE</div>
-        <h3>Vendre</h3>
-        <p>Devis, validation client et facturation.</p>
-        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Liste des devis Seba avec statuts en attente, signés et expirés">
-      </div>
-      <div class="product-block">
-        <div class="product-block-num">04 — SUIVRE</div>
-        <h3>Suivre</h3>
-        <p>Paiements, rentabilité et actions prioritaires.</p>
-        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Liste des factures Seba avec statuts payée, en attente et en retard">
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 4. PARCOURS ══ -->
-<section class="section" id="parcours">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Un seul flux</div>
-      <h2>De la demande au paiement</h2>
-    </div>
-    <div class="parcours-track">
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">1</div><h3>Client enregistré</h3><p>Le client est enregistré dans votre fiche clients.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">2</div><h3>Devis envoyé</h3><p>Le devis est créé et envoyé pour signature.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">3</div><h3>Intervention planifiée</h3><p>L'intervention est planifiée sur le calendrier de l'équipe.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">4</div><h3>Mission assignée</h3><p>L'employé reçoit sa mission avec les consignes.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">5</div><h3>Client informé</h3><p>Le client suit l'avancement de la prestation.</p></div>
-      <div class="parcours-step"><span class="parcours-line"></span><div class="parcours-num">6</div><h3>Facture envoyée</h3><p>La facture part automatiquement, sans ressaisie.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 5. PORTAILS ══ -->
+<!-- ══ 3. PORTAILS ══ -->
 <section class="section" id="portails">
   <div class="wrap">
     <div class="section-head">
@@ -332,7 +262,7 @@
     </div>
     <div class="portals-grid" id="portals-grid">
       <div class="portal-card">
-        <div class="portal-icon">🔗</div>
+        <div class="portal-icon" aria-hidden="true">CL</div>
         <h3>Portail Client</h3>
         <ul class="portal-list">
           <li><span class="portal-check">✓</span>Suivre ses demandes</li>
@@ -343,7 +273,7 @@
         <a href="client-espace.html" class="portal-link">Découvrir l'espace client →</a>
       </div>
       <div class="portal-card">
-        <div class="portal-icon">📱</div>
+        <div class="portal-icon" aria-hidden="true">EQ</div>
         <h3>Portail Employé Terrain</h3>
         <ul class="portal-list">
           <li><span class="portal-check">✓</span>Voir ses missions</li>
@@ -357,7 +287,7 @@
   </div>
 </section>
 
-<!-- ══ 6. SECTEURS ══ -->
+<!-- ══ 4. SECTEURS ══ -->
 <section class="section" id="secteurs">
   <div class="wrap">
     <div class="section-head">
@@ -373,7 +303,7 @@
   </div>
 </section>
 
-<!-- ══ 7. PREUVE PRODUIT ══ -->
+<!-- ══ 5. PREUVE PRODUIT ══ -->
 <section class="section" id="preuve">
   <div class="wrap">
     <div class="section-head">
@@ -392,7 +322,7 @@
 <section class="section">
   <div class="wrap">
     <div class="cta-final">
-      <h2>Votre entreprise mérite mieux qu'un cahier et plusieurs applications.</h2>
+      <h2>Un seul outil pour tout le dossier client, du premier contact au paiement.</h2>
       <div class="cta-final-links">
         <a href="onboarding.html" class="btn-primary">Créer mon espace Seba</a>
         <a href="connexion.html" class="cta-final-secondary">Se connecter</a>
@@ -430,6 +360,24 @@ function closeMobileMenu(){
   document.body.style.overflow='';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
+
+// Apparition au scroll des captures produit -- une seule fois par element,
+// jamais de replay. Desactivee entierement si prefers-reduced-motion.
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.querySelectorAll('.reveal-shot').forEach(el=>el.classList.add('revealed'));
+}else if('IntersectionObserver' in window){
+  const revealObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('revealed');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },{threshold:.2});
+  document.querySelectorAll('.reveal-shot').forEach(el=>revealObserver.observe(el));
+}else{
+  document.querySelectorAll('.reveal-shot').forEach(el=>el.classList.add('revealed'));
+}
 </script>
 </body>
 </html>
