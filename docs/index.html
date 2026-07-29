@@ -127,6 +127,13 @@
   .hero-visual{max-width:1040px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 24px 60px var(--shadow);}
   .hero-visual img{width:100%;height:auto;}
 
+  /* ── Apparition au scroll : une seule fois, fonctionnelle (pas de signature de marque animee) ── */
+  .reveal-shot{opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;}
+  .reveal-shot.revealed{opacity:1;transform:translateY(0);}
+  @media(prefers-reduced-motion:reduce){
+    .reveal-shot{opacity:1;transform:none;transition:none;}
+  }
+
   /* ── Problème ── */
   .problem-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);}
   .problem-item{display:flex;align-items:flex-start;gap:14px;padding:18px 22px;border-bottom:1px solid var(--border);font-size:.95rem;color:var(--text);line-height:1.5;}
@@ -264,7 +271,7 @@
     <a href="#produit" class="btn-secondary">Voir comment ça fonctionne</a>
   </div>
   <p class="hero-proof">Configuration en quelques minutes · Sans carte bancaire</p>
-  <div class="hero-visual">
+  <div class="hero-visual reveal-shot">
     <img src="marketing/preview-dashboard.png" width="1440" height="860" loading="eager" alt="Tableau de bord Seba : missions du jour, résumé financier et recommandations">
   </div>
 </section>
@@ -299,7 +306,7 @@
         <div class="product-block-num">01 — CENTRALISER</div>
         <h3>Centraliser</h3>
         <p>Clients, adresses, consignes et historique.</p>
-        <div class="product-block-shot shot-cliente">
+        <div class="product-block-shot reveal-shot shot-cliente">
           <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba : Sophie Lacroix, active, 3 interventions, 95 € de chiffre d'affaires total">
         </div>
         <p class="product-block-caption">La fiche de Sophie : coordonnées, historique et consignes de service, au même endroit.</p>
@@ -308,7 +315,7 @@
         <div class="product-block-num">02 — ORGANISER</div>
         <h3>Organiser</h3>
         <p>Planning, interventions et assignation des équipes.</p>
-        <div class="product-block-shot shot-planning">
+        <div class="product-block-shot reveal-shot shot-planning">
           <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba : Sophie Lacroix assignée au ménage standard du lundi">
         </div>
         <p class="product-block-caption">Sophie sur le planning de la semaine — visible par toute l'équipe, sans appel téléphonique.</p>
@@ -317,7 +324,7 @@
         <div class="product-block-num">03 — VENDRE</div>
         <h3>Vendre</h3>
         <p>Devis, validation client et facturation.</p>
-        <div class="product-block-shot shot-devis">
+        <div class="product-block-shot reveal-shot shot-devis">
           <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Devis Seba : Sophie Lacroix, ménage standard, 95 €, statut signé">
         </div>
         <p class="product-block-caption">Le devis de Sophie, envoyé puis signé — 95 €, prêt à devenir une facture sans ressaisie.</p>
@@ -326,7 +333,7 @@
         <div class="product-block-num">04 — SUIVRE</div>
         <h3>Suivre</h3>
         <p>Paiements, rentabilité et actions prioritaires.</p>
-        <div class="product-block-shot shot-facture">
+        <div class="product-block-shot reveal-shot shot-facture">
           <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Facture Seba : Sophie Lacroix, ménage standard, 95 €, statut payée">
         </div>
         <p class="product-block-caption">La facture de Sophie, payée — le même montant que le devis signé, sans écart.</p>
@@ -461,6 +468,24 @@ function closeMobileMenu(){
   document.body.style.overflow='';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
+
+// Apparition au scroll des captures produit -- une seule fois par element,
+// jamais de replay. Desactivee entierement si prefers-reduced-motion.
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.querySelectorAll('.reveal-shot').forEach(el=>el.classList.add('revealed'));
+}else if('IntersectionObserver' in window){
+  const revealObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('revealed');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },{threshold:.2});
+  document.querySelectorAll('.reveal-shot').forEach(el=>revealObserver.observe(el));
+}else{
+  document.querySelectorAll('.reveal-shot').forEach(el=>el.classList.add('revealed'));
+}
 </script>
 </body>
 </html>
