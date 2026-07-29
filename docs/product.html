@@ -28,7 +28,6 @@
   })();
 </script>
 <style>
-#kinetic-grid{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;contain:strict;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 /* overflow-x:hidden -- meme correctif que index.html : un halo decoratif
@@ -44,11 +43,11 @@ a{color:inherit;text-decoration:none;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
 .logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
 .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
-.nav-link{font-size:.88rem;color:rgba(255,255,255,.5);font-weight:500;letter-spacing:-0.01em;transition:color .2s;}
+.nav-link{font-size:.88rem;color:var(--mist);font-weight:500;letter-spacing:-0.01em;transition:color .2s;}
 .nav-link:hover,.nav-link.active{color:var(--pure-white);}
 .nav-link.active{color:var(--db-teal);}
 .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
-.nav-connexion{font-size:.85rem;color:rgba(255,255,255,.5);font-weight:500;transition:color .2s;}
+.nav-connexion{font-size:.85rem;color:var(--mist);font-weight:500;transition:color .2s;}
 .nav-connexion:hover{color:var(--pure-white);}
 .btn-ghost-nav{display:inline-flex;align-items:center;background:transparent;color:var(--w-a85);border:1px solid var(--w-a18);font-weight:600;font-size:.84rem;border-radius:10px;padding:8px 18px;transition:border-color .2s,color .2s,background .2s;}
 .btn-ghost-nav:hover{border-color:var(--dt-a50);color:var(--db-teal);background:var(--dt-a04);}
@@ -76,7 +75,7 @@ a{color:inherit;text-decoration:none;}
 .section{padding:130px max(24px,calc((100vw - 1140px)/2));}
 @media(max-width:768px){.section{padding:94px 24px;}}
 .headline-gradient{background:linear-gradient(135deg,var(--pure-white) 40%,var(--dt-a70) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.glass{background:var(--w-a03);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--w-a07);border-radius:20px;}
+.glass{background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:0 1px 3px var(--shadow);}
 .glow-sep{height:1px;background:linear-gradient(90deg,transparent 0%,var(--dt-a25) 40%,var(--dt-a25) 60%,transparent 100%);}
 
 /* Scroll animations — initial hidden state */
@@ -94,16 +93,12 @@ a{color:inherit;text-decoration:none;}
 /* Feature steps */
 .step-line{position:absolute;left:21px;top:44px;bottom:0;width:1px;background:linear-gradient(to bottom,var(--dt-a30),transparent);}
 
-/* Cursor trail */
-#cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
-@media(hover:none){#cursor-trail{display:none;}}
-
 /* Btn */
 .btn-seba{display:inline-flex;align-items:center;gap:8px;background:var(--db-teal);color:var(--btn-ink);font-weight:700;letter-spacing:-0.01em;border-radius:12px;transition:box-shadow .25s,transform .2s;}
 .btn-seba:hover{box-shadow:0 0 28px var(--dt-a45),0 0 60px var(--dt-a18);transform:translateY(-2px);}
 </style>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0c">
+  <meta name="theme-color" content="#E7EDD8">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
@@ -116,7 +111,6 @@ p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
-<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <!-- Nav -->
 <nav class="nav-wrap">
@@ -176,11 +170,11 @@ p{letter-spacing:-0.02em;}
         <span style="width:20px;height:20px;border-radius:6px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;font-size:.75rem;">✕</span>
         Sans Seba
       </div>
-      <div class="compare-item"><span style="color:rgba(239,68,68,.5);margin-top:2px;flex-shrink:0;">—</span><span style="color:rgba(255,255,255,.55);">Tâches gérées manuellement le soir</span></div>
-      <div class="compare-item"><span style="color:rgba(239,68,68,.5);margin-top:2px;flex-shrink:0;">—</span><span style="color:rgba(255,255,255,.55);">Clients qui relancent pour avoir des nouvelles</span></div>
-      <div class="compare-item"><span style="color:rgba(239,68,68,.5);margin-top:2px;flex-shrink:0;">—</span><span style="color:rgba(255,255,255,.55);">Plannings modifiés via des messages désordonnés</span></div>
-      <div class="compare-item"><span style="color:rgba(239,68,68,.5);margin-top:2px;flex-shrink:0;">—</span><span style="color:rgba(255,255,255,.55);">Relances manuelles oubliées</span></div>
-      <div class="compare-item"><span style="color:rgba(239,68,68,.5);margin-top:2px;flex-shrink:0;">—</span><span style="color:rgba(255,255,255,.55);">8h+ perdues chaque semaine sur l'administratif</span></div>
+      <div class="compare-item"><span style="color:var(--danger-item);margin-top:2px;flex-shrink:0;">—</span><span style="color:var(--mist);">Tâches gérées manuellement le soir</span></div>
+      <div class="compare-item"><span style="color:var(--danger-item);margin-top:2px;flex-shrink:0;">—</span><span style="color:var(--mist);">Clients qui relancent pour avoir des nouvelles</span></div>
+      <div class="compare-item"><span style="color:var(--danger-item);margin-top:2px;flex-shrink:0;">—</span><span style="color:var(--mist);">Plannings modifiés via des messages désordonnés</span></div>
+      <div class="compare-item"><span style="color:var(--danger-item);margin-top:2px;flex-shrink:0;">—</span><span style="color:var(--mist);">Relances manuelles oubliées</span></div>
+      <div class="compare-item"><span style="color:var(--danger-item);margin-top:2px;flex-shrink:0;">—</span><span style="color:var(--mist);">8h+ perdues chaque semaine sur l'administratif</span></div>
       <div style="border-top:1px solid rgba(239,68,68,.1);padding-top:14px;margin-top:4px;font-size:.8rem;color:rgba(239,68,68,.6);font-weight:600;">
         Épuisement, factures impayées, clients frustrés.
       </div>
@@ -235,27 +229,27 @@ p{letter-spacing:-0.02em;}
     </div>
     <div class="reveal-right glass" style="padding:24px;min-height:280px;">
       <!-- Chantier mock -->
-      <div style="font-size:.62rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;font-weight:600;">Chantier actif — 14h22</div>
+      <div style="font-size:.62rem;color:var(--text-caption);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;font-weight:600;">Chantier actif — 14h22</div>
       <div style="background:var(--dt-a04);border:1px solid var(--dt-a12);border-radius:10px;padding:14px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <span style="font-size:.85rem;font-weight:700;">Installation électrique — Apt. Lacroix</span>
           <span style="font-size:.68rem;background:var(--dt-a10);color:var(--db-teal);padding:2px 8px;border-radius:100px;font-weight:600;">En cours</span>
         </div>
         <div style="height:4px;background:var(--w-a06);border-radius:2px;overflow:hidden;"><div style="height:100%;width:68%;background:var(--db-teal);border-radius:2px;box-shadow:0 0 6px var(--dt-a50);"></div></div>
-        <div style="font-size:.67rem;color:rgba(255,255,255,.3);margin-top:6px;">68% — Estimé : 16h30</div>
+        <div style="font-size:.67rem;color:var(--text-micro);margin-top:6px;">68% — Estimé : 16h30</div>
       </div>
       <div style="display:flex;gap:8px;">
         <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:10px;text-align:center;">
           <div style="font-size:1.1rem;font-weight:700;">3</div>
-          <div style="font-size:.62rem;color:rgba(255,255,255,.3);margin-top:2px;">Techniciens</div>
+          <div style="font-size:.62rem;color:var(--text-micro);margin-top:2px;">Techniciens</div>
         </div>
         <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:10px;text-align:center;">
           <div style="font-size:1.1rem;font-weight:700;">7</div>
-          <div style="font-size:.62rem;color:rgba(255,255,255,.3);margin-top:2px;">Photos</div>
+          <div style="font-size:.62rem;color:var(--text-micro);margin-top:2px;">Photos</div>
         </div>
         <div style="flex:1;background:var(--w-a03);border:1px solid var(--w-a06);border-radius:8px;padding:10px;text-align:center;">
           <div style="font-size:1.1rem;font-weight:700;color:var(--db-teal);">✓</div>
-          <div style="font-size:.62rem;color:rgba(255,255,255,.3);margin-top:2px;">Devis signé</div>
+          <div style="font-size:.62rem;color:var(--text-micro);margin-top:2px;">Devis signé</div>
         </div>
       </div>
     </div>
@@ -279,7 +273,7 @@ p{letter-spacing:-0.02em;}
     <div class="reveal-left glass" style="padding:24px;direction:ltr;">
       <!-- Invoice mock -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div style="font-size:.72rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.07em;font-weight:600;">Devis #DV-0142</div>
+        <div style="font-size:.72rem;color:var(--text-caption);text-transform:uppercase;letter-spacing:.07em;font-weight:600;">Devis #DV-0142</div>
         <span style="font-size:.68rem;background:var(--dt-a10);color:var(--db-teal);padding:3px 10px;border-radius:100px;font-weight:600;">Signé ✓</span>
       </div>
       <div style="background:var(--w-a025);border:1px solid var(--w-a05);border-radius:8px;padding:12px;margin-bottom:8px;">
@@ -317,15 +311,15 @@ p{letter-spacing:-0.02em;}
     </div>
     <div class="reveal-right glass" style="padding:20px;">
       <!-- Mini calendar mock -->
-      <div style="font-size:.62rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;font-weight:600;">Semaine du 1 au 7 juillet</div>
+      <div style="font-size:.62rem;color:var(--text-caption);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;font-weight:600;">Semaine du 1 au 7 juillet</div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-bottom:8px;">
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">L</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">M</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">M</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">J</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">V</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">S</div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.25);padding-bottom:4px;">D</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">L</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">M</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">M</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">J</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">V</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">S</div>
+        <div style="font-size:.58rem;color:var(--text-caption);padding-bottom:4px;">D</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="background:var(--dt-a08);border-left:3px solid var(--db-teal);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Lacroix — Élec. (8h-12h)</div>
@@ -395,27 +389,27 @@ function toggleMobileMenu(){const m=document.getElementById('mobile-menu'),b=doc
 function closeMobileMenu(){document.getElementById('mobile-menu').classList.remove('open');document.getElementById('nav-hamburger').classList.remove('open');document.body.style.overflow='';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
 
-// Cursor trail
-(function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
-
 // Page transitions
 document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
 
 <style>
-#cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
-@media(hover:none){#cursor-trail{display:none;}}
 @media(max-width:768px){
   .feature-block{grid-template-columns:1fr !important;direction:ltr !important;}
   div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
 }
 </style>
 
-<!-- ══ Encre Vivante (SebaFX) : tokens + canvas plein écran ══ -->
+<!-- ══ Systeme "Compagnon", declinaison claire (LOT 1, 2026-07-30) ══
+     Memes noms de tokens que la version sombre d'origine (pour ne pas
+     toucher chaque usage inline un par un) mais valeurs recalculees pour
+     un fond clair homogene : --ink devient le fond (etait le texte dans
+     d'autres pages, ici c'etait deja le role fond -- attention, nom
+     historique trompeur), --pure-white/--mist/--w-aXX deviennent des
+     textes sombres a differents degres d'emphase, --dt-aXX passe du
+     cuivre a l'olive (accent unique du systeme). -->
 <style>
-:root{--em-bright:#D97A3C;--footer-mute:#4B5563;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#D97A3C;--fx-mist:#94A3B8;--db-teal:#C2793D;--zinc-950:#09090B;--dt-a04:rgba(194,121,61,0.04);--dt-a06:rgba(194,121,61,0.06);--dt-a07:rgba(194,121,61,0.07);--dt-a08:rgba(194,121,61,0.08);--dt-a10:rgba(194,121,61,0.1);--dt-a12:rgba(194,121,61,0.12);--dt-a15:rgba(194,121,61,0.15);--dt-a18:rgba(194,121,61,0.18);--dt-a20:rgba(194,121,61,0.2);--dt-a25:rgba(194,121,61,0.25);--dt-a30:rgba(194,121,61,0.3);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a70:rgba(194,121,61,0.7);--dt-a80:rgba(194,121,61,0.8);--dt-a85:rgba(194,121,61,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a70:rgba(255,255,255,.7);--w-a80:rgba(255,255,255,.8);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--w-a40:rgba(255,255,255,.4);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a025:rgba(255,255,255,.025);--w-a07:rgba(255,255,255,.07);--w-a07:rgba(255,255,255,.07);}
+:root{--em-bright:#6E5230;--footer-mute:#6B7060;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#6B7D42;--fx-mist:#6B7060;--db-teal:#6B7D42;--zinc-950:#09090B;--dt-a04:rgba(107,125,66,0.04);--dt-a06:rgba(107,125,66,0.06);--dt-a07:rgba(107,125,66,0.07);--dt-a08:rgba(107,125,66,0.08);--dt-a10:rgba(107,125,66,0.1);--dt-a12:rgba(107,125,66,0.12);--dt-a15:rgba(107,125,66,0.15);--dt-a18:rgba(107,125,66,0.18);--dt-a20:rgba(107,125,66,0.2);--dt-a25:rgba(107,125,66,0.25);--dt-a30:rgba(107,125,66,0.3);--dt-a35:rgba(107,125,66,0.35);--dt-a45:rgba(107,125,66,0.45);--dt-a50:rgba(107,125,66,0.5);--dt-a70:rgba(107,125,66,0.7);--dt-a80:rgba(107,125,66,0.8);--dt-a85:rgba(107,125,66,0.85);--btn-ink:#FFFFFF;--pure-white:#1C2016;--w-a05:rgba(90,100,70,.14);--w-a70:rgba(28,32,22,.75);--w-a80:rgba(28,32,22,.82);--mist:#6B7060;--w-a06:rgba(90,100,70,.18);--w-a40:rgba(28,32,22,.55);--ink:#E7EDD8;--nav-bg:rgba(231,237,216,.92);--mob-overlay-bg:rgba(231,237,216,.97);--w-a85:rgba(28,32,22,.88);--w-a18:rgba(90,100,70,.3);--w-a03:rgba(90,100,70,.05);--w-a08:rgba(90,100,70,.22);--w-a35:rgba(90,100,70,.14);--w-a025:rgba(90,100,70,.05);--w-a07:rgba(90,100,70,.2);--surface:#FFFFFF;--border:rgba(90,100,70,.16);--shadow:var(--shadow);--text-caption:var(--text-caption);--text-micro:var(--text-micro);--danger-item:var(--danger-item);}
 </style>
-<!-- Grille cinétique (kinetic-grid.js) : Canvas 2D vanilla, zéro dépendance. -->
-<script src="kinetic-grid.js"></script>
 </body>
 </html>
