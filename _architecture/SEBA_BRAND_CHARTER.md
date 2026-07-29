@@ -1,6 +1,14 @@
 # Seba — Charte de marque
 
-Statut : charte de marque, pas une charte graphique. Ce document ne fixe ni composants ni tokens (voir `SEBA_HOMEPAGE_BRAND_VISION.md` pour ce niveau-là) — il fixe qui Seba sert, ce qu'il promet, ce qu'il n'est jamais, ce que ressent la personne qui l'utilise, et les principes qui doivent rester vrais quel que soit le support (home, dashboard, onboarding, assistant IA, futures pages). Toute décision de conception future — visuelle, textuelle, produit — doit pouvoir se justifier par ce document.
+**Version 1.0 — validée par le fondateur, 2026-07-29.**
+
+Statut : fondation officielle de la marque Seba, opposable à tout autre document. Charte de marque, pas une charte graphique — ce document ne fixe ni composants ni tokens (voir `SEBA_HOMEPAGE_BRAND_VISION.md` pour ce niveau-là) — il fixe qui Seba sert, ce qu'il promet, ce qu'il n'est jamais, ce que ressent la personne qui l'utilise, et les principes qui doivent rester vrais quel que soit le support (home, dashboard, onboarding, assistant IA, futures pages).
+
+**Préséance :** en cas de contradiction, cette charte prime sur tout document de design, de copy ou de conception (y compris `SEBA_HOMEPAGE_BRAND_VISION.md` et tout concept créatif issu de LANDING-HOMEPAGE-001). Un document de design qui contredit ce texte doit être corrigé, pas l'inverse.
+
+**Ce qui est permanent vs. ce qui peut évoluer :** le §0 (noyau de marque), le §1 (ce que Seba n'est jamais), le §7 (principes de confiance) et le §8 (philosophie produit) sont les principes structurants de la marque — ils ne changent pas au gré d'une tendance visuelle ou d'une campagne. Les exemples de textes, métaphores de travail (ex. l'image du chef d'équipe en §0), formulations de copy et accroches de campagne cités dans ce document sont des illustrations, pas des engagements — ils peuvent évoluer librement tant qu'ils restent cohérents avec les principes permanents.
+
+**Modification de cette charte :** une modification du fond (§0, §1, §7, §8) nécessite une décision stratégique explicite du fondateur — jamais un ajustement pour suivre une tendance visuelle ponctuelle, un concept créatif séduisant, ou la préférence d'un seul document de conception. Les exemples et formulations peuvent être mis à jour plus librement, sans que cela constitue une révision de la charte elle-même.
 
 Base : `SEBA_VISION_CONTRACT.md` (vision stratégique produit) + `SEBA_HOMEPAGE_BRAND_VISION.md` (premières réponses de marque) + l'exercice LANDING-HOMEPAGE-001 (7 agents + 3 concepts créatifs + arbitrage fondateur + revue critique approfondie du fondateur, qui a précisé le positionnement et la cible que la première version de ce document laissait insuffisamment définis).
 

@@ -2,6 +2,8 @@
 
 Statut : vision stratégique validée. Ce document ne décrit ni architecture technique, ni migration, ni implémentation. Il fixe ce que Seba doit accomplir, pour qui, selon quel ordre — pas comment le construire.
 
+Voir aussi `_architecture/SEBA_BRAND_CHARTER.md` (Version 1.0) pour la marque : qui Seba sert, ce qu'il promet, ce qu'il n'est jamais, et les principes de conception permanents — ce contrat fixe la trajectoire produit, la charte fixe la marque.
+
 ---
 
 ## 1. Définition de Seba

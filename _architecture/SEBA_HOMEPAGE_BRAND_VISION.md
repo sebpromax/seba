@@ -2,6 +2,8 @@
 
 Statut : document de vision, pas de design. Sert d'ancrage commun pour tout travail visuel/éditorial futur sur la home, les illustrations, les couleurs, les animations et la communication de Seba (LANDING-HOMEPAGE-001 et au-delà). Ne décrit ni palette exacte, ni architecture de page — cela vient après, une fois cette vision validée.
 
+**Document de référence canonique : `_architecture/SEBA_BRAND_CHARTER.md` (Version 1.0, validée par le fondateur le 2026-07-29).** En cas de contradiction entre ce document et la charte de marque, la charte prime. Ce document reste utile comme historique des premières réponses de vision et comme repère du périmètre produit actuel, mais le positionnement, la cible, la promesse et les principes de design définitifs sont ceux de la charte.
+
 Base : `_architecture/SEBA_VISION_CONTRACT.md` (vision stratégique produit, deux faces, long terme) + lecture directe de `docs/index.html` (home actuelle) + `CLAUDE.md`.
 
 **Précision de périmètre importante** : la home actuelle doit vendre Seba tel qu'il existe **aujourd'hui** — un logiciel de gestion pour le patron/indépendant d'une entreprise de services de terrain. La vision "plateforme à deux faces" (découverte publique + QR code + fiche professionnelle) décrite dans `SEBA_VISION_CONTRACT.md` est une trajectoire **moyen/long terme**, pas l'état actuel du produit. La home ne doit donc jamais présenter comme disponible aujourd'hui un parcours client public, une fiche professionnelle publique ou un QR code — ces éléments n'existent pas encore dans le produit livré.
