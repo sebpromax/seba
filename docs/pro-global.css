@@ -18,6 +18,25 @@
    .table-wrap{overflow-x:auto}, section 13 plus bas) : overflow-x:hidden
    ici ne s'applique qu'a html/body eux-memes, jamais a leurs enfants. */
 html, body { overflow-x: hidden; }
+/* THEME-MOBILE-001 (2026-07-29) : html/body n'avaient JAMAIS de
+   background-color -- le canevas restait transparent, donc le blanc par
+   défaut du navigateur restait visible partout où aucun élément explicite
+   ne peignait de fond (rebond de scroll élastique iOS, grands espaces
+   entre modules). En thème sombre, un texte clair (ex. #db-greeting)
+   posé directement sur ce blanc non peint devenait invisible alors que
+   son propre style calculé était pourtant correct -- confirmé par un
+   diagnostic Playwright dédié (couleur calculée correcte, élément bien au
+   premier plan, mais fond de html/body totalement transparent) et par
+   les captures iPhone réelles du fondateur (texte invisible + "grand
+   espace vide" au même endroit -- un seul et même bug, pas deux).
+   min-height:100dvh avec repli 100vh : couvre tout le viewport même sur
+   une page courte, y compris sous la barre d'adresse/barre inférieure
+   Safari dynamiques. */
+html, body {
+  background: var(--bg);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
 
 /* ── 2. Transitions — boutons ────────────────────────────────────────────── */
 button,
@@ -83,10 +102,13 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 
 /* ── 3. Sidebar — hauteur, nav-items, footer (unifié sur toutes les pages) ─ */
 .sidebar {
-  /* Rail de navigation toujours sombre, quel que soit le theme du canvas
-     (les etats hover/active des nav-item sont codes en blanc, pas en var()). */
-  background: #0B0C0E;
-  color: rgba(255,255,255,.92);
+  /* THEME-MOBILE-001 (2026-07-29) : la sidebar suit désormais le thème de
+     la page (décision produit explicite, renverse l'ancien "rail toujours
+     sombre" -- voir --sidebar-* dans theme.css pour les deux jeux de
+     valeurs). Tous les états ci-dessous (hover/active/label/footer)
+     utilisent maintenant ces tokens plutôt que du blanc en dur. */
+  background: var(--sidebar-bg);
+  color: var(--sidebar-ink);
   display: flex;
   flex-direction: column;
   padding: 18px 0;
@@ -148,7 +170,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   font-weight: 700;
   letter-spacing: -0.02em;
   padding: 0 20px 18px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 12px;
 }
 .sidebar .s-logo-dot,
@@ -160,13 +182,14 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   flex-shrink: 0;
 }
 /* "Se" gras / "ba" fin -- meme traitement que le logo marketing (PR #74).
-   .logo-se utilise --ink-inverse (pas --ink) : la sidebar reste TOUJOURS
-   sombre quel que soit le theme (voir commentaire "Rail de navigation
-   toujours sombre" plus haut), mais --ink devient quasi-noir en theme
-   clair -- texte quasi-noir sur fond quasi-noir, illisible (trouve en
-   testant reellement le bouton "Clair" dans Reglages). --ink-inverse est
-   deja le token prevu pour "texte sur surface toujours sombre" (theme.css). */
-.logo-se { font-weight: 800; color: var(--ink-inverse); }
+   REVUE THEME-MOBILE-001 (2026-07-29) : cette regle globale sert en
+   pratique uniquement .mobile-header .mobile-logo dans ce fichier (le
+   logo de la sidebar elle-meme est un texte simple pose par sidebar.js,
+   ".s-logo", jamais ce balisage .logo-se/.logo-ba span-split) -- --ink/
+   --text-2 sont deja theme-aware, donc deja corrects ici sans variante
+   "toujours sombre". .mobile-logo .logo-se plus bas dans ce fichier
+   reste une simple redondance explicite, pas une correction necessaire. */
+.logo-se { font-weight: 800; color: var(--ink); }
 .logo-ba { font-weight: 300; color: var(--text-2); }
 
 /* ── Reset d'état du menu (Design System, IV) ────────────────────────────────
@@ -196,7 +219,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   position: relative; /* ancre le repère ::before de l'état actif, hors du flux */
 }
 .sidebar .nav-item {
-  color: rgba(255,255,255,.55);
+  color: var(--sidebar-ink-muted);
   cursor: pointer;
   transition:
     background-color var(--t-fast) var(--ease-std),
@@ -215,10 +238,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
    ::before est en position:absolute, donc jamais de saut de box model. */
 .sidebar .nav-item.active {
   background-color: transparent;
-  /* --ink-inverse, pas --ink : même bug que .logo-se ci-dessus -- --ink
-     devient quasi-noir en thème clair alors que la sidebar reste toujours
-     sombre, rendant le libellé actif illisible. */
-  color: var(--ink-inverse);
+  color: var(--sidebar-ink);
 }
 .sidebar .nav-item.active::before {
   content: '';
@@ -235,8 +255,8 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
   margin-left: auto;
   font-size: .68rem;
   font-weight: 600;
-  color: rgba(255,255,255,.35);
-  border: 1px solid rgba(255,255,255,.15);
+  color: var(--sidebar-shortcut);
+  border: 1px solid var(--sidebar-shortcut-border);
   border-radius: 4px;
   padding: 1px 5px;
   opacity: 0;
@@ -253,7 +273,7 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 .sidebar .nav-label {
   font-size: .65rem;
   font-weight: var(--weight-label);
-  color: rgba(255,255,255,.3);
+  color: var(--sidebar-label);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
   padding: 8px 12px 5px;
@@ -278,13 +298,13 @@ button:active, .btn:active, [class*="btn-"]:active { transform: translateY(0) sc
 .sidebar .sidebar-footer {
   margin-top: auto;
   padding: 12px 20px;
-  border-top: 1px solid rgba(255,255,255,.08);
+  border-top: 1px solid var(--sidebar-border);
   font-size: .76rem;
-  color: rgba(255,255,255,.3);
+  color: var(--sidebar-footer-ink);
 }
 .sidebar .sidebar-footer strong {
   display: block;
-  color: rgba(255,255,255,.68);
+  color: var(--sidebar-footer-strong);
   font-weight: 500;
   margin-bottom: 2px;
 }
@@ -575,6 +595,21 @@ tbody tr { transition: background-color var(--t-fast) var(--ease-std); }
   z-index: 149;
 }
 .sidebar-overlay.open { display: block; }
+
+/* THEME-MOBILE-001 (2026-07-29) : le FAB/panneau/backdrop de l'Assistant
+   Seba (docs/ai-assistant.js, z-index 299-301) sont ajoutés en enfants
+   directs de <body>, tout comme la sidebar mobile -- leur z-index les
+   plaçait toujours AU-DESSUS de .sidebar/.sidebar-overlay (149-150), donc
+   visibles et cliquables par-dessus le tiroir ouvert (remonté fondateur,
+   captures iPhone : "Assistant flottant visible au-dessus de la
+   sidebar"). Fix CSS pur (pas de nouvelle logique JS, pas de duplication
+   dans les ~12 copies de toggleSidebar() par page) : masquer ces trois
+   éléments tant que .sidebar.open existe quelque part dans <body>. */
+body:has(.sidebar.open) .ai-chat-fab,
+body:has(.sidebar.open) .ai-chat-panel,
+body:has(.sidebar.open) .ai-chat-backdrop {
+  display: none !important;
+}
 
 @media (max-width: 840px) {
   /* Cacher la sidebar dans la grille, l'afficher en overlay */
