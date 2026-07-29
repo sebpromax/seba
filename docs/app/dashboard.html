@@ -1273,12 +1273,37 @@ function onCustomRangeChange() {
 let biz = null;
 try { biz = JSON.parse(localStorage.getItem('sebaEntreprise')); } catch (e) {}
 
-if (!biz || !biz.secteur) {
-  document.getElementById('empty-state').style.display = 'block';
-  document.getElementById('dash-content').style.display = 'none';
-} else {
+// QA360-P1-A (2026-07-29) : ce portail ne se basait QUE sur
+// localStorage.sebaEntreprise pour decider "compte vide" (Bienvenue) vs
+// "contenu reel" -- un appareil sans ce cache (nouvel appareil, cache
+// vide/efface) affichait "Bienvenue sur Seba" et invitait a RECREER une
+// entreprise deja existante, meme pour un vrai patron avec des donnees
+// reelles sur le serveur. Avant de decider que le compte est vide,
+// verifier reellement le serveur (SebaDB.pullFromServer(), deja
+// existant) -- jamais se fier uniquement au cache local pour cette
+// decision. Le chemin rapide (localStorage deja valide) est inchange,
+// aucune regression de vitesse pour le cas courant.
+if (biz && biz.secteur) {
   prefetchAsync().then(() => renderDashboard(biz));
   if (window.SebaDB) SebaDB.onChange(() => renderDashboard(biz));
+} else if (window.SebaDB) {
+  SebaDB.pullFromServer().catch(() => {}).then(() => {
+    const serverBiz = SebaDB.entreprise.get();
+    if (serverBiz && serverBiz.secteur) {
+      biz = serverBiz;
+      try { localStorage.setItem('sebaEntreprise', JSON.stringify(biz)); } catch (e) {}
+      prefetchAsync().then(() => renderDashboard(biz));
+      SebaDB.onChange(() => renderDashboard(biz));
+    } else {
+      document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('dash-content').style.display = 'none';
+    }
+  });
+} else {
+  // Mode démo/hors Supabase : aucun serveur à vérifier, le comportement
+  // précédent (localStorage seul) reste la seule source possible.
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('dash-content').style.display = 'none';
 }
 
 /* ── Menus ── */
