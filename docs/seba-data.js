@@ -50,7 +50,23 @@
 (function () {
   'use strict';
 
-  const DB_KEY = 'seba_db';
+  /* THEME-MOBILE-001 (2026-07-29) : 'seba_db' etait une cle localStorage
+     GLOBALE, partagee par TOUS les comptes Supabase ayant deja ete
+     utilises dans ce navigateur -- se connecter a un compte B apres avoir
+     utilise un compte A affichait d'abord (avant la resolution async de
+     SupabaseAdapter.pull()) les devis/factures/missions du compte A,
+     rendant un compte reellement vide sur le serveur "faussement rempli"
+     a l'ecran. Desormais scopee par compte : dbKey() ci-dessous, jamais
+     un const fige a l'initialisation du module (l'identite du compte
+     n'est connue qu'une fois la session Supabase disponible). */
+  function dbKey() {
+    try {
+      if (window.SEBA_CONFIG && window.SEBA_CONFIG.supabaseUrl && window.SEBA_CONFIG.supabaseAnonKey) {
+        return 'seba_db_' + SupabaseAdapter._accountId();
+      }
+    } catch (e) { /* SupabaseAdapter pas encore pret (ordre d'init) -- repli sur la cle demo */ }
+    return 'seba_db';
+  }
   const EMPTY = () => ({
     v: 1,
     clients: [], devis: [], factures: [], interventions: [], employes: [], journal: [],
@@ -79,11 +95,11 @@
   const LocalAdapter = {
     name: 'local',
     load() {
-      try { const d = localStorage.getItem(DB_KEY); return d ? JSON.parse(d) : null; }
+      try { const d = localStorage.getItem(dbKey()); return d ? JSON.parse(d) : null; }
       catch (e) { return null; }
     },
     save(state) {
-      try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch (e) {}
+      try { localStorage.setItem(dbKey(), JSON.stringify(state)); } catch (e) {}
     },
   };
 
@@ -1588,6 +1604,25 @@
     saveQueue(queue);
     scheduleSyncWorker();
     updateSyncIndicator();
+  }
+
+  /* entreprise (objet unique) n'entre pas dans le contrat pushOp()/
+     sync-push (entite tableau avec id) -- voir SebaDB.entreprise.set()
+     plus bas et migrations/2026-07-29-update-my-entreprise.sql. RPC
+     dediee, authentifiee directement (jamais via service_role). */
+  function pushEntreprisePatch(patch) {
+    if (!hasSupabase) return;
+    const cfg = window.SEBA_CONFIG;
+    if (!SupabaseAdapter._hasSession(cfg)) return; // mode demo/anonyme : rien a synchroniser
+    fetch(cfg.supabaseUrl + '/rest/v1/rpc/update_my_entreprise', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, SupabaseAdapter._headers()),
+      body: JSON.stringify({ p_patch: patch }),
+    }).then((res) => {
+      if (!res.ok) console.warn('[seba-data] update_my_entreprise refuse par le serveur (HTTP ' + res.status + ') -- valeur locale conservee, reessayer en modifiant a nouveau les reglages.');
+    }).catch((e) => {
+      console.warn('[seba-data] update_my_entreprise en echec (reseau) -- valeur locale conservee, reessayer en modifiant a nouveau les reglages.', e.message);
+    });
   }
 
   let _syncTimer = null;
@@ -3476,7 +3511,7 @@
     onChange(fn) {
       listeners.push(fn);
       // synchro entre onglets
-      window.addEventListener('storage', e => { if (e.key === DB_KEY) { state = null; loadState(); fn(); } });
+      window.addEventListener('storage', e => { if (e.key === dbKey()) { state = null; loadState(); fn(); } });
     },
 
     exportJSON() { if (!state) loadState(); return JSON.stringify(state, null, 2); },
@@ -3523,7 +3558,7 @@
           });
         } catch (e) { /* hors ligne : la suppression locale a quand même lieu ci-dessous */ }
       }
-      try { localStorage.removeItem(DB_KEY); } catch (e) {}
+      try { localStorage.removeItem(dbKey()); } catch (e) {}
       state = EMPTY();
     },
 
@@ -3549,6 +3584,16 @@
         if (!state) loadState();
         state.entreprise = Object.assign({}, state.entreprise || {}, patch || {});
         persist();
+        // THEME-MOBILE-001 : entreprise est un objet unique, pas une
+        // collection tableau -- hors du contrat pushOp()/sync-push (voir
+        // migrations/2026-07-29-update-my-entreprise.sql pour le detail
+        // complet). Sans cet appel, persist() n'ecrivait QUE le cache
+        // local (Palier 1) : la modification n'atteignait jamais le
+        // serveur et disparaissait au prochain pull(). Fire-and-forget
+        // volontaire (comme le reste de ce fichier pour les ecritures
+        // non critiques) : la projection locale fait deja foi
+        // immediatement, ceci aligne le serveur en arriere-plan.
+        pushEntreprisePatch(patch);
         return state.entreprise;
       },
     },

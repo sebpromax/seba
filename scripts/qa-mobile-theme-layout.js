@@ -76,7 +76,10 @@ async function signInAndGoToDashboard(page, env) {
 }
 
 async function setTheme(page, theme) {
-  await page.evaluate((t) => window.sebaTheme.set(t), theme);
+  // THEME-MOBILE-001 (2026-07-29) : sebaTheme.set()/toggle() supprimes,
+  // le theme suit exclusivement prefers-color-scheme -- emulateMedia est
+  // desormais le seul moyen de piloter le theme dans un test.
+  await page.emulateMedia({ colorScheme: theme === 'dark' ? 'dark' : 'light' });
   await page.waitForTimeout(150);
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();</script>
 <title>Tableau de bord — Seba</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -244,8 +244,16 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
   .main { padding: 20px 16px calc(88px + env(safe-area-inset-bottom,0px)) !important; }
   .cmd-bar { order: 1; }
   .db-header { order: 2; flex-direction: column; align-items: stretch; }
-  .db-header-actions { justify-content: flex-end; }
-  .db-btn-primary.full-mobile { width: 100%; justify-content: center; }
+  /* THEME-MOBILE-001 : CTA "+ Nouvelle intervention", "⋯" et l'avatar
+     étaient sur la même ligne -- les deux boutons secondaires réduisaient
+     le CTA principal au lieu de passer sous lui (remonté fondateur,
+     captures iPhone : "bouton … et avatar en concurrence avec le CTA").
+     flex-basis:100% sur le CTA (voir full-mobile ci-dessous) force le
+     retour à la ligne des éléments suivants dans ce conteneur flex-wrap :
+     "⋯"/avatar se retrouvent seuls sur une deuxième ligne, alignés à
+     droite, sans jamais réduire le CTA. */
+  .db-header-actions { flex-wrap: wrap; justify-content: flex-end; row-gap: 10px; }
+  .db-btn-primary.full-mobile { width: 100%; flex-basis: 100%; justify-content: center; }
   #mobile-current-mission { order: 3; display: block; }
   #db-alerts { order: 4; }
   #db-grid-planning { order: 5; }
@@ -258,7 +266,16 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
   .db-grid { gap: 14px; }
   .db-panel { padding: 14px 16px; }
   .cmd-bar { gap: 8px; }
-  .cmd-search-trigger { max-width: none; }
+  /* THEME-MOBILE-001 : recherche + filtre "Mois courant" côte à côte sur
+     une largeur mobile ne laissaient pas la place au placeholder complet
+     -- il passait à la ligne dans un conteneur à hauteur fixe (40px) et
+     se retrouvait coupé au milieu d'un mot (remonté fondateur, captures
+     iPhone). La recherche prend désormais toute la largeur sur sa propre
+     ligne, le filtre passe dessous ; le texte du placeholder tient sur
+     une seule ligne avec une ellipse plutôt qu'un retour à la ligne
+     coupé. */
+  .cmd-search-trigger { flex-basis: 100%; max-width: none; min-width: 0; }
+  #cmd-search-trigger-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .cmd-period, .cmd-custom-range input { font-size: .8rem; }
   /* THEME-MOBILE-001 : .cmd-sync (statut de synchro) restait en
      white-space:nowrap, forcé sur une seule ligne à côté de
@@ -318,7 +335,7 @@ button, a { transition: color .15s ease, border-color .15s ease, background-colo
       <!-- Barre de commande -->
       <div class="cmd-bar">
         <button type="button" class="cmd-search-trigger" id="cmd-search-trigger" onclick="openSearch()" aria-haspopup="dialog">
-          🔍 Rechercher un client, devis, facture, intervention, employé… <kbd>Ctrl K</kbd>
+          <span id="cmd-search-trigger-label">🔍 Rechercher un client, devis, facture, intervention, employé…</span> <kbd>Ctrl K</kbd>
         </button>
         <select class="cmd-period" id="cmd-period" onchange="onPeriodChange()" aria-label="Période">
           <option value="7d">7 jours</option>

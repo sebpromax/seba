@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>(function(){try{var t=localStorage.getItem('seba_theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){try{var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();</script>
 <title>Seba — L'écosystème des entreprises de terrain</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -63,10 +63,6 @@
   .field-group input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rs);font-size:0.92rem;background:var(--bg);}
   .field-group input:focus{border-color:var(--emerald);outline:none;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-
-  .theme-switch-row{display:flex;gap:8px;max-width:320px;}
-  .theme-switch-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text-2);cursor:pointer;font-family:'Inter',sans-serif;font-size:0.86rem;font-weight:600;transition:border-color .15s,color .15s,background .15s;}
-  .theme-switch-btn.active{border-color:var(--emerald);color:var(--badge-success-txt);background:var(--badge-success-bg);}
 
   .color-grid{display:flex;gap:12px;margin-bottom:4px;}
   .color-swatch{width:38px;height:38px;border-radius:8px;cursor:pointer;border:2px solid transparent;}
@@ -183,13 +179,6 @@
             <div class="field-group"><label>SIRET (optionnel)</label><input type="text" id="regl-siret" placeholder="Ex : 123 456 789 00012"></div>
           </div>
           <div class="field-group"><label>N° TVA intracommunautaire (optionnel)</label><input type="text" id="regl-tva-num" placeholder="Ex : FR12 345678900"></div>
-          <div class="field-group">
-            <label>Apparence</label>
-            <div class="theme-switch-row">
-              <button type="button" class="theme-switch-btn" id="theme-switch-dark" onclick="setSebaTheme('dark')">🌙 Sombre</button>
-              <button type="button" class="theme-switch-btn" id="theme-switch-light" onclick="setSebaTheme('light')">☀️ Clair</button>
-            </div>
-          </div>
           <button class="btn-em" onclick="saveGeneralInfo()">Enregistrer</button>
         </div>
 
@@ -367,7 +356,15 @@
   function saveGeneralInfo() {
     const nom = document.getElementById('regl-nom').value.trim();
     if (!nom) { showReglToast('Le nom de l\'entreprise ne peut pas être vide'); return; }
-    _ent = Object.assign({}, _ent, {
+    // Revue pré-merge (2026-07-29) : la RPC update_my_entreprise applique
+    // une allowlist stricte de clés -- envoyer _ent en entier (fusionné
+    // depuis SebaDB.entreprise.get()/localStorage, qui contient déjà
+    // "secteur" pour tout compte réel depuis create_profile_and_company)
+    // faisait rejeter CHAQUE sauvegarde reelle par la RPC (propriété
+    // inconnue "secteur"), avec un faux succès local silencieux -- trouvé
+    // en testant reellement un compte non synthetique. Patch precis,
+    // uniquement les 7 champs geres par ce formulaire.
+    const patch = {
       nom,
       email: document.getElementById('regl-email').value.trim(),
       telephone: document.getElementById('regl-tel').value.trim(),
@@ -377,9 +374,10 @@
       raisonSociale: document.getElementById('regl-raison').value.trim(),
       siret: document.getElementById('regl-siret').value.trim(),
       tvaNumero: document.getElementById('regl-tva-num').value.trim(),
-    });
+    };
+    _ent = Object.assign({}, _ent, patch);
     localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
-    if (window.SebaDB) SebaDB.entreprise.set(_ent);
+    if (window.SebaDB) SebaDB.entreprise.set(patch);
     const _f = document.getElementById('sidebar-company');
     if (_f) _f.textContent = nom;
     showReglToast('Réglages enregistrés');
@@ -666,19 +664,6 @@
     document.getElementById('sidebar-overlay').classList.remove('open');
     document.body.style.overflow = '';
   }
-  function setSebaTheme(t) {
-    if (window.sebaTheme) sebaTheme.set(t);
-    syncThemeSwitchUI();
-  }
-  function syncThemeSwitchUI() {
-    const cur = window.sebaTheme ? sebaTheme.get() : 'dark';
-    const dark = document.getElementById('theme-switch-dark');
-    const light = document.getElementById('theme-switch-light');
-    if (dark) dark.classList.toggle('active', cur === 'dark');
-    if (light) light.classList.toggle('active', cur === 'light');
-  }
-  syncThemeSwitchUI();
-
   let _reglToastT;
   function showReglToast(msg) {
     let t = document.getElementById('regl-toast');
