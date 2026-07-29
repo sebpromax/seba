@@ -139,8 +139,24 @@
   .product-block-num{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--accent);margin-bottom:10px;}
   .product-block h3{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
   .product-block p{color:var(--text-2);font-size:.9rem;line-height:1.55;margin-bottom:16px;}
-  .product-block img{width:100%;border-radius:10px;border:1px solid var(--border);}
+  .product-block-shot{border-radius:10px;border:1px solid var(--border);overflow:hidden;position:relative;}
+  .product-block-shot img{width:100%;height:auto;display:block;}
+  .product-block-caption{color:var(--text-2);font-size:.82rem;line-height:1.5;margin-top:12px;}
   @media(max-width:900px){.product-blocks{grid-template-columns:1fr;}}
+
+  /* ── Recadrages mobiles : zoom sur l'information demontree (nom client, montant), ── */
+  /* pas la capture desktop simplement retrecie. Memes 5 fichiers reels, fenetre CSS differente. */
+  @media(max-width:640px){
+    .product-block-shot img{position:absolute;max-width:none;}
+    .shot-cliente{aspect-ratio:740/310;}
+    .shot-cliente img{width:194.6%;left:-29.7%;top:-51.6%;}
+    .shot-planning{aspect-ratio:380/195;}
+    .shot-planning img{width:378.9%;left:-64.4%;top:-100%;}
+    .shot-devis{aspect-ratio:585/70;}
+    .shot-devis img{width:246.2%;left:-63.2%;top:-699.9%;}
+    .shot-facture{aspect-ratio:585/65;}
+    .shot-facture img{width:246.2%;left:-63.2%;top:-800%;}
+  }
 
   /* ── Parcours (horizontal desktop / vertical mobile) ── */
   .parcours-track{display:flex;gap:0;}
@@ -274,33 +290,46 @@
 <section class="section" id="produit">
   <div class="wrap">
     <div class="section-head">
-      <div class="eyebrow">Comment Seba fonctionne</div>
-      <h2>Quatre étapes, un seul outil.</h2>
+      <div class="eyebrow">Un seul dossier client, du premier contact au paiement</div>
+      <h2>Suivez Sophie, du premier rendez-vous à la facture payée.</h2>
+      <p>Quatre écrans, un seul dossier. Aucune information ressaisie entre chacun.</p>
     </div>
     <div class="product-blocks">
       <div class="product-block">
         <div class="product-block-num">01 — CENTRALISER</div>
         <h3>Centraliser</h3>
         <p>Clients, adresses, consignes et historique.</p>
-        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba avec historique des interventions et informations de service">
+        <div class="product-block-shot shot-cliente">
+          <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba : Sophie Lacroix, active, 3 interventions, 95 € de chiffre d'affaires total">
+        </div>
+        <p class="product-block-caption">La fiche de Sophie : coordonnées, historique et consignes de service, au même endroit.</p>
       </div>
       <div class="product-block">
         <div class="product-block-num">02 — ORGANISER</div>
         <h3>Organiser</h3>
         <p>Planning, interventions et assignation des équipes.</p>
-        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba avec interventions assignées à l'équipe">
+        <div class="product-block-shot shot-planning">
+          <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning hebdomadaire Seba : Sophie Lacroix assignée au ménage standard du lundi">
+        </div>
+        <p class="product-block-caption">Sophie sur le planning de la semaine — visible par toute l'équipe, sans appel téléphonique.</p>
       </div>
       <div class="product-block">
         <div class="product-block-num">03 — VENDRE</div>
         <h3>Vendre</h3>
         <p>Devis, validation client et facturation.</p>
-        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Liste des devis Seba avec statuts en attente, signés et expirés">
+        <div class="product-block-shot shot-devis">
+          <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Devis Seba : Sophie Lacroix, ménage standard, 95 €, statut signé">
+        </div>
+        <p class="product-block-caption">Le devis de Sophie, envoyé puis signé — 95 €, prêt à devenir une facture sans ressaisie.</p>
       </div>
       <div class="product-block">
         <div class="product-block-num">04 — SUIVRE</div>
         <h3>Suivre</h3>
         <p>Paiements, rentabilité et actions prioritaires.</p>
-        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Liste des factures Seba avec statuts payée, en attente et en retard">
+        <div class="product-block-shot shot-facture">
+          <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Facture Seba : Sophie Lacroix, ménage standard, 95 €, statut payée">
+        </div>
+        <p class="product-block-caption">La facture de Sophie, payée — le même montant que le devis signé, sans écart.</p>
       </div>
     </div>
   </div>
