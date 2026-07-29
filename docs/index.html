@@ -18,7 +18,7 @@
 <meta name="description" content="Seba centralise la planification, les devis, la facturation et le suivi financier des entreprises de services, en un seul espace de travail.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;500;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0c">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -33,9 +33,10 @@
     --text:#f4f4f5;
     --text-2:#a1a1aa;
     --text-3:#71717a;
-    --accent:#0D9488;
-    --accent-soft:rgba(13,148,136,.10);
-    --accent-border:rgba(13,148,136,.32);
+    --accent:#C2793D;
+    --accent-strong:#9C5A2A;
+    --accent-soft:rgba(194,121,61,.12);
+    --accent-border:rgba(194,121,61,.35);
     --on-accent:#ffffff;
     --shadow:rgba(0,0,0,.35);
     --overlay:rgba(8,8,10,.97);
@@ -44,7 +45,7 @@
   }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  body{margin:0;font-family:'Geist','Inter Display',Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
   h1,h2,h3{letter-spacing:-0.02em;margin:0;}
   p{margin:0;}
   a{color:inherit;text-decoration:none;}
@@ -68,8 +69,8 @@
     transition:background-color .18s ease,border-color .18s ease,color .18s ease;
     cursor:pointer;border:1.5px solid transparent;
   }
-  .btn-primary{background:var(--accent);color:var(--on-accent);}
-  .btn-primary:hover{background:var(--accent);border-color:var(--on-accent);}
+  .btn-primary{background:var(--accent-strong);color:var(--on-accent);}
+  .btn-primary:hover{background:var(--accent-strong);border-color:var(--on-accent);}
   .btn-secondary{background:transparent;color:var(--text);border-color:var(--border-strong);}
   .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
 
@@ -90,7 +91,7 @@
   .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
   .nav-connexion{font-size:14px;color:var(--text-2);font-weight:500;padding:8px 6px;transition:color .18s ease;}
   .nav-connexion:hover{color:var(--text);}
-  .btn-header-cta{display:inline-flex;align-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:8px;padding:9px 18px;transition:opacity .18s ease;}
+  .btn-header-cta{display:inline-flex;align-items:center;background:var(--accent-strong);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:8px;padding:9px 18px;transition:opacity .18s ease;}
   .btn-header-cta:hover{opacity:.9;}
 
   .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;z-index:201;justify-self:end;}
