@@ -179,7 +179,7 @@
   /* ── Portails ── */
   .portals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
   .portal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;}
-  .portal-icon{width:44px;height:44px;border-radius:10px;background:var(--accent-soft);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:16px;}
+  .portal-icon{width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--accent-border);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;letter-spacing:.02em;margin-bottom:16px;}
   .portal-card h3{font-size:1.1rem;font-weight:700;margin-bottom:14px;}
   .portal-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
   .portal-list li{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text-2);line-height:1.5;}
@@ -363,7 +363,7 @@
     </div>
     <div class="portals-grid" id="portals-grid">
       <div class="portal-card">
-        <div class="portal-icon">🔗</div>
+        <div class="portal-icon" aria-hidden="true">CL</div>
         <h3>Portail Client</h3>
         <ul class="portal-list">
           <li><span class="portal-check">✓</span>Suivre ses demandes</li>
@@ -374,7 +374,7 @@
         <a href="client-espace.html" class="portal-link">Découvrir l'espace client →</a>
       </div>
       <div class="portal-card">
-        <div class="portal-icon">📱</div>
+        <div class="portal-icon" aria-hidden="true">EQ</div>
         <h3>Portail Employé Terrain</h3>
         <ul class="portal-list">
           <li><span class="portal-check">✓</span>Voir ses missions</li>
