@@ -161,8 +161,15 @@
        déjà repositionné à droite pour la même raison. */
     /* color ajouté -- sans ça le bouton retombait sur le noir système par
        défaut, invisible (fond blanc/dark selon le thème) sur ce cockpit. */
-    '.ai-chat-fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:calc(28px + env(safe-area-inset-right,0px));width:52px;height:52px;border-radius:50%;background:var(--white,#fff);color:var(--ink,#000);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;}' +
+    '.ai-chat-fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:calc(28px + env(safe-area-inset-right,0px));width:52px;height:52px;border-radius:50%;background:var(--white,#fff);color:var(--ink,#000);border:1.5px solid var(--border,#E8E6E1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:300;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;overflow:hidden;padding:0;}' +
     '.ai-chat-fab:hover{transform:scale(1.08);box-shadow:0 0 0 3px rgba(0,200,150,.15),0 6px 24px rgba(0,0,0,.18);}' +
+    /* Logo Seba.IA dedie (remplace l'emoji robot generique) -- le fichier
+       est deja circulaire sur fond noir, object-fit:cover + width/height
+       100% le fait remplir exactement le bouton rond existant, dans les
+       deux themes (pas de fond blanc/clair a gerer, le disque du logo
+       masque tout). */
+    '.ai-chat-fab-icon{width:100%;height:100%;object-fit:cover;display:block;}' +
+    '.ai-chat-head-icon{width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;}' +
     /* THEME-MOBILE-001 : le FAB reste visible/actionnable meme quand le
        panneau est ouvert (bouton "fermer" pas dediee) -- mais il ne doit
        plus rester au-dessus du panneau visuellement quand celui-ci est
@@ -202,14 +209,14 @@
   fab.className = 'ai-chat-fab';
   fab.setAttribute('aria-label', 'Ouvrir l\'assistant IA');
   fab.title = 'Assistant IA Seba';
-  fab.textContent = '🤖';
+  fab.innerHTML = '<img class="ai-chat-fab-icon" src="../assets/seba-ia-logo.png" alt="">';
   const panel = document.createElement('div');
   panel.className = 'ai-chat-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-label', 'Assistant Seba');
   panel.innerHTML =
-    '<div class="ai-chat-head">🤖 Assistant Seba <span id="ai-engine-badge" style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (relayUrl ? '…' : (groqKey ? 'IA Groq (locale)' : 'analyste local')) + '</span><button type="button" class="ai-chat-close" id="ai-chat-close" aria-label="Fermer l\'assistant">✕</button></div>' +
+    '<div class="ai-chat-head"><img class="ai-chat-head-icon" src="../assets/seba-ia-logo.png" alt=""> Assistant Seba <span id="ai-engine-badge" style="margin-left:auto;font-size:.68rem;font-weight:500;color:var(--text-2,#6B6A6F);">' + (relayUrl ? '…' : (groqKey ? 'IA Groq (locale)' : 'analyste local')) + '</span><button type="button" class="ai-chat-close" id="ai-chat-close" aria-label="Fermer l\'assistant">✕</button></div>' +
     '<div class="ai-chat-msgs" id="ai-chat-msgs">' +
     '<div class="ai-msg bot">Bonjour ! Posez-moi une question sur votre activité : « Comment va mon CA ? », « Quelles factures relancer ? », « Quel est mon jour le plus chargé ? »…</div>' +
     '</div>' +
