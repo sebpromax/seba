@@ -15,6 +15,18 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
+/* SETTINGS-BRAND-001 (2026-07-29) : couleurs arbitraires du sélecteur de
+   marque (Identité visuelle) -- pas des tokens de thème (elles ne varient
+   jamais clair/sombre, ce sont les choix proposés eux-mêmes), mais
+   tools/check-design-system.js exige un :root{} pour toute couleur en
+   dur -- définies ici plutôt qu'en style="background:#hex" inline. */
+:root{
+  --brand-swatch-1:#E2722C;
+  --brand-swatch-2:#4F6F52;
+  --brand-swatch-3:#3B5BA9;
+  --brand-swatch-4:#9C4A8C;
+  --brand-swatch-5:#15213A;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -189,11 +201,11 @@
           <div class="field-group">
             <label>Couleur principale</label>
             <div class="color-grid" id="identite-color-grid">
-              <div class="color-swatch" data-color="#E2722C" style="background:#E2722C"></div>
-              <div class="color-swatch" data-color="#4F6F52" style="background:#4F6F52"></div>
-              <div class="color-swatch" data-color="#3B5BA9" style="background:#3B5BA9"></div>
-              <div class="color-swatch" data-color="#9C4A8C" style="background:#9C4A8C"></div>
-              <div class="color-swatch" data-color="#15213A" style="background:#15213A"></div>
+              <div class="color-swatch" data-color="#E2722C" style="background:var(--brand-swatch-1)"></div>
+              <div class="color-swatch" data-color="#4F6F52" style="background:var(--brand-swatch-2)"></div>
+              <div class="color-swatch" data-color="#3B5BA9" style="background:var(--brand-swatch-3)"></div>
+              <div class="color-swatch" data-color="#9C4A8C" style="background:var(--brand-swatch-4)"></div>
+              <div class="color-swatch" data-color="#15213A" style="background:var(--brand-swatch-5)"></div>
             </div>
           </div>
           <div class="field-group">
