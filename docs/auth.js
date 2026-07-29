@@ -226,17 +226,35 @@
        d'autorisation cote serveur (voir supabase-schema.sql, section 37,
        mission-photos, 2026-07-20) -- pas d'Edge Function necessaire pour
        ce flux. Pas de mode demo ici, meme logique que rpc(). */
-    async uploadFile(bucket, path, file) {
+    // upsert=false par défaut (comportement historique inchangé pour les
+    // appelants existants -- mission-photos/intervention360-photos
+    // utilisent un chemin unique par fichier, jamais de remplacement
+    // voulu). SETTINGS-BRAND-001 : le logo d'entreprise vit à un chemin
+    // FIXE par compte ({auth.uid()}/logo.<ext>) -- un nouvel upload doit
+    // remplacer l'ancien, pas échouer sur un conflit de chemin existant.
+    async uploadFile(bucket, path, file, upsert) {
       if (!configured) return { ok: false, error: 'Supabase non configuré' };
       try {
         const sb = await loadSDK();
         const { data, error } = await sb.storage.from(bucket).upload(path, file, {
           contentType: file.type || 'application/octet-stream',
-          upsert: false,
+          upsert: !!upsert,
         });
         if (error) return { ok: false, error: error.message };
         return { ok: true, path: data.path };
       } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    /* SETTINGS-BRAND-001 : pour un bucket PUBLIC (ex. company-logos) --
+       construction d'URL pure, aucun appel réseau, jamais utilisée pour un
+       bucket privé (voir getSignedUrl juste en dessous pour ce cas). */
+    async getPublicUrl(bucket, path) {
+      if (!configured) return null;
+      try {
+        const sb = await loadSDK();
+        const { data } = sb.storage.from(bucket).getPublicUrl(path);
+        return (data && data.publicUrl) || null;
+      } catch (e) { return null; }
     },
 
     /* Le bucket est privé (pas d'URL publique) : toute lecture passe par

@@ -15,6 +15,18 @@
 <link rel="stylesheet" href="fx-actions.css">
 <script src="fx-actions.js" defer></script>
 <style>
+/* SETTINGS-BRAND-001 (2026-07-29) : couleurs arbitraires du sélecteur de
+   marque (Identité visuelle) -- pas des tokens de thème (elles ne varient
+   jamais clair/sombre, ce sont les choix proposés eux-mêmes), mais
+   tools/check-design-system.js exige un :root{} pour toute couleur en
+   dur -- définies ici plutôt qu'en style="background:#hex" inline. */
+:root{
+  --brand-swatch-1:#E2722C;
+  --brand-swatch-2:#4F6F52;
+  --brand-swatch-3:#3B5BA9;
+  --brand-swatch-4:#9C4A8C;
+  --brand-swatch-5:#15213A;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -24,16 +36,14 @@
   :focus-visible{outline:2px solid var(--emerald);outline-offset:3px;}
 
   .layout{display:grid;grid-template-columns: 220px minmax(0,1fr);min-height:100vh;}
-  .sidebar{background:#0B0C0E;color:rgba(255,255,255,.92);padding:24px 0;display:flex;flex-direction:column;}
-  .logo{font-weight:700;font-size:1.2rem;padding:0 24px 28px;display:flex;align-items:center;}
-  .logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);margin-right:8px;flex-shrink:0;}
-  .nav-section{padding:0 14px;}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);font-size:0.9rem;color:rgba(255,255,255,.55);cursor:pointer;margin-bottom:2px;transition:background .15s,color .15s;}
-  .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
-  .nav-item.active{background:rgba(0,255,157,.12);color:var(--emerald);}
-  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);opacity:0;}
-  .nav-item.active .dot{opacity:1;}
-  .sidebar-footer{margin-top:auto;padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:0.78rem;color:rgba(255,255,255,.35);}
+  /* SETTINGS-BRAND-001 (2026-07-29) : .sidebar/.logo/.nav-item/.sidebar-footer
+     supprimes ici -- residu mort (balisage .logo/.logo-dot/.nav-section jamais
+     genere par sidebar.js, qui utilise .s-logo/.s-logo-dot) qui ecrasait en
+     plus le fond theme-aware de .sidebar (pro-global.css, meme specificite,
+     ce bloc local gagnait par ordre de cascade) -- sidebar figee en noir sur
+     cette page quel que soit le theme. pro-global.css est deja la source
+     unique "unifiee sur toutes les pages" pour la sidebar (voir son
+     commentaire section 3), inutile de la redupliquer ici. */
 
   .main{padding:32px 40px;max-width:920px;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
@@ -136,18 +146,19 @@
   <!-- Sidebar générée par sidebar.js (source unique de vérité). -->
   <nav class="sidebar"></nav>
   <script src="sidebar.js"></script>
-  <script>
-    (function(){
-      const c=localStorage.getItem('user_theme_color');
-      if(c){document.documentElement.style.setProperty('--emerald',c);}
-    })();
-  </script>
+  <!-- SETTINGS-BRAND-001 (2026-07-29) : le bloc qui lisait
+       localStorage.getItem('user_theme_color') a été supprimé -- clé
+       jamais écrite nulle part dans le code (orpheline), et même si elle
+       l'avait été, ce script ne tournait que sur CETTE page (l'effet
+       n'aurait jamais été visible ailleurs). La couleur de marque réelle
+       est appliquée globalement par docs/brand-accent.js (voir <head>),
+       à partir de la source canonique entreprise.branding.accent. -->
 
   <main class="main">
     <div class="topbar">
       <h1>Réglages</h1>
       <div class="avatar-wrap">
-        <div class="avatar" id="avatar-btn">ML</div>
+        <div class="avatar" id="avatar-btn">—</div>
         <div class="user-menu" id="user-menu">
           <a href="reglages.html">Mon compte</a>
           <div class="menu-sep"></div>
@@ -189,16 +200,25 @@
           <p class="desc">Visible par vos clients sur leurs devis, factures et invitations.</p>
           <div class="field-group">
             <label>Couleur principale</label>
-            <div class="color-grid">
-              <div class="color-swatch active" style="background:#E2722C"></div>
-              <div class="color-swatch" style="background:#4F6F52"></div>
-              <div class="color-swatch" style="background:#3B5BA9"></div>
-              <div class="color-swatch" style="background:#9C4A8C"></div>
-              <div class="color-swatch" style="background:#15213A"></div>
+            <div class="color-grid" id="identite-color-grid">
+              <div class="color-swatch" data-color="#E2722C" style="background:var(--brand-swatch-1)"></div>
+              <div class="color-swatch" data-color="#4F6F52" style="background:var(--brand-swatch-2)"></div>
+              <div class="color-swatch" data-color="#3B5BA9" style="background:var(--brand-swatch-3)"></div>
+              <div class="color-swatch" data-color="#9C4A8C" style="background:var(--brand-swatch-4)"></div>
+              <div class="color-swatch" data-color="#15213A" style="background:var(--brand-swatch-5)"></div>
             </div>
           </div>
-          <div class="field-group"><label>Logo</label><input type="file"></div>
-          <button class="btn-em" onclick="showReglToast('Identité visuelle enregistrée')">Enregistrer</button>
+          <div class="field-group">
+            <label>Logo</label>
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div id="identite-logo-preview" style="width:56px;height:56px;border-radius:12px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--text-2);font-size:0.72rem;text-align:center;">Aucun<br>logo</div>
+              <div>
+                <input type="file" id="identite-logo-input" accept="image/png,image/jpeg,image/webp" style="display:block;">
+                <div class="desc" style="margin:6px 0 0;">PNG, JPEG ou WebP — 3 Mo maximum.</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-em" id="identite-save-btn" onclick="saveIdentiteVisuelle()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-services" style="display:none;">
@@ -233,7 +253,7 @@
             <label><input type="checkbox" id="pic-allow-date" style="width:auto;margin-right:8px;">Autoriser une date souhaitée</label>
           </div>
           <div class="field-group"><label>Message de confirmation</label><textarea id="pic-confirmation" rows="2" placeholder="Ex : Merci, nous revenons vers vous sous 24h." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-family:inherit;"></textarea></div>
-          <button class="btn-em" onclick="savePublicIntakeConfig()">Enregistrer</button>
+          <button class="btn-em" id="pic-save-btn" onclick="savePublicIntakeConfig()">Enregistrer</button>
         </div>
 
         <div class="panel tab-content" id="tab-documents" style="display:none;">
@@ -274,12 +294,19 @@
             <button class="btn-em" style="background:transparent;border:1.5px solid var(--border);color:var(--ink);" onclick="document.getElementById('import-file').click()">⬆ Importer une sauvegarde</button>
             <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importerDonnees(this)">
           </div>
-        </div>
 
-        <div class="panel danger-zone">
-          <div class="danger-row">
-            <div><div class="label">Supprimer mon entreprise</div><div class="sub">Action définitive — toutes les données seront perdues.</div></div>
-            <button class="btn-danger" onclick="confirmDelete()">Supprimer</button>
+          <!-- SETTINGS-BRAND-001 (2026-07-29) : ce panneau vivait hors de tout
+               .tab-content, donc affiche en permanence sur TOUS les onglets
+               (Général, Identité visuelle, Services...), pas seulement Compte
+               (remonté fondateur). Déplacé à l'intérieur de #tab-compte, sans
+               classe .tab-content propre (fait déjà partie du conteneur
+               parent masqué/affiché par showTab()) -- une seule occurrence
+               dans le DOM, jamais dupliquée. -->
+          <div class="panel danger-zone" style="margin-top:20px;">
+            <div class="danger-row">
+              <div><div class="label">Supprimer mon entreprise</div><div class="sub">Action définitive — toutes les données seront perdues.</div></div>
+              <button class="btn-danger" onclick="confirmDelete()">Supprimer</button>
+            </div>
           </div>
         </div>
       </div>
@@ -288,6 +315,8 @@
 </div>
 
 <script src="seba-data.js"></script>
+<script src="avatar-init.js"></script>
+<script src="brand-accent.js"></script>
 <script>
   /* ── Export / import des données réelles (SebaDB) ── */
   function exporterDonnees() {
@@ -323,12 +352,107 @@
     document.querySelectorAll('.settings-nav-item').forEach(n=>n.classList.remove('active'));
     [...document.querySelectorAll('.settings-nav-item')].find(n=>n.getAttribute('onclick').includes(name)).classList.add('active');
   }
+  // SETTINGS-BRAND-001 (2026-07-29) : les swatches ne faisaient que
+  // basculer une classe CSS locale -- rien n'était jamais lu ni sauvegardé
+  // (remonté fondateur : "l'utilisateur choisit une couleur... mais la
+  // couleur ne s'applique pas réellement"). _selectedAccent suit
+  // maintenant le choix réel, envoyé par saveIdentiteVisuelle() ci-dessous.
+  let _selectedAccent = null;
+  let _selectedLogoFile = null;
   document.querySelectorAll('.color-swatch').forEach(sw=>{
     sw.addEventListener('click',()=>{
       document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
       sw.classList.add('active');
+      _selectedAccent = sw.dataset.color;
     });
   });
+  document.getElementById('identite-logo-input').addEventListener('change', function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (allowed.indexOf(file.type) === -1) {
+      showReglToast('Format non pris en charge (PNG, JPEG ou WebP uniquement)');
+      this.value = '';
+      return;
+    }
+    if (file.size > 3145728) {
+      showReglToast('Fichier trop lourd (3 Mo maximum)');
+      this.value = '';
+      return;
+    }
+    _selectedLogoFile = file;
+    const preview = document.getElementById('identite-logo-preview');
+    preview.innerHTML = '<img src="' + URL.createObjectURL(file) + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+  });
+
+  function initIdentiteTab() {
+    const branding = (_ent && _ent.branding) || {};
+    if (branding.accent) {
+      const match = document.querySelector('.color-swatch[data-color="' + branding.accent + '"]');
+      if (match) match.classList.add('active');
+    }
+    if (branding.logoUrl) {
+      const preview = document.getElementById('identite-logo-preview');
+      preview.innerHTML = '<img src="' + branding.logoUrl.replace(/"/g, '&quot;') + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+    }
+  }
+
+  let _savingIdentite = false;
+  async function saveIdentiteVisuelle() {
+    if (_savingIdentite) return; // protection contre double-clic
+    if (!window.SebaDB) { showReglToast('Mode démo — aucune identité de marque réelle à enregistrer'); return; }
+    _savingIdentite = true;
+    const btn = document.getElementById('identite-save-btn');
+    const btnLabelBefore = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+    try {
+      const branding = Object.assign({}, (_ent && _ent.branding) || {});
+      if (_selectedAccent) branding.accent = _selectedAccent;
+
+      if (_selectedLogoFile) {
+        if (!window.sebaAuth || !window.sebaAuth.isConfigured) {
+          showReglToast('Mode démo — le logo ne peut pas être téléversé');
+          return;
+        }
+        const session = await sebaAuth.getSession();
+        const uid = session && session.user && session.user.id;
+        if (!uid) { showReglToast('Session expirée — reconnectez-vous puis réessayez'); return; }
+        const ext = _selectedLogoFile.type === 'image/png' ? 'png' : _selectedLogoFile.type === 'image/webp' ? 'webp' : 'jpg';
+        const path = uid + '/logo.' + ext;
+        const up = await sebaAuth.uploadFile('company-logos', path, _selectedLogoFile, true);
+        if (!up.ok) { showReglToast('Échec du téléversement du logo — ' + (up.error || 'erreur inconnue')); return; }
+        const publicUrl = await sebaAuth.getPublicUrl('company-logos', path);
+        if (!publicUrl) { showReglToast('Logo téléversé mais URL introuvable — réessayez'); return; }
+        // Paramètre anti-cache : même chemin de fichier à chaque remplacement
+        // (upsert), sans ceci le navigateur pourrait continuer d'afficher
+        // l'ancien logo depuis son cache HTTP après un remplacement.
+        branding.logoUrl = publicUrl + '?v=' + Date.now();
+      }
+
+      if (!branding.accent && !branding.logoUrl) {
+        showReglToast('Choisissez une couleur ou un logo avant d\'enregistrer');
+        return;
+      }
+
+      const result = await SebaDB.entreprise.set({ branding });
+      if (!result.ok) {
+        showReglToast('Échec de la sauvegarde — ' + (result.error || 'réessayez'));
+        return;
+      }
+
+      _ent = Object.assign({}, _ent, { branding });
+      localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
+      _selectedLogoFile = null;
+      SebaDB.entreprise.renderAvatar('avatar-btn');
+      showReglToast('Identité visuelle enregistrée');
+    } finally {
+      _savingIdentite = false;
+      btn.disabled = false;
+      btn.textContent = btnLabelBefore;
+    }
+  }
+
   // Lecture des données d'entreprise -- préfère state.entreprise (serveur,
   // feature/public-intake-conversion : seule source lisible par l'Edge
   // Function public-intake, qui n'a aucun accès à ce navigateur), repli sur
@@ -350,6 +474,7 @@
       if (_ent.tvaNumero) document.getElementById('regl-tva-num').value = _ent.tvaNumero;
     }
   } catch(e) {}
+  initIdentiteTab();
 
   // Enregistrement réel du panneau "Informations générales" -- avant ce
   // correctif, le bouton se contentait d'un toast sans jamais écrire dans
@@ -379,7 +504,14 @@
     };
     _ent = Object.assign({}, _ent, patch);
     localStorage.setItem('sebaEntreprise', JSON.stringify(_ent));
-    if (window.SebaDB) SebaDB.entreprise.set(patch);
+    if (window.SebaDB) {
+      SebaDB.entreprise.set(patch);
+      // SETTINGS-BRAND-001 : les initiales de l'avatar dépendent du nom --
+      // sans ce rappel, changer le nom ne mettait à jour "sidebar-company"
+      // mais jamais l'avatar (qui restait sur les initiales du nom
+      // précédent jusqu'au prochain reload).
+      SebaDB.entreprise.renderAvatar('avatar-btn');
+    }
     const _f = document.getElementById('sidebar-company');
     if (_f) _f.textContent = nom;
     showReglToast('Réglages enregistrés');
@@ -539,18 +671,41 @@
     renderPicServicesList();
   }
 
-  function savePublicIntakeConfig() {
-    const allowedServiceIds = Array.from(document.querySelectorAll('.pic-svc-chk:checked')).map(el => el.value);
-    SebaDB.publicIntake.setConfig({
-      enabled: document.getElementById('pic-enabled').checked,
-      title: document.getElementById('pic-title').value.trim(),
-      introduction: document.getElementById('pic-intro').value.trim(),
-      allowedServiceIds,
-      requireAddress: document.getElementById('pic-require-address').checked,
-      allowPreferredDate: document.getElementById('pic-allow-date').checked,
-      confirmationMessage: document.getElementById('pic-confirmation').value.trim(),
-    });
-    showReglToast('Formulaire public enregistré');
+  let _savingPic = false;
+  async function savePublicIntakeConfig() {
+    if (_savingPic) return; // protection contre double-clic
+    if (!window.SebaDB) { showReglToast('Mode démo — aucun formulaire public réel à enregistrer'); return; }
+    _savingPic = true;
+    const btn = document.getElementById('pic-save-btn');
+    const labelBefore = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+    try {
+      const allowedServiceIds = Array.from(document.querySelectorAll('.pic-svc-chk:checked')).map(el => el.value);
+      // SETTINGS-BRAND-001 : setConfig() écrivait auparavant SEULEMENT le
+      // cache local -- l'Edge Function public-intake (seule lectrice
+      // réelle) ne voyait jamais la modification, le formulaire public
+      // restait bloqué "désactivé" quoi que ce bouton affiche. await
+      // désormais une confirmation serveur réelle avant tout succès.
+      const result = await SebaDB.publicIntake.setConfig({
+        enabled: document.getElementById('pic-enabled').checked,
+        title: document.getElementById('pic-title').value.trim(),
+        introduction: document.getElementById('pic-intro').value.trim(),
+        allowedServiceIds,
+        requireAddress: document.getElementById('pic-require-address').checked,
+        allowPreferredDate: document.getElementById('pic-allow-date').checked,
+        confirmationMessage: document.getElementById('pic-confirmation').value.trim(),
+      });
+      if (!result.ok) {
+        showReglToast('Échec de la sauvegarde — ' + (result.error || 'réessayez'));
+        return;
+      }
+      showReglToast('Formulaire public enregistré');
+    } finally {
+      _savingPic = false;
+      btn.disabled = false;
+      btn.textContent = labelBefore;
+    }
   }
 
   function copyPublicIntakeLink() {

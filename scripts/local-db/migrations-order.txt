@@ -151,6 +151,24 @@ migrations/2026-07-29-update-my-entreprise.sql
 # même emplacement canonique que le bootstrap (create_profile_and_company).
 # Voir l'en-tête du fichier pour le détail complet.
 
+migrations/2026-07-29-settings-brand-identity.sql
+# SETTINGS-BRAND-001 : étend l'allowlist de update_my_entreprise() avec
+# "branding" ({accent, logoUrl}) et crée le bucket Storage public
+# "company-logos" (policies scoped par auth.uid(), pas de helper
+# SECURITY DEFINER nécessaire -- le propriétaire d'un chemin EST
+# directement auth.uid()). Voir l'en-tête du fichier pour le détail complet.
+
+migrations/2026-07-29-public-intake-config-persistence.sql
+# SETTINGS-BRAND-001 : SebaDB.publicIntake.setConfig() (docs/seba-data.js)
+# n'a jamais envoyé la moindre requête réseau -- même défaut que
+# entreprise.set() avant son propre correctif (objet unique, hors du
+# contrat pushOp()/sync-push). Conséquence réelle : l'Edge Function
+# public-intake lit seba_state.state.publicIntakeConfig en base et le
+# trouvait TOUJOURS null -- le formulaire public restait bloqué
+# "désactivé" quoi que le patron configure côté navigateur. Nouvelle RPC
+# dédiée, même schéma que update_my_entreprise. Voir l'en-tête du fichier
+# pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
