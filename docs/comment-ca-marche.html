@@ -103,10 +103,6 @@ a{color:inherit;text-decoration:none;}
 .journey-media img{width:100%;height:auto;border-radius:12px;border:1px solid var(--border);display:block;}
 .journey-caption{margin-top:12px;font-size:.85rem;font-weight:700;color:var(--ink);}
 .journey-caption span{color:var(--text-2);font-weight:500;}
-.journey-connector{display:flex;align-items:center;gap:18px;padding:20px 0;}
-.journey-connector .journey-num{margin-bottom:0;flex-shrink:0;width:32px;}
-.journey-connector p{color:var(--text-2);font-size:.9rem;line-height:1.5;}
-.journey-connector strong{color:var(--ink);}
 @media(max-width:860px){
   .journey-row{grid-template-columns:1fr;gap:20px;padding:32px 0;}
   .journey-row.is-reverse .journey-media,.journey-row.is-reverse .journey-text{order:initial;}
@@ -186,6 +182,65 @@ p{letter-spacing:-0.02em;}
   </div>
 </section>
 
+<section class="journey-section">
+  <div class="wrap">
+    <div class="section-head-center">
+      <div class="section-eyebrow">Le parcours réel</div>
+      <h2>Une information saisie une fois suit toute la mission.</h2>
+      <p>Le client ne disparaît pas d'un écran à l'autre. Ses coordonnées, son devis, son intervention et sa facture restent reliés dans le même dossier.</p>
+    </div>
+
+    <div class="journey-row">
+      <div class="journey-media">
+        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba : Sophie Lacroix, coordonnées et historique">
+        <p class="journey-caption">Sophie Lacroix <span>· Fiche cliente</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">01 — CLIENTE ENREGISTRÉE</div>
+        <h3>Ses coordonnées sont disponibles pour toute la suite</h3>
+        <p>Adresse et consignes sont enregistrées une fois, puis réutilisées à chaque étape suivante.</p>
+      </div>
+    </div>
+
+    <div class="journey-row is-reverse">
+      <div class="journey-media">
+        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Devis Seba : Sophie Lacroix, ménage standard, 95 €, statut signé">
+        <p class="journey-caption">Sophie Lacroix <span>· Devis signé, 95 €</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">02 — DEVIS SIGNÉ — 95 €</div>
+        <h3>Les informations du client sont déjà reprises</h3>
+        <p>Il ne reste qu'à ajouter la prestation et le prix. Le client signe en ligne, depuis son téléphone.</p>
+      </div>
+    </div>
+
+    <div class="journey-row">
+      <div class="journey-media">
+        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning Seba : intervention de Sophie Lacroix placée sur le calendrier de l'équipe">
+        <p class="journey-caption">Intervention planifiée <span>· Sophie Lacroix</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">03 — INTERVENTION PLANIFIÉE ET ASSIGNÉE</div>
+        <h3>Une fois le devis accepté, la mission rejoint le planning</h3>
+        <p>Avec la bonne date, la bonne adresse et les bonnes consignes. L'équipe voit aussitôt qui est assigné et où intervenir.</p>
+      </div>
+    </div>
+
+    <div class="journey-row is-reverse">
+      <div class="journey-media">
+        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Facture Seba : Sophie Lacroix, ménage standard, 95 €, statut payée">
+        <p class="journey-caption">Sophie Lacroix <span>· Facture payée, 95 €</span></p>
+      </div>
+      <div class="journey-text">
+        <div class="journey-num">04 — FACTURE ENVOYÉE PUIS PAYÉE — 95 €</div>
+        <h3>Une fois le travail terminé, la mission devient une facture</h3>
+        <p>Les informations sont reprises sans ressaisie. Vous vérifiez, envoyez et suivez le règlement.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 <section class="steps-section">
   <div class="wrap">
     <div class="section-head-center">
@@ -215,88 +270,11 @@ p{letter-spacing:-0.02em;}
         <div class="step-num">3</div>
         <div class="step-content">
           <h3>Invitez votre équipe</h3>
-          <p>Chaque membre retrouve son planning, ses missions et les consignes nécessaires. Les informations internes restent réservées au responsable.</p>
-        </div>
-      </div>
-
-      <div class="step-item">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <h3>Lancez votre première mission</h3>
-          <p>Ajoutez un client, préparez son devis et planifiez l'intervention. Le même dossier vous accompagne ensuite jusqu'à la facture.</p>
+          <p>Chaque membre retrouve son planning et ses missions — sans accès aux informations internes réservées au responsable.</p>
         </div>
       </div>
 
     </div>
-  </div>
-</section>
-
-<section class="journey-section">
-  <div class="wrap">
-    <div class="section-head-center">
-      <div class="section-eyebrow">Le parcours réel</div>
-      <h2>Une information saisie une fois suit toute la mission.</h2>
-      <p>Le client ne disparaît pas d'un écran à l'autre. Ses coordonnées, son devis, son intervention et sa facture restent reliés dans le même dossier.</p>
-    </div>
-
-    <div class="journey-row">
-      <div class="journey-media">
-        <img src="marketing/preview-client-fiche.png" width="1440" height="860" loading="lazy" alt="Fiche client Seba : Sophie Lacroix, coordonnées et historique">
-        <p class="journey-caption">Sophie Lacroix <span>· Fiche cliente</span></p>
-      </div>
-      <div class="journey-text">
-        <div class="journey-num">01 — LE CLIENT EST ENREGISTRÉ</div>
-        <h3>Ses coordonnées sont disponibles pour toute la suite</h3>
-        <p>Adresse et consignes sont enregistrées une fois, puis réutilisées à chaque étape suivante.</p>
-      </div>
-    </div>
-
-    <div class="journey-row is-reverse">
-      <div class="journey-media">
-        <img src="marketing/preview-devis.png" width="1440" height="860" loading="lazy" alt="Devis Seba : Sophie Lacroix, ménage standard, 95 €">
-        <p class="journey-caption">Sophie Lacroix <span>· Devis de 95 € envoyé</span></p>
-      </div>
-      <div class="journey-text">
-        <div class="journey-num">02 — LE DEVIS EST ENVOYÉ</div>
-        <h3>Les informations du client sont déjà reprises</h3>
-        <p>Il ne reste qu'à ajouter la prestation et le prix. Le client signe en ligne, depuis son téléphone.</p>
-      </div>
-    </div>
-
-    <div class="journey-row">
-      <div class="journey-media">
-        <img src="marketing/preview-planning.png" width="1440" height="860" loading="lazy" alt="Planning Seba : intervention de Sophie Lacroix placée sur le calendrier de l'équipe">
-        <p class="journey-caption">Intervention planifiée <span>· Sophie Lacroix</span></p>
-      </div>
-      <div class="journey-text">
-        <div class="journey-num">03 — L'INTERVENTION EST PLANIFIÉE</div>
-        <h3>Une fois le devis accepté, la mission rejoint le planning</h3>
-        <p>Avec la bonne date, la bonne adresse et les bonnes consignes — sans ressaisie.</p>
-      </div>
-    </div>
-
-    <div class="journey-connector">
-      <div class="journey-num">04</div>
-      <p><strong>La mission est assignée.</strong> L'intervenant retrouve l'horaire, le lieu et les informations dont il a besoin pour travailler, depuis son espace équipe.</p>
-    </div>
-
-    <div class="journey-connector">
-      <div class="journey-num">05</div>
-      <p><strong>Le client reste informé.</strong> Il retrouve ses documents et les informations utiles depuis son espace, sans devoir vous les redemander.</p>
-    </div>
-
-    <div class="journey-row is-reverse">
-      <div class="journey-media">
-        <img src="marketing/preview-factures.png" width="1440" height="860" loading="lazy" alt="Facture Seba : Sophie Lacroix, ménage standard, 95 €, statut payée">
-        <p class="journey-caption">Sophie Lacroix <span>· Facture de 95 € payée</span></p>
-      </div>
-      <div class="journey-text">
-        <div class="journey-num">06 — LA FACTURE REPREND LE DOSSIER</div>
-        <h3>Une fois le travail terminé, la mission devient une facture</h3>
-        <p>Les informations sont reprises sans ressaisie. Vous vérifiez, envoyez et suivez le règlement.</p>
-      </div>
-    </div>
-
   </div>
 </section>
 
@@ -317,7 +295,7 @@ p{letter-spacing:-0.02em;}
       </div>
       <div class="access-card">
         <h3>Portail client</h3>
-        <p>Le client consulte ses devis, ses factures et les informations liées à ses interventions depuis un accès privé.</p>
+        <p>Le client consulte ses devis, ses factures et l'avancement de ses interventions depuis un accès privé — sans vous solliciter.</p>
       </div>
     </div>
   </div>
