@@ -20,27 +20,32 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0a0c">
+<meta name="theme-color" content="#E7EDD8">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
   :root{
-    --bg:#0a0a0c;
-    --surface:#131417;
-    --surface-2:#1a1c20;
-    --border:rgba(255,255,255,.10);
-    --border-strong:rgba(255,255,255,.22);
-    --text:#f4f4f5;
-    --text-2:#a1a1aa;
-    --text-3:#71717a;
-    --accent:#C2793D;
-    --accent-strong:#9C5A2A;
-    --accent-soft:rgba(194,121,61,.12);
-    --accent-border:rgba(194,121,61,.35);
+    /* Systeme "Compagnon", declinaison claire (valide fondateur 2026-07-29) :
+       fond vert tres pale homogene (pas blanc + accent ajoute), cartes
+       blanches distinctes, accent olive fonce (contraste verifie sur fond
+       clair), bronze reserve aux reperes numeriques. */
+    --bg:#E7EDD8;
+    --surface:#FFFFFF;
+    --surface-2:#F1F4E8;
+    --border:rgba(90,100,70,.16);
+    --border-strong:rgba(90,100,70,.26);
+    --text:#1C2016;
+    --text-2:#6B7060;
+    --text-3:#8B9080;
+    --accent:#6B7D42;
+    --accent-strong:#6B7D42;
+    --accent-soft:rgba(107,125,66,.12);
+    --accent-border:rgba(107,125,66,.35);
     --on-accent:#ffffff;
-    --shadow:rgba(0,0,0,.35);
-    --overlay:rgba(8,8,10,.97);
-    --nav-bg:rgba(10,10,12,.92);
+    --bronze:#6E5230;
+    --shadow:rgba(28,32,22,.10);
+    --overlay:rgba(231,237,216,.97);
+    --nav-bg:rgba(231,237,216,.92);
     --danger:#EF4444;
   }
   *,*::before,*::after{box-sizing:border-box;}
