@@ -17,11 +17,11 @@
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
 /* Premier :root de cette page (dette historique : tout etait en dur) —
    n'accueille pour l'instant que les tokens Encre Vivante (SebaFX). */
-:root{--em:#0D9488;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#0D9488;--fx-mist:#94A3B8;--db-teal:#0D9488;--zinc-950:#09090B;--dt-a04:rgba(13,148,136,0.04);--dt-a07:rgba(13,148,136,0.07);--dt-a08:rgba(13,148,136,0.08);--dt-a18:rgba(13,148,136,0.18);--dt-a35:rgba(13,148,136,0.35);--dt-a45:rgba(13,148,136,0.45);--dt-a50:rgba(13,148,136,0.5);--dt-a70:rgba(13,148,136,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#0D9488;--lava-3:#2DD4BF;--err:#ff8080;--err-a08:rgba(255,100,100,.08);--btn-ink-a30:rgba(5,5,8,.3);--w-a10:rgba(255,255,255,.1);--w-a07:rgba(255,255,255,.07);--tier-text:#9CA3AF;}
+:root{--em:#C2793D;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#C2793D;--fx-mist:#94A3B8;--db-teal:#C2793D;--zinc-950:#09090B;--dt-a04:rgba(194,121,61,0.04);--dt-a07:rgba(194,121,61,0.07);--dt-a08:rgba(194,121,61,0.08);--dt-a18:rgba(194,121,61,0.18);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a70:rgba(194,121,61,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a03:rgba(255,255,255,.03);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#C2793D;--lava-3:#2DD4BF;--err:#ff8080;--err-a08:rgba(255,100,100,.08);--btn-ink-a30:rgba(5,5,8,.3);--w-a10:rgba(255,255,255,.1);--w-a07:rgba(255,255,255,.07);--tier-text:#9CA3AF;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 #gl-canvas{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;z-index:-1;pointer-events:none;display:block;}
@@ -259,10 +259,10 @@ input:-webkit-autofill:active {
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
-/* ── Harmonisation typographique Tactical Dark (spec fondateur) : Geist
+/* ── Harmonisation typographique (LANDING-HOMEPAGE-001) : Inter
    partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
    pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Geist','Inter Display',Inter,sans-serif;}
+body,button,input,select,textarea{font-family:'Inter',sans-serif;}
 h2,h3{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
 </style>
@@ -274,13 +274,15 @@ p{letter-spacing:-0.02em;}
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
   <div class="nav-center">
-    <a href="product.html" class="nav-link">Fonctionnalités</a>
-    <a href="tarifs.html"    class="nav-link">Tarifs</a>
-    <a href="faq.html"       class="nav-link">FAQ</a>
+    <a href="product.html" class="nav-link">Produit</a>
+    <a href="index.html#secteurs" class="nav-link">Pour qui</a>
+    <a href="comment-ca-marche.html" class="nav-link">Fonctionnement</a>
+    <a href="tarifs.html" class="nav-link">Tarifs</a>
+    <a href="faq.html" class="nav-link">FAQ</a>
   </div>
   <div class="nav-right">
     <a href="connexion.html" class="nav-connexion">Connexion</a>
-    <a href="onboarding.html" class="btn-ghost-nav">Démarrer</a>
+    <a href="onboarding.html" class="btn-ghost-nav">Essayer Seba</a>
   </div>
   <button class="hamburger" id="nav-hamburger" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
 </nav>
