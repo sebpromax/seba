@@ -19,7 +19,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
-#kinetic-grid{position:fixed;top:0;left:0;width:100%;height:100vh;z-index:-1;pointer-events:none;contain:strict;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white);-webkit-font-smoothing:antialiased;animation:pgFadeIn .35s ease;}
@@ -30,11 +29,11 @@ a{color:inherit;text-decoration:none;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
 .logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
 .nav-center{justify-self:center;display:flex;align-items:center;gap:32px;}
-.nav-link{font-size:.88rem;color:rgba(255,255,255,.5);font-weight:500;transition:color .2s;}
+.nav-link{font-size:.88rem;color:var(--mist);font-weight:500;transition:color .2s;}
 .nav-link:hover{color:var(--pure-white);}
 .nav-link.active{color:var(--db-teal);}
 .nav-right{justify-self:end;display:flex;align-items:center;gap:14px;}
-.nav-connexion{font-size:.85rem;color:rgba(255,255,255,.5);font-weight:500;transition:color .2s;}
+.nav-connexion{font-size:.85rem;color:var(--mist);font-weight:500;transition:color .2s;}
 .nav-connexion:hover{color:var(--pure-white);}
 .btn-ghost-nav{display:inline-flex;align-items:center;background:transparent;color:var(--w-a85);border:1px solid var(--w-a18);font-weight:600;font-size:.84rem;border-radius:10px;padding:8px 18px;transition:border-color .2s,color .2s,background .2s;}
 .btn-ghost-nav:hover{border-color:var(--dt-a50);color:var(--db-teal);background:var(--dt-a04);}
@@ -106,11 +105,9 @@ a{color:inherit;text-decoration:none;}
 .toggle-btn.active{background:var(--pure-white);color:var(--ink);}
 .trial-banner{display:inline-flex;align-items:center;gap:8px;background:var(--dt-a06);border:1px solid var(--dt-a18);border-radius:100px;padding:8px 20px;font-size:.83rem;font-weight:600;color:var(--pure-white);margin-bottom:32px;}
 .trial-banner span{color:var(--db-teal);}
-#cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
-@media(hover:none){#cursor-trail{display:none;}}
 </style>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0c">
+  <meta name="theme-color" content="#E7EDD8">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
   <script src="auth.js"></script>
@@ -125,7 +122,6 @@ p{letter-spacing:-0.02em;}
 </style>
 </head>
 <body>
-<canvas id="kinetic-grid" aria-hidden="true"></canvas>
 
 <nav class="nav-wrap">
   <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span></a>
@@ -182,7 +178,7 @@ p{letter-spacing:-0.02em;}
     <div class="price-card">
       <div style="margin-bottom:24px;">
         <div style="font-size:.68rem;font-weight:700;color:var(--dt-a55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Démarrage</div>
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Solo</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--mist);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Solo</div>
         <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;" id="solo-price">19 <span style="font-size:1.3rem;color:var(--w-a40);">€</span></div>
         <div style="font-size:.78rem;color:var(--w-a35);" id="solo-period">/ mois · Sans engagement</div>
         <div style="margin-top:8px;font-size:.72rem;color:var(--w-a40);font-weight:500;">Jusqu'à 10 projets actifs / mois</div>
@@ -227,7 +223,7 @@ p{letter-spacing:-0.02em;}
     <div class="price-card">
       <div style="margin-bottom:24px;">
         <div style="font-size:.68rem;font-weight:700;color:var(--dt-a55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Expansion</div>
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Team</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--mist);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Team</div>
         <div style="font-size:2.6rem;font-weight:900;letter-spacing:-0.05em;line-height:1;margin-bottom:4px;" id="team-price">79 <span style="font-size:1.3rem;color:var(--w-a40);">€</span></div>
         <div style="font-size:.78rem;color:var(--w-a35);" id="team-period">/ mois · Sans engagement</div>
         <div style="margin-top:8px;font-size:.72rem;color:var(--dt-a60);font-weight:600;">10 utilisateurs inclus · +5€/utilisateur supplémentaire</div>
@@ -249,7 +245,7 @@ p{letter-spacing:-0.02em;}
     <div class="price-card" style="border-color:var(--w-a10);background:var(--w-a02);">
       <div style="margin-bottom:24px;">
         <div style="font-size:.68rem;font-weight:700;color:var(--dt-a55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Enterprise</div>
-        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Sur mesure</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--mist);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">Sur mesure</div>
         <div style="font-size:2rem;font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:6px;color:var(--pure-white);">Sur<br>devis</div>
         <div style="font-size:.78rem;color:var(--w-a35);">Pour les équipes de 10+ personnes</div>
       </div>
@@ -312,21 +308,21 @@ p{letter-spacing:-0.02em;}
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--w-a06);">
           <span style="font-size:.95rem;font-weight:600;color:var(--pure-white);">Puis-je changer d'offre à tout moment ?</span>
-          <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
+          <span style="color:var(--text-caption);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
         <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:var(--mist);line-height:1.7;border-bottom:1px solid var(--w-a06);">Oui, à tout moment. Les changements prennent effet immédiatement. Une mise à niveau ne facture que la différence au prorata du mois en cours.</div>
       </div>
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--w-a06);">
           <span style="font-size:.95rem;font-weight:600;color:var(--pure-white);">Y a-t-il des frais cachés ou des commissions ?</span>
-          <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
+          <span style="color:var(--text-caption);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
         <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:var(--mist);line-height:1.7;border-bottom:1px solid var(--w-a06);">Aucun. Pas de commission sur vos devis ou factures. Pas de modules payants séparés. Le prix affiché est le prix total, point final.</div>
       </div>
       <div class="pfaq">
         <button onclick="pf(this)" style="width:100%;text-align:left;padding:20px 0;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;">
           <span style="font-size:.95rem;font-weight:600;color:var(--pure-white);">Comment fonctionne la remise annuelle ?</span>
-          <span style="color:rgba(255,255,255,.3);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
+          <span style="color:var(--text-caption);font-size:1.3rem;transition:transform .3s;flex-shrink:0;">+</span>
         </button>
         <div style="display:none;padding:16px 0 20px;font-size:.88rem;color:var(--mist);line-height:1.7;">En choisissant la facturation annuelle, vous économisez 20% : Solo à 15€/mois, Pro à 23€/mois, Team à 63€/mois. Vous êtes facturé une fois par an et pouvez demander un remboursement au prorata dans les 30 premiers jours.</div>
       </div>
@@ -368,14 +364,16 @@ function pf(btn){
 function toggleMobileMenu(){const m=document.getElementById('mobile-menu'),b=document.getElementById('nav-hamburger');m.classList.toggle('open');b.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
 function closeMobileMenu(){document.getElementById('mobile-menu').classList.remove('open');document.getElementById('nav-hamburger').classList.remove('open');document.body.style.overflow='';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
-(function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
 document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');if(h&&!h.startsWith('#')&&!h.startsWith('http')&&!h.startsWith('mailto')){a.addEventListener('click',e=>{e.preventDefault();document.body.style.cssText='opacity:0;transition:opacity .22s ease;animation:none;';setTimeout(()=>{window.location.href=h;},230);});}});
 </script>
 <style>@media(max-width:900px){#pricing-grid{grid-template-columns:1fr 1fr !important;}}@media(max-width:560px){#pricing-grid{grid-template-columns:1fr !important;}}</style>
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--footer-mute:#4B5563;--em-bright:#D97A3C;--fx-halo:rgba(194,121,61,.05);--fx-em:#C2793D;--fx-card-glow:rgba(194,121,61,.10);--fx-pick:rgba(194,121,61,.35);--db-teal:#C2793D;--zinc-950:#09090B;--dt-a03:rgba(194,121,61,0.03);--dt-a04:rgba(194,121,61,0.04);--dt-a06:rgba(194,121,61,0.06);--dt-a07:rgba(194,121,61,0.07);--dt-a09:rgba(194,121,61,0.09);--dt-a12:rgba(194,121,61,0.12);--dt-a14:rgba(194,121,61,0.14);--dt-a18:rgba(194,121,61,0.18);--dt-a20:rgba(194,121,61,0.2);--dt-a25:rgba(194,121,61,0.25);--dt-a30:rgba(194,121,61,0.3);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a55:rgba(194,121,61,0.55);--dt-a60:rgba(194,121,61,0.6);--dt-a70:rgba(194,121,61,0.7);--dt-a85:rgba(194,121,61,0.85);--btn-ink:#050508;--pure-white:#FFFFFF;--w-a05:rgba(255,255,255,.05);--w-a15:rgba(255,255,255,.15);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--mist:#94A3B8;--w-a06:rgba(255,255,255,.06);--ink:#0a0a0c;--nav-bg:rgba(10,10,12,.88);--mob-overlay-bg:rgba(10,10,12,.98);--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--w-a025:rgba(255,255,255,.025);--w-a04:rgba(255,255,255,.04);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a02:rgba(255,255,255,.02);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--w-a07:rgba(255,255,255,.07);--w-a65:rgba(255,255,255,.65);--w-a10:rgba(255,255,255,.1);--rec-surface:#0e1014;--cta-inset:rgba(255,255,255,.2);--cta-inset-h:rgba(255,255,255,.25);--cta-sh-dark:rgba(0,0,0,.5);--cta-glow:rgba(194,121,61,.18);--cta-glow-h:rgba(194,121,61,.4);--cta-sh-teal-h:rgba(194,121,61,.3);--cta-act-in:rgba(0,0,0,.6);--cta-act-in2:rgba(0,0,0,.2);--w-a50:rgba(255,255,255,.5);--zinc-800:#27272A;}
+/* Systeme "Compagnon", declinaison claire (LOT 1, 2026-07-30). Memes noms
+   de tokens que la version d'origine (pour ne pas toucher chaque usage
+   inline un par un), valeurs recalculees pour un fond clair homogene. */
+:root{--footer-mute:#6B7060;--em-bright:#6E5230;--fx-halo:rgba(107,125,66,.05);--fx-em:#6B7D42;--fx-card-glow:rgba(107,125,66,.10);--fx-pick:rgba(107,125,66,.35);--db-teal:#6B7D42;--zinc-950:#09090B;--dt-a03:rgba(107,125,66,0.03);--dt-a04:rgba(107,125,66,0.04);--dt-a06:rgba(107,125,66,0.06);--dt-a07:rgba(107,125,66,0.07);--dt-a09:rgba(107,125,66,0.09);--dt-a12:rgba(107,125,66,0.12);--dt-a14:rgba(107,125,66,0.14);--dt-a18:rgba(107,125,66,0.18);--dt-a20:rgba(107,125,66,0.2);--dt-a25:rgba(107,125,66,0.25);--dt-a30:rgba(107,125,66,0.3);--dt-a35:rgba(107,125,66,0.35);--dt-a45:rgba(107,125,66,0.45);--dt-a50:rgba(107,125,66,0.5);--dt-a55:rgba(107,125,66,0.55);--dt-a60:rgba(107,125,66,0.6);--dt-a70:rgba(107,125,66,0.7);--dt-a85:rgba(107,125,66,0.85);--btn-ink:#FFFFFF;--pure-white:#1C2016;--w-a05:rgba(90,100,70,.14);--w-a15:rgba(28,32,22,.3);--w-a40:rgba(28,32,22,.55);--w-a70:rgba(28,32,22,.75);--mist:#6B7060;--w-a06:rgba(90,100,70,.18);--ink:#E7EDD8;--nav-bg:rgba(231,237,216,.92);--mob-overlay-bg:rgba(231,237,216,.97);--w-a85:rgba(28,32,22,.88);--w-a18:rgba(90,100,70,.3);--w-a025:rgba(90,100,70,.05);--w-a04:rgba(90,100,70,.12);--w-a08:rgba(90,100,70,.22);--w-a35:rgba(90,100,70,.14);--w-a02:rgba(90,100,70,.05);--w-a07:rgba(90,100,70,.2);--w-a65:rgba(28,32,22,.72);--w-a10:rgba(90,100,70,.24);--rec-surface:#FFFFFF;--cta-inset:rgba(255,255,255,.3);--cta-inset-h:rgba(255,255,255,.4);--cta-sh-dark:rgba(28,32,22,.22);--cta-glow:rgba(107,125,66,.22);--cta-glow-h:rgba(107,125,66,.4);--cta-sh-teal-h:rgba(107,125,66,.3);--cta-act-in:rgba(0,0,0,.35);--cta-act-in2:rgba(0,0,0,.12);--w-a50:rgba(28,32,22,.6);--zinc-800:var(--border);--border:rgba(90,100,70,.16);--text-caption:rgba(28,32,22,.4);}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}
@@ -398,7 +396,5 @@ html.fx-on .price-card.fx-picked{animation:fxPick .7s ease-out 1;}
   });
 })();
 </script>
-<!-- Grille cinétique (kinetic-grid.js) : Canvas 2D vanilla, zéro dépendance. -->
-<script src="kinetic-grid.js"></script>
 </body>
 </html>

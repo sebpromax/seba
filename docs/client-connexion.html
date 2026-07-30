@@ -16,14 +16,11 @@
      patron). -->
 <script src="auth.js"></script>
 <style>
-/* Meme systeme visuel "Encre Vivante" que connexion.html/
-   employe-connexion.html (carte + halo + bordure teal qui fond dans le
-   fond), et desormais meme STRUCTURE que employe-connexion.html --
-   demande explicite : "exactement le meme que employe mais en client".
-   Plus de tunnel S'inscrire : le patron invite l'acces (comme pour
-   l'employe), le client recoit un email et choisit lui-meme son mot de
-   passe (voir client-espace.html). */
-:root{--em:#C2793D;--fx-deep:#050507;--fx-deep2:#0b0f19;--fx-glint:#C2793D;--fx-mist:#94A3B8;--db-teal:#C2793D;--zinc-950:#09090B;--dt-a04:rgba(194,121,61,0.04);--dt-a07:rgba(194,121,61,0.07);--dt-a08:rgba(194,121,61,0.08);--dt-a18:rgba(194,121,61,0.18);--dt-a35:rgba(194,121,61,0.35);--dt-a45:rgba(194,121,61,0.45);--dt-a50:rgba(194,121,61,0.5);--dt-a70:rgba(194,121,61,0.7);--btn-ink:#050508;--pure-white:#FFFFFF;--mist:#94A3B8;--w-a05:rgba(255,255,255,.05);--w-a40:rgba(255,255,255,.4);--w-a70:rgba(255,255,255,.7);--ink:#0a0a0c;--w-a85:rgba(255,255,255,.85);--w-a18:rgba(255,255,255,.18);--blk-a40:rgba(0,0,0,.4);--w-a08:rgba(255,255,255,.08);--w-a35:rgba(255,255,255,.35);--w-a10:rgba(255,255,255,.1);--w-a20:rgba(255,255,255,.2);--w-a07:rgba(255,255,255,.07);--w-a06:rgba(255,255,255,.6);--nav-bg:rgba(10,10,12,.88);--card-base:#0A0F0E;--lava-1:#053B32;--lava-2:#C2793D;--lava-3:#2DD4BF;--err:#ff8080;--err-a07:rgba(255,100,100,.07);--err-a08:rgba(255,100,100,.08);--err-a18:rgba(255,100,100,.18);--btn-ink-a30:rgba(5,5,8,.3);--autofill-bg:#18181B;--autofill-text:#EDEDED;}
+/* Systeme "Compagnon", declinaison claire (LOT 1, 2026-07-30). Meme
+   traitement que connexion.html : Encre Vivante conservee (halo CSS +
+   blobs "lave"), recoloree pour un fond clair, blend mode screen->multiply
+   (voir .card-lava span). */
+:root{--em:#6B7D42;--fx-deep:#F1F4E8;--fx-deep2:#E0E8D0;--fx-glint:#6B7D42;--fx-mist:#8B9080;--db-teal:#6B7D42;--zinc-950:#09090B;--dt-a04:rgba(107,125,66,0.04);--dt-a07:rgba(107,125,66,0.07);--dt-a08:rgba(107,125,66,0.08);--dt-a18:rgba(107,125,66,0.18);--dt-a35:rgba(107,125,66,0.35);--dt-a45:rgba(107,125,66,0.45);--dt-a50:rgba(107,125,66,0.5);--dt-a70:rgba(107,125,66,0.7);--btn-ink:#FFFFFF;--pure-white:#1C2016;--mist:#6B7060;--w-a05:rgba(90,100,70,.14);--w-a40:rgba(28,32,22,.55);--w-a70:rgba(28,32,22,.75);--ink:#E7EDD8;--w-a85:rgba(28,32,22,.88);--w-a18:rgba(90,100,70,.3);--blk-a40:rgba(28,32,22,.18);--w-a08:rgba(90,100,70,.22);--w-a35:rgba(90,100,70,.14);--w-a10:rgba(90,100,70,.24);--w-a20:rgba(28,32,22,.4);--w-a07:rgba(90,100,70,.2);--w-a06:rgba(28,32,22,.65);--nav-bg:rgba(231,237,216,.92);--card-base:#FFFFFF;--lava-1:#A8C090;--lava-2:#D4B383;--lava-3:#9FC4B0;--err:#DC2626;--err-a07:rgba(220,38,38,.07);--err-a08:rgba(220,38,38,.08);--err-a18:rgba(220,38,38,.18);--btn-ink-a30:rgba(255,255,255,.3);--autofill-bg:#FFFFFF;--autofill-text:#1C2016;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 html,body{overflow-x:hidden;}
@@ -56,7 +53,7 @@ input,button{font-family:'Inter',sans-serif;}
   z-index:1;
 }
 .card-lava{position:absolute;inset:-60px;z-index:0;pointer-events:none;}
-.card-lava span{position:absolute;border-radius:50%;opacity:.65;mix-blend-mode:screen;filter:blur(40px);will-change:transform;}
+.card-lava span{position:absolute;border-radius:50%;opacity:.55;mix-blend-mode:multiply;filter:blur(40px);will-change:transform;}
 .card-lava span:nth-child(1){width:220px;height:220px;left:-50px;top:-40px;background:var(--lava-1);animation:lavaDrift1 9s ease-in-out infinite;}
 .card-lava span:nth-child(2){width:190px;height:190px;right:-60px;top:80px;background:var(--lava-2);animation:lavaDrift2 11s ease-in-out infinite;}
 .card-lava span:nth-child(3){width:210px;height:210px;left:25%;bottom:-90px;background:var(--lava-3);animation:lavaDrift3 13s ease-in-out infinite;}
@@ -123,9 +120,6 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 .foot-sep{color:var(--w-a20);font-size:.78rem;}
 .success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-top:14px;display:none;}
 .success-msg.visible{display:block;}
-
-#cursor-trail{position:fixed;pointer-events:none;z-index:9999;width:10px;height:10px;border-radius:50%;background:var(--dt-a35);box-shadow:0 0 14px var(--dt-a50);will-change:transform;}
-@media(hover:none){#cursor-trail{display:none;}}
 
 /* Hover uniquement sur les appareils qui savent survoler -- sur tactile
    :hover reste "collant" jusqu'au tap suivant. :active donne le retour
@@ -277,7 +271,6 @@ function togglePasswordVisibility(){
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement.closest('.card')) handleLogin(); });
-(function(){if(window.matchMedia('(hover:none)').matches)return;const t=document.createElement('div');t.id='cursor-trail';document.body.appendChild(t);let mx=0,my=0,tx=0,ty=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});(function loop(){tx+=(mx-tx)*.12;ty+=(my-ty)*.12;t.style.transform=`translate(${tx-5}px,${ty-5}px)`;requestAnimationFrame(loop);})();})();
 </script>
 </body>
 </html>

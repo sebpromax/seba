@@ -18,7 +18,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-:root{--ink:#14161A;--emerald:#D97A3C;--emerald-soft:rgba(217,122,60,.08);--emerald-border:rgba(217,122,60,.2);--emerald-glow:rgba(217,122,60,.7);--emerald-light:#9C5A2A;--plum:#3D2645;--bg:#FAF9F7;--white:#FFFFFF;--text-2:#6B6A6F;--border:#E8E6E1;--db-teal:#C2793D;--zinc-950:#09090B;--nav-bg:rgba(8,9,11,.96);--nav-border:rgba(255,255,255,.05);--nav-ink:#fff;--nav-ink-muted:rgba(255,255,255,.55);--nav-on-emerald:#08090B;--nav-overlay:rgba(8,9,11,.97);--nav-border-strong:rgba(255,255,255,.22);--nav-surface:#16171b;}
+/* Systeme "Compagnon", declinaison claire (valide fondateur 2026-07-29) :
+   fond vert tres pale homogene, cartes blanches, accent olive fonce,
+   bronze reserve aux reperes numeriques. Le CTA final garde un bandeau
+   sombre volontaire (contraste de cloture), le reste de la page est clair. */
+:root{--ink:#1C2016;--emerald:#6B7D42;--emerald-soft:rgba(107,125,66,.10);--emerald-border:rgba(107,125,66,.28);--emerald-glow:rgba(107,125,66,.5);--emerald-light:#6E5230;--plum:#3D2645;--bg:#E7EDD8;--white:#FFFFFF;--surface-alt:#F1F4E8;--text-2:#6B7060;--border:rgba(90,100,70,.16);--db-teal:#6B7D42;--zinc-950:#09090B;--nav-bg:rgba(231,237,216,.92);--nav-border:rgba(90,100,70,.16);--nav-ink:#1C2016;--nav-ink-muted:#6B7060;--nav-on-emerald:#ffffff;--nav-overlay:rgba(231,237,216,.97);--nav-border-strong:rgba(90,100,70,.26);--nav-surface:#FFFFFF;--cta-bg:#0D1A08;--cta-text:#EDEBE2;--cta-text-2:#8F947F;--cta-accent:#8FA05C;--cta-on-accent:#0D1A08;--shadow:rgba(28,32,22,.08);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
@@ -68,16 +72,16 @@ a{color:inherit;text-decoration:none;}
 }
 
 /* Hero */
-.page-hero{background:var(--ink);padding:80px 0 88px;position:relative;overflow:hidden;}
+.page-hero{background:var(--bg);padding:80px 0 88px;position:relative;overflow:hidden;}
 /* Halo radial retire (audit 2026-07-08) : lisait "glow tech/hype" plutot
    qu'institutionnel pour une cible PME traditionnelle. */
 .ph-eyebrow{display:inline-flex;align-items:center;gap:9px;background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:22px;}
 .ph-eyebrow .e-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px var(--emerald-glow);}
-.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--white);max-width:720px;margin-bottom:18px;}
-.page-hero p{font-size:1.05rem;color:rgba(255,255,255,.5);max-width:560px;line-height:1.65;}
+.page-hero h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--ink);max-width:720px;margin-bottom:18px;}
+.page-hero p{font-size:1.05rem;color:var(--text-2);max-width:560px;line-height:1.65;}
 
 /* Section head commun */
-.section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald-light);background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;margin-bottom:16px;}
+.section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--emerald);background:var(--emerald-soft);border:1px solid var(--emerald-border);border-radius:100px;padding:5px 13px;margin-bottom:16px;}
 .section-head-center{max-width:640px;margin:0 auto 44px;text-align:center;}
 .section-head-center h2{font-size:clamp(1.5rem,2.8vw,2.1rem);font-weight:700;letter-spacing:-.025em;margin-bottom:10px;}
 .section-head-center p{color:var(--text-2);font-size:1rem;line-height:1.6;}
@@ -87,24 +91,27 @@ a{color:inherit;text-decoration:none;}
 .steps-grid{display:grid;grid-template-columns:1fr;gap:0;max-width:720px;margin:0 auto;}
 .step-item{display:grid;grid-template-columns:56px 1fr;gap:24px;padding:32px 0;border-bottom:1px solid var(--border);align-items:start;}
 .step-item:last-child{border-bottom:none;}
-.step-num{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--emerald);font-size:.95rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--white);color:var(--emerald-light);font-size:.95rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border);}
 .step-content h3{font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:-.02em;}
 .step-content p{color:var(--text-2);font-size:.92rem;line-height:1.6;max-width:520px;}
 
-/* Section 2 -- Le parcours reel : la demonstration centrale, grandes captures alternees */
-.journey-section{padding:80px 0;background:var(--white);}
-.journey-row{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center;padding:40px 0;}
-.journey-row:not(:last-child){border-bottom:1px solid var(--border);}
+/* Section 2 -- Le parcours reel : la demonstration centrale, grandes captures
+   alternees. Fond identique a la page (pas de bloc de couleur separe) --
+   la structure vient des cartes .journey-row, pas d'un changement de
+   teinte de section (systeme "Compagnon", fond homogene). */
+.journey-section{padding:80px 0;background:var(--bg);}
+.journey-row{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:32px;background:var(--white);border:1px solid var(--border);border-radius:16px;margin-bottom:20px;box-shadow:0 1px 3px var(--shadow);}
 .journey-row.is-reverse .journey-media{order:2;}
 .journey-row.is-reverse .journey-text{order:1;}
 .journey-num{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--emerald-light);margin-bottom:10px;}
 .journey-text h3{font-size:1.25rem;font-weight:700;margin-bottom:10px;letter-spacing:-.02em;}
 .journey-text p{color:var(--text-2);font-size:.95rem;line-height:1.65;max-width:440px;}
-.journey-media img{width:100%;height:auto;border-radius:12px;border:1px solid var(--border);display:block;}
+.journey-media{border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.journey-media img{width:100%;height:auto;display:block;}
 .journey-caption{margin-top:12px;font-size:.85rem;font-weight:700;color:var(--ink);}
 .journey-caption span{color:var(--text-2);font-weight:500;}
 @media(max-width:860px){
-  .journey-row{grid-template-columns:1fr;gap:20px;padding:32px 0;}
+  .journey-row{grid-template-columns:1fr;gap:16px;padding:20px;}
   .journey-row.is-reverse .journey-media,.journey-row.is-reverse .journey-text{order:initial;}
   .journey-text p{max-width:none;}
 }
@@ -118,10 +125,10 @@ a{color:inherit;text-decoration:none;}
 @media(max-width:700px){.access-grid{grid-template-columns:1fr;}}
 
 /* Dark section */
-.dark-section{background:var(--ink);padding:72px 0;}
-.dark-section h2{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:700;color:#fff;letter-spacing:-.025em;margin-bottom:14px;}
-.dark-section p{color:rgba(255,255,255,.5);font-size:1rem;max-width:540px;margin-bottom:32px;line-height:1.65;}
-.btn-em-dark{display:inline-block;background:var(--emerald);color:var(--ink);padding:14px 32px;border-radius:8px;font-weight:700;font-size:1rem;transition:opacity .15s;}
+.dark-section{background:var(--cta-bg);padding:72px 0;}
+.dark-section h2{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:700;color:var(--cta-text);letter-spacing:-.025em;margin-bottom:14px;}
+.dark-section p{color:var(--cta-text-2);font-size:1rem;max-width:540px;margin-bottom:32px;line-height:1.65;}
+.btn-em-dark{display:inline-block;background:var(--cta-accent);color:var(--cta-on-accent);padding:14px 32px;border-radius:8px;font-weight:700;font-size:1rem;transition:opacity .15s;}
 .btn-em-dark:hover{opacity:.88;}
 
 @media(max-width:700px){
@@ -131,7 +138,7 @@ a{color:inherit;text-decoration:none;}
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0c">
+  <meta name="theme-color" content="#E7EDD8">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
@@ -325,7 +332,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();})
 
 <!-- ══ Encre Vivante (SebaFX phase 2) : motion fonctionnel CSS pur, gate .fx-on ══ -->
 <style>
-:root{--fx-halo:rgba(194,121,61,.05);--fx-em:#C2793D;--fx-card-glow:rgba(194,121,61,.10);--fx-pick:rgba(194,121,61,.35);}
+:root{--fx-halo:rgba(107,125,66,.05);--fx-em:#6B7D42;--fx-card-glow:rgba(107,125,66,.08);--fx-pick:rgba(107,125,66,.30);}
 /* Respiration du fond (8s) : le fond n'est plus jamais fige, mais seulement hors QA/reduced-motion. */
 html.fx-on .fx-breathe{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 60% 42% at 50% 0%,var(--fx-halo),transparent 70%);animation:fxBreathe 8s ease-in-out infinite;}
 @keyframes fxBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}
