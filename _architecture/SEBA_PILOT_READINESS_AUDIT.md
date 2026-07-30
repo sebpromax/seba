@@ -22,9 +22,9 @@ Phase 0 (vérité technique) + 12 tests de lancement uniquement. Les 42 scénari
 
 # **NO-GO**
 
-Pas à cause de la qualité du cœur produit (le cœur métier — clients, interventions, devis, factures, paiements — fonctionne réellement et persiste correctement), mais parce que **la porte d'entrée est fermée** : personne ne peut créer un compte patron, et un patron déjà connecté ne peut inviter ni un client ni un employé à son propre portail. Un pilote lancé maintenant échouerait dès la première étape (recrutement d'un nouveau patron) ou dès la deuxième (le patron ne peut pas donner accès à son équipe/ses clients), pour une raison d'infrastructure identifiée et non ambiguë, pas pour une raison de conception produit.
+Pas à cause de la qualité du cœur produit : **plusieurs opérations centrales côté patron fonctionnent réellement et persistent correctement** (clients, interventions, devis — y compris révision d'un devis signé —, factures, paiements y compris partiels), confirmé par requêtes serveur directes sur un compte patron réel. Mais **le parcours complet patron → employé → client n'a pas pu être validé de bout en bout** : la porte d'entrée est fermée, personne ne peut créer un compte patron, et un patron déjà connecté ne peut inviter ni un client ni un employé à son propre portail — donc les portails employé (`espace-terrain.html`) et client (`client-espace.html`) restent **non testés**, pas confirmés fonctionnels ni confirmés cassés. Un pilote lancé maintenant échouerait dès la première étape (recrutement d'un nouveau patron) ou dès la deuxième (le patron ne peut pas donner accès à son équipe/ses clients).
 
-**Ce NO-GO est probablement réversible en un seul correctif** (configuration SMTP/email Supabase) — voir section 8.
+**Hypothèse principale, non confirmée à ce stade** : une seule panne de configuration email/SMTP côté Supabase expliquerait P0-1/P0-2/P0-3 et rendrait ce NO-GO réversible en un seul correctif — voir section 8 et `_architecture/QA360_P0_REMEDIATION_PLAN.md` pour la vérification par les logs avant toute action.
 
 ## 4. P0 réels (bugs confirmés, pas des absences de fonctionnalité)
 
@@ -37,7 +37,7 @@ Pas à cause de la qualité du cœur produit (le cœur métier — clients, inte
 ### P0-3 — Le provisioning du portail employé échoue systématiquement
 Même symptôme exact que P0-2, sur `employe-provision`, à chaque ajout d'employé.
 
-**P0-1, P0-2 et P0-3 sont probablement une seule et même panne** (configuration SMTP/email du projet Supabase), pas trois bugs indépendants. Vérifier et corriger la config email Supabase (Authentication → Email/SMTP) résoudrait vraisemblablement les trois d'un coup — mais tant que ce n'est pas confirmé, les trois restent listés séparément.
+**Hypothèse non confirmée** : P0-1, P0-2 et P0-3 pourraient n'être qu'une seule et même panne (configuration SMTP/email du projet Supabase) plutôt que trois bugs indépendants — les trois échecs partagent le même symptôme générique (`500`, message serveur non détaillé), mais **rien à ce stade ne prouve une cause commune** au niveau des logs réels. Cette hypothèse doit être confirmée ou infirmée par une inspection des logs Supabase Auth/Edge Functions avant toute correction — voir `_architecture/QA360_P0_REMEDIATION_PLAN.md`. Tant que ce n'est pas confirmé, les trois restent listés et traités séparément.
 
 ### P0-4 — Une correction de paiement échoue silencieusement, l'interface ment sur le résultat
 Enregistrer un paiement avec un montant négatif (tentative de correction d'une erreur de saisie) fait passer l'AFFICHAGE de la facture à "En attente" comme si la correction avait réussi, mais une requête directe au serveur confirme que **le paiement erroné original est toujours seul en base** — la correction n'a jamais été persistée. C'est plus grave qu'un simple manque de fonctionnalité de correction : l'interface affiche un succès qui n'existe pas côté serveur. Un patron qui corrige une erreur de paiement croira l'avoir fait alors que non.
