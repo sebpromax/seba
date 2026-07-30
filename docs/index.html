@@ -126,6 +126,8 @@
   /* ── Hero ── */
   .hero-section{padding:72px max(20px,calc((100vw - 1140px)/2)) 0;text-align:center;}
   .hero-title{font-size:clamp(2rem,4.4vw,3.4rem);font-weight:800;line-height:1.12;letter-spacing:-0.03em;max-width:920px;margin:0 auto 20px;}
+  /* Meme effet que product.html/faq.html/tarifs.html : degrade texte encre -> accent. */
+  .headline-gradient{background:linear-gradient(135deg,var(--text) 40%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
   .hero-subtitle{font-size:clamp(1.02rem,1.6vw,1.2rem);line-height:1.6;color:var(--text-2);max-width:640px;margin:0 auto 32px;}
   .hero-ctas{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:16px;}
   .hero-proof{font-size:.82rem;color:var(--text-3);margin-bottom:40px;}
@@ -226,7 +228,7 @@
 <!-- ══ 1. HERO ══ -->
 <section class="hero-section" id="hero">
   <div class="eyebrow">Pour les entreprises de services de terrain</div>
-  <h1 class="hero-title">Du premier contact client au paiement encaissé, sans changer d'outil.</h1>
+  <h1 class="hero-title"><span class="headline-gradient">Du premier contact client au paiement encaissé, sans changer d'outil.</span></h1>
   <p class="hero-subtitle">Clients, devis, planning, interventions et factures réunis dans un seul espace — pensé pour les entreprises qui travaillent sur le terrain, pas dans un bureau.</p>
   <div class="hero-ctas">
     <a href="onboarding.html" class="btn-primary">Créer mon espace</a>
@@ -325,7 +327,7 @@
 <section class="section">
   <div class="wrap">
     <div class="cta-final">
-      <h2>Un seul outil pour tout le dossier client, du premier contact au paiement.</h2>
+      <h2><span class="headline-gradient">Un seul outil pour tout le dossier client, du premier contact au paiement.</span></h2>
       <div class="cta-final-links">
         <a href="onboarding.html" class="btn-primary">Créer mon espace Seba</a>
         <a href="connexion.html" class="cta-final-secondary">Se connecter</a>
