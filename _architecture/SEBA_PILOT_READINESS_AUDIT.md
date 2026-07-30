@@ -39,14 +39,23 @@ Même symptôme exact que P0-2, sur `employe-provision`, à chaque ajout d'emplo
 
 **Hypothèse non confirmée** : P0-1, P0-2 et P0-3 pourraient n'être qu'une seule et même panne (configuration SMTP/email du projet Supabase) plutôt que trois bugs indépendants — les trois échecs partagent le même symptôme générique (`500`, message serveur non détaillé), mais **rien à ce stade ne prouve une cause commune** au niveau des logs réels. Cette hypothèse doit être confirmée ou infirmée par une inspection des logs Supabase Auth/Edge Functions avant toute correction — voir `_architecture/QA360_P0_REMEDIATION_PLAN.md`. Tant que ce n'est pas confirmé, les trois restent listés et traités séparément.
 
-### P0-4 — Une correction de paiement échoue silencieusement, l'interface ment sur le résultat
-Enregistrer un paiement avec un montant négatif (tentative de correction d'une erreur de saisie) fait passer l'AFFICHAGE de la facture à "En attente" comme si la correction avait réussi, mais une requête directe au serveur confirme que **le paiement erroné original est toujours seul en base** — la correction n'a jamais été persistée. C'est plus grave qu'un simple manque de fonctionnalité de correction : l'interface affiche un succès qui n'existe pas côté serveur. Un patron qui corrige une erreur de paiement croira l'avoir fait alors que non.
+### P0-4 — RETIRÉ en tant que bug confirmé (voir `QA360_P0_REMEDIATION_PLAN.md` section 4 pour le détail complet)
+
+> Le scénario initial de correction par montant négatif était invalide : le code refuse déjà les montants négatifs localement. Aucun succès serveur fantôme reproductible n'est confirmé.
+
+`recordPayment()` (`docs/seba-data.js:4318`) rejette déjà tout montant ≤ 0 localement, avant tout envoi au serveur. Le texte "En attente" observé n'a pas de cause confirmée liée à cette tentative précise. Retiré de la liste des P0 confirmés.
+
+**Conservé, reclassifié :**
+
+> Aucun mécanisme de correction ou d'annulation historisée d'un paiement n'existe dans l'interface. Classification : **P1 — PILOT GATE.**
+
+Ne bloque pas la remédiation en cours, mais doit être résolu ou explicitement accepté par le fondateur avant l'ouverture du pilote. Le paiement de test de 40 € reste présent sur la facture réelle `#F-0095` (id `id_ms7crz6db6iyj`) tant que non nettoyé — voir procédure en attente de validation dans `QA360_P0_REMEDIATION_PLAN.md` section 2a.
 
 ## 5. Fonctions manquantes nécessaires au pilote (absence de fonctionnalité, PAS des bugs P0)
 
 - **Détection de doublon client** : créer deux fois le même client (même prénom/nom/email/téléphone) crée deux fiches distinctes sans avertissement. Ce n'est pas un P0 en soi (le produit ne perd ni ne corrompt rien), mais c'est un vrai risque opérationnel pour un pilote réel (confusion, double facturation potentielle) — à corriger avant un usage à plusieurs personnes sur un même compte.
 - **Aucune suppression dure des devis** : "Annuler" change le statut, ne supprime jamais la ligne. Probablement un choix assumé (piste d'audit) plutôt qu'un oubli — à confirmer avec le fondateur plutôt qu'à "corriger" à l'aveugle.
-- **Aucun mécanisme de correction de paiement fiable** : au-delà du bug P0-4 ci-dessus, il n'existe visiblement aucun moyen dans l'UI de retirer ou corriger proprement un paiement mal saisi (pas de bouton "annuler ce paiement" sur la fiche facture).
+- **P1 — PILOT GATE : aucun mécanisme de correction de paiement fiable.** Il n'existe visiblement aucun moyen dans l'UI de retirer ou corriger proprement un paiement mal saisi (pas de bouton "annuler ce paiement" sur la fiche facture ; les montants négatifs sont rejetés par validation, sans alternative proposée) — voir P0-4 ci-dessus pour le détail. Ne bloque pas cette passe, mais doit être résolu ou explicitement accepté avant l'ouverture du pilote.
 - **Vue mission individuelle de la fiche employé non reliée au planning** : l'application l'admet elle-même ("l'assignation par employé n'est pas encore reliée au planning") — fonctionnalité partiellement construite, pas un bug de régression.
 - **Accès direct par rôle employé/client non testé** : bloqué faute de compte actif (voir P0-1/P0-2/P0-3 — la panne d'email empêche justement de créer ces comptes de test). Ce n'est pas une absence confirmée, c'est un **test non exécutable tant que les P0 ci-dessus ne sont pas résolus** — priorité à retester en premier après correction.
 
@@ -67,7 +76,7 @@ Aucune ressaisie manuelle constatée dans les parcours testés (client → inter
 2. **Retester l'inscription patron de bout en bout** (un vrai email doit arriver et permettre de poser un mot de passe sur `bienvenue.html`) — preuve de correction de P0-1.
 3. **Retester l'ajout d'un client et d'un employé** et confirmer que `client-provision`/`employe-provision` retournent `200`, pas `500` — preuve de correction de P0-2/P0-3.
 4. **Une fois 1-3 validés, créer un vrai compte employé et un vrai compte client de test** et exécuter les tests d'accès par URL directe avec ces rôles (section 7) — c'est le test de sécurité qui manque le plus.
-5. **Corriger le bug d'affichage-fantôme sur la correction de paiement** (P0-4) : soit l'UI doit refléter fidèlement un échec serveur (ne jamais afficher "En attente" si la requête a échoué), soit ajouter un vrai mécanisme de correction de paiement testé de bout en bout.
+5. **Décider si un vrai mécanisme de correction de paiement est nécessaire avant le pilote** (voir `QA360_P0_REMEDIATION_PLAN.md` section 4) — absence de fonctionnalité confirmée, pas un bug à corriger en urgence.
 6. **Nettoyer les artefacts de cet audit** dans le compte réel (voir liste précise dans `SEBA_EXECUTABLE_CAPABILITY_MATRIX.md`, section finale) : devis annulé `DEV-2026-0119`, paiement de test de 40€ sur la facture `#F-0095`.
 7. Seulement après 1-6 : décider si la détection de doublon client (section 5) doit être traitée avant le pilote ou documentée comme limitation acceptée pour un premier compte à un seul utilisateur.
 
