@@ -37,7 +37,7 @@ Déjà en place, valeurs publiques uniquement (URL Supabase + clé publishable, 
 | `GROQ_API_KEY` | console.groq.com → API Keys | [ ] |
 | `OPENROUTER_API_KEY` | openrouter.ai → Keys | [ ] |
 | `GEMINI_API_KEY` | aistudio.google.com/apikey (ne jamais activer la facturation) | [ ] |
-| `RESEND_API_KEY` + `RESEND_FROM` | resend.com → API Keys | [ ] |
+| `RESEND_API_KEY` + `RESEND_FROM` (⚠️ `RESEND_FROM` obligatoire depuis QA360-P0 2026-07-30, sur un domaine **vérifié** — jamais `onboarding@resend.dev`) | resend.com → API Keys + Domains | [ ] |
 | `ONESIGNAL_APP_ID` + `ONESIGNAL_API_KEY` | onesignal.com | [ ] |
 | `MAX_DAILY_REQUESTS` (optionnel, défaut 50) | disjoncteur de coût global | [ ] |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | injectés automatiquement par Supabase | auto |

@@ -84,11 +84,20 @@ Deno.serve(async (req) => {
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) return jsonResponse(cors, { error: 'RESEND_API_KEY non configurée côté serveur' }, 500);
 
+    // RESEND_FROM est OBLIGATOIRE, sans repli codé en dur : QA360-P0
+    // (2026-07-30) a confirmé que l'ancien repli 'onboarding@resend.dev'
+    // est un domaine non vérifié chez Resend -- Resend acceptait la
+    // requête (200 + id) mais l'email finissait toujours en statut
+    // "failed" ("Domain is not verified"), un faux succès silencieux.
+    // Mieux vaut échouer fort et clairement ici que de répéter ce piège.
+    const resendFrom = Deno.env.get('RESEND_FROM');
+    if (!resendFrom) return jsonResponse(cors, { error: 'RESEND_FROM non configurée côté serveur (adresse expéditrice vérifiée requise)' }, 500);
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + resendKey },
       body: JSON.stringify({
-        from: Deno.env.get('RESEND_FROM') || 'Seba <onboarding@resend.dev>',
+        from: resendFrom,
         to: [to],
         subject: String(subject).slice(0, 200),
         html: String(html).slice(0, 50000),
