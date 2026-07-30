@@ -46,12 +46,17 @@ const FETCH_TIMEOUT_MS = 5000;
 
 async function sendEmail(to: string, subject: string, html: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
-  if (!resendKey) return;
+  // RESEND_FROM est OBLIGATOIRE, sans repli codé en dur -- voir send-email.ts
+  // pour le detail (QA360-P0, 2026-07-30) : l'ancien repli
+  // 'onboarding@resend.dev' est un domaine non verifie chez Resend, il
+  // produisait un faux succes (200 + id, statut de livraison "failed").
+  const resendFrom = Deno.env.get('RESEND_FROM');
+  if (!resendKey || !resendFrom) return; // best-effort : pas de secret -> pas d'envoi, pas d'erreur qui bloque le cron
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + resendKey },
-      body: JSON.stringify({ from: Deno.env.get('RESEND_FROM') || 'Seba <onboarding@resend.dev>', to: [to], subject, html }),
+      body: JSON.stringify({ from: resendFrom, to: [to], subject, html }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch { /* best-effort */ }

@@ -12,8 +12,8 @@ Ces actions ne peuvent être faites que par toi (accès au dashboard Supabase) �
 
 - [x] **Schéma SQL complet (2026-07-20)** : `supabase-schema.sql` rejoué en entier sur la base Supabase réelle (auth universelle, demandes client, chat de mission, clôture de mission, bucket `mission-photos`) — confirmé "Success. No rows returned".
 - [x] **Edge Functions déployées (2026-07-20)** : `client-provision` et `employe-provision` créées et déployées dans Supabase (JWT legacy check désactivé, comme recommandé, la fonction fait sa propre vérification).
-- [x] **SMTP personnalisé configuré (2026-07-20)** : Resend (sandbox, domaine `onboarding@resend.dev` — pas encore de domaine vérifié) branché dans Supabase → Authentication → Emails → SMTP Settings (host `smtp.resend.com`, port 465, username `resend`, password = clé API Resend).
-- [ ] **⚠️ BUG À REPRENDRE : invitation test sans email reçu.** Fiche client créée avec `sebpromax@gmail.com` comme email de connexion → "Enregistrer" dans le panneau Email de connexion → aucun email d'invitation reçu (boîte + spam vérifiés, vide). Cause probable : Resend en mode sandbox ne délivre qu'à l'adresse **utilisée pour créer le compte Resend** — si ce compte a été créé avec une adresse différente de `sebpromax@gmail.com` (ex: `sebastien.vale13@gmail.com`), Resend bloque silencieusement l'envoi vers toute autre adresse. **Prochaine étape** : vérifier dans Resend → Emails/Logs le statut réel de la tentative d'envoi (Delivered/Bounced/Failed/absent), et/ou refaire le test avec l'adresse exacte utilisée à l'inscription Resend. Solution définitive à terme : vérifier un vrai domaine dans Resend (lève la restriction sandbox pour de bon).
+- [x] **SMTP personnalisé branché (2026-07-20)** : Resend branché dans Supabase → Authentication → Emails → SMTP Settings (host `smtp.resend.com`, port 465, username `resend`, password = clé API Resend). Adresse expéditrice utilisée : `onboarding@resend.dev` (domaine partagé Resend, non vérifié).
+- [ ] **⚠️ CAUSE CONFIRMÉE 2026-07-30 (QA360-P0) : domaine expéditeur non vérifié chez Resend.** Diagnostiqué par appel direct à l'API Resend (`POST https://api.resend.com/emails`, hors navigateur, clé API en mémoire uniquement) : la requête est acceptée (`HTTP 200`, un identifiant de message Resend est bien créé), **mais l'email finit toujours en statut `failed`**, avec l'événement exact `"Domain is not verified: The domain used to send this email needs to be verified."` — ce n'est PAS une restriction de sandbox sur le destinataire (l'ancienne hypothèse ci-dessus), c'est l'identité expéditrice `onboarding@resend.dev` elle-même qui est rejetée par Resend en livraison, silencieusement du point de vue de l'appelant (200 = accepté pour traitement, pas 200 = livré). **Prochaine étape (fondateur uniquement)** : vérifier un vrai domaine dans Resend (resend.com → Domains → Add Domain → enregistrements DNS chez ton registrar), puis mettre à jour `RESEND_FROM` (Edge Functions → Secrets) ET le champ expéditeur de Supabase Auth → Authentication → Emails → SMTP Settings avec la **même adresse vérifiée**. Ne rien déployer avant que ce domaine soit vérifié — voir `_architecture/QA360_P0_REMEDIATION_PLAN.md`.
 
 ---
 
@@ -76,14 +76,19 @@ Depuis le 2026-07-07, une seule fonction `ai-relay.ts` alimente à la fois le ch
 Utilise désormais le même relais `ai-relay` que la section 1b ci-dessus (plus besoin d'une fonction séparée). Une fois `ai-relay` déployé avec au moins une clé configurée, `callSebaAI()` dans `widgets.js` peut joindre le relais. Le Dashboard déclenche automatiquement une analyse IA (affichée comme une notification "aura", cf. Conscience Seba) quand le Serenity Score entre en alerte, ou quand un mouvement financier important apparaît dans les Lignes d'Horizon. Sans secret configuré, ces déclenchements échouent silencieusement (aucune notification, aucune erreur visible) — le dashboard reste utilisable normalement.
 
 ### 1e. Email (devis/factures envoyés au client) — Resend, GRATUIT
+
+⚠️ **Mis à jour 2026-07-30 (QA360-P0)** : `RESEND_FROM` est désormais **obligatoire**, plus de repli codé en dur vers `onboarding@resend.dev` — ce domaine partagé Resend n'est pas vérifiable et produisait un faux succès (voir la case cochée plus haut). Sans `RESEND_FROM` configurée, `send-email` répond maintenant une erreur claire (`RESEND_FROM non configurée...`) au lieu de tenter un envoi voué à l'échec.
+
 1. https://resend.com → crée un compte gratuit (3 000 emails/mois, 100/jour).
-2. **API Keys** → **Create API Key**.
-3. Supabase → **Edge Functions** → **Deploy a new function**, nom `send-email`.
-4. Colle le contenu de **`supabase-functions/send-email.ts`** → **Deploy**.
-5. Edge Functions → **Secrets** → ajoute :
+2. **Domains** → **Add Domain** → suis les instructions DNS (chez ton registrar) → attends que Resend affiche le domaine comme **Verified**. Sans cette étape, aucun email ne sera jamais livré, quelle que soit la clé API.
+3. **API Keys** → **Create API Key**.
+4. Supabase → **Edge Functions** → **Deploy a new function**, nom `send-email`.
+5. Colle le contenu de **`supabase-functions/send-email.ts`** → **Deploy**.
+6. Edge Functions → **Secrets** → ajoute :
    - `RESEND_API_KEY` — ta clé Resend
-   - `RESEND_FROM` (optionnel) — une adresse `Nom <email@tondomaine.fr>` si tu as vérifié un domaine sur Resend ; sinon le relais utilise `onboarding@resend.dev` (fonctionne tout de suite, sans domaine à vérifier, mais moins pro pour les vrais clients).
-6. Effet : le bouton "✉️ Email" sur les pages Devis et Factures envoie un vrai email au client. Sans ce secret configuré, le bouton affiche une erreur claire à l'utilisateur (pas d'échec silencieux ici, contrairement à l'IA — l'utilisateur doit savoir que l'envoi n'a pas eu lieu).
+   - `RESEND_FROM` — **obligatoire** désormais, une adresse `Nom <email@tondomaine-verifie.fr>` sur le domaine vérifié à l'étape 2. N'utilise jamais `onboarding@resend.dev`.
+7. **Même adresse à reporter dans Supabase Auth** : Authentication → Emails → SMTP Settings → champ expéditeur (Sender email/Sender name) — mets la **même adresse vérifiée** que `RESEND_FROM`, sinon l'inscription patron (`/auth/v1/otp`) et les invitations (`client-provision`/`employe-provision`, qui passent par ce même relais SMTP, pas par `RESEND_FROM`) resteront cassées même après avoir corrigé `send-email`.
+8. Effet : le bouton "✉️ Email" sur les pages Devis et Factures envoie un vrai email au client. Sans `RESEND_FROM` configurée, le bouton affiche maintenant une erreur claire à l'utilisateur (pas d'échec silencieux).
 
 ### 1f. Notifications push (rappels) — OneSignal, GRATUIT
 1. https://onesignal.com → crée un compte gratuit → **New App** → plateforme **Web Push**, renseigne l'URL du site (`https://sebpromax.github.io/seba`).
