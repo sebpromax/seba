@@ -44,7 +44,7 @@
   --nav-bg:rgba(29,23,19,.92);--mob-overlay-bg:rgba(29,23,19,.97);
   /* ── Encre Vivante (SebaFX, preset tunnel) ── */
   --fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;
---db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,0.04);--dt-a50:rgba(185,130,92,0.5);--dt-a70:rgba(185,130,92,0.7);--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
+--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,0.04);--dt-a50:rgba(185,130,92,0.5);--dt-a70:rgba(185,130,92,0.7);--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);--marron:#4A3020;}
 #gl-canvas{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;z-index:-1;pointer-events:none;display:block;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:auto;min-height:100%;width:100%;overflow-x:hidden;overflow-y:auto;}
@@ -123,7 +123,7 @@ a{color:inherit;text-decoration:none;}
    desequilibre si le nom du secteur est long. */
 .signup-heading{width:100%;margin:0 0 var(--spacing-6);text-align:center;}
 .signup-heading__title{margin:0;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-size:clamp(1.7rem,5vw,var(--font-size-2xl));text-wrap:balance;}
-.signup-heading__sector{display:block;margin-top:4px;white-space:normal;font-size:.82em;}
+.signup-heading__sector{display:block;margin-top:4px;white-space:normal;font-size:.82em;background:linear-gradient(105deg,var(--white) 0%,var(--em) 55%,var(--marron) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 @media(max-width:480px){
   .signup-heading__title{font-size:clamp(1.5rem,7.5vw,1.9rem);line-height:1.2;}
   .signup-heading{margin-bottom:var(--spacing-5);}
