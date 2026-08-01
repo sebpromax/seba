@@ -148,6 +148,9 @@ a{color:inherit;text-decoration:none;}
 .sector-card:hover{background:var(--hover-bg);border-color:var(--hover-border);}
 .sector-card:active{transform:scale(.98);}
 .sector-card.selected{border-color:var(--em);background:var(--selected-bg);}
+.sector-card.soon{opacity:.68;}
+.sector-card.soon .sector-name{color:var(--t2);}
+.sector-soon-badge{font-size:.66rem;font-weight:700;letter-spacing:.03em;color:var(--t2);background:var(--input-bg);border:1px solid var(--bd);border-radius:100px;padding:2px 10px;}
 
 /* Ecran 3 — Propulsion (skeleton screen plein ecran, spec Mistral) */
 #fstep-3{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:transparent;max-width:none;}
@@ -232,15 +235,17 @@ p{letter-spacing:-0.02em;}
           <span class="sector-icon">02</span>
           <span class="sector-name">Conciergerie &amp; Accueil</span>
         </button>
-        <button type="button" class="sector-card" data-sector="Artisans &amp; Maintenance">
+        <!-- Secteur volontairement non ouvert aux inscriptions (pilote GATE-0
+             concentre sur Nettoyage & Entretien / Conciergerie & Accueil) --
+             carte informative plutot que desactivee, pour rester honnete sur
+             ce qui arrive plutot que de cacher le secteur. -->
+        <button type="button" class="sector-card soon" id="sector-soon" data-sector="Autre activité">
           <span class="sector-icon">03</span>
-          <span class="sector-name">Artisans &amp; Maintenance</span>
-        </button>
-        <button type="button" class="sector-card" data-sector="Autre activité">
-          <span class="sector-icon">04</span>
           <span class="sector-name">Autre activité</span>
+          <span class="sector-soon-badge">Bientôt disponible</span>
         </button>
       </div>
+      <p class="reassurance" id="sector-soon-msg" style="display:none;">Nous nous concentrons d'abord sur Nettoyage &amp; Entretien et Conciergerie &amp; Accueil. Les autres secteurs arrivent bientôt — revenez vite, ou explorez la démo en attendant.</p>
       <p class="reassurance">✓ Gratuit — Sans carte bancaire</p>
       <!-- Guest access : bypass demo deja gere par guard.js (?demo, sessionStorage) -->
       <p class="reassurance"><a class="demo-link" href="app/dashboard.html?demo">Ou explorez la démo, sans compte →</a></p>
@@ -335,8 +340,16 @@ p{letter-spacing:-0.02em;}
   }
 
   // ── Écran 1 : métier — un clic, zéro saisie (parcours « valeur d'abord ») ──
-  document.querySelectorAll('.sector-card').forEach(function (card) {
+  // Le secteur "soon" (Autre activité) n'ouvre pas l'inscription tant que le
+  // pilote GATE-0 (Nettoyage & Entretien / Conciergerie & Accueil) n'a pas
+  // valide au-dela de ces deux secteurs -- message honnete plutot que de
+  // laisser un patron s'inscrire pour un secteur non encore accompagne.
+  document.getElementById('sector-soon').addEventListener('click', function () {
+    document.getElementById('sector-soon-msg').style.display = 'block';
+  });
+  document.querySelectorAll('.sector-card:not(.soon)').forEach(function (card) {
     card.addEventListener('click', function () {
+      document.getElementById('sector-soon-msg').style.display = 'none';
       document.querySelectorAll('.sector-card').forEach(function (c) { c.classList.remove('selected'); });
       card.classList.add('selected');
       S.sector = card.dataset.sector;
