@@ -113,6 +113,22 @@ a{color:inherit;text-decoration:none;}
 .flash-step{width:100%;max-width:400px;}
 .step-title{font-size:var(--font-size-2xl);font-weight:800;letter-spacing:-.03em;line-height:var(--line-height-tight);margin-bottom:var(--spacing-6);}
 
+/* Titre de l'ecran 2 (email), secteur affiche sur sa propre ligne --
+   auparavant un <span> inline dans le meme flux de texte que "Créez
+   votre espace", le retour a la ligne naturel coupait au hasard (parfois
+   en plein milieu du nom du secteur), rendu asymetrique et percu comme
+   "mal centre" alors que le bloc etait deja centre dans .ob-left. Le
+   <span> passe en display:block pour garantir la coupe avant le secteur,
+   jamais dedans ; text-wrap:balance evite un deuxieme retour a la ligne
+   desequilibre si le nom du secteur est long. */
+.signup-heading{width:100%;margin:0 0 var(--spacing-6);text-align:center;}
+.signup-heading__title{margin:0;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-size:clamp(1.7rem,5vw,var(--font-size-2xl));text-wrap:balance;}
+.signup-heading__sector{display:block;margin-top:4px;white-space:normal;font-size:.82em;}
+@media(max-width:480px){
+  .signup-heading__title{font-size:clamp(1.5rem,7.5vw,1.9rem);line-height:1.2;}
+  .signup-heading{margin-bottom:var(--spacing-5);}
+}
+
 /* Formulaire clinique */
 .field{display:flex;flex-direction:column;gap:var(--spacing-2);margin-bottom:var(--spacing-5);}
 .field label{font-size:var(--font-size-sm);color:var(--t2);font-weight:500;}
@@ -260,7 +276,9 @@ p{letter-spacing:-0.02em;}
          AUCUN mot de passe dans le tunnel : il sera choisi depuis l'email
          d'activation (bienvenue.html). -->
     <section class="flash-step hidden" id="fstep-2">
-      <h2 class="step-title">Créez votre espace <span id="title-sector">Seba</span></h2>
+      <div class="signup-heading">
+        <h2 class="signup-heading__title">Créez votre espace<span class="signup-heading__sector" id="title-sector">Seba</span></h2>
+      </div>
       <form id="capture-form" novalidate>
         <div class="field">
           <label for="inp-email">Email professionnel</label>
