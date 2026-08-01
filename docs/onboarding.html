@@ -124,6 +124,7 @@ a{color:inherit;text-decoration:none;}
 .signup-heading{width:100%;margin:0 0 var(--spacing-6);text-align:center;}
 .signup-heading__title{margin:0;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-size:clamp(1.7rem,5vw,var(--font-size-2xl));text-wrap:balance;}
 .signup-heading__sector{display:block;margin-top:4px;white-space:normal;font-size:.82em;background:linear-gradient(105deg,var(--white) 0%,var(--em) 55%,var(--marron) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.signup-heading__closing{-webkit-text-fill-color:var(--white);color:var(--white);}
 @media(max-width:480px){
   .signup-heading__title{font-size:clamp(1.5rem,7.5vw,1.9rem);line-height:1.2;}
   .signup-heading{margin-bottom:var(--spacing-5);}
@@ -378,8 +379,19 @@ p{letter-spacing:-0.02em;}
       S.sector = card.dataset.sector;
       // Le titre de l'écran 2 reprend le métier : la demande d'email est
       // justifiée par le contexte ("où crée-t-on TON espace ?").
-      document.getElementById('title-sector').textContent =
-        S.sector === 'Autre activité' ? 'Seba' : '« ' + S.sector + ' »';
+      // Le guillemet fermant reste blanc plein (hors degrade) -- span dedie
+      // avec -webkit-text-fill-color force, plutot qu'un textContent unique.
+      var titleSectorEl = document.getElementById('title-sector');
+      titleSectorEl.textContent = '';
+      if (S.sector === 'Autre activité') {
+        titleSectorEl.textContent = 'Seba';
+      } else {
+        titleSectorEl.appendChild(document.createTextNode('« ' + S.sector + ' '));
+        var closingQuote = document.createElement('span');
+        closingQuote.className = 'signup-heading__closing';
+        closingQuote.textContent = '»';
+        titleSectorEl.appendChild(closingQuote);
+      }
       if (window.SebaFX) { SebaFX.pulse(); SebaFX.setAct(2); } // premier engagement : le chaos s'ordonne
       goStep(2);
       document.getElementById('inp-email').focus();
