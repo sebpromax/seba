@@ -20,7 +20,7 @@
    traitement que connexion.html : Encre Vivante conservee (halo CSS +
    blobs "lave"), recoloree pour un fond clair, blend mode screen->multiply
    (voir .card-lava span). */
-:root{--em:#6B7D42;--fx-deep:#F1F4E8;--fx-deep2:#E0E8D0;--fx-glint:#6B7D42;--fx-mist:#8B9080;--db-teal:#6B7D42;--zinc-950:#09090B;--dt-a04:rgba(107,125,66,0.04);--dt-a07:rgba(107,125,66,0.07);--dt-a08:rgba(107,125,66,0.08);--dt-a18:rgba(107,125,66,0.18);--dt-a35:rgba(107,125,66,0.35);--dt-a45:rgba(107,125,66,0.45);--dt-a50:rgba(107,125,66,0.5);--dt-a70:rgba(107,125,66,0.7);--btn-ink:#FFFFFF;--pure-white:#1C2016;--mist:#6B7060;--w-a05:rgba(90,100,70,.14);--w-a40:rgba(28,32,22,.55);--w-a70:rgba(28,32,22,.75);--ink:#E7EDD8;--w-a85:rgba(28,32,22,.88);--w-a18:rgba(90,100,70,.3);--blk-a40:rgba(28,32,22,.18);--w-a08:rgba(90,100,70,.22);--w-a35:rgba(90,100,70,.14);--w-a10:rgba(90,100,70,.24);--w-a20:rgba(28,32,22,.4);--w-a07:rgba(90,100,70,.2);--w-a06:rgba(28,32,22,.65);--nav-bg:rgba(231,237,216,.92);--card-base:#FFFFFF;--lava-1:#A8C090;--lava-2:#D4B383;--lava-3:#9FC4B0;--err:#DC2626;--err-a07:rgba(220,38,38,.07);--err-a08:rgba(220,38,38,.08);--err-a18:rgba(220,38,38,.18);--btn-ink-a30:rgba(255,255,255,.3);--autofill-bg:#FFFFFF;--autofill-text:#1C2016;}
+:root{--em:#B9825C;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(29,23,19,.07);--dt-a07:rgba(185,130,92,.16);--dt-a08:rgba(185,130,92,.10);--dt-a18:rgba(185,130,92,.22);--dt-a35:rgba(185,130,92,.35);--dt-a45:rgba(185,130,92,.45);--dt-a50:rgba(29,23,19,.55);--dt-a70:rgba(185,130,92,.7);--btn-ink:#FFFFFF;--pure-white:#F8F4ED;--mist:#C8B9A6;--w-a05:rgba(245,240,231,.08);--w-a40:rgba(29,23,19,.55);--w-a70:rgba(245,240,231,.75);--ink:#1D1713;--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.22);--blk-a40:rgba(0,0,0,.45);--w-a08:rgba(245,240,231,.10);--w-a35:rgba(245,240,231,.14);--w-a10:rgba(29,23,19,.22);--w-a20:rgba(29,23,19,.45);--w-a07:rgba(29,23,19,.18);--w-a06:rgba(29,23,19,.88);--nav-bg:rgba(29,23,19,.92);--card-base:#B9825C;--lava-1:#F5F0E7;--lava-2:#E7DCCB;--lava-3:#CBB89D;--err:#B91C1C;--err-a07:rgba(240,230,220,.92);--err-a08:rgba(185,28,28,.15);--err-a18:rgba(29,23,19,.22);--btn-ink-a30:rgba(255,255,255,.3);--autofill-bg:#E7DCCB;--autofill-text:#1D1713;--card-ink:#1D1713;--card-ink-2:rgba(29,23,19,.88);--card-accent:#1D1713;--card-input-bg:rgba(245,240,231,.32);--card-sheen:rgba(245,240,231,.18);--card-border-tint:rgba(29,23,19,.22);--card-msg-bg:#F0E6DC;--card-success:#3F6B44;}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 html,body{overflow-x:hidden;}
@@ -38,7 +38,7 @@ input,button{font-family:'Inter',sans-serif;}
 
 .card{
   background:var(--card-base);
-  border:1px solid var(--dt-a18);
+  border:1px solid var(--card-border-tint);
   border-radius:20px;
   padding:32px;
   width:100%;max-width:400px;
@@ -48,7 +48,7 @@ input,button{font-family:'Inter',sans-serif;}
 .card::before{
   content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
   width:280px;height:180px;
-  background:radial-gradient(ellipse,var(--dt-a08) 0%,transparent 70%);
+  background:radial-gradient(ellipse,var(--card-sheen) 0%,transparent 70%);
   pointer-events:none;
   z-index:1;
 }
@@ -66,14 +66,14 @@ input,button{font-family:'Inter',sans-serif;}
 .card>*:not(.card-lava){position:relative;z-index:1;}
 
 .card-head{margin-bottom:22px;}
-.card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--pure-white);margin-bottom:6px;}
-.card-head p{font-size:.88rem;color:var(--mist);}
+.card-head h1{font-size:1.45rem;font-weight:800;letter-spacing:-0.03em;color:var(--card-ink);margin-bottom:6px;}
+.card-head p{font-size:.88rem;color:var(--card-ink-2);}
 
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
 .field label{font-size:.68rem;font-weight:600;color:var(--w-a06);letter-spacing:.03em;text-transform:uppercase;}
 .field input{
-  padding:12px 14px;background:var(--w-a05);border:1px solid var(--w-a10);border-radius:10px;
-  font-size:.9rem;color:var(--pure-white);width:100%;transition:border-color .2s,background .2s;
+  padding:12px 14px;background:var(--card-input-bg);border:1px solid var(--w-a10);border-radius:10px;
+  font-size:.9rem;color:var(--card-ink);width:100%;transition:border-color .2s,background .2s;
 }
 .field input::placeholder{color:var(--w-a20);}
 .field input:focus{border-color:var(--dt-a50);background:var(--dt-a04);outline:none;}
@@ -97,7 +97,7 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 .card.shake{animation:cardShake .32s ease;}
 
 .btn-connect{
-  width:100%;padding:13px;border:none;border-radius:12px;background:var(--db-teal);color:var(--btn-ink);
+  width:100%;padding:13px;border:none;border-radius:12px;background:var(--card-accent);color:var(--btn-ink);
   font-weight:700;font-size:.95rem;cursor:pointer;transition:box-shadow .25s,transform .2s;
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
@@ -118,21 +118,21 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 .foot-links{display:flex;justify-content:center;align-items:center;gap:14px;}
 .foot-link{background:none;border:none;padding:2px;color:var(--w-a40);font-size:.78rem;font-weight:500;cursor:pointer;transition:color .2s;}
 .foot-sep{color:var(--w-a20);font-size:.78rem;}
-.success-msg{font-size:.82rem;color:var(--db-teal);background:var(--dt-a07);border:1px solid var(--dt-a18);border-radius:10px;padding:9px 12px;margin-top:14px;display:none;}
+.success-msg{font-size:.82rem;color:var(--card-success);background:var(--card-msg-bg);border:1px solid var(--card-border-tint);border-radius:10px;padding:9px 12px;margin-top:14px;display:none;}
 .success-msg.visible{display:block;}
 
 /* Hover uniquement sur les appareils qui savent survoler -- sur tactile
    :hover reste "collant" jusqu'au tap suivant. :active donne le retour
    visuel immediat au doigt (cahier des charges mobile 2026-07-19). */
 @media (hover: hover) {
-  .toggle-pw:hover{color:var(--db-teal);}
+  .toggle-pw:hover{color:var(--card-accent);}
   .btn-connect:hover{box-shadow:0 0 28px var(--dt-a45);transform:translateY(-2px);}
-  .foot-link:hover{color:var(--db-teal);}
+  .foot-link:hover{color:var(--card-accent);}
 }
 @media (hover: none) {
-  .toggle-pw:active{color:var(--db-teal);}
+  .toggle-pw:active{color:var(--card-accent);}
   .btn-connect:active{opacity:.9;}
-  .foot-link:active{color:var(--db-teal);}
+  .foot-link:active{color:var(--card-accent);}
 }
 
 @media(max-width:768px){
