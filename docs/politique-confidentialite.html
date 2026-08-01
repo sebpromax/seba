@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Systeme "Compagnon", declinaison claire (LOT 1, 2026-07-30) : header et
-   bandeau de titre homogenes avec le reste du site, meme jeu de tokens que
-   index.html/comment-ca-marche.html/mentions-legales.html. */
-:root{--ink:#1C2016;--emerald:#6B7D42;--emerald-light:#6E5230;--bg:#E7EDD8;--white:#FFFFFF;--text-2:#6B7060;--border:rgba(90,100,70,.16);--hd-bg:rgba(231,237,216,.92);--hd-bd:rgba(90,100,70,.16);--hd-muted:#6B7060;}
+/* Direction minerale sombre marron/ivoire/caramel (LANDING-HOMEPAGE-001,
+   2026-08-01), etendue au site public -- meme jeu de tokens que
+   index.html/mentions-legales.html/cgu.html. */
+:root{--ink:#F8F4ED;--emerald:#B9825C;--emerald-light:#B9825C;--bg:#1D1713;--white:#2A211B;--text-2:#C8B9A6;--border:rgba(245,240,231,.14);--warn-bg:#4A3B1A;--warn-bd:#6B5828;--hd-bg:rgba(29,23,19,.92);--hd-bd:rgba(245,240,231,.14);--hd-muted:#C8B9A6;--logo-grad-white:#F8F4ED;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;}
 a{color:var(--emerald-light);}
@@ -21,7 +21,8 @@ a{color:var(--emerald-light);}
 
 .sh{position:sticky;top:0;z-index:200;background:var(--hd-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--hd-bd);}
 .sh-inner{max-width:1140px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
-.sh-logo{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:var(--ink);display:flex;align-items:center;gap:1px;text-decoration:none;}
+.sh-logo{font-size:1.15rem;letter-spacing:-.03em;display:flex;align-items:center;gap:1px;text-decoration:none;background:linear-gradient(105deg,var(--logo-grad-white) 0%,var(--logo-grad-white) 28%,var(--logo-grad-ivory) 48%,var(--logo-grad-mid) 72%,var(--logo-grad-end) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 1px 2px var(--logo-shadow));}
+.logo-se{font-weight:800;}.logo-ba{font-weight:300;}
 .sh-dot{color:var(--emerald);}
 .sh-back{color:var(--hd-muted);font-size:.85rem;text-decoration:none;}
 
@@ -39,7 +40,7 @@ a{color:var(--emerald-light);}
 .doc table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:.88rem;}
 .doc th,.doc td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
 .doc th{color:var(--text-2);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.02em;}
-.doc .placeholder{background:#FFF4D6;border:1px solid #F0DDA0;border-radius:6px;padding:2px 6px;font-size:.85em;}
+.doc .placeholder{background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:6px;padding:2px 6px;font-size:.85em;}
 .doc .updated{color:var(--text-2);font-size:.85rem;margin-bottom:0;}
 
 footer{background:var(--white);padding:32px 0;border-top:1px solid var(--border);}
@@ -50,14 +51,14 @@ footer a{color:var(--text-2);}
 </style>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#E7EDD8">
+  <meta name="theme-color" content="#1D1713">
   <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
 <header class="sh">
   <div class="sh-inner">
-    <a href="index.html" class="sh-logo">seba<span class="sh-dot">.</span></a>
+    <a href="index.html" class="sh-logo"><span><span class="logo-se">Se</span><span class="logo-ba">ba</span></span><span class="sh-dot">.</span></a>
     <a href="faq.html" class="sh-back">← FAQ</a>
   </div>
 </header>
