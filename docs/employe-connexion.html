@@ -20,7 +20,7 @@
    traitement que connexion.html/client-connexion.html : Encre Vivante
    conservee (halo CSS + blobs "lave"), recoloree pour un fond clair,
    blend mode screen->multiply (voir .card-lava span). */
-:root{--em:#B9825C;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(29,23,19,.07);--dt-a07:rgba(185,130,92,.16);--dt-a08:rgba(185,130,92,.10);--dt-a18:rgba(185,130,92,.22);--dt-a35:rgba(185,130,92,.35);--dt-a45:rgba(185,130,92,.45);--dt-a50:rgba(29,23,19,.55);--dt-a70:rgba(185,130,92,.7);--btn-ink:#FFFFFF;--pure-white:#F8F4ED;--mist:#C8B9A6;--w-a05:rgba(245,240,231,.08);--w-a40:rgba(29,23,19,.55);--w-a70:rgba(245,240,231,.75);--ink:#1D1713;--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.22);--blk-a40:rgba(0,0,0,.45);--w-a08:rgba(245,240,231,.10);--w-a35:rgba(245,240,231,.14);--w-a10:rgba(29,23,19,.22);--w-a20:rgba(29,23,19,.45);--w-a07:rgba(29,23,19,.18);--w-a06:rgba(29,23,19,.88);--nav-bg:rgba(29,23,19,.92);--card-base:#B9825C;--lava-1:#F5F0E7;--lava-2:#E7DCCB;--lava-3:#CBB89D;--err:#B91C1C;--err-a07:rgba(240,230,220,.92);--err-a08:rgba(185,28,28,.15);--err-a18:rgba(29,23,19,.22);--btn-ink-a30:rgba(255,255,255,.3);--autofill-bg:#E7DCCB;--autofill-text:#1D1713;--card-ink:#1D1713;--card-ink-2:rgba(29,23,19,.88);--card-accent:#1D1713;--card-input-bg:rgba(245,240,231,.32);--card-sheen:rgba(245,240,231,.18);--card-border-tint:rgba(29,23,19,.22);--card-msg-bg:#F0E6DC;--card-success:#3F6B44;}
+:root{--em:#B9825C;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(29,23,19,.07);--dt-a07:rgba(185,130,92,.16);--dt-a08:rgba(185,130,92,.10);--dt-a18:rgba(185,130,92,.22);--dt-a35:rgba(185,130,92,.35);--dt-a45:rgba(185,130,92,.45);--dt-a50:rgba(29,23,19,.55);--dt-a70:rgba(185,130,92,.7);--btn-ink:#FFFFFF;--pure-white:#F8F4ED;--mist:#C8B9A6;--w-a05:rgba(245,240,231,.08);--w-a40:rgba(29,23,19,.55);--w-a70:rgba(245,240,231,.75);--ink:#1D1713;--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.22);--blk-a40:rgba(0,0,0,.45);--w-a08:rgba(245,240,231,.10);--w-a35:rgba(245,240,231,.14);--w-a10:rgba(29,23,19,.22);--w-a20:rgba(29,23,19,.45);--w-a07:rgba(29,23,19,.18);--w-a06:rgba(29,23,19,.88);--nav-bg:rgba(29,23,19,.92);--card-base:#B9825C;--lava-1:#F5F0E7;--lava-2:#E7DCCB;--lava-3:#CBB89D;--err:#B91C1C;--err-a07:rgba(240,230,220,.92);--err-a08:rgba(185,28,28,.15);--err-a18:rgba(29,23,19,.22);--btn-ink-a30:rgba(255,255,255,.3);--autofill-bg:#E7DCCB;--autofill-text:#1D1713;--card-ink:#1D1713;--card-ink-2:rgba(29,23,19,.88);--card-accent:#1D1713;--card-input-bg:rgba(245,240,231,.32);--card-sheen:rgba(245,240,231,.18);--card-border-tint:rgba(29,23,19,.22);--card-msg-bg:#F0E6DC;--card-success:#3F6B44;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 html,body{overflow-x:hidden;}
@@ -30,9 +30,10 @@ a{color:inherit;text-decoration:none;}
 input,button{font-family:'Inter',sans-serif;}
 
 .nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;display:flex;align-items:center;padding:0 24px;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
-.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
+.nav-logo{font-size:1.1rem;letter-spacing:-0.03em;display:flex;align-items:center;gap:8px;}
 .nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--db-teal);box-shadow:0 0 10px var(--dt-a70);}
-.logo-se{font-weight:800;color:var(--pure-white);}.logo-ba{font-weight:300;color:var(--mist);}
+.logo-se{font-weight:800;}.logo-ba{font-weight:300;}
+.nav-logo{background:linear-gradient(105deg,var(--pure-white) 0%,var(--pure-white) 28%,var(--logo-grad-ivory) 48%,var(--logo-grad-mid) 72%,var(--logo-grad-end) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 1px 2px var(--logo-shadow));}
 
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:96px 24px 60px;}
 
