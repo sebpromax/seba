@@ -20,37 +20,69 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#E7EDD8">
+<meta name="theme-color" content="#1D1713">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <style>
   :root{
-    /* Systeme "Compagnon", declinaison claire (valide fondateur 2026-07-29) :
-       fond vert tres pale homogene (pas blanc + accent ajoute), cartes
-       blanches distinctes, accent olive fonce (contraste verifie sur fond
-       clair), bronze reserve aux reperes numeriques. */
-    --bg:#E7EDD8;
-    --surface:#FFFFFF;
-    --surface-2:#F1F4E8;
-    --border:rgba(90,100,70,.16);
-    --border-strong:rgba(90,100,70,.26);
-    --text:#1C2016;
-    --text-2:#6B7060;
-    --text-3:#8B9080;
-    --accent:#6B7D42;
-    --accent-strong:#6B7D42;
-    --accent-soft:rgba(107,125,66,.12);
-    --accent-border:rgba(107,125,66,.35);
-    --on-accent:#ffffff;
-    --bronze:#6E5230;
-    --shadow:rgba(28,32,22,.10);
-    --overlay:rgba(231,237,216,.97);
-    --nav-bg:rgba(231,237,216,.92);
-    --danger:#EF4444;
+    /* Direction sombre marron/ivoire/beige mineral (demande fondateur
+       2026-08-01) : bois brun tres fonce, cacao, pierre beige eclairee,
+       lin ivoire, lumiere chaude discrete. SaaS B2B premium, pas un site
+       de decoration/hotel/restaurant -- contraste fort, lecture immediate.
+       Le caramel reste une touche d'accent, jamais une couleur de fond. */
+    --seba-bg-deep:#1D1713;
+    --seba-bg-brown:#2A211B;
+    --seba-bg-soft:#352A22;
+
+    --seba-ivory:#F5F0E7;
+    --seba-cream:#E7DCCB;
+    --seba-beige:#CBB89D;
+    --seba-taupe:#9A8875;
+
+    --seba-caramel:#B9825C;
+    --seba-caramel-dark:#8D5F42;
+
+    --seba-text-main:#F8F4ED;
+    --seba-text-secondary:#C8B9A6;
+    --seba-border:rgba(245,240,231,.12);
+
+    --bg:var(--seba-bg-deep);
+    --surface:var(--seba-bg-brown);
+    --surface-2:var(--seba-bg-soft);
+    --border:var(--seba-border);
+    --border-strong:rgba(245,240,231,.22);
+    --text:var(--seba-text-main);
+    --text-2:var(--seba-text-secondary);
+    --text-3:var(--seba-taupe);
+    --accent:var(--seba-caramel);
+    --accent-strong:var(--seba-caramel-dark);
+    --accent-soft:rgba(185,130,92,.16);
+    --accent-border:rgba(185,130,92,.4);
+    --hero-glow:rgba(185,130,92,.16);
+    --hero-image-blend:rgba(245,240,231,.32);
+    --on-accent:var(--seba-bg-deep);
+    --shadow:rgba(0,0,0,.45);
+    --overlay:rgba(29,23,19,.97);
+    --nav-bg:rgba(29,23,19,.86);
+    --danger:var(--seba-caramel-dark);
+    /* Degrade mineral (ivoire -> creme -> beige -> caramel fonce), reserve
+       aux grands titres + logo texte -- jamais aux paragraphes/nav/
+       boutons/labels/cartes. Remplace le degrade terre cuite precedent
+       (2026-08-01). */
+    --titlegrad-white:var(--seba-ivory);
+    --titlegrad-ivory:var(--seba-cream);
+    --titlegrad-stone:var(--seba-beige);
+    --titlegrad-terracotta:var(--seba-caramel-dark);
+    --titlegrad-shadow:rgba(0,0,0,.45);
+    --titlegrad-shadow-tight:rgba(0,0,0,.3);
+    --titlegrad-shadow-strong:rgba(0,0,0,.6);
   }
   *,*::before,*::after{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  /* Eclaircissement subtil derriere le hero (lumiere chaude discrete) pour
+     donner de la profondeur au fond tres sombre, sans ajouter de teinte
+     hors palette (glow = caramel en tres faible opacite). */
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:radial-gradient(1100px 620px at 50% -8%,var(--hero-glow),transparent 60%),var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
   h1,h2,h3{letter-spacing:-0.02em;margin:0;}
   p{margin:0;}
   a{color:inherit;text-decoration:none;}
@@ -126,13 +158,27 @@
   /* ── Hero ── */
   .hero-section{padding:72px max(20px,calc((100vw - 1140px)/2)) 0;text-align:center;}
   .hero-title{font-size:clamp(2rem,4.4vw,3.4rem);font-weight:800;line-height:1.12;letter-spacing:-0.03em;max-width:920px;margin:0 auto 20px;}
-  /* Meme effet que product.html/faq.html/tarifs.html : degrade texte encre -> accent. */
-  .headline-gradient{background:linear-gradient(135deg,var(--text) 40%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  /* Grands titres uniquement (demande fondateur 2026-08-01) : ivoire chaud
+     dominant -> pierre -> terre cuite, progressif, jamais neon. Scope
+     volontairement limite a index.html -- product.html/faq.html/tarifs.html/
+     comment-ca-marche.html gardent le degrade encre -> accent existant tant
+     que cette nouvelle direction n'est pas etendue explicitement aux autres
+     pages. */
+  .headline-gradient,.nav-logo{background:linear-gradient(105deg,var(--titlegrad-white) 0%,var(--titlegrad-white) 28%,var(--titlegrad-ivory) 48%,var(--titlegrad-stone) 72%,var(--titlegrad-terracotta) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  /* Ombre portee douce (test) : separe le blanc du fond pale sans assombrir
+     le fond ni diluer le degrade. Intensite reduite sur le logo (petite
+     taille de police, une ombre aussi forte que sur le hero paraitrait sale). */
+  .headline-gradient{filter:drop-shadow(0 2px 10px var(--titlegrad-shadow)) drop-shadow(0 1px 2px var(--titlegrad-shadow-tight));}
+  .nav-logo{filter:drop-shadow(0 1px 2px var(--titlegrad-shadow-strong));}
   .hero-subtitle{font-size:clamp(1.02rem,1.6vw,1.2rem);line-height:1.6;color:var(--text-2);max-width:640px;margin:0 auto 32px;}
   .hero-ctas{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:16px;}
   .hero-proof{font-size:.82rem;color:var(--text-3);margin-bottom:40px;}
-  .hero-visual{max-width:1040px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 24px 60px var(--shadow);}
+  .hero-visual{position:relative;max-width:1040px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 24px 60px var(--shadow);}
   .hero-visual img{width:100%;height:auto;}
+  /* Fond blanchi de la capture produit legerement fondu vers l'ivoire de la
+     palette (demande fondateur 2026-08-01), subtil et non total : melange
+     par mix-blend-mode plutot qu'un filtre qui denaturerait la capture. */
+  .hero-visual::after{content:"";position:absolute;inset:0;background:var(--hero-image-blend);mix-blend-mode:multiply;pointer-events:none;}
 
   /* ── Apparition au scroll : une seule fois, fonctionnelle (pas de signature de marque animee) ── */
   .reveal-shot{opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;}
