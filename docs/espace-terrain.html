@@ -19,6 +19,7 @@
      pre-requis de session patron sur cet appareil (ancien modele PIN,
      retire). -->
 <script src="auth.js"></script>
+<script src="notifications-widget.js"></script>
 <style>
 :root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -636,6 +637,7 @@ function missionStatusKey(i) {
     return;
   }
   _profile = profileRes;
+  if (window.SebaNotifications) SebaNotifications.init();
 
   document.getElementById('et-loading').style.display = 'none';
   document.getElementById('et-app').style.display = 'block';

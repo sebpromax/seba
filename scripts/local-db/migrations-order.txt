@@ -169,6 +169,16 @@ migrations/2026-07-29-public-intake-config-persistence.sql
 # dédiée, même schéma que update_my_entreprise. Voir l'en-tête du fichier
 # pour le détail complet.
 
+migrations/2026-08-02-portal-notifications-foundation.sql
+# Lot 1 du programme d'amélioration des portails Client/Salarié : table
+# dédiée `notifications` + `notification_preferences` (RLS stricte, accès
+# exclusivement via RPC security definer), trigger AFTER INSERT sur
+# seba_messages, et 3 RPC existantes (client_accept_devis/
+# client_refuse_devis/complete_my_intervention) étendues de façon
+# additive (CREATE OR REPLACE reproduisant leur logique existante à
+# l'identique + un appel de notification avant le retour de succès). Voir
+# l'en-tête du fichier pour le détail complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
