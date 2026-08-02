@@ -24,7 +24,7 @@
    clair. --ink-r (panneau statique de droite) devient une teinte pale
    legerement plus soutenue que le fond de page (--surface-2), pas sombre --
    la moitie du tunnel ne doit pas rester une zone d'exception sombre. */
-:root{--em-bright:#B9825C;
+:root{
   --em:#B9825C;--ink:#1D1713;--ink-r:#2A211B;--t2:rgba(245,240,231,.6);--t3:rgba(245,240,231,.3);--bd:rgba(245,240,231,.16);--r:10px;--rs:8px;
   /* ── Design system : espacement (base 4px) ── */
   --spacing-1:4px;--spacing-2:8px;--spacing-3:12px;--spacing-4:16px;--spacing-5:20px;
@@ -37,7 +37,7 @@
   --shadow-sm:0 1px 4px rgba(0,0,0,.3);--shadow-md:0 4px 16px rgba(0,0,0,.35);
   --shadow-lg:0 16px 48px rgba(0,0,0,.45);
   /* ── Tokens du tunnel Flash & Drop ── */
-  --white:#F8F4ED;--err:#DC2626;
+  --white:#F8F4ED;--error-on-dark:#F87171;
   --input-bg:rgba(245,240,231,.06);--focus-ring:rgba(185,130,92,.25);
   --hover-bg:rgba(245,240,231,.06);--hover-border:rgba(245,240,231,.24);
   --selected-bg:rgba(185,130,92,.12);--surface:#2A211B;--on-accent:#1D1713;
@@ -141,7 +141,7 @@ a{color:inherit;text-decoration:none;}
 .pwd-wrap input{width:100%;padding-right:44px;}
 .pwd-toggle{position:absolute;right:6px;top:6px;width:36px;height:36px;border:none;background:transparent;color:var(--t2);cursor:pointer;font-size:1rem;border-radius:var(--rs);}
 .pwd-toggle:hover{color:var(--white);}
-.err{min-height:18px;font-size:var(--font-size-xs);color:var(--err);margin-top:var(--spacing-1);}
+.err{min-height:18px;font-size:var(--font-size-xs);color:var(--error-on-dark);margin-top:var(--spacing-1);}
 .label-hint{color:var(--t3);font-weight:400;}
 
 /* Action majeure = gradient bi-ton (spec Dual-Tone), texte blanc. */
@@ -248,7 +248,7 @@ p{letter-spacing:-0.02em;}
          validé fondateur 2026-07-11 : on s'intéresse à lui avant de demander
          quoi que ce soit). -->
     <section class="flash-step" id="fstep-1">
-      <h1 class="step-title">Quel est votre métier ?</h1>
+      <h1 class="step-title">Quel est votre métier&nbsp;?</h1>
       <div class="sectors-grid" id="sectors-grid">
         <button type="button" class="sector-card" data-sector="Nettoyage &amp; Entretien">
           <span class="sector-icon">01</span>

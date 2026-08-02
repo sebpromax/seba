@@ -4,16 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hors ligne — Seba</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="robots" content="noindex">
 <style>
 /* Page servie par le service worker SANS réseau : autonome par construction —
    police système, zéro requête externe, styles tokenisés dans :root. */
 :root{--em:#B9825C;--ink:#1D1713;--white:#F8F4ED;--t2:rgba(248,244,237,.5);--t3:rgba(248,244,237,.22);--bd:rgba(248,244,237,.1);--db-teal:#B9825C;--zinc-950:#1D1713;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--ink);color:var(--white);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;-webkit-font-smoothing:antialiased;}
+body{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--ink);color:var(--white);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;-webkit-font-smoothing:antialiased;}
 :focus-visible{outline:2px solid var(--em);outline-offset:3px;}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--t3);margin-bottom:20px;position:relative;}
 .dot::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1.5px solid var(--t3);opacity:.5;}
@@ -27,10 +24,12 @@ html.fx-on .dot{animation:fxDotBreathe 4s ease-in-out infinite;}
 @keyframes fxDotBreathe{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.25);}}
 </style>
 <style>
-/* ── Harmonisation typographique (LANDING-HOMEPAGE-001) : Inter
-   partout, letter-spacing compact et chirurgical. Bloc en fin de <head>
-   pour gagner la cascade sur les styles de page. ── */
-body,button,input,select,textarea{font-family:'Inter',sans-serif;}
+/* Page hors-ligne : zero dependance externe par construction (voir
+   commentaire plus haut) -- pas de police 'Inter' ici (elle forcerait un
+   fallback silencieux vers une police generique si jamais chargee sans
+   reseau). Meme pile systeme que .btn/body, letter-spacing conserve pour
+   coherence avec le reste du site. */
+body,button,input,select,textarea{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
 h2,h3{letter-spacing:-0.04em;}
 p{letter-spacing:-0.02em;}
 </style>
