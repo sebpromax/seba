@@ -179,6 +179,16 @@ migrations/2026-08-02-portal-notifications-foundation.sql
 # l'identique + un appel de notification avant le retour de succès). Voir
 # l'en-tête du fichier pour le détail complet.
 
+migrations/2026-08-03-provisional-access-code.sql
+# Accès initial Client/Salarié par code provisoire (feat/client-employee-
+# initial-access-code) : table dédiée provisional_access_codes (RLS
+# stricte, accès exclusivement via RPC security definer), machine à
+# états pending/verifying/password_pending/activated/revoked/expired,
+# contraintes uniques client_accounts/employe_accounts. N'ajoute AUCUNE
+# suspension de compte (hors périmètre, PR séparée) et ne modifie
+# aucune RPC/policy existante. Voir l'en-tête du fichier pour le détail
+# complet.
+
 # ══════════════════════════════════════════════════════════════════
 # OVERLAY FACULTATIF (jamais appliqué par défaut — commande explicite uniquement)
 # ══════════════════════════════════════════════════════════════════
