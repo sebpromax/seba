@@ -167,42 +167,103 @@ p{letter-spacing:-0.02em;}
   <div class="card" style="position:relative;z-index:1;">
     <div class="card-lava" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 
-    <div class="card-head">
-      <h1>Connexion Employé</h1>
-      <p>Accédez à votre planning du jour.</p>
-    </div>
+    <div id="normal-login-block">
+      <div class="card-head">
+        <h1>Connexion Employé</h1>
+        <p>Accédez à votre planning du jour.</p>
+      </div>
 
-    <div class="error-msg" id="error-msg"></div>
+      <div class="error-msg" id="error-msg"></div>
 
-    <div class="field" id="identifiant-field">
-      <label for="identifiant">Identifiant</label>
-      <input type="email" id="identifiant" placeholder="vous@email.fr" autocomplete="email">
-    </div>
+      <div class="field" id="identifiant-field">
+        <label for="identifiant">Identifiant</label>
+        <input type="email" id="identifiant" placeholder="vous@email.fr" autocomplete="email">
+      </div>
 
-    <div class="field" id="password-field">
-      <label for="password">Mot de passe</label>
-      <div class="field-pw-wrap">
-        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-        <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePasswordVisibility()" aria-label="Afficher le mot de passe">
-          <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-          <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
-        </button>
+      <div class="field" id="password-field">
+        <label for="password">Mot de passe</label>
+        <div class="field-pw-wrap">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePasswordVisibility()" aria-label="Afficher le mot de passe">
+            <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-connect" id="btn-connect" onclick="handleLogin()">
+        <span class="btn-spinner" id="btn-spinner"></span>
+        <span id="btn-connect-text">Se connecter</span>
+      </button>
+
+      <div class="success-msg" id="forgot-msg"></div>
+
+      <hr class="divider">
+
+      <div class="foot-links">
+        <button type="button" class="foot-link" onclick="history.back()">Retour</button>
+        <span class="foot-sep">·</span>
+        <button type="button" class="foot-link" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
+        <span class="foot-sep">·</span>
+        <button type="button" class="foot-link" onclick="showFirstLoginMode()">Première connexion</button>
       </div>
     </div>
 
-    <button class="btn-connect" id="btn-connect" onclick="handleLogin()">
-      <span class="btn-spinner" id="btn-spinner"></span>
-      <span id="btn-connect-text">Se connecter</span>
-    </button>
+    <!-- Première connexion : email + code provisoire (feat/client-employee-
+         initial-access-code). Formulaire SÉPARÉ du login normal. -->
+    <div id="first-login-block" style="display:none;">
+      <div class="card-head">
+        <h1>Première connexion</h1>
+        <p>Saisissez l'email et le code fournis par votre patron.</p>
+      </div>
 
-    <div class="success-msg" id="forgot-msg"></div>
+      <div class="error-msg" id="fl-error-msg"></div>
 
-    <hr class="divider">
+      <div class="field">
+        <label for="fl-email">Email</label>
+        <input type="email" id="fl-email" placeholder="vous@email.fr" autocomplete="email">
+      </div>
 
-    <div class="foot-links">
-      <button type="button" class="foot-link" onclick="history.back()">Retour</button>
-      <span class="foot-sep">·</span>
-      <button type="button" class="foot-link" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
+      <div class="field">
+        <label for="fl-code">Code (8 caractères)</label>
+        <input type="text" id="fl-code" placeholder="ABCD2345" autocomplete="one-time-code" inputmode="text" maxlength="8" style="text-transform:uppercase;letter-spacing:.12em;font-weight:700;">
+      </div>
+
+      <button class="btn-connect" id="fl-btn" onclick="handleFirstLoginSubmit()">
+        <span class="btn-spinner" id="fl-btn-spinner"></span>
+        <span id="fl-btn-text">Continuer</span>
+      </button>
+
+      <hr class="divider">
+      <div class="foot-links">
+        <button type="button" class="foot-link" onclick="showNormalLoginMode()">Retour à la connexion</button>
+      </div>
+    </div>
+
+    <!-- Étape obligatoire : création du mot de passe définitif, jamais
+         contournable -- affichée uniquement après un code réellement
+         validé côté serveur (activate-access-code). -->
+    <div id="create-password-block" style="display:none;">
+      <div class="card-head">
+        <h1>Créez votre mot de passe</h1>
+        <p>Dernière étape avant d'accéder à votre espace.</p>
+      </div>
+
+      <div class="error-msg" id="cp-error-msg"></div>
+
+      <div class="field">
+        <label for="cp-password">Nouveau mot de passe</label>
+        <input type="password" id="cp-password" placeholder="8 caractères minimum" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="cp-password-confirm">Confirmez le mot de passe</label>
+        <input type="password" id="cp-password-confirm" placeholder="••••••••" autocomplete="new-password">
+      </div>
+
+      <button class="btn-connect" id="cp-btn" onclick="handleCreatePassword()">
+        <span class="btn-spinner" id="cp-btn-spinner"></span>
+        <span id="cp-btn-text">Créer mon mot de passe</span>
+      </button>
     </div>
   </div>
 </div>
@@ -270,7 +331,127 @@ function togglePasswordVisibility(){
   btn.classList.toggle('showing', showing);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement.closest('.card')) handleLogin(); });
+/* ── Première connexion par code provisoire (feat/client-employee-
+   initial-access-code) : 2 écrans séparés (email+code, puis mot de passe
+   obligatoire), jamais mélangés au formulaire de connexion normale. ── */
+const ROLE = 'employe';
+const PORTAL_URL = 'espace-terrain.html';
+
+function showFirstLoginMode(){
+  document.getElementById('normal-login-block').style.display = 'none';
+  document.getElementById('first-login-block').style.display = 'block';
+  document.getElementById('create-password-block').style.display = 'none';
+}
+function showNormalLoginMode(){
+  document.getElementById('normal-login-block').style.display = 'block';
+  document.getElementById('first-login-block').style.display = 'none';
+  document.getElementById('create-password-block').style.display = 'none';
+}
+
+async function handleFirstLoginSubmit(){
+  const email = document.getElementById('fl-email').value.trim();
+  const code = document.getElementById('fl-code').value.trim().toUpperCase();
+  const err = document.getElementById('fl-error-msg');
+  err.classList.remove('visible');
+
+  if (!isValidEmailFormat(email) || code.length !== 8) {
+    shakeCard();
+    err.textContent = 'Saisissez votre email et le code à 8 caractères.';
+    err.classList.add('visible');
+    return;
+  }
+
+  const btn = document.getElementById('fl-btn');
+  const btnText = document.getElementById('fl-btn-text');
+  if (btn.disabled) return; // anti double-envoi
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btnText.textContent = 'Vérification…';
+
+  try {
+    const cfg = window.SEBA_CONFIG || {};
+    const res = await fetch(cfg.supabaseUrl + '/functions/v1/activate-access-code', {
+      method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, role: ROLE }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) {
+      err.textContent = body.error || 'Email ou code invalide, expiré ou déjà utilisé.';
+      err.classList.add('visible');
+      shakeCard();
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btnText.textContent = 'Continuer';
+      return;
+    }
+    const verifyRes = await sebaAuth.verifySessionToken(body.token_hash, body.type);
+    if (!verifyRes.ok) {
+      err.textContent = 'Le code a expiré entre-temps, redemandez un code à votre patron.';
+      err.classList.add('visible');
+      shakeCard();
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btnText.textContent = 'Continuer';
+      return;
+    }
+    document.getElementById('first-login-block').style.display = 'none';
+    document.getElementById('create-password-block').style.display = 'block';
+  } catch (e) {
+    err.textContent = 'Connexion impossible. Réessayez.';
+    err.classList.add('visible');
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    btnText.textContent = 'Continuer';
+  }
+}
+
+async function handleCreatePassword(){
+  const pwd = document.getElementById('cp-password').value;
+  const confirm = document.getElementById('cp-password-confirm').value;
+  const err = document.getElementById('cp-error-msg');
+  err.classList.remove('visible');
+
+  if (pwd.length < 8) {
+    err.textContent = 'Le mot de passe doit contenir au moins 8 caractères.';
+    err.classList.add('visible');
+    return;
+  }
+  if (pwd !== confirm) {
+    err.textContent = 'Les deux mots de passe ne correspondent pas.';
+    err.classList.add('visible');
+    return;
+  }
+
+  const btn = document.getElementById('cp-btn');
+  const btnText = document.getElementById('cp-btn-text');
+  if (btn.disabled) return;
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btnText.textContent = 'Création…';
+
+  const res = await sebaAuth.updatePassword(pwd);
+  if (!res.ok) {
+    err.textContent = res.error || 'Impossible de créer le mot de passe. Réessayez.';
+    err.classList.add('visible');
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    btnText.textContent = 'Créer mon mot de passe';
+    return;
+  }
+
+  // Marque l'invitation 'activated' -- appel authentifié (la vraie session
+  // existe déjà depuis verifySessionToken()) -- jamais avant ce point.
+  await sebaAuth.rpc('mark_access_code_activated', {});
+  window.location.href = PORTAL_URL;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !document.activeElement.closest('.card')) return;
+  if (document.getElementById('first-login-block').style.display !== 'none') { handleFirstLoginSubmit(); return; }
+  if (document.getElementById('create-password-block').style.display !== 'none') { handleCreatePassword(); return; }
+  handleLogin();
+});
 </script>
 </body>
 </html>

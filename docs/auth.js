@@ -146,6 +146,22 @@
       } catch (e) { return { ok: false, error: e.message }; }
     },
 
+    /* Accès initial par code provisoire (feat/client-employee-initial-
+       access-code) : échange le token_hash renvoyé par l'Edge Function
+       activate-access-code (déjà validé côté serveur -- code vérifié,
+       compte lié) contre une VRAIE session Supabase, via le même
+       mécanisme de vérification que Supabase utilise pour un lien
+       magique cliqué -- jamais un système de session parallèle maison. */
+    async verifySessionToken(tokenHash, type) {
+      if (!configured) return { ok: true, demo: true };
+      try {
+        const sb = await loadSDK();
+        const { data, error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: type || 'recovery' });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, session: data.session };
+      } catch (e) { return { ok: false, error: e.message }; }
+    },
+
     /* Inscription SANS mot de passe (parcours « valeur d'abord », décision
        fondateur 2026-07-11) : signInWithOtp crée le compte et envoie un lien
        d'activation. Le clic ouvre bienvenue.html AVEC une session — c'est là

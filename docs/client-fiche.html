@@ -572,6 +572,23 @@
           <p class="msg-note" id="client-email-status" style="margin-top:8px;"></p>
         </div>
 
+        <!-- ACCÈS AU PORTAIL PAR CODE PROVISOIRE (feat/client-employee-
+             initial-access-code) : complément à l'invitation par lien
+             ci-dessus, jamais un remplacement. -->
+        <div class="panel" id="access-code-panel">
+          <div class="panel-head"><h3>Accès au portail (code provisoire)</h3></div>
+          <p class="msg-note" id="access-code-status-line">Chargement du statut…</p>
+          <div class="msg-input-row" style="flex-wrap:wrap;gap:8px;">
+            <button class="btn-em" onclick="handleSendAccessCode('email')">Envoyer le code par email</button>
+            <button class="btn-em" style="background:none;border:1px solid var(--border);color:var(--ink);" onclick="handleSendAccessCode('reveal_once')">Générer et afficher une fois</button>
+            <button class="btn-em" style="background:none;border:1px solid var(--danger-text);color:var(--danger-text);" onclick="handleRevokeAccessCode()">Révoquer</button>
+          </div>
+          <div id="access-code-reveal" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;">
+            <p style="font-weight:700;font-size:1.3rem;letter-spacing:.12em;margin:0 0 6px;color:var(--ink);" id="access-code-reveal-value"></p>
+            <p class="msg-note" style="margin:0;color:var(--danger-text);">Ce code ne pourra plus être affiché. Notez-le ou transmettez-le maintenant.</p>
+          </div>
+        </div>
+
         <!-- DEMANDES (Espace Client) -->
         <div class="panel" id="demandes-panel">
           <div class="panel-head"><h3>Demandes</h3></div>
@@ -993,6 +1010,7 @@
     renderDemandes();
     const emailInput = document.getElementById('client-email-input');
     if (emailInput) emailInput.value = client.email || '';
+    loadAccessCodeStatus();
 
     // Informations métier réelles (voir renderSectorInfo() plus bas --
     // remplace les valeurs fictives DEMO_CLIENT_FIELDS retirées).
@@ -1737,6 +1755,67 @@
       status.textContent = 'Email enregistré, mais accès non créé : ' + (prov.error || 'erreur inconnue.');
       status.style.color = 'var(--danger-text)';
     }
+  }
+
+  /* ── Accès au portail par code provisoire (feat/client-employee-
+     initial-access-code) : complément à l'invitation par lien ci-dessus.
+     account n'est jamais fourni ici -- résolu côté serveur depuis le JWT
+     du patron (voir create-access-code.ts). ── */
+  const ACCESS_CODE_STATUS_LABELS = {
+    pending: 'Code envoyé, en attente de saisie', verifying: 'Code en cours de vérification',
+    password_pending: 'Code validé, en attente de création du mot de passe',
+    activated: 'Accès activé', revoked: 'Code révoqué', expired: 'Code expiré',
+  };
+  async function loadAccessCodeStatus() {
+    const line = document.getElementById('access-code-status-line');
+    if (!line || !_id || !window.sebaAuth || !sebaAuth.isConfigured) { if (line) line.textContent = 'Statut indisponible (mode démo).'; return; }
+    const { data, error } = await sebaAuth.rpc('get_my_access_codes_status', { p_role: 'client', p_entity_id: _id });
+    if (error || !Array.isArray(data) || data.length === 0) { line.textContent = 'Aucun accès créé pour ce client.'; return; }
+    const latest = data[0];
+    const label = ACCESS_CODE_STATUS_LABELS[latest.status] || latest.status;
+    const deliveryNote = latest.delivery_method === 'email'
+      ? (latest.delivery_status === 'sent' ? ' — email envoyé' : latest.delivery_status === 'delivery_failed' ? ' — ÉCHEC D\'ENVOI, réessayez' : '')
+      : ' — affiché une fois au patron';
+    line.textContent = label + deliveryNote + '.';
+  }
+
+  async function handleSendAccessCode(deliveryMethod) {
+    const emailInput = document.getElementById('client-email-input');
+    const email = (emailInput && emailInput.value.trim().toLowerCase()) || '';
+    const line = document.getElementById('access-code-status-line');
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      line.textContent = 'Renseignez d\'abord un email valide ci-dessus.';
+      return;
+    }
+    if (!window.sebaAuth || !sebaAuth.isConfigured) { line.textContent = 'Indisponible en mode démo.'; return; }
+    line.textContent = 'Génération du code…';
+    const session = await sebaAuth.getSession();
+    if (!session) { line.textContent = 'Session expirée, reconnectez-vous.'; return; }
+    const cfg = window.SEBA_CONFIG || {};
+    try {
+      const res = await fetch(cfg.supabaseUrl + '/functions/v1/create-access-code', {
+        method: 'POST',
+        headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'client', entity_id: _id, email, delivery_method: deliveryMethod }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok) { line.textContent = 'Échec : ' + (body.error || 'erreur inconnue.'); return; }
+      if (deliveryMethod === 'reveal_once' && body.code) {
+        document.getElementById('access-code-reveal-value').textContent = body.code;
+        document.getElementById('access-code-reveal').style.display = 'block';
+      }
+      SebaDB.log('client', 'Code d\'accès généré — ' + (_n || 'un client'), 'client-fiche.html?id=' + _id);
+      await loadAccessCodeStatus();
+    } catch (e) {
+      line.textContent = 'Connexion impossible : ' + e.message;
+    }
+  }
+
+  async function handleRevokeAccessCode() {
+    if (!window.sebaAuth || !sebaAuth.isConfigured) return;
+    document.getElementById('access-code-reveal').style.display = 'none';
+    await sebaAuth.rpc('revoke_access_code', { p_role: 'client', p_entity_id: _id });
+    await loadAccessCodeStatus();
   }
 
   /* ── Messagerie (journal patron + reponses du client depuis son Espace
