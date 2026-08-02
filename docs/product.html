@@ -24,12 +24,20 @@
     function loadScript(src, cb){ var s=document.createElement('script'); s.src=src; s.defer=true; s.onload=cb; s.onerror=cb; document.head.appendChild(s); }
     function revealFallback(){ document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.feature-block').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }
     function maybeLoad(){ if (window.__gsap_loaded) return; window.__gsap_loaded = true; loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js', function(){ loadScript('https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js', function(){ if (typeof gsap!=='undefined' && typeof ScrollTrigger!=='undefined' && window.__seba_reveal_init) window.__seba_reveal_init(); else revealFallback(); }); }); }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', maybeLoad); else maybeLoad();
+    // prefers-reduced-motion : ne charge meme pas GSAP/ScrollTrigger (economie
+    // reseau en plus de l'accessibilite) -- seule cette page du site laissait
+    // tourner ses animations de scroll sans respecter cette preference.
+    function init(){
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { revealFallback(); return; }
+      maybeLoad();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   })();
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+:focus-visible{outline:2px solid var(--db-teal);outline-offset:3px;}
 /* overflow-x:hidden -- meme correctif que index.html : un halo decoratif
    (width:500px fixe, position:absolute) deborde le viewport sur mobile,
    rendant toute la page scrollable horizontalement. Audit mobile 2026-07-19. */
@@ -324,7 +332,7 @@ p{letter-spacing:-0.02em;}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="background:var(--dt-a08);border-left:3px solid var(--db-teal);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Lacroix — Élec. (8h-12h)</div>
-        <div style="background:var(--dt-a08);border-left:3px solid var(--em-bright);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Tessier — Plomberie (14h-17h)</div>
+        <div style="background:var(--dt-a08);border-left:3px solid var(--em-caramel-light);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Tessier — Plomberie (14h-17h)</div>
         <div style="background:rgba(251,191,36,.07);border-left:3px solid rgba(251,191,36,.6);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Dumont — Fin chantier (9h-11h)</div>
         <div style="background:var(--dt-a08);border-left:3px solid var(--db-teal);border-radius:4px;padding:6px 10px;font-size:.72rem;font-weight:600;">Martin — Maintenance (13h-16h)</div>
       </div>
@@ -410,7 +418,7 @@ document.querySelectorAll('a[href]').forEach(a=>{const h=a.getAttribute('href');
      textes sombres a differents degres d'emphase, --dt-aXX passe du
      cuivre a l'olive (accent unique du systeme). -->
 <style>
-:root{--em-bright:#B9825C;--footer-mute:#C8B9A6;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,0.04);--dt-a06:rgba(185,130,92,0.06);--dt-a07:rgba(185,130,92,0.07);--dt-a08:rgba(185,130,92,0.08);--dt-a10:rgba(185,130,92,0.1);--dt-a12:rgba(185,130,92,0.12);--dt-a15:rgba(185,130,92,0.15);--dt-a18:rgba(185,130,92,0.18);--dt-a20:rgba(185,130,92,0.2);--dt-a25:rgba(185,130,92,0.25);--dt-a30:rgba(185,130,92,0.3);--dt-a35:rgba(185,130,92,0.35);--dt-a45:rgba(185,130,92,0.45);--dt-a50:rgba(185,130,92,0.5);--dt-a70:rgba(185,130,92,0.7);--dt-a80:rgba(185,130,92,0.8);--dt-a85:rgba(185,130,92,0.85);--btn-ink:#1D1713;--pure-white:#F8F4ED;--w-a05:rgba(245,240,231,.08);--w-a70:rgba(245,240,231,.75);--w-a80:rgba(245,240,231,.82);--mist:#C8B9A6;--w-a06:rgba(245,240,231,.18);--w-a40:rgba(245,240,231,.55);--ink:#1D1713;--nav-bg:rgba(29,23,19,.92);--mob-overlay-bg:rgba(29,23,19,.97);--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.3);--w-a03:rgba(245,240,231,.05);--w-a08:rgba(245,240,231,.22);--w-a35:rgba(245,240,231,.14);--w-a025:rgba(245,240,231,.05);--w-a07:rgba(245,240,231,.2);--surface:#2A211B;--border:rgba(245,240,231,.14);--shadow:rgba(0,0,0,.4);--text-caption:rgba(245,240,231,.5);--text-micro:rgba(245,240,231,.4);--danger-item:#E2645B;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
+:root{--em-caramel-light:#B9825C;--footer-mute:#C8B9A6;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,0.04);--dt-a06:rgba(185,130,92,0.06);--dt-a07:rgba(185,130,92,0.07);--dt-a08:rgba(185,130,92,0.08);--dt-a10:rgba(185,130,92,0.1);--dt-a12:rgba(185,130,92,0.12);--dt-a15:rgba(185,130,92,0.15);--dt-a18:rgba(185,130,92,0.18);--dt-a20:rgba(185,130,92,0.2);--dt-a25:rgba(185,130,92,0.25);--dt-a30:rgba(185,130,92,0.3);--dt-a35:rgba(185,130,92,0.35);--dt-a45:rgba(185,130,92,0.45);--dt-a50:rgba(185,130,92,0.5);--dt-a70:rgba(185,130,92,0.7);--dt-a80:rgba(185,130,92,0.8);--dt-a85:rgba(185,130,92,0.85);--btn-ink:#1D1713;--pure-white:#F8F4ED;--w-a05:rgba(245,240,231,.08);--w-a70:rgba(245,240,231,.75);--w-a80:rgba(245,240,231,.82);--mist:#C8B9A6;--w-a06:rgba(245,240,231,.18);--w-a40:rgba(245,240,231,.55);--ink:#1D1713;--nav-bg:rgba(29,23,19,.92);--mob-overlay-bg:rgba(29,23,19,.97);--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.3);--w-a03:rgba(245,240,231,.05);--w-a08:rgba(245,240,231,.22);--w-a35:rgba(245,240,231,.14);--w-a025:rgba(245,240,231,.05);--w-a07:rgba(245,240,231,.2);--surface:#2A211B;--border:rgba(245,240,231,.14);--shadow:rgba(0,0,0,.4);--text-caption:rgba(245,240,231,.5);--text-micro:rgba(245,240,231,.4);--danger-item:#E2645B;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
 </style>
 </body>
 </html>

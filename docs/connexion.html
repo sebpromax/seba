@@ -29,7 +29,7 @@
    mix-blend-mode:screen (pense pour fond noir, quasi invisible sur blanc)
    a mix-blend-mode:multiply (voir .card-lava plus bas), avec des teintes
    pastel plutot que les teintes vives d'origine. */
-:root{--em:#B9825C;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,.06);--dt-a07:rgba(185,130,92,.16);--dt-a08:rgba(185,130,92,.10);--dt-a18:rgba(185,130,92,.22);--dt-a35:rgba(185,130,92,.35);--dt-a45:rgba(185,130,92,.45);--dt-a50:rgba(185,130,92,.5);--dt-a70:rgba(185,130,92,.7);--btn-ink:#FFFFFF;--pure-white:#F8F4ED;--mist:#C8B9A6;--w-a05:rgba(245,240,231,.08);--w-a40:rgba(29,23,19,.55);--w-a70:rgba(245,240,231,.75);--ink:#1D1713;--nav-bg:rgba(29,23,19,.92);--mob-overlay-bg:rgba(29,23,19,.97);--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.22);--blk-a40:rgba(0,0,0,.45);--w-a03:rgba(245,240,231,.05);--w-a08:rgba(245,240,231,.10);--w-a35:rgba(245,240,231,.14);--card-base:#B9825C;--lava-1:#F5F0E7;--lava-2:#E7DCCB;--lava-3:#CBB89D;--err:#B91C1C;--err-a08:rgba(185,28,28,.15);--btn-ink-a30:rgba(255,255,255,.3);--w-a10:rgba(29,23,19,.22);--w-a07:rgba(29,23,19,.18);--tier-text:rgba(29,23,19,.88);--surface:#E7DCCB;--ink-text:#1D1713;--card-ink:#4A3020;--card-ink-2:rgba(29,23,19,.88);--card-placeholder:rgba(29,23,19,.45);--card-sheen:rgba(245,240,231,.18);--card-border-tint:rgba(29,23,19,.22);--card-accent:#4A3020;--card-accent-soft:rgba(29,23,19,.07);--card-input-bg:rgba(245,240,231,.32);--card-msg-bg:#F0E6DC;--card-success:#3F6B44;--card-error:#B91C1C;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
+:root{--em:#B9825C;--fx-deep:#1D1713;--fx-deep2:#2A211B;--fx-glint:#B9825C;--fx-mist:#9A8875;--db-teal:#B9825C;--zinc-950:#1D1713;--dt-a04:rgba(185,130,92,.06);--dt-a07:rgba(185,130,92,.16);--dt-a08:rgba(185,130,92,.10);--dt-a18:rgba(185,130,92,.22);--dt-a35:rgba(185,130,92,.35);--dt-a45:rgba(185,130,92,.45);--dt-a50:rgba(185,130,92,.5);--dt-a70:rgba(185,130,92,.7);--btn-ink:#FFFFFF;--pure-white:#F8F4ED;--mist:#C8B9A6;--w-a05:rgba(245,240,231,.08);--w-a40:rgba(29,23,19,.55);--w-a70:rgba(245,240,231,.75);--ink:#1D1713;--nav-bg:rgba(29,23,19,.92);--mob-overlay-bg:rgba(29,23,19,.97);--w-a85:rgba(245,240,231,.88);--w-a18:rgba(245,240,231,.22);--blk-a40:rgba(0,0,0,.45);--w-a03:rgba(245,240,231,.05);--w-a08:rgba(245,240,231,.10);--w-a35:rgba(245,240,231,.14);--card-base:#B9825C;--lava-1:#F5F0E7;--lava-2:#E7DCCB;--lava-3:#CBB89D;--err:#DC2626;--err-a08:rgba(220,38,38,.15);--btn-ink-a30:rgba(255,255,255,.3);--w-a10:rgba(29,23,19,.22);--w-a07:rgba(29,23,19,.18);--tier-text:rgba(29,23,19,.88);--surface:#E7DCCB;--ink-text:#1D1713;--card-ink:#4A3020;--card-ink-2:rgba(29,23,19,.88);--card-placeholder:rgba(29,23,19,.45);--card-sheen:rgba(245,240,231,.18);--card-border-tint:rgba(29,23,19,.22);--card-accent:#4A3020;--card-accent-soft:rgba(29,23,19,.07);--card-input-bg:rgba(245,240,231,.32);--card-msg-bg:#F0E6DC;--card-success:#3F6B44;--error-on-light:#481212;--logo-grad-ivory:#F3F0E9;--logo-grad-mid:#D7C6AD;--logo-grad-end:#8D5F42;--logo-shadow:rgba(0,0,0,.5);}
 *,*::before,*::after{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 #gl-canvas{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;z-index:-1;pointer-events:none;display:block;}
@@ -38,6 +38,11 @@ body{font-family:'Inter',sans-serif;background:var(--ink);color:var(--pure-white
 @keyframes pgFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 a{color:inherit;text-decoration:none;}
 input,button{font-family:'Inter',sans-serif;}
+/* Focus clavier : caramel sur fond sombre (nav) est bien contraste, mais
+   invisible sur la carte -- elle est caramel elle-meme. Le contexte .card
+   reprend donc le brun fonce deja utilise pour son propre texte/bouton. */
+:focus-visible{outline:2px solid var(--db-teal);outline-offset:3px;}
+.card :focus-visible{outline-color:var(--card-accent);}
 
 /* ── Nav identique au reste du site ── */
 .nav-wrap{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 max(24px,calc((100vw - 1140px)/2));height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-a05);}
@@ -127,12 +132,18 @@ input,button{font-family:'Inter',sans-serif;}
   transition:border-color .2s,background .2s;
 }
 .field input::placeholder{color:var(--card-placeholder);}
-.field input:focus{border-color:var(--card-accent);background:var(--card-accent-soft);outline:none;}
+.field input:focus{border-color:var(--card-accent);background:var(--card-accent-soft);}
 
 /* Validation temps reel : bordure rouge + message inline, sans toucher
-   au flux Supabase (handleLogin reste seul responsable de la soumission). */
+   au flux Supabase (handleLogin reste seul responsable de la soumission).
+   Le texte (.field-error) est directement sur la carte caramel opaque --
+   --err y tombe a ~1.9:1, illisible pour du texte. --error-on-light y
+   atteint 4.67:1 verifie (voir rapport de contraste). La bordure/glow
+   gardent --err : ce n'est pas du texte, l'exigence de contraste est
+   differente (etat visuel renforce par le glow + le shake, pas seulement
+   la couleur). */
 .field.has-error input{border-color:var(--err) !important;box-shadow:0 0 0 3px var(--err-a08);}
-.field-error{font-size:.76rem;color:var(--err);margin-top:2px;display:none;}
+.field-error{font-size:.76rem;color:var(--error-on-light);margin-top:2px;display:none;}
 .field.has-error .field-error{display:block;}
 @keyframes cardShake{
   0%,100%{transform:translateX(0);}
@@ -203,7 +214,7 @@ input:-webkit-autofill:active {
 }
 
 /* ── Erreur ── */
-.error-msg{font-size:.82rem;color:var(--card-error);background:var(--card-msg-bg);border:1px solid var(--card-border-tint);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
+.error-msg{font-size:.82rem;color:var(--error-on-light);background:var(--card-msg-bg);border:1px solid var(--card-border-tint);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .error-msg.visible{display:block;}
 .success-msg{font-size:.82rem;color:var(--card-success);background:var(--card-msg-bg);border:1px solid var(--card-border-tint);border-radius:10px;padding:9px 12px;margin-bottom:14px;display:none;}
 .success-msg.visible{display:block;}
