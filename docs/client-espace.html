@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#F6F5F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)">
 <title>Espace Client — Seba</title>
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pro-global.css">
@@ -332,8 +333,8 @@ button,input,textarea{font-family:'Inter',sans-serif;}
       <div class="cp-card">
         <p style="font-size:.84rem;color:var(--text-2);margin-bottom:12px;">Changez votre mot de passe à tout moment.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <input type="password" id="ce-pw-new" placeholder="Nouveau mot de passe" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
-          <input type="password" id="ce-pw-confirm" placeholder="Confirmez" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
+          <input type="password" id="ce-pw-new" placeholder="Nouveau mot de passe" aria-label="Nouveau mot de passe" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
+          <input type="password" id="ce-pw-confirm" placeholder="Confirmez" aria-label="Confirmez le nouveau mot de passe" minlength="6" style="flex:1;min-width:150px;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:16px;min-height:48px;">
         </div>
         <button type="button" class="cp-btn cp-btn-primary" style="width:100%;" onclick="modifierMonMotDePasse()">Modifier mon mot de passe</button>
         <p id="ce-pw-status" style="font-size:.82rem;margin-top:8px;"></p>
@@ -1061,6 +1062,7 @@ async function renderMessages() {
 }
 async function envoyerMessagePrestataire() {
   const inp = document.getElementById('ce-msg-input');
+  if (inp.disabled) return; // anti double-envoi (meme garde que envoyerMessagePatron() dans espace-terrain.html)
   const texte = inp.value.trim();
   if (!texte) return;
   inp.disabled = true;

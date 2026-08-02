@@ -244,7 +244,7 @@ async function handleLogin(){
     return;
   }
 
-  err.textContent = res.error || 'Connexion impossible.';
+  err.textContent = res.error === 'Invalid login credentials' ? 'Identifiants incorrects.' : (res.error || 'Connexion impossible.');
   err.classList.add('visible');
   shakeCard();
   btn.classList.remove('loading');
