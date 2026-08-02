@@ -17,6 +17,7 @@
      SebaDB.clientPortal.session()/profile(), pas via un pre-requis de
      session patron sur cet appareil. -->
 <script src="auth.js"></script>
+<script src="notifications-widget.js"></script>
 <style>
 :root{--danger-text:#EF4444;--danger-bg:rgba(239,68,68,.08);--danger-border:rgba(239,68,68,.22);--modal-overlay-bg:rgba(0,0,0,.5);
   /* Navigation latérale compacte client (toujours sombre, même rationale
@@ -951,6 +952,7 @@ function switchView(name) {
     return;
   }
   _profile = profileRes;
+  if (window.SebaNotifications) SebaNotifications.init();
 
   document.getElementById('cp-loading').style.display = 'none';
   document.getElementById('cp-app').style.display = 'block';
