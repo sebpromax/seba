@@ -22,15 +22,30 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
+// Jamais de repli sur une origine par défaut (sebpromax.github.io) --
+// une origine absente de la liste doit être refusée (403), jamais
+// silencieusement remplacée : c'est exactement ce qui cassait les
+// invitations depuis https://sebastienvalentin.com (le domaine
+// personnalisé n'était pas encore dans cette liste au moment où ce
+// fichier a été écrit, 2026-07-19 -- le repli renvoyait alors le header
+// CORS de sebpromax.github.io, que le navigateur rejette puisqu'il ne
+// correspond pas à l'origine réelle de la requête).
+const ALLOWED_ORIGINS = new Set([
+  'https://sebastienvalentin.com',
+  'https://www.sebastienvalentin.com',
+  'https://sebpromax.github.io',
+  'http://localhost:8791',
+]);
 
-function corsHeaders(req: Request) {
-  const origin = req.headers.get('origin') || '';
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+function getCorsHeaders(req: Request): Record<string, string> | null {
+  const origin = req.headers.get('origin');
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return null;
   return {
-    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 }
 
@@ -56,8 +71,14 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const cors = getCorsHeaders(req);
+  if (!cors) {
+    return new Response(JSON.stringify({ error: 'Origine non autorisée.' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return jsonResponse(cors, { error: 'Method not allowed' }, 405);
 
   const callerUid = verifyUser(req);
@@ -95,7 +116,9 @@ Deno.serve(async (req) => {
     return jsonResponse(cors, { ok: true, already_provisioned: true });
   }
 
-  const origin = req.headers.get('origin') || ALLOWED_ORIGINS[0];
+  // origin non-null garanti ici : une origine absente/inconnue a deja ete
+  // rejetee (403) par getCorsHeaders() plus haut.
+  const origin = req.headers.get('origin')!;
   const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(emailLower, {
     redirectTo: origin + '/reset-password.html',
   });
