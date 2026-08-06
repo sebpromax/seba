@@ -40,8 +40,8 @@
 
 import { ASSISTANT_CONVERSATIONNEL_SYSTEM, buildStructuredContext, decideAvecLLM } from './_shared/conscience-seba.ts';
 import { callWithFallback, LLM_PROVIDERS } from './_shared/llm-providers.ts';
+import { forbiddenOriginResponse, getCorsHeaders } from './_shared/cors.ts';
 
-const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'http://localhost:8791'];
 const DAILY_LIMIT = 50;
 // Audit go-live (AUDIT-GO-LIVE-SEBA.md, section 2) : aucun appel reseau
 // sortant n'avait de limite de temps propre a l'application, exposant
@@ -51,16 +51,6 @@ const DAILY_LIMIT = 50;
 // nettoyage automatique du timer, pas de risque de fuite si le fetch
 // resout avant l'echeance.
 const FETCH_TIMEOUT_MS = 5000;
-
-function corsHeaders(req: Request) {
-  const origin = req.headers.get('origin') || '';
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
 
 function jsonResponse(cors: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -139,8 +129,9 @@ function fallbackJson(reasoning: string) {
 }
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const cors = getCorsHeaders(req);
+  if (!cors) return forbiddenOriginResponse();
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
   const userId = verifyUser(req);
   if (!userId) return jsonResponse(cors, { error: 'Authentification requise' }, 401);

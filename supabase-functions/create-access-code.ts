@@ -20,21 +20,11 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { forbiddenOriginResponse, getCorsHeaders } from './_shared/cors.ts';
 
-const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'https://sebastienvalentin.com', 'http://localhost:8791'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans 0/O, 1/I/L -- pas d'ambiguite a la saisie
 const CODE_LENGTH = 8;
-
-function corsHeaders(req: Request) {
-  const origin = req.headers.get('origin') || '';
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
 
 function jsonResponse(cors: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -91,8 +81,9 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const cors = getCorsHeaders(req);
+  if (!cors) return forbiddenOriginResponse();
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return jsonResponse(cors, { error: 'Method not allowed' }, 405);
 
   const callerUid = verifyUser(req);
