@@ -71,7 +71,14 @@ interface OpResult {
   error?: string;
 }
 
-const VALID_ENTITIES = new Set(['clients', 'devis', 'factures', 'interventions', 'employes', 'journal']);
+// P0 (2026-08-06) : cette allowlist et le param p_op manquant plus bas
+// avaient divergé de la copie suivie par git (supabase/functions/sync-push/
+// index.ts, PR #98, 2026-07-28) qui avait déjà les deux corrections --
+// jamais reportées ici, la copie "source" documentée dans MANUEL-SEBA-
+// ADMIN.md. Réaligné sur la même liste (grep exhaustif SebaDB.create/
+// update/remove(...) dans docs/*.html + docs/seba-data.js) et confirmé
+// identique à la contrainte sync_operations_entity_check en base.
+const VALID_ENTITIES = new Set(['clients', 'devis', 'factures', 'interventions', 'employes', 'journal', 'contrats', 'custom_services', 'automationRules', 'automationRuns', 'automationAlerts']);
 
 /* Résout account + user_id à partir du JWT patron. Seul le patron pousse
    des écritures via ce chemin (voir commentaire d'en-tête). */
@@ -144,12 +151,21 @@ async function applyOne(identity: { account: string; user_id: string; employee_i
   // l'insertion pour ce (account, device_id, client_seq) -- la contrainte
   // UNIQUE de Postgres a tranche, pas notre code. apply_entity_patch ne
   // peut donc plus jamais etre invoquee deux fois pour la meme operation.
+  // p_op transmet la valeur REELLE deja portee par chaque operation du
+  // batch (op.op, typee 'create'|'update'|'delete' -- voir interface
+  // SyncOp plus haut, remplie par le frontend qui sait deja de quel type
+  // d'ecriture il s'agit) -- jamais devinee ni calculee ici. La fonction
+  // SQL exige ce parametre depuis migrations/2026-07-28-sync-push-state-
+  // persistence.sql (signature a 4 parametres supprimee, voir en-tete de
+  // cette migration) pour distinguer les 3 operations et savoir ajouter,
+  // fusionner ou retirer un element du tableau JSONB seba_state.state.
   const { data: patched, error: rpcError } = await supabase
     .rpc('apply_entity_patch', {
       p_account: identity.account,
       p_entity: op.entity,
       p_entity_id: op.entity_id,
       p_patch_jsonb: op.patch,
+      p_op: op.op,
     })
     .abortSignal(AbortSignal.timeout(FETCH_TIMEOUT_MS))
     .single();
