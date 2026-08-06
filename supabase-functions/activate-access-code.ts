@@ -36,22 +36,12 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { forbiddenOriginResponse, getCorsHeaders } from './_shared/cors.ts';
 
-const ALLOWED_ORIGINS = ['https://sebpromax.github.io', 'https://sebastienvalentin.com', 'http://localhost:8791'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_RE = /^[A-Z2-9]{8}$/;
 const GENERIC_ERROR = 'Email ou code invalide, expiré ou déjà utilisé.';
 const RATE_LIMIT_PER_IP_PER_DAY = 60; // large marge sous un usage légitime, bloque un balayage automatisé
-
-function corsHeaders(req: Request) {
-  const origin = req.headers.get('origin') || '';
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
 
 function jsonResponse(cors: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -88,8 +78,9 @@ function extractTokenFromActionLink(actionLink: string): { token_hash: string; t
 }
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const cors = getCorsHeaders(req);
+  if (!cors) return forbiddenOriginResponse();
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return jsonResponse(cors, { error: 'Method not allowed' }, 405);
 
   const ip = clientIp(req);
@@ -159,7 +150,9 @@ Deno.serve(async (req) => {
 
   // 4. Génère un token de session frais (toujours 'recovery' : fonctionne
   // pour un compte neuf comme pour une reprise, voir en-tête).
-  const origin = req.headers.get('origin') || ALLOWED_ORIGINS[0];
+  // origin non-null garanti ici : une origine absente/inconnue a deja ete
+  // rejetee (403) par getCorsHeaders() plus haut.
+  const origin = req.headers.get('origin')!;
   const redirectTo = origin + (v.role === 'client' ? '/client-connexion.html' : '/employe-connexion.html');
   const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
     type: 'recovery', email: v.email, options: { redirectTo },
